@@ -8,6 +8,8 @@ import { createHealthResponse, createErrorResponseFromError } from '@/lib/api-ut
 import { healthCheckQuerySchema } from '@/lib/api/validation/schemas'
 import { validateQueryParams } from '@/lib/api/validation/middleware'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     // Validate query parameters

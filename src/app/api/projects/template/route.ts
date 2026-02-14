@@ -13,6 +13,8 @@ import { llmObservability } from '@/lib/datadog-llm'
 import type { Span } from 'dd-trace'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(20) // 20 requests per minute - template creation
 
 const generateFromTemplateSchema = z.object({

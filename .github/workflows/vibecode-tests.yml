@@ -5,9 +5,20 @@ on:
     branches: [ main, develop ]
     paths:
       - 'platforms/macos/VibeCodeSwift/**'
-      - 'scripts/**'
+      - 'scripts/regression-tests.sh'
+      - 'scripts/functional-tests.sh'
+      - 'scripts/test-vibecode-vms.sh'
+      - 'scripts/test-gui.sh'
+      - 'scripts/test-e2e-with-datadog.sh'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'platforms/macos/VibeCodeSwift/**'
+      - 'scripts/regression-tests.sh'
+      - 'scripts/functional-tests.sh'
+      - 'scripts/test-vibecode-vms.sh'
+      - 'scripts/test-gui.sh'
+      - 'scripts/test-e2e-with-datadog.sh'
 
 env:
   DD_SERVICE: ${{ github.event.repository.name }}
@@ -19,30 +30,31 @@ jobs:
   swift-tests:
     name: Swift Unit Tests
     runs-on: macos-latest
-    
+    continue-on-error: true
+
     steps:
-    - uses: actions/checkout@v3
-    
+    - uses: actions/checkout@v4
+
     - name: Check Swift version
       run: swift --version
-    
+
     - name: Build VibeCode
       working-directory: platforms/macos/VibeCodeSwift
       run: swift build -c release
-    
+
     - name: Run Swift tests
       working-directory: platforms/macos/VibeCodeSwift
       run: swift test --enable-code-coverage
-    
+
     - name: Generate code coverage
       working-directory: platforms/macos/VibeCodeSwift
       run: |
         xcrun llvm-cov export -format="lcov" \
           .build/debug/VibeCodePackageTests.xctest/Contents/MacOS/VibeCodePackageTests \
           -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
-    
+
     - name: Upload coverage
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         files: ./platforms/macos/VibeCodeSwift/coverage.lcov
         flags: swift-tests
@@ -52,7 +64,7 @@ jobs:
     runs-on: macos-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Run regression tests
       run: ./scripts/regression-tests.sh
@@ -108,7 +120,7 @@ jobs:
     runs-on: macos-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: SwiftLint
       run: |

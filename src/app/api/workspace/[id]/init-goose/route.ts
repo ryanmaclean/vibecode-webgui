@@ -7,6 +7,8 @@ import path from 'path';
 import { validatePathParams, validateRequestBody } from '@/lib/api/validation/middleware';
 import { initGooseParamSchema, initGooseSchema } from '@/lib/api/validation/schemas';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
+
+export const dynamic = 'force-dynamic'
 // import { logger } from '@/lib/logger';
 const execAsync = promisify(exec);
 

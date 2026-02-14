@@ -12,6 +12,8 @@ import { checkMonitoringAuth, getUnauthorizedResponse } from '@/lib/monitoring/a
 import { z } from '@/lib/zod-compat';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(120); // 120 requests per minute - monitoring data
 
 // In-memory metrics storage

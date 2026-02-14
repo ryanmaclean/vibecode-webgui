@@ -29,6 +29,8 @@ import {
 import type { ServiceName, ServiceHealthResult } from '@/types/health';
 import { createServiceLogger } from '@/lib/logging';
 
+export const dynamic = 'force-dynamic'
+
 const log = createServiceLogger({
   service: 'vibecode-webgui',
   component: 'health-services-api',

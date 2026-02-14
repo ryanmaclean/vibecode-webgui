@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { modelRegistry } from '@/lib/ai/models/model-registry';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 
+export const dynamic = 'force-dynamic'
+
 // Rate limiting: 120 requests per minute
 const apiRateLimit = createAPIRateLimit(120);
 

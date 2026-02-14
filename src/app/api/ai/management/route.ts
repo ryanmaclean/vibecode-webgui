@@ -17,6 +17,8 @@ import {
   clampLimit,
 } from '@/lib/api/pagination';
 
+export const dynamic = 'force-dynamic'
+
 // Define inline schema since schemas-phase4-batch2 doesn't exist
 const aiManagementActionSchema = z.object({
   action: z.enum(['overview', 'models', 'usage', 'costs', 'health', 'performance', 'users']),

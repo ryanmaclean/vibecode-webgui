@@ -11,6 +11,8 @@ import { IDEFactory, IDEConfig, IDEType } from '@/lib/ide';
 import { getSessionStore } from '@/lib/ide/session/store';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(30); // 30 requests per minute
 
 export async function POST(request: NextRequest) {

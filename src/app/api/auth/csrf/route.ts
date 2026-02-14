@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateCSRFToken, getSessionId } from '@/lib/security/csrf-protection';
 
+export const dynamic = 'force-dynamic'
+
 // Force Node.js runtime since csrf-protection uses Node.js crypto
 export const runtime = 'nodejs';
 

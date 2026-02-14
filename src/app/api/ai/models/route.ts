@@ -19,6 +19,8 @@ import type {
   TaskType,
 } from '@/types/model-comparison';
 
+export const dynamic = 'force-dynamic'
+
 // Rate limiting: 120 requests per minute for read-heavy operations
 const apiRateLimit = createAPIRateLimit(120);
 

@@ -14,6 +14,8 @@ import { healthCheckQuerySchema } from '@/lib/api/validation/schemas'
 import { validateQueryParams } from '@/lib/api/validation/middleware'
 import { createServiceLogger } from '@/lib/logging'
 
+export const dynamic = 'force-dynamic'
+
 const log = createServiceLogger({
   service: 'vibecode-webgui',
   component: 'health-check'

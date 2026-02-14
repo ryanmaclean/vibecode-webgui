@@ -14,6 +14,8 @@ import { createAPIRateLimit } from '@/lib/rate-limiting';
 import type { CreateVMOptions, VMListOptions } from '@/types/multi-vm';
 import type { VMStatus } from '@/lib/vm/types';
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(60);
 
 const log = createServiceLogger({

@@ -11,6 +11,8 @@ import { appLogger } from '@/lib/server-monitoring'
 import type { ExperimentContext } from '@/lib/feature-flags'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
 /**

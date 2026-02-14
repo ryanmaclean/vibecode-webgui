@@ -107,6 +107,11 @@ def init_log_aggregation() -> bool:
     return True
 
 
+def get_log_aggregation() -> bool:
+    """Backward-compatible helper for legacy scripts."""
+    return init_log_aggregation()
+
+
 def send_log_to_datadog(level: str, message: str, context: Dict[str, Any]) -> bool:
     """Send log to Datadog.
 

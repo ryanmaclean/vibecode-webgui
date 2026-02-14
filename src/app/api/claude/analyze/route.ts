@@ -13,6 +13,8 @@ import { getClaudeCliInstance } from '@/lib/claude-cli-integration'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { z } from '@/lib/zod-compat'
 
+export const dynamic = 'force-dynamic'
+
 // Security: Input validation schema
 const ClaudeAnalyzeRequestSchema = z.object({
   code: z.string().min(1, 'Code cannot be empty').max(50000, 'Code too long'),

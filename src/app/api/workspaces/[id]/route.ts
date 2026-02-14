@@ -8,6 +8,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 import { z } from '@/lib/zod-compat'
+
+export const dynamic = 'force-dynamic'
 // import { logger } from '@/lib/logger';
 // Zod validation schemas for workspace ID parameter
 const WorkspaceIdParamSchema = z.object({

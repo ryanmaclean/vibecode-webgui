@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { GitHubIntegration } from '@/lib/github/integration';
 
+export const dynamic = 'force-dynamic'
+
 const compareCommitsSchema = z.object({
   repoName: z.string().min(1),
   accessToken: z.string().min(1),

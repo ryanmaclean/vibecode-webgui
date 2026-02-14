@@ -42,17 +42,21 @@ echo "VibeCode Regression Test Suite"
 echo "==============================="
 echo ""
 
-# Test 1: Swift build (release)
+# Test 1: Swift build (release) - skip in CI (dedicated swift-tests job handles this)
 log_test "1/8" "Release build"
-if (cd "$PROJECT_ROOT/platforms/macos/VibeCodeSwift" && swift build -c release) > /dev/null 2>&1; then
+if [ "$CI_MODE" = "true" ]; then
+    log_skip "Release build tested by swift-tests CI job"
+elif (cd "$PROJECT_ROOT/platforms/macos/VibeCodeSwift" && swift build -c release) > /dev/null 2>&1; then
     log_pass "Release build successful"
 else
     log_fail "Release build failed"
 fi
 
-# Test 2: Swift build (debug)
+# Test 2: Swift build (debug) - skip in CI (dedicated swift-tests job handles this)
 log_test "2/8" "Debug build"
-if (cd "$PROJECT_ROOT/platforms/macos/VibeCodeSwift" && swift build -c debug) > /dev/null 2>&1; then
+if [ "$CI_MODE" = "true" ]; then
+    log_skip "Debug build tested by swift-tests CI job"
+elif (cd "$PROJECT_ROOT/platforms/macos/VibeCodeSwift" && swift build -c debug) > /dev/null 2>&1; then
     log_pass "Debug build successful"
 else
     log_fail "Debug build failed"

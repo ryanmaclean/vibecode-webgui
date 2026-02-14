@@ -51,26 +51,18 @@ jobs:
           kubectl wait --for=condition=ready pod -l app=datadog-agent -n datadog --timeout=180s
 
       - name: OpenLineage Proxy Smoke
+        shell: bash
         run: |
+          PYSCRIPT='
+          import json, time, uuid, urllib.request
+          url = "http://datadog-agent.datadog.svc.cluster.local:8126/openlineage/api/v1/lineage"
+          payload = {"eventType": "START", "eventTime": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "run": {"runId": str(uuid.uuid4())}, "job": {"namespace": "kind", "name": "tundra-openlineage-ci"}, "producer": "tundra-dome/ci-smoke", "schemaURL": "https://openlineage.io/spec/1-0-5/OpenLineage.json"}
+          req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
+          with urllib.request.urlopen(req, timeout=10) as resp:
+              print("openlineage_proxy_status", resp.status)
+          '
           kubectl -n tundra-dome run openlineage-smoke --rm -i --restart=Never \
-            --image=python:3.12-alpine --command -- sh -lc '
-              python - <<"PY"
-import json, time, uuid
-import urllib.request
-url = "http://datadog-agent.datadog.svc.cluster.local:8126/openlineage/api/v1/lineage"
-payload = {
-  "eventType": "START",
-  "eventTime": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-  "run": {"runId": str(uuid.uuid4())},
-  "job": {"namespace": "kind", "name": "tundra-openlineage-ci"},
-  "producer": "tundra-dome/ci-smoke",
-  "schemaURL": "https://openlineage.io/spec/1-0-5/OpenLineage.json"
-}
-req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
-with urllib.request.urlopen(req, timeout=10) as resp:
-  print("openlineage_proxy_status", resp.status)
-PY
-            '
+            --image=python:3.12-alpine --command -- python3 -c "$PYSCRIPT"
 
       - name: Kafka Traffic Smoke
         run: |

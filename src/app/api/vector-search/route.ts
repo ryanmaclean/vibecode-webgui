@@ -16,6 +16,8 @@ import { cache, CacheKeys, CacheTTL } from '@/lib/cache/unified-cache-client';
 import crypto from 'crypto';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(30); // 30 requests per minute
 const searchRequestSchema = z.object({
   query: z.string().min(1, 'Query cannot be empty'),

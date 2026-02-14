@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { monitoring } from '../../../../lib/monitoring'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(120) // 120 requests per minute - monitoring data
 
 export async function POST(request: NextRequest) {

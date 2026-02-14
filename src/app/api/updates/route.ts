@@ -25,6 +25,8 @@ import {
   ReleaseNotesSection,
 } from '@/types/auto-update';
 
+export const dynamic = 'force-dynamic'
+
 // ============================================================================
 // Constants
 // ============================================================================

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { mongodbChatService } from '@/lib/services/chat-mongodb'
 import { getToken } from 'next-auth/jwt'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+export const dynamic = 'force-dynamic'
 // import { logger } from '@/lib/logger'
 
 const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute

@@ -6,6 +6,8 @@ import { z } from '@/lib/zod-compat'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 import type { PushOperator, Document } from 'mongodb'
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
 // Simple MongoDB chat test without complex service layer

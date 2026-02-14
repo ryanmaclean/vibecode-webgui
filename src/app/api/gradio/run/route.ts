@@ -5,6 +5,8 @@ import path from 'path';
 import crypto from 'crypto';
 import { z } from '@/lib/zod-compat';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
+
+export const dynamic = 'force-dynamic'
 // import { logger } from '@/lib/logger';
 
 const apiRateLimit = createAPIRateLimit(20) // 20 requests per minute - expensive operations

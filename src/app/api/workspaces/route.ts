@@ -23,6 +23,8 @@ import {
 } from '@/lib/api/pagination'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 
+export const dynamic = 'force-dynamic'
+
 const log = createServiceLogger({
   service: 'vibecode-webgui',
   component: 'workspace-api'

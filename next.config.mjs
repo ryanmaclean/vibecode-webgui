@@ -17,7 +17,7 @@ const outputMode = process.env.NEXT_OUTPUT_MODE === 'export'
     ? 'standalone'
     : undefined
 if (outputMode) {
-  console.info(`[next.config] output mode: ${outputMode}`)
+  console.info(`[next.config] output mode: ${outputMode} (root config at ${__dirname})`)
 }
 
 const securityHeaders = [
@@ -211,7 +211,7 @@ const nextConfig = {
   },
   webpack: (config, { dev, isServer }) => {
     // Enable WebAssembly support (needed for tiktoken)
-    // layers: true prevents 'hash' null reference with Next.js 16 webpack
+    // Use layers to avoid hash null reference with Next.js 16 webpack
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
@@ -318,14 +318,8 @@ const nextConfig = {
       config.externals = externals
     }
 
-    // Re-enable minification now that MinifyPlugin is removed
-    // SWC minifier handles this automatically in Next.js
-    if (!dev && !isServer) {
-      config.optimization = {
-        ...config.optimization,
-        minimize: true,
-      }
-    }
+    // Let Next.js handle minification defaults
+    // Do not override config.optimization.minimize
 
     // Drop all Moment.js locales if Moment is used anywhere
     const hasMomentLocaleDrop = config.plugins.some(
@@ -335,22 +329,8 @@ const nextConfig = {
       config.plugins.push(new webpack.ContextReplacementPlugin(/moment[\\/\\]locale$/, /^$/))
     }
 
-    config.module = config.module || {}
-    config.module.rules = config.module.rules || []
-    config.module.rules.push(
-      {
-        test: /node_modules\/camelcase/,
-        use: 'null-loader',
-      },
-      {
-        test: /vendor-chunks\/@opentelemetry/,
-        use: 'null-loader',
-      },
-      {
-        test: /\.wasm$/,
-        type: 'webassembly/async',
-      }
-    )
+    // null-loader rules removed - caused 'hash' null reference in webpack 5
+    // camelcase and opentelemetry vendor chunks handled by resolve.alias and externals
 
     return config
   },

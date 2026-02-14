@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 
+export const dynamic = 'force-dynamic'
+
 const generateProjectSchema = z.object({
   prompt: z.string().min(1, 'Project prompt is required').max(4000),
 })

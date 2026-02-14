@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic'
 // import { logger } from '../../../../lib/logger';
 
 // Defer heavy or circular-prone imports to runtime to avoid build-time evaluation cycles

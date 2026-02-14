@@ -14,6 +14,8 @@ import { createContainerSchema } from '@/lib/api/validation/schemas'
 import { createServiceLogger } from '@/lib/logging'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(60)
 
 const log = createServiceLogger({

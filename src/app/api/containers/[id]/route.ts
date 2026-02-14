@@ -10,6 +10,8 @@ import { authOptions } from '@/lib/auth'
 import { appleContainer } from '@/lib/container/apple-container'
 import { validatePathParams } from '@/lib/api/validation/middleware'
 import { containerIdSchema } from '@/lib/api/validation/schemas'
+
+export const dynamic = 'force-dynamic'
 // import { logger } from '@/lib/logger';
 /**
  * GET /api/containers/[id]

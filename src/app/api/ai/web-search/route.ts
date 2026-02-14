@@ -3,6 +3,8 @@ import { webSearchService } from '@/lib/services/web-search'
 import { z } from '@/lib/zod-compat'
 import { webSearchSchema } from '@/lib/api/validation/schemas'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+export const dynamic = 'force-dynamic'
 // import { logger } from '@/lib/logger'
 
 // Extended schema with additional fields

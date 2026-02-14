@@ -12,6 +12,8 @@ import { getPoolManager } from '@/lib/vm/pool/vm-pool-manager';
 import { createServiceLogger } from '@/lib/logging';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(60);
 
 const log = createServiceLogger({

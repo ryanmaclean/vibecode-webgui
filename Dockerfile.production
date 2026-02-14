@@ -31,6 +31,9 @@ ARG NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=${NODE_ENV}
 ENV NEXT_TELEMETRY_DISABLED=${NEXT_TELEMETRY_DISABLED}
 
+# Clear DD/tracing env vars to prevent dd-trace side effects during build
+ENV DD_API_KEY=""
+ENV DD_TRACE_ENABLED=false
 RUN npx next build --webpack
 
 # ── Stage 3: Production runtime ──────────────────────────────────────

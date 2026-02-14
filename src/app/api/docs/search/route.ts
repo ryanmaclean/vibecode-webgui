@@ -6,6 +6,8 @@ import { sanitizeSearchQuery } from '@/lib/api/validation/sanitize';
 import { createErrorResponse } from '@/lib/utils/api-response';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(30); // 30 requests per minute
 
 // Response type definitions

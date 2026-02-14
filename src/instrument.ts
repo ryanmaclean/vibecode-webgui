@@ -3,6 +3,8 @@
 
 // Hard-coded Docker build detection - most aggressive approach
 const isMonitoringDisabled = (
+  process.env.NEXT_PHASE === 'phase-production-build' ||
+  process.argv.some(a => a.includes('next') && a.includes('build')) ||
   process.env.DOCKER_BUILD === 'true' ||
   process.env.SKIP_MONITORING === 'true' ||
   process.env.CI === 'true' ||

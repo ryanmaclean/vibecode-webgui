@@ -13,6 +13,8 @@ import { getClaudeCliInstance } from '@/lib/claude-cli-integration'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { z } from '@/lib/zod-compat'
 
+export const dynamic = 'force-dynamic'
+
 // Security: Input validation schema
 const ClaudeGenerateRequestSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty').max(5000, 'Prompt too long'),

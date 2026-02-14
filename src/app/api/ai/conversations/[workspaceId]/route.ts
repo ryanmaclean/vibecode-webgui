@@ -19,6 +19,8 @@ import {
 } from '@/lib/api/pagination';
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - conversation management
 
 // Zod validation schemas

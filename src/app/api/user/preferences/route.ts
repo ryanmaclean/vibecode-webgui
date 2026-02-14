@@ -10,6 +10,8 @@ import { loadUserPreferences, saveUserPreferences } from '@/lib/server/user-pref
 import { userPreferencesInputSchema } from '@/lib/user-preferences'
 import { cacheGet, cacheSet, cacheDelete, CacheKeyGenerators, TTLPresets } from '@/lib/cache/cache-utils'
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - user settings
 
 export async function POST(request: NextRequest) {

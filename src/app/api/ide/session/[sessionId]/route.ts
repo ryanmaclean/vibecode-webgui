@@ -11,6 +11,8 @@ import { authOptions } from '@/lib/auth';
 import { IDEFactory } from '@/lib/ide';
 import { getSessionStore } from '@/lib/ide/session/store';
 
+export const dynamic = 'force-dynamic'
+
 interface RouteContext {
   params: Promise<{
     sessionId: string;

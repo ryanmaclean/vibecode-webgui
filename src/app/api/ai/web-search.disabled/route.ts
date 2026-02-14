@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { webSearchService } from '@/lib/services/web-search'
 import { z } from '@/lib/zod-compat'
 
+export const dynamic = 'force-dynamic'
+
 // Zod validation schema for web search requests
 const webSearchRequestSchema = z.object({
   query: z.string()

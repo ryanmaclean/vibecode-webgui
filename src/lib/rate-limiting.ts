@@ -44,20 +44,22 @@ interface TokenBucketState {
 // In-memory store for development (use Redis in production)
 const requestStore = new Map<string, TokenBucketState>()
 
-// Cleanup old entries every 5 minutes
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, bucket] of requestStore.entries()) {
-    if (bucket.refillPerMs <= 0) continue
+// Cleanup old entries every 5 minutes (only at runtime, not during build)
+if (typeof setInterval !== 'undefined' && process.env.NEXT_PHASE !== 'phase-production-build') {
+  setInterval(() => {
+    const now = Date.now()
+    for (const [key, bucket] of requestStore.entries()) {
+      if (bucket.refillPerMs <= 0) continue
 
-    const bucketWindowMs = bucket.capacity / bucket.refillPerMs
-    const idleDuration = now - bucket.lastRefill
-    // Drop inactive buckets once they have been full for 2 windows
-    if (bucket.tokens >= bucket.capacity && idleDuration > bucketWindowMs * 2) {
-      requestStore.delete(key)
+      const bucketWindowMs = bucket.capacity / bucket.refillPerMs
+      const idleDuration = now - bucket.lastRefill
+      // Drop inactive buckets once they have been full for 2 windows
+      if (bucket.tokens >= bucket.capacity && idleDuration > bucketWindowMs * 2) {
+        requestStore.delete(key)
+      }
     }
-  }
-}, 5 * 60 * 1000)
+  }, 5 * 60 * 1000)
+}
 
 /**
  * Clear the request store (for testing purposes)

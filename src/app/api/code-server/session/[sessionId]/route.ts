@@ -9,6 +9,8 @@ import { authOptions } from '@/lib/auth'
 import { validatePathParams, validateRequestBody } from '@/lib/api/validation/middleware'
 import { z } from '@/lib/zod-compat'
 
+export const dynamic = 'force-dynamic'
+
 // Define inline schemas since schemas-phase4-batch2 doesn't exist
 const codeServerSessionIdSchema = z.object({
   sessionId: z.string().uuid()

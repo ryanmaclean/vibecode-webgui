@@ -11,6 +11,8 @@ import { createAPIRateLimit } from '@/lib/rate-limiting';
 import { z } from '@/lib/zod-compat';
 import type { RecommendationRequest, TaskType } from '@/types/model-comparison';
 
+export const dynamic = 'force-dynamic'
+
 // Rate limiting: 60 requests per minute
 const apiRateLimit = createAPIRateLimit(60);
 

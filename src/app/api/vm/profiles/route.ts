@@ -12,6 +12,8 @@ import { createServiceLogger } from '@/lib/logging';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 import type { VMProfile } from '@/types/multi-vm';
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(60);
 
 const log = createServiceLogger({

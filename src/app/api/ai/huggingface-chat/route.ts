@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { HfInference } from '@huggingface/inference'
 import { z } from '@/lib/zod-compat'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+export const dynamic = 'force-dynamic'
 // import { logger } from '@/lib/logger'
 
 const apiRateLimit = createAPIRateLimit(30) // 30 req/min

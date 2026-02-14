@@ -10,6 +10,8 @@ import { loadSecret } from '@/lib/security/macos-keychain-server'
 import { fetchWithRetry } from '@/lib/utils/fetch'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(30) // 30 req/min for AI endpoints
 
 // Code completion request validation schema

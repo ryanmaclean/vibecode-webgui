@@ -3,6 +3,8 @@ import { VectorConnectionPoolFactory } from '@/lib/db/vector-connection-pool';
 import { ConnectionPoolMonitor, AlertLevel } from '@/lib/db/connection-pool-monitor';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(120); // 120 requests per minute - monitoring data
 // import { logger } from '@/lib/logger';
 // Create a singleton monitor instance

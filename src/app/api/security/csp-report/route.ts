@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from '@/lib/zod-compat'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - CSP reports can be frequent
 
 const cspViolationSchema = z.object({

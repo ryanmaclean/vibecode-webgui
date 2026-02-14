@@ -3,6 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(10) // 10 requests per minute - initialization is expensive
 
 export async function GET(_request: NextRequest) {

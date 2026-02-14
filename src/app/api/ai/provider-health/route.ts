@@ -11,6 +11,8 @@ import { validateRequestBody } from '@/lib/api/validation/middleware';
 import { z } from '@/lib/zod-compat';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 
+export const dynamic = 'force-dynamic'
+
 const apiRateLimit = createAPIRateLimit(60); // 60 requests per minute - health checks
 
 // Define inline schema since schemas-phase4-batch2 doesn't exist
