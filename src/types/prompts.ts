@@ -2,7 +2,7 @@
  * Prompt Types and Interfaces for AI-powered Code Assistance
  *
  * This module defines the type system for the reusable prompt library,
- * supporting 321+ AI models via OpenRouter with structured templates
+ * supporting 340+ AI models via OpenRouter with structured templates
  * for common development tasks.
  */
 

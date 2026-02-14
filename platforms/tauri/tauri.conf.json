@@ -4,10 +4,10 @@
   "version": "5.1.0-beta",
   "identifier": "com.vibecode.app",
   "build": {
-    "beforeDevCommand": "echo 'OpenVSCode should be running on :8080'",
-    "beforeBuildCommand": "test -f ../public/index.html || echo 'index.html missing'",
-    "frontendDist": "../public",
-    "devUrl": "http://localhost:8080"
+    "beforeDevCommand": "echo 'Next.js dev server should be running on :3000'",
+    "beforeBuildCommand": "cd ../.. && npm run build",
+    "frontendDist": "../../public",
+    "devUrl": "http://localhost:3000"
   },
   "bundle": {
     "active": true,

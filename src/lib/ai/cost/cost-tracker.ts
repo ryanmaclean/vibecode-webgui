@@ -52,7 +52,7 @@ const STORAGE_KEYS = {
 // ============================================================================
 
 /**
- * Comprehensive pricing data for 321+ models
+ * Comprehensive pricing data for 340+ models
  * Prices in USD per 1K tokens
  */
 export const MODEL_PRICING: Record<string, ModelPricing> = {

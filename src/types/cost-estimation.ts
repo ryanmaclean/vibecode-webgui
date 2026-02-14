@@ -2,7 +2,7 @@
  * Cost Estimation Types for VibeCode AI
  *
  * Type definitions for AI cost tracking, estimation, and management.
- * Supports 321+ AI models through OpenRouter and direct providers.
+ * Supports 340+ AI models through OpenRouter and direct providers.
  *
  * @module types/cost-estimation
  */

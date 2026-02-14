@@ -53,7 +53,7 @@ describe('AIPage', () => {
   it('renders the page description', () => {
     render(<AIPage />);
     expect(
-      screen.getByText(/Access 321\+ AI models, manage agents, track costs/)
+      screen.getByText(/Access 340\+ AI models, manage agents, track costs/)
     ).toBeInTheDocument();
   });
 

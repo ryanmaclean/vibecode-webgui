@@ -2,7 +2,7 @@
  * AI Prompts Module
  *
  * Comprehensive prompt library for AI-powered code assistance.
- * Supports 321+ AI models via OpenRouter with structured templates
+ * Supports 340+ AI models via OpenRouter with structured templates
  * for code review, explanation, refactoring, testing, and documentation.
  */
 

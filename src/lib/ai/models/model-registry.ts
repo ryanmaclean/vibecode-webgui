@@ -1,7 +1,7 @@
 /**
  * Model Registry Service for VibeCode
  *
- * Comprehensive model registry supporting 321+ AI models from multiple providers.
+ * Comprehensive model registry supporting 340+ AI models from multiple providers.
  * Provides model lookup, filtering, comparison, and recommendations.
  */
 

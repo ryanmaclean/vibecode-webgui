@@ -2,7 +2,7 @@
  * Prompt Library
  *
  * A reusable, versioned prompt library for AI-powered code assistance features.
- * Supports 321+ AI models via OpenRouter with structured templates,
+ * Supports 340+ AI models via OpenRouter with structured templates,
  * variable substitution, and model-specific variations.
  */
 

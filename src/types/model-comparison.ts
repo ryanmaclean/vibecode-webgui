@@ -2,7 +2,7 @@
  * Model Comparison Types for VibeCode AI Model Selection
  *
  * Comprehensive type definitions for comparing and selecting AI models
- * across 321+ available models from multiple providers.
+ * across 340+ available models from multiple providers.
  */
 
 import type { ModelFamily } from './context';

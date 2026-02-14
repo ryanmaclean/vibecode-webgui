@@ -37,7 +37,7 @@ const overviewCards = [
   {
     title: 'Models',
     icon: Cpu,
-    stat: '321+ Models',
+    stat: '340+ Models',
     description: 'Compare and select AI models',
     href: '/ai/models',
     gradient: 'from-indigo-500 to-indigo-700',
@@ -94,7 +94,7 @@ export default function AIPage() {
           <h1 className="text-2xl font-bold text-gray-900">AI Dashboard</h1>
         </div>
         <p className="text-gray-600">
-          Access 321+ AI models, manage agents, track costs, and browse prompt templates -- all from one place.
+          Access 340+ AI models, manage agents, track costs, and browse prompt templates -- all from one place.
         </p>
       </div>
 

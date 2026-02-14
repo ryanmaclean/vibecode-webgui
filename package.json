@@ -92,6 +92,8 @@
     "test:monitoring:production": "jest --testPathPatterns=tests/production/.*monitoring.*\\.test\\.(ts|js)$",
     "test:monitoring:health": "jest --testPathPatterns=tests/unit/health-check.test.ts",
     "test:security": "jest --testPathPatterns=\"tests/security/.*\\.test\\.(ts|tsx|js|jsx)$\"",
+    "health": "bash scripts/health-check.sh",
+    "health:quick": "bash scripts/health-check.sh --quick",
     "test:fix": "npm run setup && npm install --legacy-peer-deps",
     "dev:cdn": "./scripts/setup-tailwind-mode.sh cdn && npm run dev",
     "dev:docker": "./scripts/setup-tailwind-mode.sh docker && docker-compose -f docker-compose.dev.yml up --build",
