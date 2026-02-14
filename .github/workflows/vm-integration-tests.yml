@@ -1,0 +1,94 @@
+name: VM Integration Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/vfkit/**'
+      - 'platforms/cli/**'
+      - 'tests/vm-integration/**'
+      - 'infrastructure/**'
+  workflow_dispatch:
+    inputs:
+      architecture:
+        description: 'Target architecture'
+        required: false
+        default: 'x86_64'
+        type: choice
+        options:
+          - x86_64
+          - aarch64
+          - both
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly Monday 6am UTC
+
+concurrency:
+  group: vm-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  boot-chain-test:
+    runs-on: [self-hosted, linux, x64, vm-testing]
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        arch: [x86_64]  # aarch64 via emulation is optional
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify QEMU/KVM availability
+        run: |
+          echo "Checking QEMU version..."
+          qemu-system-x86_64 --version
+
+          echo "Checking KVM availability..."
+          if [ -e /dev/kvm ]; then
+            echo "KVM OK - Hardware acceleration available"
+            ls -l /dev/kvm
+          else
+            echo "WARNING: No KVM device found - tests will run without acceleration"
+          fi
+
+      - name: Download release assets
+        run: |
+          mkdir -p dist/vm-images dist/kernels dist/initramfs
+
+          echo "Downloading VM images..."
+          gh release download v5.1.0-beta --pattern "*.img" --dir dist/vm-images/ || true
+
+          echo "Downloading kernels..."
+          gh release download v5.1.0-beta --pattern "vmlinuz*" --dir dist/kernels/ || true
+
+          echo "Downloading initramfs..."
+          gh release download v5.1.0-beta --pattern "initramfs*" --dir dist/initramfs/ || true
+
+          echo "Downloaded assets:"
+          find dist/ -type f -ls
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run boot chain tests
+        env:
+          TEST_ARCH: ${{ matrix.arch }}
+        run: bash tests/vm-integration/run-all.sh --arch "$TEST_ARCH"
+        timeout-minutes: 20
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vm-test-results-${{ matrix.arch }}
+          path: tests/vm-integration/results/
+          retention-days: 30
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vm-test-logs-${{ matrix.arch }}
+          path: |
+            tests/vm-integration/logs/
+            /tmp/vm-test-*.log
+          retention-days: 7
