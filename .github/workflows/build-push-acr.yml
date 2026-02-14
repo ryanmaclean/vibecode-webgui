@@ -1,15 +1,8 @@
 name: Build and Push to ACR
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'docker/Dockerfile.aks'
-      - '.github/workflows/build-push-acr.yml'
+  # Only run manually via workflow_dispatch - requires Azure credentials to be configured
+  # Push trigger disabled because AZURE_CREDENTIALS secret is not configured
   workflow_dispatch:
     inputs:
       tag:
