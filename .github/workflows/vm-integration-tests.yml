@@ -39,16 +39,27 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Verify QEMU/KVM availability
+        id: vm-check
         run: |
           echo "Checking QEMU version..."
           qemu-system-x86_64 --version
 
           echo "Checking KVM availability..."
-          if [ -e /dev/kvm ]; then
+          if [ -e /dev/kvm ] && [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
             echo "KVM OK - Hardware acceleration available"
             ls -l /dev/kvm
+            echo "kvm_available=true" >> "$GITHUB_OUTPUT"
           else
             echo "WARNING: No KVM device found - tests will run without acceleration"
+            echo "This is normal for runners without KVM support (QEMU-only or emulation)"
+            echo "kvm_available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Set environment variable for test scripts
+          if [ -e /dev/kvm ]; then
+            echo "HAS_KVM=true" >> "$GITHUB_ENV"
+          else
+            echo "HAS_KVM=false" >> "$GITHUB_ENV"
           fi
 
       - name: Download release assets

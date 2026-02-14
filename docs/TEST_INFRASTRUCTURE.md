@@ -84,6 +84,21 @@ tar xzf ./actions-runner-osx-arm64-2.314.1.tar.gz
 
 ### Runner Labels Strategy
 
+#### Deployed Runners (Wave 39+)
+
+| Runner | Labels | Capabilities | Use Case |
+|--------|--------|--------------|----------|
+| **i7-zfs-pop** | `self-hosted`, `Linux`, `X64`, `vm-testing`, `qemu-only`, `pop-os` | QEMU (no KVM) | VM tests without hardware acceleration |
+| **i9-zfs-pop** | `self-hosted`, `Linux`, `X64`, `pop-os` | KVM only (no QEMU yet) | Reserved for future VM testing |
+
+**Status Notes:**
+- ✅ **i7-zfs-pop**: ONLINE, runs VM tests via QEMU software emulation (slower but functional)
+- ⏳ **i9-zfs-pop**: ONLINE, but QEMU not installed yet (will add `vm-testing`, `qemu-kvm` labels after installation)
+
+See [RUNNER_LABEL_FIX.md](./RUNNER_LABEL_FIX.md) for label management commands.
+
+#### Planned Runners (Future)
+
 | Runner | Labels | Use Case |
 |--------|--------|----------|
 | workstation-1 | `self-hosted`, `linux`, `x64`, `vm-testing`, `qemu-kvm` | x86_64 VM testing, heavy parallel jobs |
