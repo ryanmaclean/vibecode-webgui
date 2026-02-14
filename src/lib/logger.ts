@@ -235,6 +235,19 @@ export function createChildLogger(contextMetadata: Record<string, unknown>) {
 // Direct access to Pino instance for advanced usage
 export const pinoInstance = pinoLogger;
 
+// ============================================================================
+// Security Helpers
+// ============================================================================
+
+/**
+ * Sanitize user input to prevent log injection attacks
+ * Removes newlines, carriage returns, and other control characters
+ */
+function sanitizeForLog(input: string): string {
+  // Replace newlines, carriage returns, and other control characters
+  return input.replace(/[\r\n\x00-\x1F\x7F]/g, '');
+}
+
 // Helper functions for common logging patterns
 export function logPerformance(
   operation: string,
@@ -242,7 +255,7 @@ export function logPerformance(
   metadata?: Record<string, unknown>
 ): void {
   logger.info('Performance metric', {
-    operation,
+    operation: sanitizeForLog(operation),
     durationMs: duration,
     ...metadata,
   });
@@ -256,8 +269,8 @@ export function logApiRequest(
   metadata?: Record<string, unknown>
 ): void {
   logger.http('API Request', {
-    method,
-    url,
+    method: sanitizeForLog(method),
+    url: sanitizeForLog(url),
     statusCode,
     responseTimeMs: responseTime,
     ...metadata,

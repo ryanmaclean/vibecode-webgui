@@ -6,13 +6,14 @@
 import { VMProvider, VMConfig, VM, VMStatus, ExecResult } from '../types';
 import { validateVMName, validateVMPath, validateDownloadUrl } from '../security';
 import { logger } from '@/lib/logger';
-import { exec as execCallback } from 'child_process';
+import { exec as execCallback, execFile as execFileCallback } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 
 const exec = promisify(execCallback);
+const execFile = promisify(execFileCallback);
 
 export class WSL2Provider implements VMProvider {
   name = 'wsl2';
@@ -49,8 +50,8 @@ export class WSL2Provider implements VMProvider {
     // Download Alpine rootfs
     const rootfsPath = await this.downloadAlpineRootfs(installDir);
 
-    // Import as WSL distribution
-    await exec(`wsl --import ${distroName} ${installDir} ${rootfsPath}`);
+    // Import as WSL distribution - use execFile with array args to prevent shell injection
+    await execFile('wsl', ['--import', distroName, installDir, rootfsPath]);
 
     // Configure distribution
     await this.configureDistribution(distroName, config);
@@ -199,7 +200,8 @@ export class WSL2Provider implements VMProvider {
     const url = 'https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.2-x86_64.tar.gz';
     const validatedUrl = validateDownloadUrl(url);
 
-    await exec(`curl -L -o ${rootfsPath} ${validatedUrl.href}`);
+    // Use execFile with array args to prevent shell injection
+    await execFile('curl', ['-L', '-o', rootfsPath, validatedUrl.href]);
     logger.info('Alpine rootfs downloaded');
 
     return rootfsPath;

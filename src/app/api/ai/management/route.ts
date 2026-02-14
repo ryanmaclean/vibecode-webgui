@@ -7,13 +7,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getToken, JWT } from 'next-auth/jwt';
 import { litellmClient, ModelInfo } from '../../../../lib/ai/litellm-client';
 import { prisma } from '../../../../lib/prisma';
-import { cache, CacheKeys, CacheTTL } from '../../../../lib/cache/unified-cache-client';
+import { cache, CacheTTL } from '../../../../lib/cache/unified-cache-client';
 import { validateQueryParams } from '@/lib/api/validation/middleware';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 import { z } from 'zod';
 import {
   MAX_PAGE_SIZE,
-  DEFAULT_PAGE_SIZE,
   clampLimit,
 } from '@/lib/api/pagination';
 

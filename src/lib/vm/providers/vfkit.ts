@@ -4,16 +4,17 @@
  * Uses Apple Virtualization.framework for native macOS performance
  */
 
-import { VMProvider, VMConfig, VM, VMStatus, ExecResult, PortMapping } from '../types';
+import { VMProvider, VMConfig, VM, VMStatus, ExecResult } from '../types';
 import { validateVMName, validateVMPath, validateDownloadUrl } from '../security';
 import { logger } from '@/lib/logger';
-import { spawn, exec as execCallback } from 'child_process';
+import { spawn, exec as execCallback, execFile as execFileCallback } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 
 const exec = promisify(execCallback);
+const execFile = promisify(execFileCallback);
 let __tracer: any;
 function getTracer() {
   if (!__tracer) {
@@ -247,9 +248,18 @@ export class VfkitProvider implements VMProvider {
     const vmlinuzPath = validateVMPath(kernelDir, 'vmlinuz');
     const initramfsPath = validateVMPath(kernelDir, 'initramfs');
     try {
-      await exec(`curl -fL -o ${vmlinuzPath} ${validatedVmlinuzUrl.href}`);
-      await exec(`curl -fL -o ${initramfsPath} ${validatedInitramfsUrl.href}`);
-      await exec(`gunzip -c ${vmlinuzPath} > ${vmlinuxPath} || cp ${vmlinuzPath} ${vmlinuxPath}`);
+      // Use execFile with array args to prevent shell injection
+      await execFile('curl', ['-fL', '-o', vmlinuzPath, validatedVmlinuzUrl.href]);
+      await execFile('curl', ['-fL', '-o', initramfsPath, validatedInitramfsUrl.href]);
+      // Use shell redirection for gunzip decompression (with proper escaping)
+      try {
+        await execFile('gunzip', ['-c', vmlinuzPath], {
+          shell: false,
+          encoding: 'buffer'
+        }).then(result => fs.writeFile(vmlinuxPath, result.stdout as Buffer));
+      } catch {
+        await execFile('cp', [vmlinuzPath, vmlinuxPath]);
+      }
       logger.info('Netboot kernel downloaded');
       span.finish();
       return;
@@ -259,16 +269,23 @@ export class VfkitProvider implements VMProvider {
       const isoUrl = `https://dl-cdn.alpinelinux.org/alpine/${alpineVersion}/releases/${arch}/alpine-virt-${isoVer}-${arch}.iso`;
       const validatedIsoUrl = validateDownloadUrl(isoUrl);
       const isoPath = validateVMPath(kernelDir, `alpine-virt-${isoVer}-${arch}.iso`);
-      await exec(`curl -L -o ${isoPath} ${validatedIsoUrl.href}`);
+      await execFile('curl', ['-L', '-o', isoPath, validatedIsoUrl.href]);
       const mountPoint = '/tmp/alpine-mount';
-      await exec(`mkdir -p ${mountPoint}`);
-      await exec(`hdiutil attach ${isoPath} -mountpoint ${mountPoint}`);
+      await execFile('mkdir', ['-p', mountPoint]);
+      await execFile('hdiutil', ['attach', isoPath, '-mountpoint', mountPoint]);
       try {
-        await exec(`cp ${mountPoint}/boot/vmlinuz-virt ${vmlinuzPath}`);
-        await exec(`gunzip -c ${vmlinuzPath} > ${vmlinuxPath} || cp ${vmlinuzPath} ${vmlinuxPath}`);
-        await exec(`cp ${mountPoint}/boot/initramfs-virt ${initramfsPath}`);
+        await execFile('cp', [`${mountPoint}/boot/vmlinuz-virt`, vmlinuzPath]);
+        try {
+          await execFile('gunzip', ['-c', vmlinuzPath], {
+            shell: false,
+            encoding: 'buffer'
+          }).then(result => fs.writeFile(vmlinuxPath, result.stdout as Buffer));
+        } catch {
+          await execFile('cp', [vmlinuzPath, vmlinuxPath]);
+        }
+        await execFile('cp', [`${mountPoint}/boot/initramfs-virt`, initramfsPath]);
       } finally {
-        await exec(`hdiutil detach ${mountPoint}`);
+        await execFile('hdiutil', ['detach', mountPoint]);
       }
       span.finish();
       logger.info('Kernel downloaded and extracted');
@@ -316,12 +333,13 @@ export class VfkitProvider implements VMProvider {
     }
     
     logger.info('Creating disk image', { size });
-    
+
     // Convert size (e.g., "20GB" to bytes)
     const sizeBytes = this.parseSizeToBytes(size);
-    
-    // Create raw disk image
-    await exec(`dd if=/dev/zero of=${diskPath} bs=1m count=${sizeBytes / (1024 * 1024)}`);
+
+    // Create raw disk image - use execFile with array args to prevent shell injection
+    const count = Math.floor(sizeBytes / (1024 * 1024));
+    await execFile('dd', ['if=/dev/zero', `of=${diskPath}`, 'bs=1m', `count=${count}`]);
   }
   
   /**

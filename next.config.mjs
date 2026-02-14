@@ -326,7 +326,8 @@ const nextConfig = {
       (p) => p?.constructor?.name === 'ContextReplacementPlugin'
     )
     if (!hasMomentLocaleDrop) {
-      config.plugins.push(new webpack.ContextReplacementPlugin(/moment[\\/\\]locale$/, /^$/))
+      // Fix: Remove duplicate backslash in character class - use [\\/] instead of [\\/\\]
+      config.plugins.push(new webpack.ContextReplacementPlugin(/moment[\\/]locale$/, /^$/))
     }
 
     // null-loader rules removed - caused 'hash' null reference in webpack 5

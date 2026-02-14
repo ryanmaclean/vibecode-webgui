@@ -6,13 +6,14 @@
 import { VMProvider, VMConfig, VM, VMStatus, ExecResult } from '../types';
 import { validateVMName, validateVMPath, validateDownloadUrl } from '../security';
 import { logger } from '@/lib/logger';
-import { spawn, exec as execCallback } from 'child_process';
+import { spawn, exec as execCallback, execFile as execFileCallback } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 
 const exec = promisify(execCallback);
+const execFile = promisify(execFileCallback);
 
 export class QEMUProvider implements VMProvider {
   name = 'qemu';
@@ -199,7 +200,8 @@ export class QEMUProvider implements VMProvider {
     const url = `https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/${arch}/alpine-virt-3.22.2-${arch}.iso`;
     const validatedUrl = validateDownloadUrl(url);
 
-    await exec(`curl -L -o ${isoPath} ${validatedUrl.href}`);
+    // Use execFile with array args to prevent shell injection
+    await execFile('curl', ['-L', '-o', isoPath, validatedUrl.href]);
     logger.info('Alpine ISO downloaded');
   }
   
@@ -218,9 +220,10 @@ export class QEMUProvider implements VMProvider {
     }
     
     logger.info('Creating QCOW2 disk', { size });
-    
-    await exec(`qemu-img create -f qcow2 ${diskPath} ${size}`);
-    
+
+    // Use execFile with array args to prevent shell injection
+    await execFile('qemu-img', ['create', '-f', 'qcow2', diskPath, size]);
+
     return diskPath;
   }
   

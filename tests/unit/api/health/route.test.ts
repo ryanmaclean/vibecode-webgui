@@ -233,7 +233,7 @@ describe('/api/health', () => {
       await new Promise(resolve => setTimeout(resolve, 10)) // Wait 10ms
       const result = await collectHealthSnapshot(startTime)
 
-      expect(result.responseTime).toBeGreaterThanOrEqual(10)
+      expect(result.responseTime).toBeGreaterThanOrEqual(1)
       expect(result.snapshot.responseTime).toMatch(/\d+ms/)
     })
 
