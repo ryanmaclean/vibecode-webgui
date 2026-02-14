@@ -94,6 +94,8 @@
     "test:security": "jest --testPathPatterns=\"tests/security/.*\\.test\\.(ts|tsx|js|jsx)$\"",
     "health": "bash scripts/health-check.sh",
     "health:quick": "bash scripts/health-check.sh --quick",
+    "benchmark": "bash scripts/benchmark.sh",
+    "benchmark:quick": "bash scripts/benchmark.sh --quick",
     "test:fix": "npm run setup && npm install --legacy-peer-deps",
     "dev:cdn": "./scripts/setup-tailwind-mode.sh cdn && npm run dev",
     "dev:docker": "./scripts/setup-tailwind-mode.sh docker && docker-compose -f docker-compose.dev.yml up --build",

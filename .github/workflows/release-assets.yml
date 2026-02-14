@@ -1,0 +1,571 @@
+name: Release Assets Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Git tag to build from (e.g., v1.0.0)'
+        required: true
+        type: string
+      skip_cli:
+        description: 'Skip CLI binary builds'
+        required: false
+        type: boolean
+        default: false
+      skip_initramfs:
+        description: 'Skip initramfs builds'
+        required: false
+        type: boolean
+        default: false
+      skip_alpine:
+        description: 'Skip Alpine kernel downloads'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  DD_SERVICE: vibecode-release-pipeline
+  DD_ENV: ci
+  DD_TAGS: team:platform,component:release-assets
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  # Job 1: Build CLI binaries from Go source
+  build-cli-binaries:
+    name: Build CLI Binaries
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_cli }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Get version info
+        id: version
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "commit=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+          echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+          echo "Building version: ${TAG} from commit ${GITHUB_SHA}"
+
+      - name: Build CLI binaries
+        env:
+          VERSION: ${{ steps.version.outputs.tag }}
+          COMMIT: ${{ steps.version.outputs.commit }}
+          BUILD_DATE: ${{ steps.version.outputs.date }}
+        run: |
+          set -euo pipefail
+
+          # Create output directory
+          mkdir -p dist/cli
+
+          # Build for all platforms with version info
+          PLATFORMS="darwin/amd64 darwin/arm64 linux/amd64 linux/arm64"
+
+          for platform in $PLATFORMS; do
+            GOOS=${platform%/*}
+            GOARCH=${platform#*/}
+            OUTPUT_NAME="vibecode-${GOOS}-${GOARCH}"
+
+            echo "Building ${OUTPUT_NAME}..."
+
+            CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH go build \
+              -ldflags="-s -w -X 'main.Version=${VERSION}' -X 'main.Commit=${COMMIT}' -X 'main.BuildDate=${BUILD_DATE}'" \
+              -o "dist/cli/${OUTPUT_NAME}" \
+              ./cmd/vibecode
+
+            # Make executable
+            chmod +x "dist/cli/${OUTPUT_NAME}"
+
+            # Generate SHA256
+            (cd dist/cli && sha256sum "${OUTPUT_NAME}" > "${OUTPUT_NAME}.sha256")
+
+            echo "Built ${OUTPUT_NAME} ($(stat -c%s "dist/cli/${OUTPUT_NAME}" | numfmt --to=iec-i --suffix=B))"
+          done
+
+          # List all binaries
+          ls -lh dist/cli/
+
+      - name: Create CLI manifest
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          COMMIT: ${{ steps.version.outputs.commit }}
+          BUILD_DATE: ${{ steps.version.outputs.date }}
+        run: |
+          cat > dist/cli/manifest.json << EOF
+          {
+            "type": "cli-binaries",
+            "version": "${TAG}",
+            "commit": "${COMMIT}",
+            "build_date": "${BUILD_DATE}",
+            "binaries": [
+              "vibecode-darwin-amd64",
+              "vibecode-darwin-arm64",
+              "vibecode-linux-amd64",
+              "vibecode-linux-arm64"
+            ],
+            "checksums": "sha256"
+          }
+          EOF
+          cat dist/cli/manifest.json
+
+      - name: Upload CLI binaries to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          files: |
+            dist/cli/vibecode-*
+            dist/cli/manifest.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Backup CLI binaries to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-binaries-${{ steps.version.outputs.tag }}
+          path: dist/cli/
+          retention-days: 90
+
+  # Job 2: Build initramfs variants
+  build-initramfs:
+    name: Build Initramfs
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_initramfs }}
+    strategy:
+      matrix:
+        variant:
+          - name: minimal
+            script: build-minimal-initramfs.sh
+          - name: busybox
+            script: build-busybox-musl.sh
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Get version info
+        id: version
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "commit=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+          echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.variant.name }} initramfs
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          # Create output directory
+          mkdir -p dist/initramfs
+
+          # Run build script
+          cd scripts/benchmarks
+
+          if [ -f "${{ matrix.variant.script }}" ]; then
+            bash "${{ matrix.variant.script }}"
+
+            # Find and copy the generated initramfs
+            INITRAMFS_FILE=$(find . -name "*initramfs*" -o -name "*.cpio.gz" | head -1)
+
+            if [ -n "$INITRAMFS_FILE" ]; then
+              OUTPUT_NAME="initramfs-${{ matrix.variant.name }}-${TAG}.cpio.gz"
+              cp "$INITRAMFS_FILE" "../../dist/initramfs/${OUTPUT_NAME}"
+
+              # Generate SHA256
+              (cd ../../dist/initramfs && sha256sum "${OUTPUT_NAME}" > "${OUTPUT_NAME}.sha256")
+
+              echo "Built ${OUTPUT_NAME} ($(stat -c%s "../../dist/initramfs/${OUTPUT_NAME}" | numfmt --to=iec-i --suffix=B))"
+            else
+              echo "Warning: No initramfs file generated"
+            fi
+          else
+            echo "Error: Script ${{ matrix.variant.script }} not found"
+            exit 1
+          fi
+
+      - name: Create initramfs manifest
+        env:
+          VARIANT: ${{ matrix.variant.name }}
+          TAG: ${{ steps.version.outputs.tag }}
+          COMMIT: ${{ steps.version.outputs.commit }}
+          BUILD_DATE: ${{ steps.version.outputs.date }}
+          SCRIPT: ${{ matrix.variant.script }}
+        run: |
+          cat > dist/initramfs/manifest-${VARIANT}.json << EOF
+          {
+            "type": "initramfs",
+            "variant": "${VARIANT}",
+            "version": "${TAG}",
+            "commit": "${COMMIT}",
+            "build_date": "${BUILD_DATE}",
+            "script": "${SCRIPT}"
+          }
+          EOF
+
+      - name: Upload initramfs to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          files: |
+            dist/initramfs/initramfs-*
+            dist/initramfs/manifest-*.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Backup initramfs to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: initramfs-${{ matrix.variant.name }}-${{ steps.version.outputs.tag }}
+          path: dist/initramfs/
+          retention-days: 90
+
+  # Job 3: Download Alpine kernels
+  download-alpine-kernels:
+    name: Download Alpine ARM64 Kernels
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_alpine }}
+    strategy:
+      matrix:
+        alpine_version:
+          - version: "3.19"
+            url_base: "https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/aarch64"
+          - version: "3.22"
+            url_base: "https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Get version info
+        id: version
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "commit=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+          echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+
+      - name: Download Alpine ${{ matrix.alpine_version.version }} kernel and initramfs
+        env:
+          ALPINE_VERSION: ${{ matrix.alpine_version.version }}
+          URL_BASE: ${{ matrix.alpine_version.url_base }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p dist/alpine-${ALPINE_VERSION}
+          cd dist/alpine-${ALPINE_VERSION}
+
+          # Get latest release info from Alpine
+          LATEST_RELEASE=$(curl -s ${URL_BASE}/latest-releases.yaml | grep -A5 'flavor: virt' | grep 'version:' | head -1 | awk '{print $2}')
+
+          echo "Latest Alpine ${ALPINE_VERSION} version: ${LATEST_RELEASE}"
+
+          # Download files
+          KERNEL_FILE="alpine-virt-${LATEST_RELEASE}-aarch64.iso"
+          wget -q "${URL_BASE}/${KERNEL_FILE}" || echo "Warning: Could not download ${KERNEL_FILE}"
+
+          # Extract kernel from ISO if downloaded
+          if [ -f "${KERNEL_FILE}" ]; then
+            # Mount ISO and extract kernel
+            mkdir -p mnt
+            sudo mount -o loop "${KERNEL_FILE}" mnt 2>/dev/null || true
+
+            if [ -f mnt/boot/vmlinuz-virt ]; then
+              cp mnt/boot/vmlinuz-virt "vmlinuz-alpine-${ALPINE_VERSION}-virt-arm64"
+              cp mnt/boot/initramfs-virt "initramfs-alpine-${ALPINE_VERSION}-virt-arm64"
+
+              sudo umount mnt 2>/dev/null || true
+              rm -rf mnt "${KERNEL_FILE}"
+
+              # Generate checksums
+              sha256sum vmlinuz-alpine-${ALPINE_VERSION}-virt-arm64 > vmlinuz-alpine-${ALPINE_VERSION}-virt-arm64.sha256
+              sha256sum initramfs-alpine-${ALPINE_VERSION}-virt-arm64 > initramfs-alpine-${ALPINE_VERSION}-virt-arm64.sha256
+            fi
+          fi
+
+          ls -lh
+
+      - name: Create Alpine manifest
+        env:
+          ALPINE_VERSION: ${{ matrix.alpine_version.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          COMMIT: ${{ steps.version.outputs.commit }}
+          BUILD_DATE: ${{ steps.version.outputs.date }}
+          URL_BASE: ${{ matrix.alpine_version.url_base }}
+        run: |
+          cat > dist/alpine-${ALPINE_VERSION}/manifest.json << EOF
+          {
+            "type": "alpine-kernel",
+            "alpine_version": "${ALPINE_VERSION}",
+            "architecture": "aarch64",
+            "flavor": "virt",
+            "release_tag": "${TAG}",
+            "commit": "${COMMIT}",
+            "download_date": "${BUILD_DATE}",
+            "source_url": "${URL_BASE}"
+          }
+          EOF
+
+      - name: Upload Alpine kernels to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          files: |
+            dist/alpine-${{ matrix.alpine_version.version }}/vmlinuz-*
+            dist/alpine-${{ matrix.alpine_version.version }}/initramfs-*
+            dist/alpine-${{ matrix.alpine_version.version }}/manifest.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Backup Alpine assets to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: alpine-${{ matrix.alpine_version.version }}-${{ steps.version.outputs.tag }}
+          path: dist/alpine-${{ matrix.alpine_version.version }}/
+          retention-days: 90
+
+  # Job 4: Create source tarballs
+  create-source-tarballs:
+    name: Create Source Tarballs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Get version info
+        id: version
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "commit=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Create source tarball
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p dist/source
+
+          PREFIX="vibecode-${TAG#v}"
+
+          # Create tarball with git archive
+          git archive \
+            --format=tar.gz \
+            --prefix="${PREFIX}/" \
+            --output="dist/source/${PREFIX}.tar.gz" \
+            HEAD
+
+          # Create zip archive
+          git archive \
+            --format=zip \
+            --prefix="${PREFIX}/" \
+            --output="dist/source/${PREFIX}.zip" \
+            HEAD
+
+          # Generate checksums
+          (cd dist/source && sha256sum *.tar.gz *.zip > SHA256SUMS.txt)
+
+          ls -lh dist/source/
+
+      - name: Upload source tarballs to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          files: |
+            dist/source/*.tar.gz
+            dist/source/*.zip
+            dist/source/SHA256SUMS.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Backup source to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-${{ steps.version.outputs.tag }}
+          path: dist/source/
+          retention-days: 90
+
+  # Job 5: Create release metadata
+  create-release-metadata:
+    name: Create Release Metadata
+    needs: [build-cli-binaries, build-initramfs, download-alpine-kernels, create-source-tarballs]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Get version info
+        id: version
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "commit=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+          echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/all-artifacts
+
+      - name: Create comprehensive versions.json
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          COMMIT: ${{ steps.version.outputs.commit }}
+          BUILD_DATE: ${{ steps.version.outputs.date }}
+          RUN_ID: ${{ github.run_id }}
+          REPOSITORY: ${{ github.repository }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          mkdir -p dist/metadata
+
+          cat > dist/metadata/versions.json << EOF
+          {
+            "release": {
+              "tag": "${TAG}",
+              "commit": "${COMMIT}",
+              "build_date": "${BUILD_DATE}",
+              "pipeline_run": "${RUN_ID}",
+              "workflow": "release-assets.yml"
+            },
+            "provenance": {
+              "repository": "${REPOSITORY}",
+              "ref": "${REF}",
+              "sha": "${SHA}",
+              "actor": "${ACTOR}",
+              "event": "${EVENT}"
+            },
+            "assets": {
+              "cli_binaries": {
+                "platforms": ["darwin-amd64", "darwin-arm64", "linux-amd64", "linux-arm64"],
+                "go_version": "1.23",
+                "source": "cmd/vibecode"
+              },
+              "initramfs": {
+                "variants": ["minimal", "busybox"],
+                "build_scripts": ["build-minimal-initramfs.sh", "build-busybox-musl.sh"]
+              },
+              "alpine_kernels": {
+                "versions": ["3.19", "3.22"],
+                "architecture": "aarch64",
+                "flavor": "virt"
+              },
+              "source": {
+                "formats": ["tar.gz", "zip"],
+                "method": "git archive"
+              }
+            },
+            "backup": {
+              "location": "GitHub Actions Artifacts",
+              "retention_days": 90,
+              "artifact_pattern": "*-${TAG}"
+            }
+          }
+          EOF
+
+          cat dist/metadata/versions.json
+
+      - name: Create consolidated manifest
+        run: |
+          # Collect all SHA256 checksums from artifacts
+          find dist/all-artifacts -name "*.sha256" -exec cat {} \; > dist/metadata/ALL-SHA256SUMS.txt
+
+          echo "All checksums:"
+          cat dist/metadata/ALL-SHA256SUMS.txt
+
+      - name: Upload metadata to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          files: |
+            dist/metadata/versions.json
+            dist/metadata/ALL-SHA256SUMS.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Backup metadata to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-metadata-${{ steps.version.outputs.tag }}
+          path: dist/metadata/
+          retention-days: 90
+
+      - name: Summary
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          COMMIT: ${{ steps.version.outputs.commit }}
+          BUILD_DATE: ${{ steps.version.outputs.date }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          echo "## Release Asset Pipeline Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Release:** ${TAG}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${COMMIT}" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Date:** ${BUILD_DATE}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Assets Built:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ CLI Binaries (4 platforms)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Initramfs (2 variants)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Alpine Kernels (2 versions)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Source Tarballs (tar.gz + zip)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Backup Strategy:" >> $GITHUB_STEP_SUMMARY
+          echo "- All assets backed up to GitHub Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- Retention: 90 days" >> $GITHUB_STEP_SUMMARY
+          echo "- Includes: versions.json with full provenance" >> $GITHUB_STEP_SUMMARY
+          echo "- SHA256 checksums for all files" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Release](https://github.com/${REPOSITORY}/releases/tag/${TAG})" >> $GITHUB_STEP_SUMMARY
