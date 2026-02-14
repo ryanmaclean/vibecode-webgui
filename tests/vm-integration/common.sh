@@ -4,9 +4,9 @@
 set -euo pipefail
 
 # Test configuration
-QEMU_TIMEOUT=120
-BOOT_WAIT=30
-HEALTH_TIMEOUT=60
+export QEMU_TIMEOUT=120
+export BOOT_WAIT=30
+export HEALTH_TIMEOUT=60
 CACHE_DIR="${HOME}/.cache/vibecode-vm-tests"
 
 # Colors for output
@@ -45,7 +45,8 @@ check_kvm() {
 
 # Check if running on ARM64 (macOS M1/M2)
 check_arch() {
-    local arch=$(uname -m)
+    local arch
+    arch=$(uname -m)
     if [ "$arch" = "arm64" ]; then
         info "Running on ARM64 (${arch})"
         return 0
@@ -85,7 +86,8 @@ download_alpine_kernel() {
 
     # On macOS, use hdiutil to mount ISO
     if [ "$(uname)" = "Darwin" ]; then
-        local device=$(hdiutil attach -nomount "$iso_file" | head -1 | awk '{print $1}')
+        local device
+        device=$(hdiutil attach -nomount "$iso_file" | head -1 | awk '{print $1}')
         mount -t cd9660 "$device" "$mount_point" 2>/dev/null || {
             hdiutil detach "$device" 2>/dev/null
             fail "Failed to mount ISO"
@@ -131,7 +133,8 @@ build_qemu_cmd() {
     local disk="${3:-}"
     local arch="${4:-x86_64}"
 
-    local qemu_bin=$(get_qemu_binary "$arch")
+    local qemu_bin
+    qemu_bin=$(get_qemu_binary "$arch")
     local qemu_cmd=("$qemu_bin")
 
     # Basic configuration
@@ -171,7 +174,7 @@ wait_for_string() {
     local timeout="${3:-$BOOT_WAIT}"
 
     local elapsed=0
-    while [ $elapsed -lt $timeout ]; do
+    while [ $elapsed -lt "$timeout" ]; do
         if grep -q "$search_string" "$output_file" 2>/dev/null; then
             return 0
         fi

@@ -34,7 +34,7 @@ if [ "$initramfs_size" -lt 1000000 ]; then
     fail "Initramfs too small (${initramfs_size} bytes) - may be corrupted"
 fi
 
-info "Initramfs size: $(numfmt --to=iec-i --suffix=B $initramfs_size 2>/dev/null || echo ${initramfs_size} bytes)"
+info "Initramfs size: $(numfmt --to=iec-i --suffix=B "$initramfs_size" 2>/dev/null || echo "${initramfs_size} bytes")"
 
 # Create output capture file
 output_file=$(create_temp_output)
@@ -67,7 +67,7 @@ info "Starting QEMU with debug logging..."
 qemu_pid=$!
 
 # Ensure cleanup on exit
-trap "cleanup $qemu_pid; rm -f $output_file" EXIT INT TERM
+trap 'cleanup "$qemu_pid"; rm -f "$output_file"' EXIT INT TERM
 
 info "QEMU started (PID: ${qemu_pid})"
 info "Waiting for initramfs messages (timeout: ${BOOT_WAIT}s)..."

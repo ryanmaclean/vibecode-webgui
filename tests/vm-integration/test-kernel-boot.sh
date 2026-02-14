@@ -60,7 +60,7 @@ info "Command: ${qemu_cmd[*]}"
 qemu_pid=$!
 
 # Ensure cleanup on exit
-trap "cleanup $qemu_pid; rm -f $output_file" EXIT INT TERM
+trap 'cleanup "$qemu_pid"; rm -f "$output_file"' EXIT INT TERM
 
 info "QEMU started (PID: ${qemu_pid})"
 info "Waiting for boot messages (timeout: ${BOOT_WAIT}s)..."

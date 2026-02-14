@@ -51,8 +51,10 @@ format_time() {
     if (( $(echo "$seconds < 60" | bc -l) )); then
         printf "%.2fs" "$seconds"
     else
-        local mins=$(echo "$seconds / 60" | bc)
-        local secs=$(echo "$seconds % 60" | bc)
+        local mins
+        local secs
+        mins=$(echo "$seconds / 60" | bc)
+        secs=$(echo "$seconds % 60" | bc)
         printf "%dm %.0fs" "$mins" "$secs"
     fi
 }

@@ -51,7 +51,7 @@ if [ "$QUICK_MODE" = false ]; then
   if [ $? -eq 124 ]; then
     echo "TS errors: (timeout - check manually with 'npm run type-check')"
   else
-    TS_ERRORS=$(echo "$TS_OUTPUT" | grep "error TS" | wc -l | tr -d ' ')
+    TS_ERRORS=$(echo "$TS_OUTPUT" | grep -c "error TS" || echo "0")
     if [ "$TS_ERRORS" = "0" ]; then
       echo -e "TS errors: ${GREEN}$TS_ERRORS${NC}"
     else
@@ -114,7 +114,7 @@ fi
 # 8. Remote branches
 echo ""
 echo "--- Git ---"
-REMOTE_BRANCHES=$(git branch -r 2>/dev/null | grep -v '\->' | wc -l | tr -d ' ')
+REMOTE_BRANCHES=$(git branch -r 2>/dev/null | grep -vc '\->' || echo "0")
 echo "Remote branches: $REMOTE_BRANCHES"
 
 CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
@@ -133,11 +133,11 @@ echo ""
 echo "--- Code Size ---"
 if [ "$QUICK_MODE" = false ]; then
   # Count TypeScript/TSX lines
-  TS_LINES=$(find src -type f \( -name "*.ts" -o -name "*.tsx" \) -not -path "*/node_modules/*" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0")
+  TS_LINES=$(find src -type f \( -name "*.ts" -o -name "*.tsx" \) -not -path "*/node_modules/*" -print0 2>/dev/null | xargs -0 wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0")
   echo "TypeScript/TSX lines: $TS_LINES"
 
   # Count test lines
-  TEST_LINES=$(find src -type f \( -name "*.test.ts" -o -name "*.test.tsx" -o -name "*.test.js" \) 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0")
+  TEST_LINES=$(find src -type f \( -name "*.test.ts" -o -name "*.test.tsx" -o -name "*.test.js" \) -print0 2>/dev/null | xargs -0 wc -l 2>/dev/null | tail -1 | awk '{print $1}' || echo "0")
   echo "Test lines: $TEST_LINES"
 
   # Production code (excluding tests)

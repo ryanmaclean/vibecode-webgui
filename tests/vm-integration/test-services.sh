@@ -28,7 +28,7 @@ fi
 
 # Find available disk images
 info "Searching for VM disk images in: ${DISK_DIR}"
-disk_images=($(ls "${DISK_DIR}"/*.img 2>/dev/null || true))
+mapfile -t disk_images < <(find "${DISK_DIR}" -name "*.img" 2>/dev/null || true)
 
 if [ ${#disk_images[@]} -eq 0 ]; then
     warn "No VM disk images found"
@@ -90,7 +90,7 @@ info "  Valkey:     localhost:6379 -> VM:6379"
 qemu_pid=$!
 
 # Ensure cleanup on exit
-trap "cleanup $qemu_pid; rm -f $output_file" EXIT INT TERM
+trap 'cleanup "$qemu_pid"; rm -f "$output_file"' EXIT INT TERM
 
 info "QEMU started (PID: ${qemu_pid})"
 info "Waiting for VM to boot (timeout: ${BOOT_WAIT}s)..."

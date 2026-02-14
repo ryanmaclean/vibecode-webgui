@@ -98,7 +98,8 @@ verify_kernel_file() {
         return 1
     fi
 
-    local size=$(stat -f%z "${kernel_path}" 2>/dev/null || stat -c%s "${kernel_path}" 2>/dev/null)
+    local size
+    size=$(stat -f%z "${kernel_path}" 2>/dev/null || stat -c%s "${kernel_path}" 2>/dev/null)
 
     # Size sanity check (kernel should be >5MB)
     if [[ ${size} -lt 5242880 ]]; then
@@ -107,7 +108,8 @@ verify_kernel_file() {
     fi
 
     # Check file type
-    local file_type=$(file -b "${kernel_path}")
+    local file_type
+    file_type=$(file -b "${kernel_path}")
 
     # Alpine kernels can be:
     # - "Linux kernel" (traditional)
@@ -160,7 +162,7 @@ test_qemu_boot() {
         return 1
     fi
 
-    if ! command -v qemu-system-${arch} &>/dev/null; then
+    if ! command -v "qemu-system-${arch}" &>/dev/null; then
         echo "NO_QEMU"
         return 1
     fi
@@ -169,7 +171,8 @@ test_qemu_boot() {
     local qemu_cmd="qemu-system-${arch}"
     local timeout_duration=10
 
-    local output=$(timeout ${timeout_duration} ${qemu_cmd} \
+    local output
+    output=$(timeout "${timeout_duration}" "${qemu_cmd}" \
         -kernel "${kernel_path}" \
         -initrd "${initramfs_path}" \
         -nographic \
@@ -199,11 +202,8 @@ log_section "Alpine Linux Kernel Compatibility Test"
 # Determine platform
 PLATFORM=$(uname -s)
 IS_LINUX=false
-IS_MACOS=false
 if [[ "${PLATFORM}" == "Linux" ]]; then
     IS_LINUX=true
-elif [[ "${PLATFORM}" == "Darwin" ]]; then
-    IS_MACOS=true
 fi
 
 log_info "Platform: ${PLATFORM}"
