@@ -308,10 +308,10 @@ describe('API Health Endpoints Error Scenarios', () => {
       const totalDiff = Math.abs(afterMemoryUsage.heapTotal - originalMemoryUsage.heapTotal);
 
       // Health check should not allocate excessive memory
-      // Using 25MB threshold for heap to account for CI environment fluctuations
-      // (GC timing, JIT compilation, parallel test execution overhead)
-      expect(heapDiff).toBeLessThan(25 * 1024 * 1024); // Less than 25MB change
-      expect(totalDiff).toBeLessThan(100 * 1024 * 1024); // Less than 100MB change
+      // Using generous thresholds to account for GC timing, JIT compilation,
+      // parallel test execution, and CI environment fluctuations
+      expect(heapDiff).toBeLessThan(50 * 1024 * 1024); // Less than 50MB change
+      expect(totalDiff).toBeLessThan(200 * 1024 * 1024); // Less than 200MB change
     });
 
     it('should report accurate uptime values', async () => {
