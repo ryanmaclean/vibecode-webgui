@@ -191,6 +191,7 @@ COMMANDS:
     logs          Show VM console logs
     docker        Check Docker status and info
     ip            Show VM IP address
+    plugin        Manage plugins (list, install, uninstall)
     version       Show version information
     help          Show this help message
 
@@ -202,6 +203,8 @@ EXAMPLES:
     vibecode docker             # Check Docker
     vibecode services           # List all services
     vibecode status             # Full status report
+    vibecode plugin list        # List installed plugins
+    vibecode plugin install <url>  # Install a plugin
 
 SERVICES:
     SSH           localhost:2222
@@ -557,6 +560,239 @@ cmd_ip() {
     fi
 }
 
+cmd_plugin() {
+    local subcommand=${1:-}
+
+    if [ -z "$subcommand" ] || [ "$subcommand" = "--help" ] || [ "$subcommand" = "-h" ] || [ "$subcommand" = "help" ]; then
+        print_header "Plugin Management"
+        cat << 'EOF'
+USAGE:
+    vibecode plugin <subcommand> [options]
+
+SUBCOMMANDS:
+    list                      List all installed plugins
+    install <url>             Install a plugin from URL or path
+    uninstall <name>          Uninstall a plugin by name
+    help                      Show this help message
+
+EXAMPLES:
+    vibecode plugin list
+    vibecode plugin install ./plugins/examples/hello-world
+    vibecode plugin install https://example.com/plugin.zip
+    vibecode plugin uninstall hello-world
+
+EOF
+        return 0
+    fi
+
+    shift
+
+    case "$subcommand" in
+        list)
+            cmd_plugin_list "$@"
+            ;;
+        install)
+            cmd_plugin_install "$@"
+            ;;
+        uninstall)
+            cmd_plugin_uninstall "$@"
+            ;;
+        *)
+            print_error "Unknown plugin subcommand: $subcommand"
+            echo ""
+            cmd_plugin help
+            exit 1
+            ;;
+    esac
+}
+
+cmd_plugin_list() {
+    print_header "Installed Plugins"
+
+    # Check if curl is available
+    if ! command -v curl &> /dev/null; then
+        print_error "curl not found. Please install curl."
+        exit 1
+    fi
+
+    # Call the API endpoint
+    local response
+    local status
+
+    print_info "Fetching plugin list from API..."
+    echo ""
+
+    response=$(curl -s -w "\n%{http_code}" "http://localhost:3000/api/plugins" 2>/dev/null)
+    status=$(echo "$response" | tail -n 1)
+    local body=$(echo "$response" | head -n -1)
+
+    if [ "$status" != "200" ]; then
+        print_error "Failed to fetch plugins (HTTP $status)"
+        print_info "Make sure the development server is running: npm run dev"
+        exit 1
+    fi
+
+    # Check if jq is available for pretty printing
+    if command -v jq &> /dev/null; then
+        local plugin_count
+        plugin_count=$(echo "$body" | jq '.plugins | length' 2>/dev/null || echo "0")
+
+        if [ "$plugin_count" = "0" ]; then
+            print_warning "No plugins installed"
+            echo ""
+            print_info "Install a plugin with: vibecode plugin install <url>"
+        else
+            print_success "Found $plugin_count plugin(s):"
+            echo ""
+            echo "$body" | jq -r '.plugins[] | "  \(.name) (\(.version)) - \(.status)\n    \(.description)\n    Author: \(.author // "Unknown")\n    Type: \(.type)\n"'
+        fi
+    else
+        # Fallback to plain output if jq not available
+        echo "$body"
+        echo ""
+        print_info "Install jq for prettier output: brew install jq"
+    fi
+}
+
+cmd_plugin_install() {
+    local source=$1
+
+    if [ -z "$source" ]; then
+        print_error "Missing plugin source URL or path"
+        echo ""
+        print_info "Usage: vibecode plugin install <url-or-path>"
+        print_info "Example: vibecode plugin install ./plugins/examples/hello-world"
+        exit 1
+    fi
+
+    print_header "Installing Plugin"
+
+    # Check if curl is available
+    if ! command -v curl &> /dev/null; then
+        print_error "curl not found. Please install curl."
+        exit 1
+    fi
+
+    print_info "Installing from: $source"
+    echo ""
+
+    # Determine if source is a file or URL
+    if [ -f "$source/plugin.json" ] || [ -d "$source" ]; then
+        # Local directory - create a temporary zip file
+        print_info "Creating plugin package from local directory..."
+
+        local temp_zip="/tmp/vibecode-plugin-$$.zip"
+
+        if command -v zip &> /dev/null; then
+            cd "$source" && zip -r "$temp_zip" . > /dev/null
+            cd - > /dev/null
+
+            print_info "Uploading plugin package..."
+
+            local response
+            local status
+            response=$(curl -s -w "\n%{http_code}" -X POST \
+                -F "file=@$temp_zip" \
+                -F "autoEnable=true" \
+                "http://localhost:3000/api/plugins/install" 2>/dev/null)
+            status=$(echo "$response" | tail -n 1)
+            local body=$(echo "$response" | head -n -1)
+
+            rm -f "$temp_zip"
+
+            if [ "$status" = "200" ]; then
+                print_success "Plugin installed successfully!"
+                if command -v jq &> /dev/null; then
+                    echo ""
+                    echo "$body" | jq -r '"Plugin ID: \(.pluginId)\nName: \(.plugin.name)\nVersion: \(.plugin.version)"'
+                fi
+            else
+                print_error "Failed to install plugin (HTTP $status)"
+                if command -v jq &> /dev/null && echo "$body" | jq -e .error > /dev/null 2>&1; then
+                    echo ""
+                    echo "$body" | jq -r '.error'
+                fi
+                exit 1
+            fi
+        else
+            print_error "zip command not found. Please install zip utility."
+            exit 1
+        fi
+    else
+        # URL - send URL to API
+        print_info "Installing from URL..."
+
+        local response
+        local status
+        response=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -d "{\"source\":\"$source\",\"autoEnable\":true}" \
+            "http://localhost:3000/api/plugins/install" 2>/dev/null)
+        status=$(echo "$response" | tail -n 1)
+        local body=$(echo "$response" | head -n -1)
+
+        if [ "$status" = "200" ]; then
+            print_success "Plugin installed successfully!"
+            if command -v jq &> /dev/null; then
+                echo ""
+                echo "$body" | jq -r '"Plugin ID: \(.pluginId)\nName: \(.plugin.name)\nVersion: \(.plugin.version)"'
+            fi
+        else
+            print_error "Failed to install plugin (HTTP $status)"
+            if command -v jq &> /dev/null && echo "$body" | jq -e .error > /dev/null 2>&1; then
+                echo ""
+                echo "$body" | jq -r '.error'
+            fi
+            exit 1
+        fi
+    fi
+}
+
+cmd_plugin_uninstall() {
+    local plugin_name=$1
+
+    if [ -z "$plugin_name" ]; then
+        print_error "Missing plugin name"
+        echo ""
+        print_info "Usage: vibecode plugin uninstall <name>"
+        print_info "Example: vibecode plugin uninstall hello-world"
+        exit 1
+    fi
+
+    print_header "Uninstalling Plugin"
+
+    # Check if curl is available
+    if ! command -v curl &> /dev/null; then
+        print_error "curl not found. Please install curl."
+        exit 1
+    fi
+
+    print_info "Uninstalling: $plugin_name"
+    echo ""
+
+    local response
+    local status
+    response=$(curl -s -w "\n%{http_code}" -X DELETE \
+        "http://localhost:3000/api/plugins/$plugin_name" 2>/dev/null)
+    status=$(echo "$response" | tail -n 1)
+    local body=$(echo "$response" | head -n -1)
+
+    if [ "$status" = "200" ]; then
+        print_success "Plugin uninstalled successfully!"
+    elif [ "$status" = "404" ]; then
+        print_error "Plugin not found: $plugin_name"
+        print_info "Run 'vibecode plugin list' to see installed plugins"
+        exit 1
+    else
+        print_error "Failed to uninstall plugin (HTTP $status)"
+        if command -v jq &> /dev/null && echo "$body" | jq -e .error > /dev/null 2>&1; then
+            echo ""
+            echo "$body" | jq -r '.error'
+        fi
+        exit 1
+    fi
+}
+
 # ============================================================================
 # MAIN
 # ============================================================================
@@ -603,6 +839,9 @@ main() {
             ;;
         ip)
             cmd_ip "$@"
+            ;;
+        plugin)
+            cmd_plugin "$@"
             ;;
         version|--version|-v)
             cmd_version "$@"
