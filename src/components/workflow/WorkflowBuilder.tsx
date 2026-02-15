@@ -32,6 +32,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader, Save, Play, Settings, Grid } from 'lucide-react'
 import { z } from '@/lib/zod-compat'
 import { NodePalette } from './NodePalette'
+import { WorkflowCanvas } from './WorkflowCanvas'
 
 export interface WorkflowBuilderProps {
   /** Initial workflow definition */
@@ -281,6 +282,35 @@ export function WorkflowBuilder({
     setDraggedNodeType(null)
   }, [])
 
+  // Handle nodes change (for position updates, etc.)
+  const handleNodesChange = useCallback((nodes: WorkflowNode[]) => {
+    setWorkflow(prev => ({ ...prev, nodes }))
+  }, [])
+
+  // Handle edges change (for adding/removing edges)
+  const handleEdgesChange = useCallback((edges: WorkflowEdge[]) => {
+    setWorkflow(prev => ({ ...prev, edges }))
+  }, [])
+
+  // Handle node update
+  const handleNodeUpdate = useCallback((nodeId: string, updates: Partial<WorkflowNode>) => {
+    setWorkflow(prev => ({
+      ...prev,
+      nodes: prev.nodes.map(node =>
+        node.id === nodeId ? { ...node, ...updates } : node
+      ),
+    }))
+  }, [])
+
+  // Handle node removal
+  const handleNodeRemove = useCallback((nodeId: string) => {
+    setWorkflow(prev => ({
+      ...prev,
+      nodes: prev.nodes.filter(node => node.id !== nodeId),
+      edges: prev.edges.filter(edge => edge.source !== nodeId && edge.target !== nodeId),
+    }))
+  }, [])
+
   return (
     <div className="flex h-full flex-row">
       {/* Node Palette Sidebar */}
@@ -430,115 +460,12 @@ export function WorkflowBuilder({
                 onDragOver={handleCanvasDragOver}
                 onDrop={handleCanvasDrop}
                 draggedNodeType={draggedNodeType}
+                onNodesChange={handleNodesChange}
+                onEdgesChange={handleEdgesChange}
               />
             </CardContent>
           </Card>
         </div>
-      </div>
-    </div>
-  )
-}
-
-/**
- * WorkflowCanvas Component
- *
- * Renders the visual canvas for displaying and interacting with workflow nodes and edges.
- * Supports drag-and-drop for adding nodes from the palette.
- */
-function WorkflowCanvas({
-  workflow,
-  readOnly,
-  canvasRef,
-  onDragOver,
-  onDrop,
-  draggedNodeType,
-}: {
-  workflow: WorkflowDefinition
-  readOnly: boolean
-  canvasRef: React.RefObject<HTMLDivElement>
-  onDragOver: (event: React.DragEvent<HTMLDivElement>) => void
-  onDrop: (event: React.DragEvent<HTMLDivElement>) => void
-  draggedNodeType: NodeType | null
-}) {
-  const isEmpty = workflow.nodes.length === 0
-
-  return (
-    <div
-      ref={canvasRef}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      className="relative h-full w-full overflow-auto bg-slate-50 dark:bg-slate-900"
-    >
-      {/* Grid Background */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, rgb(226 232 240 / 0.3) 1px, transparent 1px),
-            linear-gradient(to bottom, rgb(226 232 240 / 0.3) 1px, transparent 1px)
-          `,
-          backgroundSize: '20px 20px',
-        }}
-      />
-
-      {/* Canvas Content */}
-      <div className="relative h-full w-full">
-        {isEmpty ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="text-center">
-              <Grid className="mx-auto h-12 w-12 text-slate-400" />
-              <h3 className="mt-4 text-lg font-medium text-slate-900 dark:text-slate-100">
-                {draggedNodeType ? 'Drop Node Here' : 'Empty Canvas'}
-              </h3>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                {draggedNodeType
-                  ? `Drop the ${draggedNodeType} node onto the canvas`
-                  : readOnly
-                    ? 'No nodes in this workflow'
-                    : 'Drag nodes from the palette to build your workflow'}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="relative min-h-full min-w-full p-8">
-            {/* Render nodes at their positions */}
-            {workflow.nodes.map(node => (
-              <div
-                key={node.id}
-                className="absolute cursor-move rounded-lg border-2 border-primary/20 bg-card p-4 shadow-md transition-all hover:border-primary/40 hover:shadow-lg"
-                style={{
-                  left: node.position?.x || 100,
-                  top: node.position?.y || 100,
-                  minWidth: '200px',
-                  maxWidth: '300px',
-                }}
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      {node.type}
-                    </Badge>
-                  </div>
-                  <h4 className="font-medium text-sm">{node.name}</h4>
-                  {node.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2">
-                      {node.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {/* Drop overlay when dragging */}
-            {draggedNodeType && (
-              <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary/30 pointer-events-none flex items-center justify-center">
-                <p className="text-sm text-muted-foreground">
-                  Drop to add {draggedNodeType} node
-                </p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   )
