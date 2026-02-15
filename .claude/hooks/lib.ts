@@ -441,6 +441,58 @@ export interface PullRequestDetails extends PullRequest {
   mergeable?: boolean
 }
 
+// GitLab Merge Request types
+export interface MergeRequestAuthor {
+  username: string
+  name?: string
+  avatarUrl?: string
+}
+
+export interface MergeRequest {
+  iid: number
+  title: string
+  state: 'opened' | 'closed' | 'merged' | 'locked'
+  author: MergeRequestAuthor
+  description: string
+  webUrl: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MergeRequestAssignee {
+  username: string
+  name?: string
+}
+
+export interface MergeRequestReviewer {
+  username: string
+  name?: string
+  state?: 'unreviewed' | 'reviewed'
+}
+
+export interface MergeRequestChange {
+  oldPath: string
+  newPath: string
+  aMode: string
+  bMode: string
+  diff: string
+  newFile: boolean
+  renamedFile: boolean
+  deletedFile: boolean
+}
+
+export interface MergeRequestDetails extends MergeRequest {
+  assignees: MergeRequestAssignee[]
+  reviewers: MergeRequestReviewer[]
+  labels: string[]
+  changes: MergeRequestChange[]
+  sourceBranch: string
+  targetBranch: string
+  mergeStatus: string
+  draft: boolean
+  workInProgress: boolean
+}
+
 // Hook handler types
 export type PreToolUseHandler = (payload: PreToolUsePayload) => Promise<PreToolUseResponse> | PreToolUseResponse
 export type PostToolUseHandler = (payload: PostToolUsePayload) => Promise<PostToolUseResponse> | PostToolUseResponse
