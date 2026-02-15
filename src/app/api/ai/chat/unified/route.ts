@@ -10,6 +10,8 @@ import { UnifiedAIClient, type UnifiedChatMessage } from '@/lib/unified-ai-clien
 import { logger } from '@/lib/logger'
 import type { AuthenticatedRequest } from '@/lib/auth/middleware'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+import { ContextManager } from '@/lib/ai/context/context-manager'
+import { ContextStrategy, ContextItemType, ContextPriority } from '@/types/context'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -206,13 +208,28 @@ export async function POST(request: NextRequest & AuthenticatedRequest) {
 
     // Build advanced RAG context
     const ragResult = await buildAdvancedRAGContext(
-      context.workspaceId, 
-      message, 
+      context.workspaceId,
+      message,
       session.user.id
     )
 
-    // Prepare system message with enhanced context
-    const systemMessage = `You are an expert AI coding assistant integrated into VibeCode, an open-source development platform.
+    // Initialize ContextManager for intelligent context window management
+    const contextManager = new ContextManager({
+      defaultModel: model,
+      maxUtilization: 90, // Use 90% of available context window
+      autoRerank: true
+    })
+
+    // Create context window with hybrid strategy
+    const contextWindow = contextManager.createWindow({
+      model,
+      strategy: ContextStrategy.HYBRID,
+      maxUtilization: 90,
+      boostKeywords: ragResult ? ['code', 'function', 'implementation'] : []
+    })
+
+    // Base system prompt (CRITICAL priority - always included)
+    const baseSystemPrompt = `You are an expert AI coding assistant integrated into VibeCode, an open-source development platform.
 
 **🎯 Current Session Context:**
 - User: ${session.user.email}
@@ -221,8 +238,6 @@ export async function POST(request: NextRequest & AuthenticatedRequest) {
 - RAG Status: ${ragResult ? `Active (${ragResult.relevanceScore} relevance, ${ragResult.strategiesUsed} strategies)` : 'Disabled'}
 - Providers Available: ${availableProviders.join(', ')}
 
-${ragResult ? `**📋 Relevant Code Context (${ragResult.totalLength} chars):**\n${ragResult.context}\n` : ''}
-
 **🚀 Platform Capabilities:**
 - Multi-provider AI access with automatic fallbacks
 - Advanced RAG with semantic search and context ranking
@@ -230,8 +245,6 @@ ${ragResult ? `**📋 Relevant Code Context (${ragResult.totalLength} chars):**\
 - BYOK (Bring Your Own Keys) support for premium features
 - Real-time workspace integration and file system access
 - Voice input, file uploads, and multimodal processing
-
-${generateToolCapabilities(enableTools, availableProviders)}
 
 **📐 Guidelines:**
 - Provide production-ready, secure code solutions
@@ -247,15 +260,162 @@ ${generateToolCapabilities(enableTools, availableProviders)}
 - Local models available for sensitive code
 - All responses respect workspace boundaries`
 
-    // Prepare messages for unified client
-    const messages: UnifiedChatMessage[] = [
-      { role: 'system', content: systemMessage },
-      ...context.previousMessages.slice(-8).map(msg => ({
-        role: msg.role,
-        content: msg.content
-      })),
-      { role: 'user', content: message }
-    ]
+    // Add base system prompt (CRITICAL - required)
+    contextManager.addItem(
+      ContextItemType.SYSTEM_PROMPT,
+      baseSystemPrompt,
+      {
+        priority: ContextPriority.CRITICAL,
+        isRequired: true,
+        relevanceScore: 1.0
+      }
+    )
+
+    // Add RAG context if available (HIGH priority, relevance-based)
+    if (ragResult) {
+      const ragPriority = ragResult.relevanceScore === 'high'
+        ? ContextPriority.HIGH
+        : ragResult.relevanceScore === 'medium'
+          ? ContextPriority.MEDIUM
+          : ContextPriority.LOW
+
+      const ragRelevance = ragResult.relevanceScore === 'high'
+        ? 0.9
+        : ragResult.relevanceScore === 'medium'
+          ? 0.7
+          : 0.5
+
+      contextManager.addItem(
+        ContextItemType.RAG_RESULT,
+        `**📋 Relevant Code Context (${ragResult.totalLength} chars, ${ragResult.strategiesUsed} strategies):**\n${ragResult.context}`,
+        {
+          priority: ragPriority,
+          isRequired: false,
+          relevanceScore: ragRelevance,
+          metadata: {
+            source: ragResult.workspaceId,
+            custom: {
+              strategiesUsed: ragResult.strategiesUsed,
+              totalLength: ragResult.totalLength
+            }
+          }
+        }
+      )
+    }
+
+    // Add tool capabilities (MEDIUM priority - helpful but not critical)
+    const toolCapabilities = generateToolCapabilities(enableTools, availableProviders)
+    if (toolCapabilities) {
+      contextManager.addItem(
+        ContextItemType.CUSTOM,
+        toolCapabilities,
+        {
+          priority: ContextPriority.MEDIUM,
+          isRequired: false,
+          relevanceScore: 0.6
+        }
+      )
+    }
+
+    // Add previous conversation messages (MEDIUM priority for recent, LOW for older)
+    const recentMessages = context.previousMessages.slice(-8)
+    recentMessages.forEach((msg, index) => {
+      const isRecent = index >= recentMessages.length - 4
+      const itemType = msg.role === 'assistant'
+        ? ContextItemType.ASSISTANT_MESSAGE
+        : ContextItemType.USER_MESSAGE
+
+      contextManager.addItem(
+        itemType,
+        msg.content,
+        {
+          priority: isRecent ? ContextPriority.MEDIUM : ContextPriority.LOW,
+          isRequired: false,
+          relevanceScore: 0.5 + (index / recentMessages.length) * 0.3, // More recent = higher relevance
+          metadata: {
+            custom: {
+              role: msg.role,
+              messageIndex: index
+            }
+          }
+        }
+      )
+    })
+
+    // Add current user message (CRITICAL - required)
+    contextManager.addItem(
+      ContextItemType.USER_MESSAGE,
+      message,
+      {
+        priority: ContextPriority.CRITICAL,
+        isRequired: true,
+        relevanceScore: 1.0
+      }
+    )
+
+    // Get optimized context window
+    const optimizedWindow = contextManager.getWindow()
+
+    // Build final messages array from optimized context
+    const messages: UnifiedChatMessage[] = []
+
+    if (optimizedWindow) {
+      // Group items by type for proper message structure
+      let systemContent = ''
+      const conversationMessages: Array<{ role: 'user' | 'assistant', content: string }> = []
+
+      for (const item of optimizedWindow.items) {
+        switch (item.type) {
+          case ContextItemType.SYSTEM_PROMPT:
+          case ContextItemType.RAG_RESULT:
+          case ContextItemType.CUSTOM:
+            systemContent += item.content + '\n\n'
+            break
+          case ContextItemType.USER_MESSAGE:
+          case ContextItemType.ASSISTANT_MESSAGE:
+            // These will be added in order later
+            if (item.metadata.custom?.role) {
+              conversationMessages.push({
+                role: item.metadata.custom.role as 'user' | 'assistant',
+                content: item.content
+              })
+            }
+            break
+        }
+      }
+
+      // Add system message if we have content
+      if (systemContent.trim()) {
+        messages.push({ role: 'system', content: systemContent.trim() })
+      }
+
+      // Add conversation history (excluding the current user message)
+      messages.push(...conversationMessages.slice(0, -1))
+
+      // Add current user message last
+      messages.push({ role: 'user', content: message })
+
+      // Log context optimization stats
+      logger.info('Context window optimized', {
+        model,
+        totalTokens: optimizedWindow.totalTokens,
+        availableTokens: optimizedWindow.availableTokens,
+        utilizationPercent: optimizedWindow.utilizationPercent,
+        itemsIncluded: optimizedWindow.items.length,
+        itemsExcluded: optimizedWindow.excludedItems.length,
+        strategy: optimizedWindow.strategy
+      })
+    } else {
+      // Fallback to simple message structure if context manager fails
+      messages.push(
+        { role: 'system', content: baseSystemPrompt },
+        ...context.previousMessages.slice(-8).map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })),
+        { role: 'user', content: message }
+      )
+    }
 
     // Enhanced streaming response with unified client
     const { ReadableStream, TextEncoder } = globalThis
@@ -291,7 +451,15 @@ ${generateToolCapabilities(enableTools, availableProviders)}
                 toolsEnabled: enableTools,
                 tokenCount,
                 availableProviders,
-                providerHealth: Object.entries(providerHealth).filter(([_, healthy]) => healthy).map(([name]) => name)
+                providerHealth: Object.entries(providerHealth).filter(([_, healthy]) => healthy).map(([name]) => name),
+                contextWindow: optimizedWindow ? {
+                  totalTokens: optimizedWindow.totalTokens,
+                  availableTokens: optimizedWindow.availableTokens,
+                  utilizationPercent: optimizedWindow.utilizationPercent,
+                  itemsIncluded: optimizedWindow.items.length,
+                  itemsExcluded: optimizedWindow.excludedItems.length,
+                  strategy: optimizedWindow.strategy
+                } : null
               })
 
               controller.enqueue(encoder.encode(`data: ${data}\n\n`))
@@ -312,6 +480,15 @@ ${generateToolCapabilities(enableTools, availableProviders)}
               relevanceScore: ragResult.relevanceScore,
               strategiesUsed: ragResult.strategiesUsed,
               contextLength: ragResult.totalLength
+            } : null,
+            contextWindow: optimizedWindow ? {
+              totalTokens: optimizedWindow.totalTokens,
+              availableTokens: optimizedWindow.availableTokens,
+              utilizationPercent: optimizedWindow.utilizationPercent,
+              itemsIncluded: optimizedWindow.items.length,
+              itemsExcluded: optimizedWindow.excludedItems.length,
+              strategy: optimizedWindow.strategy,
+              isAtCapacity: optimizedWindow.isAtCapacity
             } : null,
             processingTime: Date.now() - startTime,
             availableProviders: availableProviders.length,
@@ -370,7 +547,13 @@ ${generateToolCapabilities(enableTools, availableProviders)}
       'X-Providers-Available': availableProviders.join(','),
       'X-RAG-Status': ragResult ? 'active' : 'inactive',
       'X-Tools-Enabled': enableTools.toString(),
-      'X-Enhanced-Features': 'unified-ai,multi-provider,advanced-rag,fallback-chains'
+      'X-Enhanced-Features': 'unified-ai,multi-provider,advanced-rag,fallback-chains,context-management',
+      'X-Context-Tokens-Used': optimizedWindow?.totalTokens.toString() ?? '0',
+      'X-Context-Tokens-Available': optimizedWindow?.availableTokens.toString() ?? '0',
+      'X-Context-Utilization': optimizedWindow?.utilizationPercent.toFixed(1) ?? '0',
+      'X-Context-Items-Included': optimizedWindow?.items.length.toString() ?? '0',
+      'X-Context-Items-Excluded': optimizedWindow?.excludedItems.length.toString() ?? '0',
+      'X-Context-Strategy': optimizedWindow?.strategy ?? 'none'
     }
 
     // Only set Access-Control-Allow-Origin if the origin is validated
