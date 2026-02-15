@@ -165,23 +165,101 @@ export const getCurrentTimeTool: ToolDefinition = {
   },
   execute: async ({ timezone = 'UTC', format = 'ISO' }) => {
     const now = new Date();
-    
+
     switch (format) {
       case 'ISO':
         return { time: now.toISOString(), timezone };
       case 'locale':
-        return { 
-          time: now.toLocaleString(undefined, { timeZone: timezone }), 
-          timezone 
+        return {
+          time: now.toLocaleString(undefined, { timeZone: timezone }),
+          timezone
         };
       case 'unix':
-        return { 
+        return {
           timestamp: Math.floor(now.getTime() / 1000),
           timezone: 'UTC' // Unix timestamps are always UTC
         };
       default:
         return { time: now.toISOString(), timezone };
     }
+  },
+};
+
+/**
+ * File write tool - writes content to a file (requires confirmation)
+ */
+export const fileWriteTool: ToolDefinition = {
+  name: 'write_file',
+  description: 'Write content to a file',
+  requiresConfirmation: true,
+  parameters: {
+    type: 'object',
+    properties: {
+      path: {
+        type: 'string',
+        description: 'Path to the file to write',
+      },
+      content: {
+        type: 'string',
+        description: 'Content to write to the file',
+      },
+      createDirectories: {
+        type: 'boolean',
+        description: 'Whether to create parent directories if they do not exist',
+        default: false,
+      },
+    },
+    required: ['path', 'content'],
+  },
+  execute: async ({ path, content, createDirectories = false }) => {
+    // In a real implementation, this would write to the filesystem
+    // For now, we'll return a mock response
+    return {
+      path,
+      success: true,
+      bytesWritten: content.length,
+      created: true,
+      message: `Successfully wrote ${content.length} bytes to ${path}`,
+    };
+  },
+};
+
+/**
+ * File edit tool - edits an existing file (requires confirmation)
+ */
+export const fileEditTool: ToolDefinition = {
+  name: 'edit_file',
+  description: 'Edit an existing file by replacing content',
+  requiresConfirmation: true,
+  parameters: {
+    type: 'object',
+    properties: {
+      path: {
+        type: 'string',
+        description: 'Path to the file to edit',
+      },
+      oldContent: {
+        type: 'string',
+        description: 'Content to search for and replace',
+      },
+      newContent: {
+        type: 'string',
+        description: 'New content to replace with',
+      },
+    },
+    required: ['path', 'oldContent', 'newContent'],
+  },
+  execute: async ({ path, oldContent, newContent }) => {
+    // In a real implementation, this would read the file, replace content, and write back
+    // For now, we'll return a mock response
+    return {
+      path,
+      success: true,
+      replacements: 1,
+      linesAdded: newContent.split('\n').length - oldContent.split('\n').length,
+      linesRemoved: oldContent.split('\n').length,
+      message: `Successfully edited ${path}`,
+    };
   },
 };
 
@@ -194,6 +272,8 @@ export const builtInTools = {
   readFile: fileReadTool,
   executeCode: codeExecutionTool,
   getCurrentTime: getCurrentTimeTool,
+  writeFile: fileWriteTool,
+  editFile: fileEditTool,
 };
 
 export type BuiltInToolName = keyof typeof builtInTools;
