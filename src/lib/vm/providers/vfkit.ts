@@ -14,6 +14,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { isProcessRunning, waitForBoot } from '../utils/health-check';
 import { retryWithThrow } from '../utils/retry';
+import { validateMemoryAllocation, getRecommendedCpus } from '../utils/system-resources';
 
 const exec = promisify(execCallback);
 const execFile = promisify(execFileCallback);
@@ -59,7 +60,45 @@ export class VfkitProvider implements VMProvider {
 
     const safeName = validateVMName(config.name);
     const vmDir = validateVMPath(this.vmBaseDir, safeName);
-    
+
+    // Validate memory allocation (limit to 80% of available memory)
+    const sValidate = getTracer().startSpan('vfkit.create.validateResources');
+    const memoryValidation = await validateMemoryAllocation(config.memory, 80);
+    if (!memoryValidation.valid) {
+      sValidate.finish();
+      span.finish();
+      logger.error('Memory allocation validation failed', {
+        vmId: config.name,
+        requested: config.memory,
+        validation: memoryValidation
+      });
+      throw new Error(
+        `Memory allocation validation failed: ${memoryValidation.message}. ` +
+        `Requested: ${config.memory}, Available: ${memoryValidation.availableBytes} bytes, ` +
+        `Max safe allocation: ${memoryValidation.maxSafeAllocation} bytes`
+      );
+    }
+
+    // Validate CPU allocation (limit to 75% of available cores by default)
+    const recommendedCpus = await getRecommendedCpus(config.cpus, 75);
+    if (config.cpus > recommendedCpus) {
+      logger.warn('CPU allocation exceeds recommendation', {
+        vmId: config.name,
+        requested: config.cpus,
+        recommended: recommendedCpus
+      });
+      // Don't fail, but log warning - CPU over-allocation is less critical than memory
+    }
+
+    logger.info('Resource allocation validated', {
+      vmId: config.name,
+      memory: config.memory,
+      memoryBytes: memoryValidation.requestedBytes,
+      cpus: config.cpus,
+      recommendedCpus
+    });
+    sValidate.finish();
+
     // Create directory structure
     const sDirs = getTracer().startSpan('vfkit.create.directories');
     await this.createDirectories(vmDir);
