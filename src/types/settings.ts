@@ -200,6 +200,26 @@ export interface AISettings {
 }
 
 // ============================================================================
+// Agent Confirmation Settings
+// ============================================================================
+
+/**
+ * Agent action confirmation and preview settings
+ */
+export interface AgentConfirmationSettings {
+  /** Show diff previews before applying changes */
+  enableActionPreview: boolean;
+  /** Require explicit approval for agent actions */
+  requireConfirmation: boolean;
+  /** Allow approving multiple changes at once */
+  bulkApprovalMode: boolean;
+  /** Show why each change is proposed */
+  showExplanations: boolean;
+  /** Skip confirmation for read-only operations */
+  autoApproveReadOnly: boolean;
+}
+
+// ============================================================================
 // Telemetry & Advanced Settings
 // ============================================================================
 
