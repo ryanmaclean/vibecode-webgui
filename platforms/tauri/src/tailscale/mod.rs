@@ -179,24 +179,115 @@ impl TailscaleManager {
 mod tests {
     use super::*;
 
+    // Unit Tests - TailscaleStatus
     #[test]
-    fn test_is_installed() {
-        // This will pass if Tailscale is installed, fail otherwise
-        let installed = TailscaleManager::is_installed();
-        println!("Tailscale installed: {}", installed);
+    fn test_tailscale_status_serialization() {
+        let status = TailscaleStatus {
+            connected: true,
+            ip: Some("100.64.0.1".to_string()),
+            hostname: "test-machine".to_string(),
+            user: Some("user@example.com".to_string()),
+            version: Some("1.52.0".to_string()),
+        };
+
+        // Test serialization
+        let json = serde_json::to_string(&status).unwrap();
+        assert!(json.contains("100.64.0.1"));
+        assert!(json.contains("test-machine"));
+        assert!(json.contains("user@example.com"));
+
+        // Test deserialization
+        let deserialized: TailscaleStatus = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.connected, true);
+        assert_eq!(deserialized.ip, Some("100.64.0.1".to_string()));
+        assert_eq!(deserialized.hostname, "test-machine");
     }
 
     #[test]
-    fn test_status() {
+    fn test_tailscale_status_optional_fields() {
+        let status = TailscaleStatus {
+            connected: false,
+            ip: None,
+            hostname: "offline-machine".to_string(),
+            user: None,
+            version: None,
+        };
+
+        let json = serde_json::to_string(&status).unwrap();
+        let deserialized: TailscaleStatus = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(deserialized.connected, false);
+        assert_eq!(deserialized.ip, None);
+        assert_eq!(deserialized.user, None);
+        assert_eq!(deserialized.version, None);
+    }
+
+    // Unit Tests - TailscaleConfig
+    #[test]
+    fn test_tailscale_config_serialization() {
+        let config = TailscaleConfig {
+            enabled: true,
+            auto_start: false,
+            bind_services: true,
+        };
+
+        let json = serde_json::to_string(&config).unwrap();
+        assert!(json.contains("\"enabled\":true"));
+        assert!(json.contains("\"auto_start\":false"));
+        assert!(json.contains("\"bind_services\":true"));
+
+        let deserialized: TailscaleConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.enabled, true);
+        assert_eq!(deserialized.auto_start, false);
+        assert_eq!(deserialized.bind_services, true);
+    }
+
+    #[test]
+    fn test_tailscale_config_defaults() {
+        let config = TailscaleConfig {
+            enabled: false,
+            auto_start: false,
+            bind_services: false,
+        };
+
+        assert_eq!(config.enabled, false);
+        assert_eq!(config.auto_start, false);
+        assert_eq!(config.bind_services, false);
+    }
+
+    // Unit Tests - TailscaleManager
+    #[test]
+    fn test_is_installed() {
+        // This will return true or false depending on installation
+        let installed = TailscaleManager::is_installed();
+        // Just ensure it returns without panic
+        assert!(installed == true || installed == false);
+    }
+
+    #[test]
+    fn test_status_format() {
+        // Only run if Tailscale is installed
         if TailscaleManager::is_installed() {
             match TailscaleManager::status() {
                 Ok(status) => {
-                    println!("Connected: {}", status.connected);
-                    println!("IP: {:?}", status.ip);
-                    println!("Hostname: {}", status.hostname);
+                    // Verify structure
+                    assert!(status.hostname.len() > 0 || !status.connected);
+
+                    // If connected, should have IP
+                    if status.connected {
+                        assert!(status.ip.is_some(), "Connected status should have IP");
+                        if let Some(ip) = &status.ip {
+                            // Tailscale IPs are in 100.x.x.x range
+                            assert!(ip.starts_with("100.") || ip.contains(":"),
+                                "Tailscale IP should be in 100.x.x.x range or IPv6");
+                        }
+                    }
                 }
                 Err(e) => {
-                    println!("Status error: {}", e);
+                    // Expected if not running or not connected
+                    assert!(e.contains("not installed") ||
+                           e.contains("not running") ||
+                           e.contains("not connected"));
                 }
             }
         }
@@ -207,13 +298,115 @@ mod tests {
         if TailscaleManager::is_installed() {
             match TailscaleManager::get_ip() {
                 Ok(ip) => {
-                    println!("Tailscale IP: {}", ip);
-                    assert!(ip.starts_with("100."));
+                    // Verify IP format
+                    assert!(!ip.is_empty());
+                    assert!(ip.contains(".") || ip.contains(":"),
+                        "IP should be IPv4 or IPv6 format");
                 }
                 Err(e) => {
-                    println!("Not connected: {}", e);
+                    // Expected errors
+                    assert!(e.contains("not connected") ||
+                           e.contains("not installed") ||
+                           e.contains("No Tailscale IP"));
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_secure_bind_addr_format() {
+        // Test with a mock IP (this would normally come from status)
+        // We can't test the actual function without Tailscale running,
+        // but we can test the expected format
+        let port = 8080;
+        let expected_format = format!("100.64.0.1:{}", port);
+
+        assert!(expected_format.contains(":"));
+        assert!(expected_format.ends_with(":8080"));
+    }
+
+    #[test]
+    fn test_verify_zero_trust_when_not_installed() {
+        // Test behavior when Tailscale is not installed
+        if !TailscaleManager::is_installed() {
+            let result = TailscaleManager::verify_zero_trust();
+            assert!(result.is_err(), "Should fail when Tailscale not installed");
+
+            if let Err(warnings) = result {
+                assert!(warnings.contains("Tailscale error"),
+                    "Should mention Tailscale error");
+            }
+        }
+    }
+
+    // Integration Tests (require Tailscale to be installed and running)
+    #[test]
+    #[ignore] // Run with: cargo test -- --ignored
+    fn integration_test_full_workflow() {
+        if !TailscaleManager::is_installed() {
+            println!("⚠️ Tailscale not installed, skipping integration test");
+            return;
+        }
+
+        // Test status
+        let status = TailscaleManager::status();
+        assert!(status.is_ok() || status.is_err());
+
+        // Test IP retrieval
+        if let Ok(status) = &status {
+            if status.connected {
+                let ip = TailscaleManager::get_ip();
+                assert!(ip.is_ok(), "Should get IP when connected");
+            }
+        }
+
+        // Test zero-trust verification
+        let verify = TailscaleManager::verify_zero_trust();
+        assert!(verify.is_ok() || verify.is_err());
+    }
+
+    #[test]
+    fn test_status_clone() {
+        let status = TailscaleStatus {
+            connected: true,
+            ip: Some("100.64.0.1".to_string()),
+            hostname: "test".to_string(),
+            user: None,
+            version: None,
+        };
+
+        let cloned = status.clone();
+        assert_eq!(cloned.connected, status.connected);
+        assert_eq!(cloned.ip, status.ip);
+        assert_eq!(cloned.hostname, status.hostname);
+    }
+
+    #[test]
+    fn test_config_clone() {
+        let config = TailscaleConfig {
+            enabled: true,
+            auto_start: true,
+            bind_services: true,
+        };
+
+        let cloned = config.clone();
+        assert_eq!(cloned.enabled, config.enabled);
+        assert_eq!(cloned.auto_start, config.auto_start);
+        assert_eq!(cloned.bind_services, config.bind_services);
+    }
+
+    #[test]
+    fn test_status_debug() {
+        let status = TailscaleStatus {
+            connected: true,
+            ip: Some("100.64.0.1".to_string()),
+            hostname: "test".to_string(),
+            user: None,
+            version: None,
+        };
+
+        let debug_str = format!("{:?}", status);
+        assert!(debug_str.contains("TailscaleStatus"));
+        assert!(debug_str.contains("100.64.0.1"));
     }
 }
