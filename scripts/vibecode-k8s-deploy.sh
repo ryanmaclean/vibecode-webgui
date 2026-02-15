@@ -22,11 +22,47 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Parse command-line arguments
+DRY_RUN=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --cluster-name)
+            CLUSTER_NAME="$2"
+            shift 2
+            ;;
+        -h|--help)
+            echo "Usage: $0 [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --dry-run           Show what would be deployed without actually deploying"
+            echo "  --cluster-name NAME Specify KIND cluster name (default: vibecode-local)"
+            echo "  -h, --help          Show this help message"
+            echo ""
+            exit 0
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
 # Configuration
 CLUSTER_NAME="${CLUSTER_NAME:-vibecode-local}"
 NAMESPACE_PLATFORM="vibecode-platform"
 NAMESPACE_WEBGUI="vibecode-webgui"
 K8S_MANIFESTS_DIR="platforms/kubernetes/k8s"
+
+if [ "$DRY_RUN" = true ]; then
+    echo ""
+    log_info "🔍 DRY RUN MODE - No actual changes will be made"
+    echo ""
+fi
 
 # Helper functions
 log_info() {
@@ -47,7 +83,9 @@ log_error() {
 
 # Run prerequisites check
 log_info "Checking prerequisites..."
-if [ -f "$(dirname "$0")/check-k8s-prerequisites.sh" ]; then
+if [ "$DRY_RUN" = true ]; then
+    log_info "Would check prerequisites script"
+elif [ -f "$(dirname "$0")/check-k8s-prerequisites.sh" ]; then
     if bash "$(dirname "$0")/check-k8s-prerequisites.sh" > /dev/null 2>&1; then
         log_success "All prerequisites met"
     else
@@ -60,90 +98,136 @@ fi
 
 # Check if KIND cluster exists
 log_info "Checking KIND cluster..."
-if ! kind get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
-    log_info "Creating KIND cluster: $CLUSTER_NAME"
-    kind create cluster --name "$CLUSTER_NAME"
-    log_success "KIND cluster created"
+if [ "$DRY_RUN" = true ]; then
+    log_info "Would check for KIND cluster: $CLUSTER_NAME"
+    log_info "If cluster doesn't exist, would create it with: kind create cluster --name $CLUSTER_NAME"
+    log_info "Would set kubectl context to: kind-${CLUSTER_NAME}"
 else
-    log_success "KIND cluster already exists: $CLUSTER_NAME"
-fi
+    if ! kind get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
+        log_info "Creating KIND cluster: $CLUSTER_NAME"
+        kind create cluster --name "$CLUSTER_NAME"
+        log_success "KIND cluster created"
+    else
+        log_success "KIND cluster already exists: $CLUSTER_NAME"
+    fi
 
-# Ensure kubectl context is set
-log_info "Setting kubectl context..."
-kubectl config use-context "kind-${CLUSTER_NAME}"
-log_success "kubectl context set to kind-${CLUSTER_NAME}"
+    # Ensure kubectl context is set
+    log_info "Setting kubectl context..."
+    kubectl config use-context "kind-${CLUSTER_NAME}"
+    log_success "kubectl context set to kind-${CLUSTER_NAME}"
+fi
 
 # Create namespaces
 log_info "Creating namespaces..."
-kubectl create namespace "$NAMESPACE_PLATFORM" --dry-run=client -o yaml | kubectl apply -f -
-kubectl create namespace "$NAMESPACE_WEBGUI" --dry-run=client -o yaml | kubectl apply -f -
-log_success "Namespaces created: $NAMESPACE_PLATFORM, $NAMESPACE_WEBGUI"
+if [ "$DRY_RUN" = true ]; then
+    log_info "Would create namespace: $NAMESPACE_PLATFORM"
+    log_info "Would create namespace: $NAMESPACE_WEBGUI"
+else
+    kubectl create namespace "$NAMESPACE_PLATFORM" --dry-run=client -o yaml | kubectl apply -f -
+    kubectl create namespace "$NAMESPACE_WEBGUI" --dry-run=client -o yaml | kubectl apply -f -
+    log_success "Namespaces created: $NAMESPACE_PLATFORM, $NAMESPACE_WEBGUI"
+fi
 
 # Deploy secrets
 log_info "Deploying secrets..."
-if [ -f "$K8S_MANIFESTS_DIR/postgres-secret.yaml" ]; then
-    kubectl apply -f "$K8S_MANIFESTS_DIR/postgres-secret.yaml"
-    log_success "PostgreSQL secrets deployed"
+if [ "$DRY_RUN" = true ]; then
+    [ -f "$K8S_MANIFESTS_DIR/postgres-secret.yaml" ] && log_info "Would deploy: $K8S_MANIFESTS_DIR/postgres-secret.yaml" || log_warning "postgres-secret.yaml not found"
+    [ -f "$K8S_MANIFESTS_DIR/oauth-secrets.yaml" ] && log_info "Would deploy: $K8S_MANIFESTS_DIR/oauth-secrets.yaml" || log_warning "oauth-secrets.yaml not found"
+    [ -f "$K8S_MANIFESTS_DIR/vibecode-secrets.yaml" ] && log_info "Would deploy: $K8S_MANIFESTS_DIR/vibecode-secrets.yaml" || log_warning "vibecode-secrets.yaml not found"
 else
-    log_warning "postgres-secret.yaml not found, skipping..."
-fi
+    if [ -f "$K8S_MANIFESTS_DIR/postgres-secret.yaml" ]; then
+        kubectl apply -f "$K8S_MANIFESTS_DIR/postgres-secret.yaml"
+        log_success "PostgreSQL secrets deployed"
+    else
+        log_warning "postgres-secret.yaml not found, skipping..."
+    fi
 
-if [ -f "$K8S_MANIFESTS_DIR/oauth-secrets.yaml" ]; then
-    kubectl apply -f "$K8S_MANIFESTS_DIR/oauth-secrets.yaml"
-    log_success "OAuth secrets deployed"
-else
-    log_warning "oauth-secrets.yaml not found, skipping..."
-fi
+    if [ -f "$K8S_MANIFESTS_DIR/oauth-secrets.yaml" ]; then
+        kubectl apply -f "$K8S_MANIFESTS_DIR/oauth-secrets.yaml"
+        log_success "OAuth secrets deployed"
+    else
+        log_warning "oauth-secrets.yaml not found, skipping..."
+    fi
 
-if [ -f "$K8S_MANIFESTS_DIR/vibecode-secrets.yaml" ]; then
-    kubectl apply -f "$K8S_MANIFESTS_DIR/vibecode-secrets.yaml"
-    log_success "VibeCode secrets deployed"
-else
-    log_warning "vibecode-secrets.yaml not found, skipping..."
+    if [ -f "$K8S_MANIFESTS_DIR/vibecode-secrets.yaml" ]; then
+        kubectl apply -f "$K8S_MANIFESTS_DIR/vibecode-secrets.yaml"
+        log_success "VibeCode secrets deployed"
+    else
+        log_warning "vibecode-secrets.yaml not found, skipping..."
+    fi
 fi
 
 # Deploy PostgreSQL
 log_info "Deploying PostgreSQL with pgvector..."
-if [ -f "$K8S_MANIFESTS_DIR/postgres-deployment.yaml" ]; then
-    kubectl apply -f "$K8S_MANIFESTS_DIR/postgres-deployment.yaml"
-    log_success "PostgreSQL deployment applied"
-
-    # Wait for PostgreSQL to be ready
-    log_info "Waiting for PostgreSQL to be ready..."
-    kubectl wait --for=condition=available --timeout=300s deployment/postgres -n "$NAMESPACE_WEBGUI" 2>/dev/null || log_warning "Timeout waiting for PostgreSQL (may still be starting)"
-    log_success "PostgreSQL is ready"
+if [ "$DRY_RUN" = true ]; then
+    if [ -f "$K8S_MANIFESTS_DIR/postgres-deployment.yaml" ]; then
+        log_info "Would deploy: $K8S_MANIFESTS_DIR/postgres-deployment.yaml"
+        log_info "Would wait for PostgreSQL deployment to be ready in namespace: $NAMESPACE_WEBGUI"
+    else
+        log_error "postgres-deployment.yaml not found at $K8S_MANIFESTS_DIR"
+        exit 1
+    fi
 else
-    log_error "postgres-deployment.yaml not found at $K8S_MANIFESTS_DIR"
-    exit 1
+    if [ -f "$K8S_MANIFESTS_DIR/postgres-deployment.yaml" ]; then
+        kubectl apply -f "$K8S_MANIFESTS_DIR/postgres-deployment.yaml"
+        log_success "PostgreSQL deployment applied"
+
+        # Wait for PostgreSQL to be ready
+        log_info "Waiting for PostgreSQL to be ready..."
+        kubectl wait --for=condition=available --timeout=300s deployment/postgres -n "$NAMESPACE_WEBGUI" 2>/dev/null || log_warning "Timeout waiting for PostgreSQL (may still be starting)"
+        log_success "PostgreSQL is ready"
+    else
+        log_error "postgres-deployment.yaml not found at $K8S_MANIFESTS_DIR"
+        exit 1
+    fi
 fi
 
 # Deploy Redis
 log_info "Deploying Redis..."
-if [ -f "$K8S_MANIFESTS_DIR/redis-deployment.yaml" ]; then
-    kubectl apply -f "$K8S_MANIFESTS_DIR/redis-deployment.yaml"
-    log_success "Redis deployment applied"
-
-    # Wait for Redis to be ready
-    log_info "Waiting for Redis to be ready..."
-    kubectl wait --for=condition=available --timeout=180s deployment/redis -n "$NAMESPACE_PLATFORM" 2>/dev/null || log_warning "Timeout waiting for Redis (may still be starting)"
-    log_success "Redis is ready"
+if [ "$DRY_RUN" = true ]; then
+    if [ -f "$K8S_MANIFESTS_DIR/redis-deployment.yaml" ]; then
+        log_info "Would deploy: $K8S_MANIFESTS_DIR/redis-deployment.yaml"
+        log_info "Would wait for Redis deployment to be ready in namespace: $NAMESPACE_PLATFORM"
+    else
+        log_warning "redis-deployment.yaml not found, would skip Redis deployment"
+    fi
 else
-    log_warning "redis-deployment.yaml not found, skipping Redis deployment"
+    if [ -f "$K8S_MANIFESTS_DIR/redis-deployment.yaml" ]; then
+        kubectl apply -f "$K8S_MANIFESTS_DIR/redis-deployment.yaml"
+        log_success "Redis deployment applied"
+
+        # Wait for Redis to be ready
+        log_info "Waiting for Redis to be ready..."
+        kubectl wait --for=condition=available --timeout=180s deployment/redis -n "$NAMESPACE_PLATFORM" 2>/dev/null || log_warning "Timeout waiting for Redis (may still be starting)"
+        log_success "Redis is ready"
+    else
+        log_warning "redis-deployment.yaml not found, skipping Redis deployment"
+    fi
 fi
 
 # Deploy VibeCode WebGUI
 log_info "Deploying VibeCode WebGUI..."
-if [ -f "$K8S_MANIFESTS_DIR/vibecode-deployment.yaml" ]; then
-    kubectl apply -f "$K8S_MANIFESTS_DIR/vibecode-deployment.yaml"
-    log_success "VibeCode WebGUI deployment applied"
-
-    # Wait for VibeCode to be ready
-    log_info "Waiting for VibeCode WebGUI to be ready..."
-    kubectl wait --for=condition=available --timeout=300s deployment/vibecode-webgui -n "$NAMESPACE_PLATFORM" 2>/dev/null || log_warning "Timeout waiting for VibeCode (may still be starting)"
-    log_success "VibeCode WebGUI is ready"
+if [ "$DRY_RUN" = true ]; then
+    if [ -f "$K8S_MANIFESTS_DIR/vibecode-deployment.yaml" ]; then
+        log_info "Would deploy: $K8S_MANIFESTS_DIR/vibecode-deployment.yaml"
+        log_info "Would wait for VibeCode WebGUI deployment to be ready in namespace: $NAMESPACE_PLATFORM"
+    else
+        log_error "vibecode-deployment.yaml not found at $K8S_MANIFESTS_DIR"
+        exit 1
+    fi
 else
-    log_error "vibecode-deployment.yaml not found at $K8S_MANIFESTS_DIR"
-    exit 1
+    if [ -f "$K8S_MANIFESTS_DIR/vibecode-deployment.yaml" ]; then
+        kubectl apply -f "$K8S_MANIFESTS_DIR/vibecode-deployment.yaml"
+        log_success "VibeCode WebGUI deployment applied"
+
+        # Wait for VibeCode to be ready
+        log_info "Waiting for VibeCode WebGUI to be ready..."
+        kubectl wait --for=condition=available --timeout=300s deployment/vibecode-webgui -n "$NAMESPACE_PLATFORM" 2>/dev/null || log_warning "Timeout waiting for VibeCode (may still be starting)"
+        log_success "VibeCode WebGUI is ready"
+    else
+        log_error "vibecode-deployment.yaml not found at $K8S_MANIFESTS_DIR"
+        exit 1
+    fi
 fi
 
 # Display deployment summary
@@ -153,39 +237,51 @@ echo "  ☸️  Cluster: $CLUSTER_NAME"
 echo "  📦 Namespaces: $NAMESPACE_PLATFORM, $NAMESPACE_WEBGUI"
 echo ""
 
-# Check pod status
-log_info "Checking pod status..."
-echo ""
-echo "Pods in $NAMESPACE_PLATFORM:"
-kubectl get pods -n "$NAMESPACE_PLATFORM" 2>/dev/null || log_warning "No pods found in $NAMESPACE_PLATFORM"
-echo ""
-echo "Pods in $NAMESPACE_WEBGUI:"
-kubectl get pods -n "$NAMESPACE_WEBGUI" 2>/dev/null || log_warning "No pods found in $NAMESPACE_WEBGUI"
-
-# Display service endpoints
-echo ""
-log_info "Service endpoints..."
-echo ""
-kubectl get services -n "$NAMESPACE_PLATFORM" 2>/dev/null || log_warning "No services found in $NAMESPACE_PLATFORM"
-
-# Get NodePort for VibeCode WebGUI if available
-VIBECODE_NODEPORT=$(kubectl get service vibecode-service -n "$NAMESPACE_PLATFORM" -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "")
-if [ -n "$VIBECODE_NODEPORT" ]; then
+if [ "$DRY_RUN" = true ]; then
+    log_info "DRY RUN: Would check pod status in namespaces"
+    log_info "DRY RUN: Would display service endpoints"
+    log_info "DRY RUN: Would check for VibeCode WebGUI NodePort"
     echo ""
-    log_success "VibeCode WebGUI is available at: http://localhost:${VIBECODE_NODEPORT}"
-    log_info "Default login: admin@vibecode.dev / admin123"
+    log_success "✅ DRY RUN completed - no actual changes were made"
+    echo ""
+    echo "📝 To deploy for real, run without --dry-run:"
+    echo "  $0"
+    echo ""
 else
+    # Check pod status
+    log_info "Checking pod status..."
     echo ""
-    log_warning "VibeCode service not found or NodePort not configured"
-    log_info "You can access the service using port-forwarding:"
-    log_info "  kubectl port-forward -n $NAMESPACE_PLATFORM service/vibecode-service 3000:3000"
-fi
+    echo "Pods in $NAMESPACE_PLATFORM:"
+    kubectl get pods -n "$NAMESPACE_PLATFORM" 2>/dev/null || log_warning "No pods found in $NAMESPACE_PLATFORM"
+    echo ""
+    echo "Pods in $NAMESPACE_WEBGUI:"
+    kubectl get pods -n "$NAMESPACE_WEBGUI" 2>/dev/null || log_warning "No pods found in $NAMESPACE_WEBGUI"
 
-echo ""
-log_success "✅ VibeCode deployment completed successfully!"
-echo ""
-echo "📝 Quick commands:"
-echo "  View logs:        kubectl logs -n $NAMESPACE_PLATFORM -l app=vibecode-webgui --tail=50 -f"
-echo "  View all pods:    kubectl get pods --all-namespaces"
-echo "  Delete cluster:   kind delete cluster --name $CLUSTER_NAME"
-echo ""
+    # Display service endpoints
+    echo ""
+    log_info "Service endpoints..."
+    echo ""
+    kubectl get services -n "$NAMESPACE_PLATFORM" 2>/dev/null || log_warning "No services found in $NAMESPACE_PLATFORM"
+
+    # Get NodePort for VibeCode WebGUI if available
+    VIBECODE_NODEPORT=$(kubectl get service vibecode-service -n "$NAMESPACE_PLATFORM" -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "")
+    if [ -n "$VIBECODE_NODEPORT" ]; then
+        echo ""
+        log_success "VibeCode WebGUI is available at: http://localhost:${VIBECODE_NODEPORT}"
+        log_info "Default login: admin@vibecode.dev / admin123"
+    else
+        echo ""
+        log_warning "VibeCode service not found or NodePort not configured"
+        log_info "You can access the service using port-forwarding:"
+        log_info "  kubectl port-forward -n $NAMESPACE_PLATFORM service/vibecode-service 3000:3000"
+    fi
+
+    echo ""
+    log_success "✅ VibeCode deployment completed successfully!"
+    echo ""
+    echo "📝 Quick commands:"
+    echo "  View logs:        kubectl logs -n $NAMESPACE_PLATFORM -l app=vibecode-webgui --tail=50 -f"
+    echo "  View all pods:    kubectl get pods --all-namespaces"
+    echo "  Delete cluster:   kind delete cluster --name $CLUSTER_NAME"
+    echo ""
+fi
