@@ -24,6 +24,7 @@ let PrometheusExporter: any = null;
 let Resource: any = null;
 let ATTR_SERVICE_NAME: any = null;
 let ATTR_SERVICE_VERSION: any = null;
+let TailBasedSampler: any = null;
 
 if (!isDockerBuild) {
   try {
@@ -34,7 +35,8 @@ if (!isDockerBuild) {
     const prometheusExporter = require('@opentelemetry/exporter-prometheus');
     const resources = require('@opentelemetry/resources');
     const semanticConventions = require('@opentelemetry/semantic-conventions');
-    
+    const tailBasedSampler = require('./tail-based-sampler');
+
     NodeSDK = sdkNode.NodeSDK;
     getNodeAutoInstrumentations = autoInstrumentations.getNodeAutoInstrumentations;
     OTLPTraceExporter = otlpExporter.OTLPTraceExporter;
@@ -42,12 +44,14 @@ if (!isDockerBuild) {
     Resource = resources.Resource;
     ATTR_SERVICE_NAME = semanticConventions.SEMRESATTRS_SERVICE_NAME || semanticConventions.ATTR_SERVICE_NAME;
     ATTR_SERVICE_VERSION = semanticConventions.SEMRESATTRS_SERVICE_VERSION || semanticConventions.ATTR_SERVICE_VERSION;
+    TailBasedSampler = tailBasedSampler.TailBasedSampler;
   } catch (error) {
     // Debug log removed
   }
 }
 
 import { getDatadogApiKey } from './datadog-env'
+import { getSamplingConfig } from './sampling-config'
 const isServer = typeof window === 'undefined'
 const serviceName = 'vibecode-webgui'
 const serviceVersion = process.env.npm_package_version || '0.1.0'
@@ -66,7 +70,7 @@ export function initializeOpenTelemetry() {
   }
 
   // Check if all required modules are available
-  if (!NodeSDK || !getNodeAutoInstrumentations || !OTLPTraceExporter || !PrometheusExporter || !Resource || !ATTR_SERVICE_NAME || !ATTR_SERVICE_VERSION) {
+  if (!NodeSDK || !getNodeAutoInstrumentations || !OTLPTraceExporter || !PrometheusExporter || !Resource || !ATTR_SERVICE_NAME || !ATTR_SERVICE_VERSION || !TailBasedSampler) {
     // Debug log removed
     return null;
   }
@@ -102,10 +106,19 @@ export function initializeOpenTelemetry() {
       // Debug log removed
     })
 
+    // Configure tail-based sampler with OTLP exporter
+    const samplingConfig = getSamplingConfig()
+    const tailBasedSampler = new TailBasedSampler(otlpExporter, {
+      errorSampleRate: samplingConfig.errorSampleRate,
+      defaultSampleRate: samplingConfig.defaultSampleRate,
+      bufferTimeout: samplingConfig.bufferTimeout,
+      maxBufferSize: samplingConfig.maxBufferSize
+    })
+
     // Initialize SDK with auto-instrumentation
     otelSDK = new NodeSDK({
       resource,
-      traceExporter: otlpExporter,
+      spanProcessor: tailBasedSampler,
       metricReader: prometheusExporter,
       instrumentations: [
         getNodeAutoInstrumentations({
