@@ -2,6 +2,7 @@
 // Provides secure, encrypted networking with no public exposure
 
 pub mod commands;
+pub use commands::*;
 
 use serde::{Deserialize, Serialize};
 use std::process::Command;
