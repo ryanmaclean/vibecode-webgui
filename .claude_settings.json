@@ -1,0 +1,39 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(/Users/studio/Documents/harness/.auto-claude/worktrees/tasks/017-one-click-kubernetes-deployment/**)",
+      "Write(/Users/studio/Documents/harness/.auto-claude/worktrees/tasks/017-one-click-kubernetes-deployment/**)",
+      "Edit(/Users/studio/Documents/harness/.auto-claude/worktrees/tasks/017-one-click-kubernetes-deployment/**)",
+      "Glob(/Users/studio/Documents/harness/.auto-claude/worktrees/tasks/017-one-click-kubernetes-deployment/**)",
+      "Grep(/Users/studio/Documents/harness/.auto-claude/worktrees/tasks/017-one-click-kubernetes-deployment/**)",
+      "Read(/Users/studio/Documents/harness/.auto-claude/worktrees/tasks/017-one-click-kubernetes-deployment/.auto-claude/specs/017-one-click-kubernetes-deployment/**)",
+      "Write(/Users/studio/Documents/harness/.auto-claude/worktrees/tasks/017-one-click-kubernetes-deployment/.auto-claude/specs/017-one-click-kubernetes-deployment/**)",
+      "Edit(/Users/studio/Documents/harness/.auto-claude/worktrees/tasks/017-one-click-kubernetes-deployment/.auto-claude/specs/017-one-click-kubernetes-deployment/**)",
+      "Read(/Users/studio/Documents/harness/.auto-claude/**)",
+      "Write(/Users/studio/Documents/harness/.auto-claude/**)",
+      "Edit(/Users/studio/Documents/harness/.auto-claude/**)",
+      "Glob(/Users/studio/Documents/harness/.auto-claude/**)",
+      "Grep(/Users/studio/Documents/harness/.auto-claude/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}
