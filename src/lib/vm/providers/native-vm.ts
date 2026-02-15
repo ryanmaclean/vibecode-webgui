@@ -11,6 +11,7 @@
 
 import { VMProvider, VMConfig, VM, VMStatus, ExecResult, PortMapping } from '../types';
 import { logger } from '@/lib/logger';
+import { retryWithThrow, RetryPredicates } from '../utils/retry';
 import { spawn, ChildProcess } from 'child_process';
 import { promisify } from 'util';
 import { exec as execCallback } from 'child_process';
@@ -481,7 +482,7 @@ export class NativeVMProvider implements VMProvider {
   }
 
   /**
-   * Send JSON-RPC request to Swift process
+   * Send JSON-RPC request to Swift process with retry logic
    */
   private async sendRequest(
     proc: ChildProcess,
@@ -489,26 +490,46 @@ export class NativeVMProvider implements VMProvider {
     params?: any,
     timeoutMs: number = 30000
   ): Promise<any> {
-    const id = ++this.requestId;
+    return retryWithThrow(
+      async () => {
+        const id = ++this.requestId;
 
-    const request: JSONRPCRequest = {
-      jsonrpc: '2.0',
-      id,
-      method,
-      params
-    };
+        const request: JSONRPCRequest = {
+          jsonrpc: '2.0',
+          id,
+          method,
+          params
+        };
 
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        this.pendingRequests.delete(id);
-        reject(new Error(`Request timeout: ${method}`));
-      }, timeoutMs);
+        return new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            this.pendingRequests.delete(id);
+            reject(new Error(`Request timeout: ${method}`));
+          }, timeoutMs);
 
-      this.pendingRequests.set(id, { resolve, reject, timeout });
+          this.pendingRequests.set(id, { resolve, reject, timeout });
 
-      // Send request via stdin (newline-delimited JSON)
-      proc.stdin?.write(JSON.stringify(request) + '\n');
-    });
+          // Send request via stdin (newline-delimited JSON)
+          proc.stdin?.write(JSON.stringify(request) + '\n');
+        });
+      },
+      {
+        maxAttempts: 3,
+        initialDelay: 100,
+        backoffMultiplier: 2,
+        maxDelay: 5000,
+        operationName: `json-rpc-${method}`,
+        context: { method, vmId: params?.vmId },
+        shouldRetry: (error: Error, attempt: number) => {
+          // Retry on network errors, timeouts, or transient VM errors
+          return RetryPredicates.any(
+            RetryPredicates.isNetworkError,
+            RetryPredicates.isTimeoutError,
+            RetryPredicates.isTransientVMError
+          )(error);
+        }
+      }
+    );
   }
 
   /**
