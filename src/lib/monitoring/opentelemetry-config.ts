@@ -1,9 +1,10 @@
 // import { logger } from '@/lib/logger';
+import { getSamplingConfig } from './sampling-config';
 
 
 /**
  * OpenTelemetry Configuration with Dependency Error Handling
- * 
+ *
  * This module provides a robust OpenTelemetry setup that gracefully handles
  * missing dependencies and version conflicts.
  */
@@ -267,24 +268,35 @@ export function checkOpenTelemetryHealth(): {
   details: Record<string, any>;
 } {
   const details: Record<string, any> = {};
-  
+
   // Check if core modules are available
   const coreModules = {
     'NodeSDK': !!NodeSDK,
     'Resource': !!Resource,
     'Auto-instrumentations': !!getNodeAutoInstrumentations,
   };
-  
+
   details.coreModules = coreModules;
   details.exporters = {
     'Prometheus': !!PrometheusExporter,
     'OTLP': !!OTLPTraceExporter,
   };
-  
+
+  // Add sampling configuration status
+  const samplingConfig = getSamplingConfig();
+  details.samplingEnabled = samplingConfig.enabled;
+  details.samplingConfig = {
+    errorSampleRate: samplingConfig.errorSampleRate,
+    defaultSampleRate: samplingConfig.defaultSampleRate,
+    bufferTimeout: samplingConfig.bufferTimeout,
+    maxBufferSize: samplingConfig.maxBufferSize,
+    rules: samplingConfig.rules,
+  };
+
   // Determine health status
   const coreAvailable = Object.values(coreModules).every(Boolean);
   const hasExporter = Object.values(details.exporters).some(Boolean);
-  
+
   let status: 'healthy' | 'degraded' | 'unhealthy';
   if (coreAvailable && hasExporter) {
     status = 'healthy';
@@ -293,7 +305,7 @@ export function checkOpenTelemetryHealth(): {
   } else {
     status = 'unhealthy';
   }
-  
+
   return { status, details };
 }
 
@@ -303,7 +315,7 @@ export const otelConfig = {
   getEndpoint: () => process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
   getHeaders: () => {
     try {
-      return process.env.OTEL_EXPORTER_OTLP_HEADERS ? 
+      return process.env.OTEL_EXPORTER_OTLP_HEADERS ?
         JSON.parse(process.env.OTEL_EXPORTER_OTLP_HEADERS) : {};
     } catch {
       return {};
@@ -311,4 +323,6 @@ export const otelConfig = {
   },
   getResource: createResource,
   checkHealth: checkOpenTelemetryHealth,
+  getSamplingConfig: getSamplingConfig,
+  isSamplingEnabled: () => getSamplingConfig().enabled,
 };
