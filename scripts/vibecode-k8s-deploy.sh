@@ -395,6 +395,103 @@ else
     fi
 fi
 
+# ============================================================================
+# COMPREHENSIVE DEPLOYMENT VERIFICATION
+# ============================================================================
+
+echo ""
+echo "🔍 Verifying Deployment Health..."
+echo "=================================="
+
+if [ "$DRY_RUN" = true ]; then
+    log_info "DRY RUN: Would verify all deployments"
+    log_info "DRY RUN: Would check PostgreSQL deployment health"
+    log_info "DRY RUN: Would check Redis deployment health"
+    log_info "DRY RUN: Would check VibeCode WebGUI deployment health"
+    log_info "DRY RUN: Would verify pod status in all namespaces"
+    echo ""
+else
+    VERIFICATION_FAILED=false
+
+    # Verify PostgreSQL deployment
+    log_info "Verifying PostgreSQL deployment..."
+    if verify_deployment_health "postgres" "$NAMESPACE_WEBGUI"; then
+        log_success "PostgreSQL deployment verified"
+    else
+        log_error "PostgreSQL deployment verification failed"
+        VERIFICATION_FAILED=true
+    fi
+
+    # Verify Redis deployment (if deployed)
+    if kubectl get deployment redis -n "$NAMESPACE_PLATFORM" > /dev/null 2>&1; then
+        log_info "Verifying Redis deployment..."
+        if verify_deployment_health "redis" "$NAMESPACE_PLATFORM"; then
+            log_success "Redis deployment verified"
+        else
+            log_error "Redis deployment verification failed"
+            VERIFICATION_FAILED=true
+        fi
+    else
+        log_warning "Redis deployment not found (may not be configured)"
+    fi
+
+    # Verify VibeCode WebGUI deployment
+    log_info "Verifying VibeCode WebGUI deployment..."
+    if verify_deployment_health "vibecode-webgui" "$NAMESPACE_PLATFORM"; then
+        log_success "VibeCode WebGUI deployment verified"
+    else
+        log_error "VibeCode WebGUI deployment verification failed"
+        VERIFICATION_FAILED=true
+    fi
+
+    # Get comprehensive pod status
+    echo ""
+    log_info "Pod status summary..."
+    echo "  Platform namespace ($NAMESPACE_PLATFORM): $(get_pod_status "$NAMESPACE_PLATFORM")"
+    echo "  WebGUI namespace ($NAMESPACE_WEBGUI): $(get_pod_status "$NAMESPACE_WEBGUI")"
+
+    # Check for failed pods
+    FAILED_PODS_PLATFORM=$(kubectl get pods -n "$NAMESPACE_PLATFORM" --field-selector=status.phase=Failed --no-headers 2>/dev/null | wc -l | tr -d ' ')
+    FAILED_PODS_WEBGUI=$(kubectl get pods -n "$NAMESPACE_WEBGUI" --field-selector=status.phase=Failed --no-headers 2>/dev/null | wc -l | tr -d ' ')
+
+    if [ "$FAILED_PODS_PLATFORM" -gt 0 ] || [ "$FAILED_PODS_WEBGUI" -gt 0 ]; then
+        log_error "Found failed pods in deployment"
+        VERIFICATION_FAILED=true
+
+        if [ "$FAILED_PODS_PLATFORM" -gt 0 ]; then
+            echo ""
+            log_error "Failed pods in $NAMESPACE_PLATFORM:"
+            kubectl get pods -n "$NAMESPACE_PLATFORM" --field-selector=status.phase=Failed
+        fi
+
+        if [ "$FAILED_PODS_WEBGUI" -gt 0 ]; then
+            echo ""
+            log_error "Failed pods in $NAMESPACE_WEBGUI:"
+            kubectl get pods -n "$NAMESPACE_WEBGUI" --field-selector=status.phase=Failed
+        fi
+    fi
+
+    # Wait a moment for services to stabilize
+    log_info "Allowing services to stabilize..."
+    sleep 5
+
+    # Final verification status
+    echo ""
+    if [ "$VERIFICATION_FAILED" = true ]; then
+        log_error "❌ Deployment verification FAILED"
+        log_warning "Some components are not healthy. Check the logs above for details."
+        echo ""
+        log_info "Troubleshooting commands:"
+        echo "  Check pod status:   kubectl get pods --all-namespaces"
+        echo "  View pod logs:      kubectl logs -n <namespace> <pod-name>"
+        echo "  Describe pod:       kubectl describe pod -n <namespace> <pod-name>"
+        echo ""
+        exit 1
+    else
+        log_success "✅ All deployments verified successfully"
+    fi
+fi
+
 # Display deployment summary
 echo ""
 echo "📊 Deployment Summary:"
@@ -403,7 +500,7 @@ echo "  📦 Namespaces: $NAMESPACE_PLATFORM, $NAMESPACE_WEBGUI"
 echo ""
 
 if [ "$DRY_RUN" = true ]; then
-    log_info "DRY RUN: Would check pod status in namespaces"
+    log_info "DRY RUN: Would display pod status in namespaces"
     log_info "DRY RUN: Would display service endpoints"
     log_info "DRY RUN: Would check for VibeCode WebGUI NodePort"
     echo ""
@@ -413,9 +510,7 @@ if [ "$DRY_RUN" = true ]; then
     echo "  $0"
     echo ""
 else
-    # Check pod status
-    log_info "Checking pod status..."
-    echo ""
+    # Display detailed pod status
     echo "Pods in $NAMESPACE_PLATFORM:"
     kubectl get pods -n "$NAMESPACE_PLATFORM" 2>/dev/null || log_warning "No pods found in $NAMESPACE_PLATFORM"
     echo ""
