@@ -12,6 +12,7 @@ import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
+import { isProcessRunning, waitForBoot } from '../utils/health-check';
 
 const exec = promisify(execCallback);
 const execFile = promisify(execFileCallback);
@@ -107,16 +108,45 @@ export class VfkitProvider implements VMProvider {
   
   async stop(vmId: string): Promise<void> {
     logger.info('Stopping vfkit VM', { vmId });
-    
+
     const pidPath = path.join(this.vmBaseDir, vmId, 'vm.pid');
-    
+
     try {
-      const pid = await fs.readFile(pidPath, 'utf-8');
-      process.kill(parseInt(pid.trim()), 'SIGTERM');
-      
-      // Wait for process to stop
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      const pidContent = await fs.readFile(pidPath, 'utf-8');
+      const pid = parseInt(pidContent.trim(), 10);
+
+      process.kill(pid, 'SIGTERM');
+
+      // Wait for process to stop with health check polling
+      const timeout = 10000; // 10 seconds timeout
+      const interval = 100; // Check every 100ms
+      const maxAttempts = timeout / interval;
+      const startTime = Date.now();
+
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const running = await isProcessRunning(pid);
+
+        if (!running) {
+          logger.info('VM process stopped', {
+            vmId,
+            pid,
+            duration: Date.now() - startTime
+          });
+          break;
+        }
+
+        if (attempt < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, interval));
+        } else {
+          logger.warn('Process did not stop within timeout, forcing', { vmId, pid });
+          try {
+            process.kill(pid, 'SIGKILL');
+          } catch {
+            // Process might have stopped between checks
+          }
+        }
+      }
+
       // Remove PID file
       await fs.unlink(pidPath);
     } catch (error) {
@@ -387,14 +417,32 @@ export class VfkitProvider implements VMProvider {
     // Save config
     const configPath = validateVMPath(vmDir, 'config.json');
     await fs.writeFile(configPath, JSON.stringify(config, null, 2));
-    
+
+    // Wait for VM to boot using health check
     const bootSpan = getTracer().startSpan('vfkit.boot.wait');
     const waitStart = Date.now();
-    await new Promise(resolve => setTimeout(resolve, 2500));
+
+    const bootResult = await waitForBoot(consolePath, {
+      timeout: 30000, // 30 seconds timeout for boot
+      interval: 200, // Check every 200ms
+      operationName: 'vfkit-boot',
+      context: { vmId: config.name }
+    });
+
     bootSpan.setTag('boot.wait.ms', Date.now() - waitStart);
+    bootSpan.setTag('boot.healthy', bootResult.healthy);
+    bootSpan.setTag('boot.attempts', bootResult.attempts);
     bootSpan.finish();
     span.finish();
-    
+
+    if (!bootResult.healthy) {
+      logger.warn('VM boot health check did not complete', {
+        vmId: config.name,
+        reason: bootResult.reason,
+        duration: bootResult.duration
+      });
+    }
+
     return {
       id: config.name,
       name: config.name,
@@ -411,17 +459,17 @@ export class VfkitProvider implements VMProvider {
    */
   private async getVMStatus(vmId: string): Promise<VMStatus> {
     const pidPath = path.join(this.vmBaseDir, vmId, 'vm.pid');
-    
+
     try {
-      const pid = await fs.readFile(pidPath, 'utf-8');
-      
-      // Check if process is running
-      try {
-        process.kill(parseInt(pid.trim()), 0);
-        return 'running';
-      } catch {
+      const pidContent = await fs.readFile(pidPath, 'utf-8');
+      const pid = parseInt(pidContent.trim(), 10);
+
+      if (isNaN(pid)) {
         return 'stopped';
       }
+
+      const running = await isProcessRunning(pid);
+      return running ? 'running' : 'stopped';
     } catch {
       return 'stopped';
     }
