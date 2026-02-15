@@ -8,7 +8,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,6 +20,9 @@ import {
   setCurrentSessionId,
   clearCurrentSessionId,
 } from '@/lib/session-manager';
+import ModelSelector from '@/components/ai/ModelSelector';
+import type { ModelProfile } from '@/types/model-comparison';
+import { modelRegistry } from '@/lib/ai/models/model-registry';
 
 export interface ChatMessage {
   id: string;
@@ -38,17 +40,6 @@ export interface ChatInterfaceProps {
   defaultModel?: string;
 }
 
-const AVAILABLE_MODELS = [
-  { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
-  { id: 'openai/gpt-4', name: 'GPT-4' },
-  { id: 'openai/gpt-4-turbo', name: 'GPT-4 Turbo' },
-  { id: 'openai/gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
-  { id: 'anthropic/claude-3-opus', name: 'Claude 3 Opus' },
-  { id: 'anthropic/claude-3-sonnet', name: 'Claude 3 Sonnet' },
-  { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku' },
-  { id: 'ai/smollm2:360M-Q4_K_M', name: 'SmolLM2 360M' },
-];
-
 export function ChatInterface({
   className = '',
   onMessageSent,
@@ -64,8 +55,41 @@ export function ChatInterface({
   const [isStreaming, setIsStreaming] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
 
+  // Model selector state
+  const [availableModels, setAvailableModels] = useState<ModelProfile[]>([]);
+  const [favoriteModelIds, setFavoriteModelIds] = useState<string[]>([]);
+  const [recentModelIds, setRecentModelIds] = useState<string[]>([]);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load available models from registry
+  useEffect(() => {
+    const models = modelRegistry.getAllModels();
+    setAvailableModels(models);
+  }, []);
+
+  // Load favorites from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem('vibecode-favorite-models');
+      if (saved) setFavoriteModelIds(JSON.parse(saved));
+    } catch {
+      // Ignore parse errors
+    }
+  }, []);
+
+  // Load recent models from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem('vibecode-recent-models');
+      if (saved) setRecentModelIds(JSON.parse(saved));
+    } catch {
+      // Ignore parse errors
+    }
+  }, []);
 
   // Initialize session on mount - load existing or create new
   useEffect(() => {
@@ -115,6 +139,42 @@ export function ChatInterface({
   // Focus textarea on mount
   useEffect(() => {
     textareaRef.current?.focus();
+  }, []);
+
+  // Handle model selection from ModelSelector
+  const handleModelSelect = useCallback((model: ModelProfile) => {
+    setSelectedModel(model.id);
+
+    // Update recent models
+    if (typeof window !== 'undefined') {
+      setRecentModelIds((prev) => {
+        const updated = [model.id, ...prev.filter((id) => id !== model.id)].slice(0, 10);
+        try {
+          localStorage.setItem('vibecode-recent-models', JSON.stringify(updated));
+        } catch {
+          // Ignore storage errors
+        }
+        return updated;
+      });
+    }
+  }, []);
+
+  // Handle favorite toggle
+  const handleFavoriteToggle = useCallback((modelId: string) => {
+    setFavoriteModelIds((prev) => {
+      const updated = prev.includes(modelId)
+        ? prev.filter((id) => id !== modelId)
+        : [...prev, modelId];
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('vibecode-favorite-models', JSON.stringify(updated));
+        } catch {
+          // Ignore storage errors
+        }
+      }
+      return updated;
+    });
   }, []);
 
   const handleSendMessage = useCallback(async () => {
@@ -235,7 +295,7 @@ export function ChatInterface({
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">AI Chat</h2>
           <Badge variant="outline" data-testid="model-badge">
-            {AVAILABLE_MODELS.find((m) => m.id === selectedModel)?.name}
+            {availableModels.find((m) => m.id === selectedModel)?.name || selectedModel}
           </Badge>
         </div>
         <Button
@@ -251,25 +311,18 @@ export function ChatInterface({
 
       {/* Model Selector */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <label htmlFor="model-select" className="block text-sm font-medium mb-2">
-          Model
-        </label>
-        <Select
-          value={selectedModel}
-          onValueChange={setSelectedModel}
+        <ModelSelector
+          selectedModelId={selectedModel}
+          onModelSelect={handleModelSelect}
+          models={availableModels}
+          recentModelIds={recentModelIds}
+          favoriteModelIds={favoriteModelIds}
+          onFavoriteToggle={handleFavoriteToggle}
+          placeholder="Select a model..."
+          label="Model"
           disabled={isLoading || isStreaming}
-        >
-          <SelectTrigger id="model-select" data-testid="model-selector">
-            <SelectValue placeholder="Select a model" />
-          </SelectTrigger>
-          <SelectContent>
-            {AVAILABLE_MODELS.map((model) => (
-              <SelectItem key={model.id} value={model.id}>
-                {model.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          showDetails
+        />
       </div>
 
       {/* Error Display */}
@@ -309,7 +362,7 @@ export function ChatInterface({
                   {message.timestamp.toLocaleTimeString()}
                   {message.model && message.role === 'assistant' && (
                     <span className="ml-2">
-                      ({AVAILABLE_MODELS.find((m) => m.id === message.model)?.name})
+                      ({availableModels.find((m) => m.id === message.model)?.name || message.model})
                     </span>
                   )}
                 </div>
