@@ -100,10 +100,19 @@ struct VibeCodeVM {
             config.platform = VZGenericPlatformConfiguration()
         }
         
-        // CPU & Memory - use safe values from VirtualBuddy approach
+        // CPU & Memory - optimize based on host resources
         let computeCPUCount = ProcessInfo.processInfo.processorCount
         config.cpuCount = min(2, computeCPUCount)
-        config.memorySize = 1_073_741_824 // 1GB as UInt64 literal
+
+        // Dynamic memory allocation based on host physical memory
+        // Allocate 25% of physical memory, capped at 8GB, minimum 512MB
+        let physicalMemory = ProcessInfo.processInfo.physicalMemory
+        let targetMemory = physicalMemory / 4  // 25% of total
+        let minMemory: UInt64 = 512 * 1024 * 1024  // 512MB
+        let maxMemory: UInt64 = 8 * 1024 * 1024 * 1024  // 8GB
+        config.memorySize = max(minMemory, min(maxMemory, targetMemory))
+
+        print("  Memory: \(config.memorySize / (1024 * 1024))MB (host: \(physicalMemory / (1024 * 1024 * 1024))GB)")
         
         let vmDir = "\(homeDirectory)/.vfkit/vms/\(name)"
         
