@@ -246,6 +246,79 @@ export async function traceDatabaseOperation<T>(
 }
 
 /**
+ * Get current Redis trace context for correlation
+ */
+export function getRedisTraceContext(): {
+  trace_id?: string;
+  span_id?: string;
+} {
+  if (!isServer || isDockerBuild || !trace || !context) {
+    return {};
+  }
+
+  try {
+    const activeSpan = trace.getActiveSpan();
+    if (!activeSpan) {
+      return {};
+    }
+
+    const spanContext = activeSpan.spanContext();
+    return {
+      trace_id: spanContext.traceId,
+      span_id: spanContext.spanId
+    };
+  } catch (error) {
+    return {};
+  }
+}
+
+/**
+ * Wrap a Redis/cache operation with tracing
+ */
+export async function traceRedisOperation<T>(
+  operationName: string,
+  attributes: Record<string, any>,
+  fn: () => Promise<T>
+): Promise<T> {
+  if (!isServer || isDockerBuild || !trace) {
+    // Execute without tracing in Docker build or client-side
+    return fn();
+  }
+
+  const tracer = trace.getTracer('vibecode-webgui-redis');
+
+  return tracer.startActiveSpan(
+    `redis.${operationName}`,
+    {
+      attributes: {
+        'db.system': 'redis',
+        'vibecode.service': 'webgui',
+        'vibecode.cache.operation': operationName,
+        ...attributes
+      }
+    },
+    async (span: any) => {
+      try {
+        const result = await fn();
+        span.setStatus({ code: 1 }); // OK status
+        span.setAttribute('vibecode.cache.success', true);
+        return result;
+      } catch (error) {
+        span.setStatus({
+          code: 2, // ERROR status
+          message: (error as Error).message
+        });
+        span.setAttribute('vibecode.cache.success', false);
+        span.recordException(error as Error);
+        throw error;
+      } finally {
+        span.end();
+      }
+    }
+  );
+}
+
+/**
  * Get database instrumentation configuration
  */
 export function getDatabaseInstrumentationConfig() {

@@ -43,9 +43,14 @@ export async function GET(request: NextRequest) {
 
     // Parallel execution of all health checks for optimal performance
     const startTime = Date.now();
+
+    // Perform cache health check to trigger tracing
+    const cacheHealthy = await cache.healthCheck();
+    const cacheTraceContext = cache.getTraceContext();
+
     const [dbHealth, redisHealth, aiHealth, dashboardDataPromise, systemMetrics] = await Promise.allSettled([
       monitoring.checkDatabase(),
-      monitoring.checkValkey(), 
+      monitoring.checkValkey(),
       monitoring.checkAIService(),
       Promise.resolve(datadogMonitoring.getDashboardData()),
       getSystemMetrics()
@@ -62,11 +67,15 @@ export async function GET(request: NextRequest) {
       processing_time_ms: processingTime,
       from_cache: false,
       cache_hit: false,
-      
+
       // System Health with error handling
       health: {
         database: dbHealth.status === 'fulfilled' ? dbHealth.value : { status: 'error', error: 'Health check failed', details: dbHealth.reason?.message },
-        redis: redisHealth.status === 'fulfilled' ? redisHealth.value : { status: 'error', error: 'Health check failed', details: redisHealth.reason?.message },
+        redis: {
+          ...(redisHealth.status === 'fulfilled' ? redisHealth.value : { status: 'error', error: 'Health check failed', details: redisHealth.reason?.message }),
+          cache_healthy: cacheHealthy,
+          ...cacheTraceContext
+        },
         aiService: aiHealth.status === 'fulfilled' ? aiHealth.value : { status: 'error', error: 'Health check failed', details: aiHealth.reason?.message },
         overall: calculateOverallHealth([
           dbHealth.status === 'fulfilled' ? dbHealth.value?.status : 'error',
