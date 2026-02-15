@@ -54,6 +54,7 @@ import type {
   ServiceSettings,
   AISettings,
   AdvancedSettings,
+  AgentConfirmationSettings,
   ThemeMode,
   LogLevel,
   SettingsValidationResult,
@@ -339,6 +340,14 @@ export function SettingsPanel({
           ? { ...prev.advanced.telemetry, ...updates.telemetry }
           : prev.advanced.telemetry,
       },
+    }));
+    setSaveStatus('idle');
+  }, []);
+
+  const updateAgentConfirmation = useCallback((updates: Partial<AgentConfirmationSettings>) => {
+    setSettings((prev) => ({
+      ...prev,
+      agentConfirmation: { ...prev.agentConfirmation, ...updates },
     }));
     setSaveStatus('idle');
   }, []);
@@ -939,6 +948,89 @@ export function SettingsPanel({
                 <RotateCcw className="h-4 w-4 mr-2" aria-hidden="true" />
                 Reset
               </Button>
+            </div>
+
+            {/* Agent Safety Section */}
+            <div className="border rounded-lg p-4 space-y-4">
+              <h4 className="font-medium">Agent Safety & Confirmation</h4>
+              <p className="text-sm text-muted-foreground">
+                Configure how agent actions are previewed and approved before execution
+              </p>
+
+              <SettingRow
+                id="enable-action-preview"
+                label="Enable Action Preview"
+                description="Show diff previews before applying changes"
+              >
+                <Switch
+                  id="enable-action-preview"
+                  checked={settings.agentConfirmation.enableActionPreview}
+                  onCheckedChange={(checked) =>
+                    updateAgentConfirmation({ enableActionPreview: checked })
+                  }
+                  aria-label="Enable action preview"
+                />
+              </SettingRow>
+
+              <SettingRow
+                id="require-confirmation"
+                label="Require Confirmation"
+                description="Require explicit approval for agent actions"
+              >
+                <Switch
+                  id="require-confirmation"
+                  checked={settings.agentConfirmation.requireConfirmation}
+                  onCheckedChange={(checked) =>
+                    updateAgentConfirmation({ requireConfirmation: checked })
+                  }
+                  aria-label="Require confirmation"
+                />
+              </SettingRow>
+
+              <SettingRow
+                id="bulk-approval-mode"
+                label="Bulk Approval Mode"
+                description="Allow approving multiple changes at once"
+              >
+                <Switch
+                  id="bulk-approval-mode"
+                  checked={settings.agentConfirmation.bulkApprovalMode}
+                  onCheckedChange={(checked) =>
+                    updateAgentConfirmation({ bulkApprovalMode: checked })
+                  }
+                  aria-label="Enable bulk approval mode"
+                />
+              </SettingRow>
+
+              <SettingRow
+                id="show-explanations"
+                label="Show Explanations"
+                description="Show why each change is proposed"
+              >
+                <Switch
+                  id="show-explanations"
+                  checked={settings.agentConfirmation.showExplanations}
+                  onCheckedChange={(checked) =>
+                    updateAgentConfirmation({ showExplanations: checked })
+                  }
+                  aria-label="Show explanations"
+                />
+              </SettingRow>
+
+              <SettingRow
+                id="auto-approve-read-only"
+                label="Auto-approve Read-only"
+                description="Skip confirmation for read-only operations"
+              >
+                <Switch
+                  id="auto-approve-read-only"
+                  checked={settings.agentConfirmation.autoApproveReadOnly}
+                  onCheckedChange={(checked) =>
+                    updateAgentConfirmation({ autoApproveReadOnly: checked })
+                  }
+                  aria-label="Auto-approve read-only operations"
+                />
+              </SettingRow>
             </div>
 
             {/* Telemetry Section */}
