@@ -49,11 +49,21 @@ export function createPgInstrumentation() {
       // Hook to add custom attributes to database spans
       requestHook: (span: any, queryConfig: any) => {
         try {
+          // Add standard OpenTelemetry semantic convention attributes
+          span.setAttribute('db.system', 'postgresql');
+
+          // Add database name from environment or default
+          const dbName = process.env.POSTGRES_DB || process.env.DB_NAME || 'postgres';
+          span.setAttribute('db.name', dbName);
+
           // Add custom attributes for better observability
           if (queryConfig) {
             // Add query type (SELECT, INSERT, UPDATE, DELETE, etc.)
             const queryType = extractQueryType(queryConfig.text || queryConfig);
             if (queryType) {
+              // Use standard db.operation attribute
+              span.setAttribute('db.operation', queryType);
+              // Keep custom attribute for backwards compatibility
               span.setAttribute('db.query.type', queryType);
             }
 
@@ -65,6 +75,8 @@ export function createPgInstrumentation() {
             const tableName = extractTableName(queryConfig.text || queryConfig);
             if (tableName) {
               span.setAttribute('db.query.table', tableName);
+              // Use standard db.sql.table attribute
+              span.setAttribute('db.sql.table', tableName);
             }
 
             // Add parameter count
