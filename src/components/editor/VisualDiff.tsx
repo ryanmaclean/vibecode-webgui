@@ -3,6 +3,7 @@
 import type { editor } from 'monaco-editor';
 import dynamic from 'next/dynamic';
 import { useTheme } from 'next-themes';
+import { DiffControls, type ChangeStatistics } from './DiffControls';
 
 // ============================================================================
 // Types
@@ -23,6 +24,18 @@ export interface VisualDiffProps {
   height?: string | number;
   /** Width of the diff editor */
   width?: string | number;
+  /** Show diff controls for accept/reject actions */
+  showControls?: boolean;
+  /** Callback when accept button is clicked */
+  onAccept?: () => void;
+  /** Callback when reject button is clicked */
+  onReject?: () => void;
+  /** Statistics about the changes */
+  statistics?: ChangeStatistics;
+  /** Label for the control group */
+  controlsLabel?: string;
+  /** Whether controls are disabled */
+  controlsDisabled?: boolean;
 }
 
 // ============================================================================
@@ -70,35 +83,63 @@ export function VisualDiff({
   options,
   height = '100%',
   width = '100%',
+  showControls = false,
+  onAccept,
+  onReject,
+  statistics,
+  controlsLabel,
+  controlsDisabled = false,
 }: VisualDiffProps) {
   const { theme } = useTheme();
 
+  // Calculate editor height when controls are shown
+  const editorHeight = showControls && typeof height === 'string' && height === '100%'
+    ? 'calc(100% - 200px)' // Reserve space for controls
+    : height;
+
   return (
-    <DiffEditorComponent
-      height={height}
-      width={width}
-      language={language}
-      theme={theme === 'dark' ? 'vs-dark' : 'light'}
-      original={original}
-      modified={modified}
-      onMount={(editor) => {
-        // Optional: Add any custom configuration on mount
-        if (onModifiedChange) {
-          const modifiedEditor = editor.getModifiedEditor();
-          modifiedEditor.onDidChangeModelContent(() => {
-            const value = modifiedEditor.getValue();
-            onModifiedChange(value);
-          });
-        }
-      }}
-      options={{
-        minimap: { enabled: false },
-        scrollBeyondLastLine: false,
-        readOnly: !onModifiedChange, // Make read-only if no change handler
-        renderSideBySide: true,
-        ...options,
-      }}
-    />
+    <div className="flex flex-col h-full w-full gap-4">
+      {/* Diff Controls - shown at the top if enabled */}
+      {showControls && (
+        <DiffControls
+          statistics={statistics}
+          onAccept={onAccept}
+          onReject={onReject}
+          disabled={controlsDisabled}
+          level="hunk"
+          label={controlsLabel}
+        />
+      )}
+
+      {/* Diff Editor */}
+      <div className={showControls ? 'flex-1' : 'h-full w-full'}>
+        <DiffEditorComponent
+          height={showControls ? '100%' : editorHeight}
+          width={width}
+          language={language}
+          theme={theme === 'dark' ? 'vs-dark' : 'light'}
+          original={original}
+          modified={modified}
+          onMount={(editor) => {
+            // Optional: Add any custom configuration on mount
+            if (onModifiedChange) {
+              const modifiedEditor = editor.getModifiedEditor();
+              modifiedEditor.onDidChangeModelContent(() => {
+                const value = modifiedEditor.getValue();
+                onModifiedChange(value);
+              });
+            }
+          }}
+          options={{
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            readOnly: !onModifiedChange, // Make read-only if no change handler
+            renderSideBySide: true,
+            ...options,
+          }}
+        />
+      </div>
+    </div>
   );
 }
 
