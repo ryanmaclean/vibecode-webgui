@@ -4,6 +4,25 @@
  */
 
 // ============================================================================
+// Re-exports from other modules
+// ============================================================================
+
+export type {
+  AuditEntry,
+  AuditQuery,
+  AuditQueryResult,
+  AuditStatistics,
+  AuditChange,
+} from './audit-trail';
+export { AuditActionType, AuditSeverity } from './audit-trail';
+
+export type {
+  RollbackResult,
+  RollbackManagerOptions,
+  WorkflowExecutionState,
+} from './rollback-manager';
+
+// ============================================================================
 // Core Workflow Types
 // ============================================================================
 
