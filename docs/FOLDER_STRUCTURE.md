@@ -1044,38 +1044,397 @@ config/
 
 ### Decision Tree
 
+Use this comprehensive decision tree to quickly determine where to add your code:
+
 ```mermaid
 graph TD
-    A[What are you adding?]
+    Start[What are you adding?]
 
-    A -->|New API endpoint| B[Is it platform-specific?]
-    A -->|New UI component| C[Is it shared across platforms?]
-    A -->|New utility function| D[Is it used by multiple services?]
-    A -->|New service| E[Create new service]
-    A -->|Infrastructure config| F[infrastructure/]
-    A -->|Documentation| G[docs/]
+    Start -->|API Endpoint| API{API Type?}
+    Start -->|UI Component| Component{Shared or Platform-Specific?}
+    Start -->|Business Logic| Logic{Service or Utility?}
+    Start -->|Data Model/Type| Type{Shared or Service-Specific?}
+    Start -->|Test| Test{Test Type?}
+    Start -->|Infrastructure| Infra{Infrastructure Type?}
+    Start -->|Documentation| Doc{Documentation Type?}
+    Start -->|Configuration| Config{Config Scope?}
+    Start -->|Tool/Script| Tool{Tool Type?}
 
-    B -->|Yes| H[platforms/{platform}/src/app/api/]
-    B -->|No| I[services/api-gateway/src/routes/]
+    %% API Endpoint Branch
+    API -->|REST API| REST{Platform-Specific BFF?}
+    API -->|WebSocket| WS[services/chat-service/src/websocket/]
+    API -->|GraphQL| GQL[services/api-gateway/src/graphql/]
 
-    C -->|Yes| J[shared/components/]
-    C -->|No| K[platforms/{platform}/src/components/]
+    REST -->|Yes - Next.js| BFF[platforms/web/src/app/api/]
+    REST -->|No - Service API| Gateway[services/api-gateway/src/routes/]
 
-    D -->|Yes| L[shared/utils/]
-    D -->|No| M[services/{service}/src/utils/]
+    %% UI Component Branch
+    Component -->|Shared| Shared{Component Complexity?}
+    Component -->|Platform-Specific| Platform{Which Platform?}
 
-    E --> N[services/{service-name}/]
+    Shared -->|Basic Atom| Atom[shared/components/src/atoms/]
+    Shared -->|Composite Molecule| Molecule[shared/components/src/molecules/]
+    Shared -->|Complex Organism| Organism[shared/components/src/organisms/]
 
-    style H fill:#51cf66
-    style I fill:#51cf66
-    style J fill:#51cf66
-    style K fill:#51cf66
-    style L fill:#51cf66
-    style M fill:#51cf66
-    style N fill:#51cf66
-    style F fill:#51cf66
-    style G fill:#51cf66
+    Platform -->|Web| WebComp[platforms/web/src/components/]
+    Platform -->|Desktop| DesktopComp[platforms/desktop/src/components/]
+    Platform -->|Mobile| MobileComp[platforms/mobile/ios or android/]
+    Platform -->|CLI| CLIComp[platforms/cli/src/commands/]
+
+    %% Business Logic Branch
+    Logic -->|New Service| NewService[services/{service-name}/]
+    Logic -->|AI Provider| AIProvider[services/ai-gateway/src/providers/]
+    Logic -->|Auth Strategy| AuthStrat[services/auth-service/src/strategies/]
+    Logic -->|Webhook Handler| WebhookHandler[services/webhook-service/src/handlers/]
+    Logic -->|Background Job| BgJob[services/background-worker/src/jobs/]
+    Logic -->|Airflow DAG| AirflowDAG[services/workflow-orchestrator/dags/]
+    Logic -->|Utility Function| Util{Used by Multiple Services?}
+
+    Util -->|Yes - Shared| SharedUtil[shared/utils/src/]
+    Util -->|No - Service-Specific| ServiceUtil[services/{service}/src/utils/]
+
+    %% Data Model/Type Branch
+    Type -->|API Contract Type| APIType[shared/types/src/api/]
+    Type -->|Data Model| DataModel[shared/types/src/models/]
+    Type -->|Service-Specific| ServiceType[services/{service}/src/models/]
+
+    %% Test Branch
+    Test -->|Unit Test| UnitTest[{code-dir}/__tests__/]
+    Test -->|Integration Test| IntTest[services/{service}/tests/integration/]
+    Test -->|E2E Test| E2ETest[platforms/web/tests/e2e/]
+    Test -->|Shared Test Utilities| TestUtil[shared/testing/src/]
+
+    %% Infrastructure Branch
+    Infra -->|Terraform| TF{Resource Type?}
+    Infra -->|Docker| Docker{Docker Config?}
+    Infra -->|Kubernetes| K8s{K8s Resource?}
+    Infra -->|CI/CD| CICD[infrastructure/ci-cd/]
+    Infra -->|Monitoring| Monitor{Monitoring Tool?}
+
+    TF -->|Module| TFModule[infrastructure/terraform/modules/]
+    TF -->|Environment| TFEnv[infrastructure/terraform/environments/]
+
+    Docker -->|Compose| Compose[infrastructure/docker/compose/]
+    Docker -->|Custom Image| Image[infrastructure/docker/images/]
+
+    K8s -->|Base Manifest| K8sBase[infrastructure/kubernetes/base/]
+    K8s -->|Environment Overlay| K8sOverlay[infrastructure/kubernetes/overlays/]
+    K8s -->|Helm Chart| Helm[infrastructure/kubernetes/helm/]
+
+    Monitor -->|Prometheus| Prom[infrastructure/monitoring/prometheus/]
+    Monitor -->|Grafana| Graf[infrastructure/monitoring/grafana/]
+    Monitor -->|Datadog| DD[infrastructure/monitoring/datadog/]
+
+    %% Documentation Branch
+    Doc -->|Architecture| ArchDoc{Architecture Type?}
+    Doc -->|Service Docs| ServiceDoc[docs/services/{service}/]
+    Doc -->|Platform Docs| PlatformDoc[docs/platforms/{platform}/]
+    Doc -->|Guide| GuideDoc[docs/guides/]
+    Doc -->|API Docs| APIDoc[docs/api/]
+
+    ArchDoc -->|ADR| ADR[docs/architecture/ADR/]
+    ArchDoc -->|Diagram| Diagram[docs/architecture/diagrams/]
+    ArchDoc -->|General| ArchGeneral[docs/architecture/]
+
+    %% Configuration Branch
+    Config -->|Base Config| BaseConfig[config/base/]
+    Config -->|Environment| EnvConfig[config/environments/{env}/]
+    Config -->|Service Config| ServiceConfig[config/services/]
+    Config -->|Platform Config| PlatformConfig[config/platforms/]
+
+    %% Tool Branch
+    Tool -->|Build Script| BuildScript[tools/scripts/build/]
+    Tool -->|Dev Script| DevScript[tools/scripts/dev/]
+    Tool -->|Code Generator| Generator[tools/generators/]
+    Tool -->|CLI Tool| CLITool[tools/cli/src/commands/]
+    Tool -->|Plugin| Plugin[tools/plugins/]
+
+    %% Styling
+    classDef endpoint fill:#51cf66,stroke:#2f9e44,color:#000,stroke-width:2px
+    classDef decision fill:#339af0,stroke:#1c7ed6,color:#fff,stroke-width:2px
+    classDef start fill:#f03e3e,stroke:#c92a2a,color:#fff,stroke-width:3px
+
+    class Start start
+    class API,Component,Logic,Type,Test,Infra,Doc,Config,Tool,REST,WS,Shared,Platform,Util,TF,Docker,K8s,Monitor,ArchDoc decision
+    class BFF,Gateway,Atom,Molecule,Organism,WebComp,DesktopComp,MobileComp,CLIComp,NewService,AIProvider,AuthStrat,WebhookHandler,BgJob,AirflowDAG,SharedUtil,ServiceUtil,APIType,DataModel,ServiceType,UnitTest,IntTest,E2ETest,TestUtil,TFModule,TFEnv,Compose,Image,K8sBase,K8sOverlay,Helm,Prom,Graf,DD,ADR,Diagram,ArchGeneral,ServiceDoc,PlatformDoc,GuideDoc,APIDoc,BaseConfig,EnvConfig,ServiceConfig,PlatformConfig,BuildScript,DevScript,Generator,CLITool,Plugin endpoint
 ```
+
+**Legend:**
+- 🔴 **Red** = Starting point (What are you adding?)
+- 🔵 **Blue** = Decision nodes (questions to guide you)
+- 🟢 **Green** = Final destinations (where to add your code)
+
+### Interactive Decision Guide
+
+Can't find what you're looking for in the tree? Use this quick lookup:
+
+| What I'm Adding | First Question | Destination |
+|-----------------|----------------|-------------|
+| **REST API endpoint for web app** | Platform-specific? | `platforms/web/src/app/api/{endpoint}/route.ts` (BFF pattern) |
+| **REST API endpoint for all clients** | Platform-specific? | `services/api-gateway/src/routes/{endpoint}.ts` |
+| **WebSocket handler** | - | `services/chat-service/src/websocket/handlers/{handler}.ts` |
+| **GraphQL schema/resolver** | - | `services/api-gateway/src/graphql/` |
+| **Reusable button component** | Complexity? | `shared/components/src/atoms/Button/` |
+| **Complex dashboard widget** | Complexity? | `shared/components/src/organisms/Dashboard/` |
+| **Web-only navigation bar** | Which platform? | `platforms/web/src/components/layout/Navbar.tsx` |
+| **Mobile-specific view** | iOS or Android? | `platforms/mobile/{ios\|android}/Views/` |
+| **New AI provider (e.g., Gemini)** | - | `services/ai-gateway/src/providers/gemini/` |
+| **OAuth provider (e.g., Google)** | - | `services/auth-service/src/strategies/oauth-google.ts` |
+| **GitHub webhook handler** | - | `services/webhook-service/src/handlers/github-handler.ts` |
+| **Email sending job** | - | `services/background-worker/src/jobs/email-job.ts` |
+| **Data pipeline DAG** | - | `services/workflow-orchestrator/dags/data-pipeline.py` |
+| **String formatting utility** | Used by multiple services? | `shared/utils/src/formatting/string.ts` (if shared)<br>`services/{service}/src/utils/` (if service-specific) |
+| **API request/response type** | - | `shared/types/src/api/` |
+| **User data model** | Shared across services? | `shared/types/src/models/user.ts` (if shared)<br>`services/{service}/src/models/` (if service-specific) |
+| **Unit test for a component** | - | `{component-directory}/__tests__/{component}.test.ts` |
+| **Integration test for API** | - | `services/api-gateway/tests/integration/{test}.test.ts` |
+| **E2E test for login flow** | - | `platforms/web/tests/e2e/login-flow.spec.ts` |
+| **Terraform AWS module** | - | `infrastructure/terraform/modules/{resource}/` |
+| **Docker Compose for dev** | - | `infrastructure/docker/compose/development.yml` |
+| **Kubernetes deployment** | - | `infrastructure/kubernetes/base/{service}/deployment.yaml` |
+| **Grafana dashboard** | - | `infrastructure/monitoring/grafana/dashboards/{service}.json` |
+| **Architecture Decision Record** | - | `docs/architecture/ADR/{number}-{title}.md` |
+| **Service documentation** | - | `docs/services/{service}/README.md` |
+| **How-to guide** | - | `docs/guides/{guide-name}.md` |
+| **Environment variable config** | - | `config/environments/{env}/{config}.ts` |
+| **Feature flag** | - | `config/base/features.ts` |
+| **Build script** | - | `tools/scripts/build/{script}.sh` |
+| **Code generator** | - | `tools/generators/{type}/` |
+| **VS Code snippet** | - | `tools/extensions/vscode/{extension}/` |
+
+### Common "I Want To..." Scenarios
+
+<details>
+<summary><strong>I want to add a new microservice</strong></summary>
+
+**Location:** `services/{service-name}/`
+
+**Required Structure:**
+```
+services/my-service/
+├── src/
+│   ├── routes/          # API routes
+│   ├── handlers/        # Request handlers
+│   ├── __tests__/       # Unit tests
+│   └── index.ts         # Entry point
+├── tests/
+│   ├── integration/     # Integration tests
+│   └── e2e/             # E2E tests
+├── package.json
+├── tsconfig.json
+├── Dockerfile
+├── openapi.yml          # API contract
+└── README.md
+```
+
+**See:** [Adding a New Service Guide](./guides/adding-new-service.md)
+</details>
+
+<details>
+<summary><strong>I want to add a new platform (e.g., browser extension)</strong></summary>
+
+**Location:** `platforms/{platform-name}/`
+
+**Required Structure:**
+```
+platforms/browser-extension/
+├── src/
+│   ├── background/      # Background scripts
+│   ├── content/         # Content scripts
+│   ├── popup/           # Popup UI
+│   ├── adapters/        # Platform adapters
+│   └── components/      # Platform-specific components
+├── manifest.json
+├── package.json
+└── README.md
+```
+
+**Key Principle:** Implement platform adapters for `StorageAdapter`, `NetworkAdapter`, etc.
+</details>
+
+<details>
+<summary><strong>I want to add authentication for a new OAuth provider</strong></summary>
+
+**Location:** `services/auth-service/src/strategies/oauth-{provider}.ts`
+
+**Example:**
+```typescript
+// services/auth-service/src/strategies/oauth-github.ts
+import { OAuthStrategy } from '../types/strategy'
+
+export class GitHubOAuthStrategy implements OAuthStrategy {
+  async authenticate(code: string) {
+    // Exchange code for tokens
+  }
+
+  async getUserProfile(accessToken: string) {
+    // Fetch user profile
+  }
+}
+```
+</details>
+
+<details>
+<summary><strong>I want to add support for a new AI model provider</strong></summary>
+
+**Location:** `services/ai-gateway/src/providers/{provider}/`
+
+**Structure:**
+```
+services/ai-gateway/src/providers/gemini/
+├── adapter.ts           # Provider adapter implementation
+├── types.ts             # Provider-specific types
+├── config.ts            # Configuration
+└── __tests__/
+    └── adapter.test.ts
+```
+
+**Example:**
+```typescript
+// services/ai-gateway/src/providers/gemini/adapter.ts
+import { AIProviderAdapter } from '../../types/provider'
+
+export class GeminiAdapter implements AIProviderAdapter {
+  async complete(prompt: string, options: CompletionOptions) {
+    // Gemini-specific implementation
+  }
+}
+```
+</details>
+
+<details>
+<summary><strong>I want to add a scheduled background job</strong></summary>
+
+**Location:** `services/background-worker/src/jobs/{job-name}.ts`
+
+**Example:**
+```typescript
+// services/background-worker/src/jobs/cleanup-old-sessions.ts
+import { Job } from 'bull'
+
+export class CleanupOldSessionsJob {
+  async process(job: Job) {
+    // Clean up sessions older than 30 days
+  }
+}
+```
+
+**Scheduler:** `services/background-worker/src/schedulers/cron-jobs.ts`
+</details>
+
+<details>
+<summary><strong>I want to add a webhook handler for a third-party service</strong></summary>
+
+**Location:** `services/webhook-service/src/handlers/{source}-handler.ts`
+
+**Structure:**
+```typescript
+// services/webhook-service/src/handlers/stripe-handler.ts
+import { WebhookHandler } from '../types/handler'
+
+export class StripeWebhookHandler implements WebhookHandler {
+  async validate(signature: string, payload: string) {
+    // Validate Stripe signature
+  }
+
+  async process(event: StripeEvent) {
+    // Process Stripe webhook event
+  }
+}
+```
+
+**Validator:** `services/webhook-service/src/validators/stripe-validator.ts`
+</details>
+
+<details>
+<summary><strong>I want to add a data processing pipeline</strong></summary>
+
+**Location:** `services/workflow-orchestrator/dags/{pipeline-name}.py`
+
+**Example:**
+```python
+# services/workflow-orchestrator/dags/user-analytics.py
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime
+
+dag = DAG(
+    'user_analytics',
+    start_date=datetime(2026, 1, 1),
+    schedule_interval='@daily'
+)
+
+def process_analytics():
+    # Processing logic
+    pass
+
+process_task = PythonOperator(
+    task_id='process',
+    python_callable=process_analytics,
+    dag=dag
+)
+```
+</details>
+
+<details>
+<summary><strong>I want to add infrastructure for a new service</strong></summary>
+
+**Terraform Module:** `infrastructure/terraform/modules/{service}/`
+```hcl
+# infrastructure/terraform/modules/cache-service/main.tf
+resource "aws_elasticache_cluster" "cache" {
+  cluster_id           = var.cluster_id
+  engine               = "redis"
+  node_type            = var.node_type
+  num_cache_nodes      = var.num_nodes
+}
+```
+
+**Kubernetes Manifest:** `infrastructure/kubernetes/base/{service}/`
+```yaml
+# infrastructure/kubernetes/base/cache-service/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cache-service
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+```
+
+**Docker Compose:** `infrastructure/docker/compose/development.yml`
+```yaml
+services:
+  cache:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+```
+</details>
+
+<details>
+<summary><strong>I want to add monitoring for a service</strong></summary>
+
+**Prometheus Alerts:** `infrastructure/monitoring/prometheus/alerts/{service}.yml`
+**Grafana Dashboard:** `infrastructure/monitoring/grafana/dashboards/{service}.json`
+**Datadog Monitor:** `infrastructure/monitoring/datadog/monitors/{service}.json`
+
+**Example:**
+```yaml
+# infrastructure/monitoring/prometheus/alerts/api-gateway.yml
+groups:
+  - name: api-gateway
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        annotations:
+          summary: "High error rate detected"
+```
+</details>
 
 ### Common Scenarios
 
