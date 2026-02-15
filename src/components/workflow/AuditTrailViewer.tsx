@@ -50,6 +50,16 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 
 // ============================================================================
@@ -221,6 +231,7 @@ interface ActionItemProps {
 function ActionItem({ action, onRollback, enableRollback }: ActionItemProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isRollingBack, setIsRollingBack] = useState(false)
+  const [showRollbackDialog, setShowRollbackDialog] = useState(false)
 
   const typeConfig = actionTypeConfig[action.type]
   const statusConf = statusConfig[action.status]
@@ -229,17 +240,27 @@ function ActionItem({ action, onRollback, enableRollback }: ActionItemProps) {
 
   const hasChanges = action.changes && (action.changes.before || action.changes.after)
 
-  const handleRollback = async () => {
+  const handleRollbackClick = () => {
+    setShowRollbackDialog(true)
+  }
+
+  const handleRollbackConfirm = async () => {
     if (!onRollback) return
 
+    setShowRollbackDialog(false)
     setIsRollingBack(true)
     try {
       await onRollback(action.id)
     } catch (error) {
-      console.error('Rollback failed:', error)
+      // Error handling - the parent component should handle error display
+      throw error
     } finally {
       setIsRollingBack(false)
     }
+  }
+
+  const handleRollbackCancel = () => {
+    setShowRollbackDialog(false)
   }
 
   const formatDate = (date: Date) => {
@@ -299,7 +320,7 @@ function ActionItem({ action, onRollback, enableRollback }: ActionItemProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleRollback}
+                  onClick={handleRollbackClick}
                   disabled={isRollingBack}
                   aria-label="Rollback this action"
                 >
@@ -362,6 +383,61 @@ function ActionItem({ action, onRollback, enableRollback }: ActionItemProps) {
           )}
         </div>
       </div>
+
+      {/* Rollback Confirmation Dialog */}
+      <AlertDialog open={showRollbackDialog} onOpenChange={setShowRollbackDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RefreshCw className="h-5 w-5 text-orange-500" aria-hidden="true" />
+              Confirm Rollback
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Are you sure you want to rollback this action? This will restore the workflow
+                to its previous state.
+              </p>
+              <div className="bg-muted p-3 rounded-md space-y-2">
+                <div className="flex items-start gap-2">
+                  <Info className="h-4 w-4 mt-0.5 text-muted-foreground" aria-hidden="true" />
+                  <div className="text-sm">
+                    <p className="font-medium text-foreground">{typeConfig.label}</p>
+                    <p className="text-muted-foreground">{action.description}</p>
+                  </div>
+                </div>
+                {action.workflowName && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <GitBranch className="h-3 w-3" aria-hidden="true" />
+                    <span>{action.workflowName}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Clock className="h-3 w-3" aria-hidden="true" />
+                  <time dateTime={new Date(action.timestamp).toISOString()}>
+                    {formatDate(action.timestamp)}
+                  </time>
+                </div>
+              </div>
+              <p className="text-sm text-orange-600 dark:text-orange-400 flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                <span>This action cannot be undone. The workflow will be reverted to its state before this action occurred.</span>
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleRollbackCancel}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRollbackConfirm}
+              className="bg-orange-500 hover:bg-orange-600 focus:ring-orange-500"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
+              Confirm Rollback
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
