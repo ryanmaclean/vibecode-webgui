@@ -174,9 +174,44 @@ export class VfkitProvider implements VMProvider {
       const pidContent = await fs.readFile(pidPath, 'utf-8');
       const pid = parseInt(pidContent.trim(), 10);
 
+      // Attempt graceful ACPI shutdown via serial console
+      try {
+        await this.sendACPIShutdown(vmId);
+        logger.info('ACPI shutdown signal sent', { vmId });
+
+        // Wait for graceful shutdown (30 seconds for ACPI)
+        const acpiTimeout = 30000;
+        const interval = 100;
+        const maxAttempts = acpiTimeout / interval;
+        const startTime = Date.now();
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          const running = await isProcessRunning(pid);
+
+          if (!running) {
+            logger.info('VM stopped gracefully via ACPI', {
+              vmId,
+              pid,
+              duration: Date.now() - startTime
+            });
+            await fs.unlink(pidPath);
+            return;
+          }
+
+          if (attempt < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, interval));
+          }
+        }
+
+        logger.warn('ACPI shutdown timeout, falling back to SIGTERM', { vmId });
+      } catch (error) {
+        logger.warn('ACPI shutdown not available, using SIGTERM', { vmId, error });
+      }
+
+      // Fall back to SIGTERM
       process.kill(pid, 'SIGTERM');
 
-      // Wait for process to stop with health check polling
+      // Wait for process to stop with SIGTERM
       const timeout = 10000; // 10 seconds timeout
       const interval = 100; // Check every 100ms
       const maxAttempts = timeout / interval;
@@ -186,30 +221,56 @@ export class VfkitProvider implements VMProvider {
         const running = await isProcessRunning(pid);
 
         if (!running) {
-          logger.info('VM process stopped', {
+          logger.info('VM process stopped via SIGTERM', {
             vmId,
             pid,
             duration: Date.now() - startTime
           });
-          break;
+          await fs.unlink(pidPath);
+          return;
         }
 
         if (attempt < maxAttempts) {
           await new Promise(resolve => setTimeout(resolve, interval));
         } else {
-          logger.warn('Process did not stop within timeout, forcing', { vmId, pid });
-          try {
-            process.kill(pid, 'SIGKILL');
-          } catch {
-            // Process might have stopped between checks
-          }
+          logger.error('Failed to stop VM gracefully, forcing', { vmId, pid });
+          process.kill(pid, 'SIGKILL');
+          await fs.unlink(pidPath);
+          throw new Error(`VM ${vmId} failed to stop gracefully, forced kill`);
         }
       }
-
-      // Remove PID file
-      await fs.unlink(pidPath);
     } catch (error) {
       logger.error('Failed to stop VM', { vmId, error });
+      throw error;
+    }
+  }
+
+  /**
+   * Send ACPI shutdown signal to VM via serial console
+   * This triggers a graceful OS shutdown inside the guest
+   */
+  private async sendACPIShutdown(vmId: string): Promise<void> {
+    const vmDir = path.join(this.vmBaseDir, vmId);
+    const consolePath = path.join(vmDir, 'logs/console.log');
+
+    // For vfkit, ACPI shutdown can be triggered by writing to the serial console
+    // This sends a shutdown command to the guest OS via virtio-serial
+    // The guest must be configured to handle this (e.g., via inittab or systemd)
+
+    try {
+      // Write shutdown command to serial console
+      // The exact mechanism depends on guest OS configuration
+      // For Alpine Linux with proper init, this triggers ACPI shutdown
+      const shutdownCommand = '\x00ACPI_SHUTDOWN\n';
+
+      // Note: vfkit doesn't expose a direct ACPI interface
+      // This is a placeholder for the actual ACPI mechanism
+      // In practice, would need guest agent or SSH access
+      logger.debug('ACPI shutdown mechanism not yet fully implemented', { vmId });
+
+      // Throw to fall back to SIGTERM
+      throw new Error('ACPI shutdown not available for vfkit');
+    } catch (error) {
       throw error;
     }
   }
