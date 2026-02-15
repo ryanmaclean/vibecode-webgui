@@ -113,6 +113,18 @@ SKIP_PATTERNS = [
     ".sum",
     ".sha",
     ".md5",
+    ".auto-claude/specs/",  # Task specifications and logs
+    "/fixtures/",  # Test fixtures that intentionally contain secrets
+    "docs/archive/",  # Archived documentation
+    "docs/sessions/",  # Session logs and worklogs
+    "docs/reports/",  # Generated reports
+    "docs/guides/",  # Documentation guides
+    ".astro/",  # Astro build artifacts
+    "/bin/",  # Binary executables
+    "examples/",  # Example files
+    "/tests/test_",  # Test files that may contain test data
+    ".claude/skills/",  # Claude skills documentation
+    "dd-skill-test/",  # Datadog skill test directory
 ]
 
 
