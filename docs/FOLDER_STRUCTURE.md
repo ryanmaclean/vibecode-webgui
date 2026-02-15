@@ -180,56 +180,242 @@ Services communicate via:
 2. **Message Queues** - Asynchronous event-driven (Kafka, RabbitMQ)
 3. **Service Mesh** - Advanced networking (future: Istio)
 
+#### Complete Module Dependency Map
+
+This diagram shows all module dependencies across the entire VibeCode architecture with clear service boundaries:
+
 ```mermaid
 graph TB
-    subgraph "Client Layer"
-        Web[Web Platform]
-        Desktop[Desktop Platform]
-        Mobile[Mobile Platform]
+    subgraph "Platform Layer"
+        WebPlatform[Web Platform<br/>Next.js 15]
+        DesktopPlatform[Desktop Platform<br/>Tauri + Rust]
+        MobilePlatform[Mobile Platform<br/>iOS/Android]
+        CLIPlatform[CLI Platform<br/>Node.js]
     end
 
-    subgraph "API Layer"
-        Gateway[API Gateway]
+    subgraph "API Gateway Layer"
+        Gateway[API Gateway<br/>Routes & Middleware]
     end
 
     subgraph "Service Layer"
-        AI[AI Gateway]
-        Auth[Auth Service]
-        Chat[Chat Service]
-        Webhook[Webhook Service]
-        Worker[Background Worker]
+        AIGateway[AI Gateway<br/>Model Orchestration]
+        AuthService[Auth Service<br/>JWT & OAuth]
+        ChatService[Chat Service<br/>WebSocket]
+        WebhookService[Webhook Service<br/>Event Processing]
+        WorkflowService[Workflow Orchestrator<br/>Airflow DAGs]
+        BackgroundWorker[Background Worker<br/>Bull Queue]
+        GitService[Git Service<br/>Gitea Integration]
+        MCPServer[MCP Server<br/>Claude Integration]
+    end
+
+    subgraph "Shared Library Layer"
+        Types[Shared Types<br/>@vibecode/types]
+        Utils[Shared Utils<br/>@vibecode/utils]
+        Contracts[API Contracts<br/>@vibecode/contracts]
+        Components[Shared Components<br/>@vibecode/components]
+        Middleware[Shared Middleware<br/>@vibecode/middleware]
     end
 
     subgraph "Infrastructure Layer"
-        DB[(PostgreSQL)]
-        Redis[(Redis)]
-        Queue[(Message Queue)]
+        PostgreSQL[(PostgreSQL 16<br/>+ pgvector)]
+        Redis[(Redis/Valkey<br/>Cache)]
+        Kafka[(Kafka/RabbitMQ<br/>Message Queue)]
+        VectorDB[(Vector DB<br/>Embeddings)]
     end
 
-    Web --> Gateway
-    Desktop --> Gateway
-    Mobile --> Gateway
+    %% Platform to Gateway
+    WebPlatform --> Gateway
+    DesktopPlatform --> Gateway
+    MobilePlatform --> Gateway
+    CLIPlatform --> Gateway
 
-    Gateway --> AI
-    Gateway --> Auth
-    Gateway --> Chat
-    Gateway --> Webhook
+    %% Gateway to Services
+    Gateway --> AIGateway
+    Gateway --> AuthService
+    Gateway --> ChatService
+    Gateway --> WebhookService
+    Gateway --> GitService
+    Gateway --> MCPServer
 
-    AI --> Redis
-    Auth --> DB
-    Chat --> DB
-    Chat --> Redis
-    Webhook --> Queue
-    Worker --> Queue
-    Worker --> DB
+    %% Service to Service (via API only, shown as dashed)
+    AIGateway -.->|HTTP API| AuthService
+    ChatService -.->|HTTP API| AIGateway
+    WebhookService -.->|Message Queue| WorkflowService
+    BackgroundWorker -.->|Message Queue| WebhookService
 
-    style Gateway fill:#fa5252
-    style AI fill:#fab005
-    style Auth fill:#fab005
-    style Chat fill:#fab005
-    style Webhook fill:#fab005
-    style Worker fill:#fab005
+    %% Services to Shared Libraries
+    AIGateway --> Types
+    AIGateway --> Utils
+    AIGateway --> Contracts
+    AuthService --> Types
+    AuthService --> Utils
+    ChatService --> Types
+    ChatService --> Utils
+    ChatService --> Contracts
+    WebhookService --> Types
+    WebhookService --> Middleware
+    WorkflowService --> Types
+    BackgroundWorker --> Types
+    BackgroundWorker --> Utils
+    GitService --> Types
+    GitService --> Contracts
+    MCPServer --> Types
+    MCPServer --> Utils
+
+    %% Platforms to Shared Libraries
+    WebPlatform --> Components
+    WebPlatform --> Types
+    DesktopPlatform --> Components
+    DesktopPlatform --> Types
+    MobilePlatform --> Types
+    CLIPlatform --> Types
+    CLIPlatform --> Utils
+
+    %% Services to Infrastructure
+    AIGateway --> PostgreSQL
+    AIGateway --> Redis
+    AIGateway --> VectorDB
+    AuthService --> PostgreSQL
+    AuthService --> Redis
+    ChatService --> PostgreSQL
+    ChatService --> Redis
+    ChatService --> Kafka
+    WebhookService --> Kafka
+    WorkflowService --> PostgreSQL
+    BackgroundWorker --> Kafka
+    BackgroundWorker --> Redis
+    GitService --> PostgreSQL
+    MCPServer --> PostgreSQL
+    MCPServer --> VectorDB
+
+    %% Styling by Layer
+    classDef platformStyle fill:#339af0,stroke:#1c7ed6,color:#fff,stroke-width:2px
+    classDef gatewayStyle fill:#f03e3e,stroke:#c92a2a,color:#fff,stroke-width:2px
+    classDef serviceStyle fill:#ff922b,stroke:#fd7e14,color:#fff,stroke-width:2px
+    classDef sharedStyle fill:#37b24d,stroke:#2f9e44,color:#fff,stroke-width:2px
+    classDef infraStyle fill:#7950f2,stroke:#6741d9,color:#fff,stroke-width:2px
+
+    class WebPlatform,DesktopPlatform,MobilePlatform,CLIPlatform platformStyle
+    class Gateway gatewayStyle
+    class AIGateway,AuthService,ChatService,WebhookService,WorkflowService,BackgroundWorker,GitService,MCPServer serviceStyle
+    class Types,Utils,Contracts,Components,Middleware sharedStyle
+    class PostgreSQL,Redis,Kafka,VectorDB infraStyle
 ```
+
+**Legend:**
+- 🔵 **Blue** = Platform Layer (client applications)
+- 🔴 **Red** = API Gateway Layer (routing and middleware)
+- 🟠 **Orange** = Service Layer (backend microservices)
+- 🟢 **Green** = Shared Library Layer (reusable code)
+- 🟣 **Purple** = Infrastructure Layer (databases, caches, queues)
+- **Solid lines** = Direct imports allowed
+- **Dashed lines** = API calls only (no direct imports)
+
+#### Service-to-Service Communication Patterns
+
+This diagram focuses on how services communicate with each other:
+
+```mermaid
+graph LR
+    subgraph "Synchronous Communication (HTTP/REST)"
+        AIGateway[AI Gateway]
+        AuthService[Auth Service]
+        ChatService[Chat Service]
+        GitService[Git Service]
+        MCPServer[MCP Server]
+    end
+
+    subgraph "Asynchronous Communication (Message Queue)"
+        WebhookService[Webhook Service]
+        WorkflowService[Workflow Orchestrator]
+        BackgroundWorker[Background Worker]
+    end
+
+    subgraph "Message Queue"
+        Kafka[(Kafka/RabbitMQ)]
+    end
+
+    %% Synchronous patterns
+    ChatService -->|POST /api/complete| AIGateway
+    AIGateway -->|GET /api/verify| AuthService
+    GitService -->|POST /api/validate-token| AuthService
+    MCPServer -->|POST /api/chat| ChatService
+
+    %% Asynchronous patterns
+    WebhookService -->|Event: webhook.received| Kafka
+    Kafka -->|Consume: webhook.received| WorkflowService
+    WorkflowService -->|Event: task.completed| Kafka
+    Kafka -->|Consume: task.completed| BackgroundWorker
+    BackgroundWorker -->|Event: job.finished| Kafka
+    Kafka -->|Consume: job.finished| WebhookService
+
+    style AIGateway fill:#ff922b,stroke:#fd7e14,color:#fff
+    style AuthService fill:#ff922b,stroke:#fd7e14,color:#fff
+    style ChatService fill:#ff922b,stroke:#fd7e14,color:#fff
+    style GitService fill:#ff922b,stroke:#fd7e14,color:#fff
+    style MCPServer fill:#ff922b,stroke:#fd7e14,color:#fff
+    style WebhookService fill:#ff922b,stroke:#fd7e14,color:#fff
+    style WorkflowService fill:#ff922b,stroke:#fd7e14,color:#fff
+    style BackgroundWorker fill:#ff922b,stroke:#fd7e14,color:#fff
+    style Kafka fill:#7950f2,stroke:#6741d9,color:#fff
+```
+
+#### Shared Library Dependency Hierarchy
+
+This diagram shows the dependency relationships between shared libraries:
+
+```mermaid
+graph TB
+    subgraph "Layer 4: Component Library"
+        Components[@vibecode/components]
+    end
+
+    subgraph "Layer 3: Contract Library"
+        Contracts[@vibecode/contracts]
+        Middleware[@vibecode/middleware]
+    end
+
+    subgraph "Layer 2: Utility Library"
+        Utils[@vibecode/utils]
+    end
+
+    subgraph "Layer 1: Type Library"
+        Types[@vibecode/types]
+    end
+
+    %% Dependency hierarchy
+    Components --> Contracts
+    Components --> Utils
+    Components --> Types
+    Contracts --> Types
+    Middleware --> Types
+    Middleware --> Utils
+    Utils --> Types
+
+    %% External dependencies
+    Services[Services] --> Components
+    Services --> Contracts
+    Services --> Middleware
+    Services --> Utils
+    Services --> Types
+
+    Platforms[Platforms] --> Components
+    Platforms --> Types
+
+    style Components fill:#37b24d,stroke:#2f9e44,color:#fff
+    style Contracts fill:#37b24d,stroke:#2f9e44,color:#fff
+    style Middleware fill:#37b24d,stroke:#2f9e44,color:#fff
+    style Utils fill:#37b24d,stroke:#2f9e44,color:#fff
+    style Types fill:#37b24d,stroke:#2f9e44,color:#fff
+    style Services fill:#ff922b,stroke:#fd7e14,color:#fff
+    style Platforms fill:#339af0,stroke:#1c7ed6,color:#fff
+```
+
+**Key Rules:**
+- Lower layers (Types) cannot depend on higher layers (Components)
+- Services can use any shared library
+- Platforms should primarily use Components and Types
+- All shared libraries depend on Types as the foundation
 
 ### Service Requirements
 

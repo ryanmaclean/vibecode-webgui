@@ -49,73 +49,129 @@ VibeCode follows a **5-layer architecture** with strict dependency rules:
 ```mermaid
 graph TB
     subgraph "Layer 1: Platform Layer"
-        Web[Web Platform]
-        Desktop[Desktop Platform]
-        Mobile[Mobile Platform]
-        CLI[CLI Platform]
+        Web[Web Platform<br/>Next.js 15]
+        Desktop[Desktop Platform<br/>Tauri + Rust]
+        Mobile[Mobile Platform<br/>iOS/Android]
+        CLI[CLI Platform<br/>Node.js]
     end
 
     subgraph "Layer 2: API Gateway Layer"
-        Gateway[API Gateway]
+        Gateway[API Gateway<br/>Express/Fastify]
     end
 
     subgraph "Layer 3: Service Layer"
-        AIService[AI Gateway]
-        AuthService[Auth Service]
-        ChatService[Chat Service]
-        WebhookService[Webhook Service]
-        WorkflowService[Workflow Orchestrator]
-        BackgroundWorker[Background Worker]
-        GitService[Git Service]
+        AIService[AI Gateway<br/>OpenAI, Anthropic, etc.]
+        AuthService[Auth Service<br/>JWT, OAuth2]
+        ChatService[Chat Service<br/>WebSocket Server]
+        WebhookService[Webhook Service<br/>Event Handlers]
+        WorkflowService[Workflow Orchestrator<br/>Apache Airflow]
+        BackgroundWorker[Background Worker<br/>Bull/BullMQ]
+        GitService[Git Service<br/>Gitea API]
+        MCPServer[MCP Server<br/>Claude MCP Protocol]
     end
 
     subgraph "Layer 4: Shared Library Layer"
-        Types[Shared Types]
-        Utils[Shared Utils]
-        Components[Shared Components]
-        Contracts[API Contracts]
+        Types[Shared Types<br/>@vibecode/types]
+        Utils[Shared Utils<br/>@vibecode/utils]
+        Components[Shared Components<br/>@vibecode/components]
+        Contracts[API Contracts<br/>@vibecode/contracts]
+        Middleware[Shared Middleware<br/>@vibecode/middleware]
     end
 
     subgraph "Layer 5: Infrastructure Layer"
-        Database[(PostgreSQL)]
-        Cache[(Redis)]
-        Queue[(Message Queue)]
-        VectorDB[(Vector DB)]
+        Database[(PostgreSQL 16<br/>+ pgvector)]
+        Cache[(Redis/Valkey<br/>In-Memory Cache)]
+        Queue[(Kafka/RabbitMQ<br/>Message Broker)]
+        VectorDB[(Vector Store<br/>Embeddings)]
     end
 
+    %% Platform to Gateway
     Web --> Gateway
     Desktop --> Gateway
     Mobile --> Gateway
     CLI --> Gateway
 
+    %% Gateway to Services
     Gateway --> AIService
     Gateway --> AuthService
     Gateway --> ChatService
     Gateway --> WebhookService
+    Gateway --> GitService
+    Gateway --> MCPServer
 
+    %% Service to Service (via API only - shown as dashed)
+    AIService -.->|HTTP API| AuthService
+    ChatService -.->|HTTP API| AIService
+    WebhookService -.->|Message Queue| WorkflowService
+    BackgroundWorker -.->|Message Queue| WebhookService
+
+    %% Services to Shared Libraries
     AIService --> Types
     AIService --> Utils
     AIService --> Contracts
     AuthService --> Types
+    AuthService --> Utils
     ChatService --> Types
-    WebhookService --> Queue
-    BackgroundWorker --> Queue
+    ChatService --> Utils
+    ChatService --> Contracts
+    WebhookService --> Types
+    WebhookService --> Middleware
+    WorkflowService --> Types
+    BackgroundWorker --> Types
+    BackgroundWorker --> Utils
+    GitService --> Types
+    GitService --> Contracts
+    MCPServer --> Types
+    MCPServer --> Utils
 
+    %% Platforms to Shared Libraries
+    Web --> Components
+    Web --> Types
+    Desktop --> Components
+    Desktop --> Types
+    Mobile --> Types
+    CLI --> Types
+    CLI --> Utils
+
+    %% Services to Infrastructure
     AIService --> Database
     AIService --> Cache
+    AIService --> VectorDB
     AuthService --> Database
+    AuthService --> Cache
     ChatService --> Database
     ChatService --> Cache
+    ChatService --> Queue
+    WebhookService --> Queue
+    WorkflowService --> Database
+    BackgroundWorker --> Queue
+    BackgroundWorker --> Cache
+    GitService --> Database
+    MCPServer --> Database
+    MCPServer --> VectorDB
 
-    Web --> Components
-    Desktop --> Components
+    %% Styling by Layer
+    classDef platformStyle fill:#339af0,stroke:#1c7ed6,color:#fff,stroke-width:2px
+    classDef gatewayStyle fill:#f03e3e,stroke:#c92a2a,color:#fff,stroke-width:2px
+    classDef serviceStyle fill:#ff922b,stroke:#fd7e14,color:#fff,stroke-width:2px
+    classDef sharedStyle fill:#37b24d,stroke:#2f9e44,color:#fff,stroke-width:2px
+    classDef infraStyle fill:#7950f2,stroke:#6741d9,color:#fff,stroke-width:2px
 
-    style Gateway fill:#fa5252
-    style AIService fill:#fab005
-    style AuthService fill:#fab005
-    style ChatService fill:#fab005
-    style WebhookService fill:#fab005
+    class Web,Desktop,Mobile,CLI platformStyle
+    class Gateway gatewayStyle
+    class AIService,AuthService,ChatService,WebhookService,WorkflowService,BackgroundWorker,GitService,MCPServer serviceStyle
+    class Types,Utils,Components,Contracts,Middleware sharedStyle
+    class Database,Cache,Queue,VectorDB infraStyle
 ```
+
+**Legend:**
+- 🔵 **Blue** = Platform Layer (client applications)
+- 🔴 **Red** = API Gateway Layer (routing and middleware)
+- 🟠 **Orange** = Service Layer (backend microservices)
+- 🟢 **Green** = Shared Library Layer (reusable code)
+- 🟣 **Purple** = Infrastructure Layer (databases, caches, queues)
+- **Solid lines** = Direct imports allowed (compile-time dependency)
+- **Dashed lines** = API calls only (runtime dependency, no direct imports)
 
 ### Layer Dependency Rules
 
@@ -242,6 +298,88 @@ export async function handlePushEvent(payload: GitHubPushPayload) {
 import { analyzeText } from '../../../ai-gateway/src/analyzer'  // WRONG!
 ```
 
+#### Service Boundary Diagram
+
+This diagram shows the clear boundaries between services and how they interact:
+
+```mermaid
+graph TB
+    subgraph "Service A Boundary"
+        ServiceA[AI Gateway Service]
+        ServiceA_API[Public API<br/>POST /api/analyze]
+        ServiceA_Queue[Message Queue Consumer<br/>Topic: ai.requests]
+        ServiceA_Internal[Internal Logic<br/>PRIVATE]
+
+        ServiceA --> ServiceA_API
+        ServiceA --> ServiceA_Queue
+        ServiceA --> ServiceA_Internal
+    end
+
+    subgraph "Service B Boundary"
+        ServiceB[Chat Service]
+        ServiceB_API[Public API<br/>POST /api/chat]
+        ServiceB_Internal[Internal Logic<br/>PRIVATE]
+        ServiceB_Client[API Client]
+
+        ServiceB --> ServiceB_API
+        ServiceB --> ServiceB_Internal
+        ServiceB --> ServiceB_Client
+    end
+
+    subgraph "Service C Boundary"
+        ServiceC[Webhook Service]
+        ServiceC_API[Public API<br/>POST /api/webhook]
+        ServiceC_Queue[Message Queue Producer<br/>Topic: webhooks.received]
+        ServiceC_Internal[Internal Logic<br/>PRIVATE]
+
+        ServiceC --> ServiceC_API
+        ServiceC --> ServiceC_Queue
+        ServiceC --> ServiceC_Internal
+    end
+
+    subgraph "Shared Boundary"
+        Types[@vibecode/types]
+        Utils[@vibecode/utils]
+        Contracts[@vibecode/contracts]
+    end
+
+    %% Service B calls Service A via public API (ALLOWED)
+    ServiceB_Client -.->|HTTP POST<br/>ALLOWED| ServiceA_API
+
+    %% Service C publishes to message queue (ALLOWED)
+    ServiceC_Queue -.->|Publish Event<br/>ALLOWED| Queue[(Message Queue)]
+    Queue -.->|Consume Event<br/>ALLOWED| ServiceA_Queue
+
+    %% Services use shared libraries (ALLOWED)
+    ServiceA_Internal --> Types
+    ServiceA_Internal --> Utils
+    ServiceB_Internal --> Types
+    ServiceB_Internal --> Contracts
+    ServiceC_Internal --> Types
+
+    %% FORBIDDEN: Direct import between services
+    ServiceB_Internal -.->|FORBIDDEN<br/>No Direct Import| ServiceA_Internal
+
+    %% Styling
+    classDef serviceStyle fill:#ff922b,stroke:#fd7e14,color:#fff,stroke-width:2px
+    classDef apiStyle fill:#51cf66,stroke:#2f9e44,color:#fff,stroke-width:2px
+    classDef internalStyle fill:#868e96,stroke:#495057,color:#fff,stroke-width:2px
+    classDef sharedStyle fill:#37b24d,stroke:#2f9e44,color:#fff,stroke-width:2px
+    classDef forbiddenStyle stroke:#ff6b6b,stroke-width:3px,stroke-dasharray:5
+
+    class ServiceA,ServiceB,ServiceC serviceStyle
+    class ServiceA_API,ServiceB_API,ServiceC_API,ServiceA_Queue,ServiceC_Queue,ServiceB_Client apiStyle
+    class ServiceA_Internal,ServiceB_Internal,ServiceC_Internal internalStyle
+    class Types,Utils,Contracts sharedStyle
+```
+
+**Key Principles:**
+- ✅ **Public APIs are the ONLY way to communicate between services**
+- ✅ **Message queues enable async communication**
+- ✅ **Shared libraries provide common functionality**
+- ❌ **NEVER import internal code from another service**
+- ❌ **NEVER access another service's database directly**
+
 ---
 
 ### Rule 3: Platform Independence
@@ -289,6 +427,91 @@ export class TauriAIAdapter implements AIAdapter {
 // services/ai-gateway/src/routes.ts
 import { TauriWindow } from '@tauri-apps/api/window'  // WRONG!
 ```
+
+#### Platform Adapter Architecture
+
+This diagram shows how platforms interact with services through adapters:
+
+```mermaid
+graph TB
+    subgraph "Platform Layer"
+        WebApp[Web Application<br/>Next.js]
+        DesktopApp[Desktop Application<br/>Tauri]
+        MobileApp[Mobile Application<br/>iOS/Android]
+    end
+
+    subgraph "Platform Adapters"
+        WebAdapter[Web Adapter<br/>fetch API]
+        DesktopAdapter[Desktop Adapter<br/>Tauri invoke]
+        MobileAdapter[Mobile Adapter<br/>Native HTTP]
+    end
+
+    subgraph "Shared Contracts"
+        StorageInterface[StorageAdapter Interface]
+        FilesystemInterface[FilesystemAdapter Interface]
+        NetworkInterface[NetworkAdapter Interface]
+        AuthInterface[AuthAdapter Interface]
+    end
+
+    subgraph "API Gateway"
+        Gateway[API Gateway<br/>Routes & Middleware]
+    end
+
+    subgraph "Services"
+        AIService[AI Gateway]
+        AuthService[Auth Service]
+        ChatService[Chat Service]
+    end
+
+    %% Platforms use adapters
+    WebApp --> WebAdapter
+    DesktopApp --> DesktopAdapter
+    MobileApp --> MobileAdapter
+
+    %% Adapters implement interfaces
+    WebAdapter -.->|implements| StorageInterface
+    WebAdapter -.->|implements| NetworkInterface
+    DesktopAdapter -.->|implements| StorageInterface
+    DesktopAdapter -.->|implements| FilesystemInterface
+    DesktopAdapter -.->|implements| NetworkInterface
+    MobileAdapter -.->|implements| StorageInterface
+    MobileAdapter -.->|implements| AuthInterface
+
+    %% All platforms route through gateway
+    WebAdapter --> Gateway
+    DesktopAdapter --> Gateway
+    MobileAdapter --> Gateway
+
+    %% Gateway routes to services
+    Gateway --> AIService
+    Gateway --> AuthService
+    Gateway --> ChatService
+
+    %% Services NEVER depend on platforms
+    AIService -.->|FORBIDDEN| WebAdapter
+    AIService -.->|FORBIDDEN| DesktopAdapter
+    AIService -.->|FORBIDDEN| MobileAdapter
+
+    %% Styling
+    classDef platformStyle fill:#339af0,stroke:#1c7ed6,color:#fff,stroke-width:2px
+    classDef adapterStyle fill:#74c0fc,stroke:#339af0,color:#000,stroke-width:2px
+    classDef interfaceStyle fill:#37b24d,stroke:#2f9e44,color:#fff,stroke-width:2px
+    classDef gatewayStyle fill:#f03e3e,stroke:#c92a2a,color:#fff,stroke-width:2px
+    classDef serviceStyle fill:#ff922b,stroke:#fd7e14,color:#fff,stroke-width:2px
+
+    class WebApp,DesktopApp,MobileApp platformStyle
+    class WebAdapter,DesktopAdapter,MobileAdapter adapterStyle
+    class StorageInterface,FilesystemInterface,NetworkInterface,AuthInterface interfaceStyle
+    class Gateway gatewayStyle
+    class AIService,AuthService,ChatService serviceStyle
+```
+
+**Benefits of Platform Adapters:**
+- ✅ **Platform-agnostic services** - Services work with any platform
+- ✅ **Platform-specific optimizations** - Each adapter can use native APIs
+- ✅ **Testability** - Mock adapters for testing
+- ✅ **Flexibility** - Add new platforms without changing services
+- ✅ **Clear boundaries** - Adapters enforce the platform/service separation
 
 ---
 
@@ -715,48 +938,144 @@ export class TauriStorageAdapter implements StorageAdapter {
 
 ### Shared Library Hierarchy
 
+The shared library layer follows a strict dependency hierarchy to prevent circular dependencies:
+
 ```mermaid
 graph TB
-    subgraph "Level 1: Foundation"
-        Types[shared/types]
-        Constants[shared/constants]
+    subgraph "Level 1: Foundation Layer - Zero Dependencies"
+        Types[@vibecode/types<br/>TypeScript Interfaces & Types]
+        Constants[@vibecode/constants<br/>Static Constants]
     end
 
-    subgraph "Level 2: Utilities"
-        Utils[shared/utils]
+    subgraph "Level 2: Utility Layer - Depends on Foundation"
+        Utils[@vibecode/utils<br/>Helper Functions]
+        Validation[@vibecode/validation<br/>Input Validators]
     end
 
-    subgraph "Level 3: Contracts"
-        Contracts[shared/contracts]
+    subgraph "Level 3: Contract Layer - Depends on Foundation + Utilities"
+        Contracts[@vibecode/contracts<br/>API Contracts & Schemas]
+        Middleware[@vibecode/middleware<br/>Express/Fastify Middleware]
     end
 
-    subgraph "Level 4: Components"
-        Components[shared/components]
+    subgraph "Level 4: Component Layer - Depends on All Below"
+        Components[@vibecode/components<br/>React Components]
+        Hooks[@vibecode/hooks<br/>React Hooks]
     end
 
     subgraph "Consumers"
-        Services[Services]
-        Platforms[Platforms]
+        Services[Backend Services<br/>AI, Auth, Chat, etc.]
+        Platforms[Platform Applications<br/>Web, Desktop, Mobile]
     end
 
+    %% Level dependencies
     Utils --> Types
+    Validation --> Types
     Contracts --> Types
+    Contracts --> Utils
+    Middleware --> Types
+    Middleware --> Utils
     Components --> Types
     Components --> Utils
+    Components --> Contracts
+    Hooks --> Types
 
+    %% Service dependencies
     Services --> Types
     Services --> Utils
+    Services --> Validation
     Services --> Contracts
+    Services --> Middleware
 
+    %% Platform dependencies
     Platforms --> Types
     Platforms --> Utils
     Platforms --> Contracts
     Platforms --> Components
+    Platforms --> Hooks
 
-    style Types fill:#51cf66
-    style Utils fill:#fab005
-    style Contracts fill:#fab005
-    style Components fill:#fab005
+    %% Styling
+    classDef foundationStyle fill:#4c6ef5,stroke:#364fc7,color:#fff,stroke-width:3px
+    classDef utilityStyle fill:#37b24d,stroke:#2f9e44,color:#fff,stroke-width:2px
+    classDef contractStyle fill:#f59f00,stroke:#f76707,color:#fff,stroke-width:2px
+    classDef componentStyle fill:#e64980,stroke:#c92a2a,color:#fff,stroke-width:2px
+    classDef consumerStyle fill:#868e96,stroke:#495057,color:#fff,stroke-width:2px
+
+    class Types,Constants foundationStyle
+    class Utils,Validation utilityStyle
+    class Contracts,Middleware contractStyle
+    class Components,Hooks componentStyle
+    class Services,Platforms consumerStyle
+```
+
+#### Shared Library Dependency Rules
+
+| Library | Can Depend On | Cannot Depend On | Used By |
+|---------|---------------|------------------|---------|
+| **@vibecode/types** | Nothing (zero dependencies) | Everything | All layers |
+| **@vibecode/constants** | Nothing | Everything | All layers |
+| **@vibecode/utils** | types, constants | contracts, components, services, platforms | All layers |
+| **@vibecode/validation** | types, constants | contracts, components, services, platforms | Services, contracts |
+| **@vibecode/contracts** | types, utils, validation | components, services, platforms | Services, platforms |
+| **@vibecode/middleware** | types, utils, validation | components, services, platforms | Services |
+| **@vibecode/components** | types, utils, contracts | services, platforms | Platforms only |
+| **@vibecode/hooks** | types, utils | components, services, platforms | Platforms only |
+
+#### Shared Library Communication Diagram
+
+This diagram shows the allowed communication patterns between shared libraries:
+
+```mermaid
+graph TB
+    subgraph "Components communicate with lower layers"
+        Comp[Component Library]
+        CompCalls1[Imports Types]
+        CompCalls2[Imports Utils]
+        CompCalls3[Imports Contracts]
+
+        Comp --> CompCalls1
+        Comp --> CompCalls2
+        Comp --> CompCalls3
+    end
+
+    subgraph "Contracts communicate with foundation"
+        Cont[Contract Library]
+        ContCalls1[Imports Types]
+        ContCalls2[Imports Utils]
+
+        Cont --> ContCalls1
+        Cont --> ContCalls2
+    end
+
+    subgraph "Utils communicate with foundation only"
+        Util[Utils Library]
+        UtilCalls1[Imports Types]
+
+        Util --> UtilCalls1
+    end
+
+    subgraph "Types have zero dependencies"
+        TypeLib[Types Library<br/>FOUNDATION]
+    end
+
+    CompCalls1 --> TypeLib
+    CompCalls2 --> Util
+    CompCalls3 --> Cont
+    ContCalls1 --> TypeLib
+    ContCalls2 --> Util
+    UtilCalls1 --> TypeLib
+
+    %% Forbidden
+    TypeLib -.->|FORBIDDEN| Util
+    Util -.->|FORBIDDEN| Cont
+    Util -.->|FORBIDDEN| Comp
+
+    classDef libStyle fill:#37b24d,stroke:#2f9e44,color:#fff,stroke-width:2px
+    classDef callStyle fill:#74c0fc,stroke:#339af0,color:#000,stroke-width:1px
+    classDef foundationStyle fill:#4c6ef5,stroke:#364fc7,color:#fff,stroke-width:3px
+
+    class Comp,Cont,Util libStyle
+    class CompCalls1,CompCalls2,CompCalls3,ContCalls1,ContCalls2,UtilCalls1 callStyle
+    class TypeLib foundationStyle
 ```
 
 ### Shared Types (`shared/types/`)
