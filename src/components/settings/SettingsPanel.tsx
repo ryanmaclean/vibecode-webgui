@@ -34,6 +34,7 @@ import {
   Monitor,
   Moon,
   Sun,
+  Shield,
 } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,6 +49,8 @@ import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 
 import { SettingsManager, getSettingsManager } from '@/lib/settings/settings-manager';
+import { TailscaleStatus } from '@/components/TailscaleStatus';
+import { TailscaleSetup } from '@/components/TailscaleSetup';
 import type {
   AppSettings,
   GeneralSettings,
@@ -70,7 +73,7 @@ import {
 
 export interface SettingsPanelProps {
   /** Initial tab to display */
-  initialTab?: 'general' | 'services' | 'ai' | 'advanced';
+  initialTab?: 'general' | 'services' | 'networking' | 'ai' | 'advanced';
   /** Callback when settings are saved */
   onSave?: (settings: AppSettings) => void;
   /** Callback when panel is closed */
@@ -469,7 +472,7 @@ export function SettingsPanel({
 
       <CardContent>
         <Tabs defaultValue={initialTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="general" className="flex items-center gap-2">
               <Settings className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">General</span>
@@ -477,6 +480,10 @@ export function SettingsPanel({
             <TabsTrigger value="services" className="flex items-center gap-2">
               <Server className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">Services</span>
+            </TabsTrigger>
+            <TabsTrigger value="networking" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Network</span>
             </TabsTrigger>
             <TabsTrigger value="ai" className="flex items-center gap-2">
               <Brain className="h-4 w-4" aria-hidden="true" />
@@ -747,6 +754,53 @@ export function SettingsPanel({
                 className="w-20"
               />
             </SettingRow>
+          </TabsContent>
+
+          {/* Networking Settings Tab */}
+          <TabsContent value="networking" className="space-y-4 mt-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Networking & Security</h3>
+              <p className="text-sm text-muted-foreground">
+                Zero-trust networking with Tailscale
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              {/* Tailscale Status */}
+              <div>
+                <h4 className="text-sm font-medium mb-3">Connection Status</h4>
+                <TailscaleStatus
+                  autoRefresh={true}
+                  refreshInterval={30000}
+                  showRefreshButton={true}
+                />
+              </div>
+
+              {/* Tailscale Setup */}
+              <div>
+                <h4 className="text-sm font-medium mb-3">Setup & Configuration</h4>
+                <TailscaleSetup />
+              </div>
+
+              {/* Information */}
+              <div className="border rounded-lg p-4">
+                <h4 className="text-sm font-medium mb-2">About Tailscale</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Tailscale creates a secure network overlay that allows your devices to communicate
+                  safely over the internet without exposing services to the public.
+                </p>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p className="font-medium">Key Features:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>End-to-end encryption for all traffic</li>
+                    <li>Zero-trust security model</li>
+                    <li>No open ports to the public internet</li>
+                    <li>Automatic key rotation and management</li>
+                    <li>Cross-platform support</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </TabsContent>
 
           {/* AI Settings Tab */}
