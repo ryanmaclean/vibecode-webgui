@@ -12,6 +12,7 @@ mod platform;
 mod service;
 mod tailscale;
 mod vm;
+mod wireguard;
 
 // use tauri::Manager; // Removed unused import
 
@@ -123,6 +124,15 @@ fn main() {
             // Tailscale commands
             tailscale::commands::tailscale_status,
             tailscale::commands::tailscale_get_ip,
+            // WireGuard commands
+            wireguard::commands::wireguard_is_installed,
+            wireguard::commands::wireguard_get_version,
+            wireguard::commands::wireguard_list_interfaces,
+            wireguard::commands::wireguard_get_interface_status,
+            wireguard::commands::wireguard_status,
+            wireguard::commands::wireguard_get_ip,
+            wireguard::commands::wireguard_get_secure_bind_addr,
+            wireguard::commands::wireguard_verify_configuration,
         ])
         .setup(|app| {
             // Check if running in service mode (for Electron)
