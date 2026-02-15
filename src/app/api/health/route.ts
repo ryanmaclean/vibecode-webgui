@@ -13,6 +13,7 @@ import { monitoring } from '@/lib/monitoring'
 import { healthCheckQuerySchema } from '@/lib/api/validation/schemas'
 import { validateQueryParams } from '@/lib/api/validation/middleware'
 import { createServiceLogger } from '@/lib/logging'
+import { extractTraceContext } from '@/lib/monitoring/trace-context'
 
 export const dynamic = 'force-dynamic'
 
@@ -71,11 +72,15 @@ export async function GET(request: NextRequest) {
                    request.headers.get('x-real-ip') ||
                    'unknown'
 
+  // Extract trace context from request headers for distributed tracing
+  const traceContext = extractTraceContext(request.headers)
+
   const logContext = {
     service: 'vibecode-webgui',
     component: 'health-check',
     requestId,
-    clientIp
+    clientIp,
+    ...(traceContext ? { traceId: traceContext.traceId } : {})
   }
 
   console.log('Health check requested', logContext)
@@ -125,7 +130,14 @@ export async function GET(request: NextRequest) {
       const publicStatus = hasFailures ? 'degraded' : (healthChecks.status as 'healthy' | 'degraded' | 'unhealthy')
       return NextResponse.json({
         status: publicStatus === 'healthy' ? 'ok' : publicStatus,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        ...(traceContext ? {
+          trace_context: {
+            trace_id: traceContext.traceId,
+            span_id: traceContext.spanId,
+            trace_flags: traceContext.traceFlags
+          }
+        } : {})
       }, { status: hasFailures ? 503 : 200 })
     }
 
@@ -134,11 +146,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         ...healthChecks,
         responseTime: `${responseTime}ms`,
-        requestId
+        requestId,
+        ...(traceContext ? {
+          trace_context: {
+            trace_id: traceContext.traceId,
+            span_id: traceContext.spanId,
+            trace_flags: traceContext.traceFlags
+          }
+        } : {})
       }, { status: 503 })
     }
 
-    return NextResponse.json(snapshot, { status: 200 })
+    return NextResponse.json({
+      ...snapshot,
+      ...(traceContext ? {
+        trace_context: {
+          trace_id: traceContext.traceId,
+          span_id: traceContext.spanId,
+          trace_flags: traceContext.traceFlags
+        }
+      } : {})
+    }, { status: 200 })
 
   } catch (error) {
     console.error('Health check failed with error:', error)
@@ -151,7 +179,14 @@ export async function GET(request: NextRequest) {
     if (!isAuthenticated) {
       return NextResponse.json({
         status: 'unhealthy',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        ...(traceContext ? {
+          trace_context: {
+            trace_id: traceContext.traceId,
+            span_id: traceContext.spanId,
+            trace_flags: traceContext.traceFlags
+          }
+        } : {})
       }, { status: 503 })
     }
 
@@ -159,7 +194,14 @@ export async function GET(request: NextRequest) {
       status: 'unhealthy',
       error: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString(),
-      requestId
+      requestId,
+      ...(traceContext ? {
+        trace_context: {
+          trace_id: traceContext.traceId,
+          span_id: traceContext.spanId,
+          trace_flags: traceContext.traceFlags
+        }
+      } : {})
     }, { status: 503 })
   }
 }

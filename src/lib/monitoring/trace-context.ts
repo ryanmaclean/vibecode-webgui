@@ -289,3 +289,71 @@ export function extractTraceContext(headers: Headers | Record<string, string>) {
 export function createTraceparentHeader(traceId: string, spanId: string, traceFlags: string = '01') {
   return `00-${traceId}-${spanId}-${traceFlags}`;
 }
+
+/**
+ * Inject trace context into OpenTelemetry context
+ * This sets the remote trace context as the parent span
+ */
+export function injectTraceContext(
+  traceId: string,
+  spanId: string,
+  traceFlags: number = 1
+): any {
+  if (!isServer || isDockerBuild || !trace || !context || !api) {
+    // Return current context if not available
+    return context?.active() || {};
+  }
+
+  try {
+    const { TraceFlags } = api;
+
+    // Create a span context from the extracted trace information
+    const spanContext = {
+      traceId,
+      spanId,
+      traceFlags: traceFlags || TraceFlags.SAMPLED,
+      isRemote: true,
+    };
+
+    // Set this as the active context
+    return trace.setSpanContext(context.active(), spanContext);
+  } catch (error) {
+    // Return current context on error
+    return context?.active() || {};
+  }
+}
+
+/**
+ * Extract and inject trace context from request headers
+ * Returns the new context with the injected trace
+ */
+export function extractAndInjectTraceContext(
+  headers: Headers | Record<string, string>
+): { context: any; traceContext: any } {
+  const extracted = extractTraceContext(headers);
+
+  if (!extracted || !isServer || isDockerBuild) {
+    return {
+      context: context?.active() || {},
+      traceContext: null,
+    };
+  }
+
+  // Parse trace flags from hex string to number
+  const traceFlags = parseInt(extracted.traceFlags, 16);
+
+  const newContext = injectTraceContext(
+    extracted.traceId,
+    extracted.spanId,
+    traceFlags
+  );
+
+  return {
+    context: newContext,
+    traceContext: {
+      trace_id: extracted.traceId,
+      span_id: extracted.spanId,
+      trace_flags: extracted.traceFlags,
+    },
+  };
+}

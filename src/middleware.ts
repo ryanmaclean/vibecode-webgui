@@ -1,9 +1,10 @@
 /**
  * Next.js Middleware
- * Handles authentication, security headers, and request routing
+ * Handles authentication, security headers, request routing, and trace context propagation
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { extractAndInjectTraceContext } from './lib/monitoring/trace-context';
 
 /**
  * Add security headers to response
@@ -21,22 +22,44 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip middleware for static assets and health endpoints
+  // Extract and inject trace context from incoming request for all requests
+  // This enables distributed tracing across services
+  const { traceContext } = extractAndInjectTraceContext(request.headers);
+
+  // Skip middleware for static assets
   if (
     pathname.startsWith('/_next/static') ||
     pathname.startsWith('/_next/image') ||
     pathname.startsWith('/favicon.ico') ||
-    pathname.startsWith('/public') ||
-    pathname.startsWith('/api/health') ||
-    pathname === '/api/healthz' ||
-    pathname === '/api/readyz'
+    pathname.startsWith('/public')
   ) {
     return NextResponse.next();
   }
 
   // In test environment, pass through without additional processing
   if (process.env.NODE_ENV === 'test') {
-    return NextResponse.next();
+    const response = NextResponse.next();
+    // Add trace context to response headers for testing
+    if (traceContext) {
+      response.headers.set('X-Trace-Id', traceContext.trace_id);
+      response.headers.set('X-Span-Id', traceContext.span_id);
+    }
+    return response;
+  }
+
+  // For health endpoints, skip auth but still propagate trace context
+  const isHealthEndpoint = pathname.startsWith('/api/health') ||
+                          pathname === '/api/healthz' ||
+                          pathname === '/api/readyz';
+
+  if (isHealthEndpoint) {
+    const response = NextResponse.next();
+    // Add trace context to response headers
+    if (traceContext) {
+      response.headers.set('X-Trace-Id', traceContext.trace_id);
+      response.headers.set('X-Span-Id', traceContext.span_id);
+    }
+    return addSecurityHeaders(response);
   }
 
   // Check authentication for protected routes
@@ -57,8 +80,15 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Continue with security headers
+  // Continue with security headers and trace context propagation
   const response = NextResponse.next();
+
+  // Add trace context to response headers for propagation
+  if (traceContext) {
+    response.headers.set('X-Trace-Id', traceContext.trace_id);
+    response.headers.set('X-Span-Id', traceContext.span_id);
+  }
+
   return addSecurityHeaders(response);
 }
 
