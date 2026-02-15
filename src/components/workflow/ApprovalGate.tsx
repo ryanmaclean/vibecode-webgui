@@ -45,6 +45,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
+import { globalHITLManager } from '@/lib/workflow/hitl-manager'
 import type {
   ApprovalRequest,
   ApprovalStatus,
@@ -523,10 +524,18 @@ function ApprovalRequestCard({
 export function ApprovalGate({
   requests,
   currentUserId,
-  onApprove = async () => {},
-  onReject = async () => {},
-  onEscalate,
-  onRefresh,
+  onApprove = async (requestId: string, comment?: string) => {
+    globalHITLManager.submitApproval(requestId, currentUserId, 'approved', comment)
+  },
+  onReject = async (requestId: string, comment?: string) => {
+    globalHITLManager.submitApproval(requestId, currentUserId, 'rejected', comment)
+  },
+  onEscalate = async (requestId: string) => {
+    globalHITLManager.escalate(requestId)
+  },
+  onRefresh = async () => {
+    globalHITLManager.processExpiredRequests()
+  },
   refreshInterval = 30000,
   filterByUser = false,
   className
