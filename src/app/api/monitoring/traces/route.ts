@@ -271,98 +271,131 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const traces = await request.json()
+    const body = await request.json()
 
-    // Validate trace data structure
-    if (!traces.resourceSpans || !Array.isArray(traces.resourceSpans)) {
+    let processedSpans = 0
+    let errors = 0
+
+    // Support both simple format and OTLP format
+    if (body.spans && Array.isArray(body.spans)) {
+      // Simple format: { spans: [...] }
+      for (const span of body.spans) {
+        try {
+          const spanName = span.name || 'unknown_span'
+          const traceId = span.traceId || 'unknown_trace'
+          const duration = span.duration || 0
+          const tags = ['source:client_simple', 'service:vibecode-webgui-client']
+
+          // Add trace ID as tag
+          tags.push(`trace_id:${traceId}`)
+
+          // Submit as performance metric to Datadog
+          await monitoring.submitMetric({
+            metric: 'vibecode.client.span.duration',
+            value: duration,
+            tags: [...tags, `span_name:${spanName}`],
+          })
+
+          processedSpans++
+        } catch (spanError) {
+          errors++
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        processed_spans: processedSpans,
+        errors,
+        message: `Successfully processed ${processedSpans} spans${errors > 0 ? ` with ${errors} errors` : ''}`,
+        timestamp: new Date().toISOString(),
+      })
+    } else if (body.resourceSpans && Array.isArray(body.resourceSpans)) {
+      // OTLP format: { resourceSpans: [...] }
+      for (const resourceSpan of body.resourceSpans) {
+        try {
+          const resource = resourceSpan.resource || {}
+          const instrumentationLibrarySpans = resourceSpan.instrumentationLibrarySpans || []
+
+          for (const libSpan of instrumentationLibrarySpans) {
+            const spans = libSpan.spans || []
+
+            for (const span of spans) {
+              // Extract span information
+              const spanName = span.name || 'unknown_span'
+              const startTime = span.startTimeUnixNano
+                ? Math.floor(parseInt(span.startTimeUnixNano) / 1000000)
+                : Date.now()
+              const endTime = span.endTimeUnixNano
+                ? Math.floor(parseInt(span.endTimeUnixNano) / 1000000)
+                : Date.now()
+              const duration = endTime - startTime
+
+              // Extract attributes
+              const attributes = span.attributes || []
+              const tags = ['source:client_otel', 'service:vibecode-webgui-client']
+
+              attributes.forEach((attr: any) => {
+                if (attr.key && attr.value) {
+                  const value = attr.value.stringValue || attr.value.intValue || attr.value.boolValue
+                  if (value !== undefined) {
+                    tags.push(`${attr.key}:${value}`)
+                  }
+                }
+              })
+
+              // Submit as performance metric to Datadog
+              await monitoring.submitMetric({
+                metric: 'vibecode.client.span.duration',
+                value: duration,
+                tags: [...tags, `span_name:${spanName}`],
+              })
+
+              // For user interactions, submit additional metrics
+              if (attributes.some((a: any) => a.key === 'user.interaction')) {
+                await monitoring.submitMetric({
+                  metric: 'vibecode.client.user_interactions.count',
+                  value: 1,
+                  tags,
+                })
+              }
+
+              processedSpans++
+            }
+          }
+
+          // Submit trace event to Datadog
+          const serviceName =
+            resource.attributes?.find((a: any) => a.key === 'service.name')?.value?.stringValue ||
+            'vibecode-webgui-client'
+
+          await monitoring.submitEvent(
+            `Client Traces Received`,
+            `Processed ${processedSpans} spans from ${serviceName}`,
+            ['source:client_otel', 'event:traces_received', `service:${serviceName}`]
+          )
+        } catch (spanError) {
+          errors++
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        processed_spans: processedSpans,
+        errors,
+        message: `Successfully processed ${processedSpans} spans${errors > 0 ? ` with ${errors} errors` : ''}`,
+        timestamp: new Date().toISOString(),
+      })
+    } else {
+      // Invalid format
       return NextResponse.json(
         {
           error: 'Invalid trace data format',
-          expected: 'OTLP trace format with resourceSpans array',
+          expected: 'Either simple format { spans: [...] } or OTLP format { resourceSpans: [...] }',
         },
         { status: 400 }
       )
     }
 
-    // Process each resource span
-    let processedSpans = 0
-    let errors = 0
-
-    for (const resourceSpan of traces.resourceSpans) {
-      try {
-        const resource = resourceSpan.resource || {}
-        const instrumentationLibrarySpans = resourceSpan.instrumentationLibrarySpans || []
-
-        for (const libSpan of instrumentationLibrarySpans) {
-          const spans = libSpan.spans || []
-
-          for (const span of spans) {
-            // Extract span information
-            const spanName = span.name || 'unknown_span'
-            const startTime = span.startTimeUnixNano
-              ? Math.floor(parseInt(span.startTimeUnixNano) / 1000000)
-              : Date.now()
-            const endTime = span.endTimeUnixNano
-              ? Math.floor(parseInt(span.endTimeUnixNano) / 1000000)
-              : Date.now()
-            const duration = endTime - startTime
-
-            // Extract attributes
-            const attributes = span.attributes || []
-            const tags = ['source:client_otel', 'service:vibecode-webgui-client']
-
-            attributes.forEach((attr: any) => {
-              if (attr.key && attr.value) {
-                const value = attr.value.stringValue || attr.value.intValue || attr.value.boolValue
-                if (value !== undefined) {
-                  tags.push(`${attr.key}:${value}`)
-                }
-              }
-            })
-
-            // Submit as performance metric to Datadog
-            await monitoring.submitMetric({
-              metric: 'vibecode.client.span.duration',
-              value: duration,
-              tags: [...tags, `span_name:${spanName}`],
-            })
-
-            // For user interactions, submit additional metrics
-            if (attributes.some((a: any) => a.key === 'user.interaction')) {
-              await monitoring.submitMetric({
-                metric: 'vibecode.client.user_interactions.count',
-                value: 1,
-                tags,
-              })
-            }
-
-            processedSpans++
-          }
-        }
-
-        // Submit trace event to Datadog
-        const serviceName =
-          resource.attributes?.find((a: any) => a.key === 'service.name')?.value?.stringValue ||
-          'vibecode-webgui-client'
-
-        await monitoring.submitEvent(
-          `Client Traces Received`,
-          `Processed ${processedSpans} spans from ${serviceName}`,
-          ['source:client_otel', 'event:traces_received', `service:${serviceName}`]
-        )
-      } catch (spanError) {
-        // Server error logged
-        errors++
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      processed_spans: processedSpans,
-      errors,
-      message: `Successfully processed ${processedSpans} spans${errors > 0 ? ` with ${errors} errors` : ''}`,
-      timestamp: new Date().toISOString(),
-    })
   } catch (error) {
     // Server error logged
 
