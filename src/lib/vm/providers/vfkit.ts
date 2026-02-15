@@ -797,6 +797,220 @@ export class VfkitProvider implements VMProvider {
   }
   
   /**
+   * Pause a running VM
+   * Note: vfkit doesn't natively support pause/resume
+   * This is a no-op placeholder for snapshot compatibility
+   */
+  async pause(vmId: string): Promise<void> {
+    logger.debug('Pause operation not supported by vfkit', { vmId });
+    // vfkit doesn't have native pause support
+    // For snapshots, we rely on the snapshot manager to handle this
+  }
+
+  /**
+   * Resume a paused VM
+   * Note: vfkit doesn't natively support pause/resume
+   * This is a no-op placeholder for snapshot compatibility
+   */
+  async resume(vmId: string): Promise<void> {
+    logger.debug('Resume operation not supported by vfkit', { vmId });
+    // vfkit doesn't have native resume support
+  }
+
+  /**
+   * Save VM state to file
+   * Saves VM configuration and runtime state for later restoration
+   *
+   * @param vmId - VM identifier
+   * @param statePath - Path where state should be saved
+   * @returns Promise resolving to true if state was saved successfully
+   */
+  async saveState(vmId: string, statePath: string): Promise<boolean> {
+    logger.info('Saving VM state', { vmId, statePath });
+
+    try {
+      const vmDir = path.join(this.vmBaseDir, vmId);
+
+      // Collect VM state information
+      const state = {
+        vmId,
+        savedAt: new Date().toISOString(),
+        status: await this.getVMStatus(vmId),
+        config: null as VMConfig | null,
+        pid: null as number | null,
+      };
+
+      // Read VM config
+      try {
+        const configPath = path.join(vmDir, 'config.json');
+        const configData = await fs.readFile(configPath, 'utf-8');
+        state.config = JSON.parse(configData);
+      } catch (error) {
+        logger.warn('Could not read VM config during state save', { vmId, error });
+      }
+
+      // Read VM PID if running
+      try {
+        const pidPath = path.join(vmDir, 'vm.pid');
+        const pidContent = await fs.readFile(pidPath, 'utf-8');
+        state.pid = parseInt(pidContent.trim(), 10);
+      } catch (error) {
+        logger.debug('No PID file found during state save', { vmId });
+      }
+
+      // Save state to file
+      await fs.writeFile(statePath, JSON.stringify(state, null, 2));
+
+      logger.info('VM state saved successfully', { vmId, statePath });
+      return true;
+    } catch (error) {
+      logger.error('Failed to save VM state', { vmId, statePath, error });
+      return false;
+    }
+  }
+
+  /**
+   * Restore VM state from file
+   * Restores VM configuration and runtime state
+   *
+   * @param vmId - VM identifier
+   * @param statePath - Path to saved state file
+   * @returns Promise resolving to true if state was restored successfully
+   */
+  async restoreState(vmId: string, statePath: string): Promise<boolean> {
+    logger.info('Restoring VM state', { vmId, statePath });
+
+    try {
+      // Read state file
+      const stateData = await fs.readFile(statePath, 'utf-8');
+      const state = JSON.parse(stateData);
+
+      logger.debug('VM state read from file', {
+        vmId,
+        savedVmId: state.vmId,
+        savedAt: state.savedAt,
+        status: state.status
+      });
+
+      // Verify state matches VM
+      if (state.vmId !== vmId) {
+        logger.warn('State file is for different VM', {
+          vmId,
+          stateVmId: state.vmId
+        });
+        return false;
+      }
+
+      // Restore config if present
+      if (state.config) {
+        const vmDir = path.join(this.vmBaseDir, vmId);
+        const configPath = path.join(vmDir, 'config.json');
+
+        try {
+          await fs.writeFile(configPath, JSON.stringify(state.config, null, 2));
+          logger.debug('VM config restored', { vmId });
+        } catch (error) {
+          logger.warn('Could not restore VM config', { vmId, error });
+        }
+      }
+
+      logger.info('VM state restored successfully', { vmId, statePath });
+      return true;
+    } catch (error) {
+      logger.error('Failed to restore VM state', { vmId, statePath, error });
+      return false;
+    }
+  }
+
+  /**
+   * Restart a VM with state preservation
+   * Saves VM state before stopping, then restores after starting
+   *
+   * @param vmId - VM identifier
+   * @returns Promise that resolves when restart is complete
+   */
+  async restart(vmId: string): Promise<void> {
+    logger.info('Restarting VM with state preservation', { vmId });
+    const span = getTracer().startSpan('vfkit.restart');
+    span.setTag('vm.id', vmId);
+
+    const vmDir = path.join(this.vmBaseDir, vmId);
+    const statePath = path.join(vmDir, 'restart.state');
+
+    try {
+      // Save current state
+      const sSave = getTracer().startSpan('vfkit.restart.saveState');
+      const stateSaved = await this.saveState(vmId, statePath);
+      sSave.setTag('state.saved', stateSaved);
+      sSave.finish();
+
+      if (!stateSaved) {
+        logger.warn('Could not save VM state, proceeding with restart anyway', { vmId });
+      }
+
+      // Stop VM
+      const sStop = getTracer().startSpan('vfkit.restart.stop');
+      try {
+        await this.stop(vmId);
+        sStop.finish();
+      } catch (error) {
+        sStop.finish();
+        logger.warn('Error stopping VM during restart', { vmId, error });
+        // Continue with restart even if stop fails (VM might already be stopped)
+      }
+
+      // Start VM
+      const sStart = getTracer().startSpan('vfkit.restart.start');
+      await this.start(vmId);
+      sStart.finish();
+
+      // Restore state if it was saved
+      if (stateSaved) {
+        const sRestore = getTracer().startSpan('vfkit.restart.restoreState');
+        const stateRestored = await this.restoreState(vmId, statePath);
+        sRestore.setTag('state.restored', stateRestored);
+        sRestore.finish();
+
+        if (!stateRestored) {
+          logger.warn('Could not restore VM state after restart', { vmId });
+        }
+
+        // Clean up state file
+        try {
+          await fs.unlink(statePath);
+        } catch (error) {
+          logger.debug('Could not clean up state file', { vmId, statePath, error });
+        }
+      }
+
+      logger.info('VM restarted successfully', { vmId });
+      span.finish();
+    } catch (error) {
+      logger.error('Failed to restart VM', { vmId, error });
+      span.finish();
+      throw error;
+    }
+  }
+
+  /**
+   * Get VM configuration
+   *
+   * @param vmId - VM identifier
+   * @returns Promise resolving to VM config or null if not found
+   */
+  async getConfig(vmId: string): Promise<VMConfig | null> {
+    try {
+      const vmDir = path.join(this.vmBaseDir, vmId);
+      const configPath = path.join(vmDir, 'config.json');
+      const configData = await fs.readFile(configPath, 'utf-8');
+      return JSON.parse(configData);
+    } catch (error) {
+      logger.debug('Could not read VM config', { vmId, error });
+      return null;
+    }
+  }
+
+  /**
    * Parse size string to bytes
    */
   private parseSizeToBytes(size: string): number {
@@ -804,10 +1018,10 @@ export class VfkitProvider implements VMProvider {
     if (!match) {
       throw new Error(`Invalid size format: ${size}`);
     }
-    
+
     const value = parseInt(match[1]);
     const unit = (match[2] || 'MB').toUpperCase();
-    
+
     switch (unit) {
       case 'GB':
         return value * 1024 * 1024 * 1024;
