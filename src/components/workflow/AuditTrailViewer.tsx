@@ -274,7 +274,7 @@ function ActionItem({ action, onRollback, enableRollback }: ActionItemProps) {
   }
 
   return (
-    <div className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
+    <div data-testid="audit-entry" className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
       <div className="flex items-start gap-3">
         {/* Icon */}
         <div className={cn("mt-0.5", typeConfig.color)}>
@@ -318,6 +318,7 @@ function ActionItem({ action, onRollback, enableRollback }: ActionItemProps) {
               )}
               {enableRollback && action.canRollback && (
                 <Button
+                  data-testid="rollback-button"
                   variant="outline"
                   size="sm"
                   onClick={handleRollbackClick}
@@ -509,7 +510,7 @@ export function AuditTrailViewer({
   })
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div data-testid="audit-trail-viewer" className={cn("space-y-4", className)}>
       {/* Header */}
       <Card>
         <CardHeader>

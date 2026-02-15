@@ -323,7 +323,7 @@ export function WorkflowBuilder({
   }, [])
 
   return (
-    <div className="flex h-full flex-row">
+    <div data-testid="workflow-builder" className="flex h-full flex-row">
       {/* Node Palette Sidebar */}
       {!readOnly && (
         <div className="w-64 flex-none border-r">
@@ -353,6 +353,7 @@ export function WorkflowBuilder({
                 {!readOnly && (
                   <>
                     <Button
+                      data-testid="save-workflow-button"
                       variant="outline"
                       size="sm"
                       onClick={handleSave}
@@ -371,6 +372,7 @@ export function WorkflowBuilder({
                       )}
                     </Button>
                     <Button
+                      data-testid="execute-workflow-button"
                       size="sm"
                       onClick={handleExecute}
                       disabled={isExecuting || workflow.nodes.length === 0}
@@ -415,6 +417,7 @@ export function WorkflowBuilder({
               <div className="space-y-2">
                 <Label htmlFor="workflow-name">Name</Label>
                 <Input
+                  data-testid="workflow-name"
                   id="workflow-name"
                   value={workflow.name}
                   onChange={e => updateMetadata({ name: e.target.value })}
@@ -436,6 +439,7 @@ export function WorkflowBuilder({
             <div className="space-y-2">
               <Label htmlFor="workflow-description">Description</Label>
               <Input
+                data-testid="workflow-description"
                 id="workflow-description"
                 value={workflow.description || ''}
                 onChange={e => updateMetadata({ description: e.target.value })}

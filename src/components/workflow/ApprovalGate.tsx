@@ -310,7 +310,7 @@ function ApprovalRequestCard({
   }
 
   return (
-    <Card className={cn('transition-all', hasUserApproved && 'opacity-60')}>
+    <Card data-testid="approval-request" className={cn('transition-all', hasUserApproved && 'opacity-60')}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1">
@@ -466,6 +466,7 @@ function ApprovalRequestCard({
             />
             <div className="flex gap-2">
               <Button
+                data-testid="approve-button"
                 onClick={handleApprove}
                 disabled={isSubmitting}
                 className="flex-1"
@@ -476,6 +477,7 @@ function ApprovalRequestCard({
                 Approve
               </Button>
               <Button
+                data-testid="reject-button"
                 onClick={handleReject}
                 disabled={isSubmitting}
                 variant="destructive"
@@ -594,7 +596,7 @@ export function ApprovalGate({
   }, [onRefresh, refreshInterval])
 
   return (
-    <div className={cn('space-y-6', className)}>
+    <div data-testid="approval-requests" className={cn('space-y-6', className)}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
