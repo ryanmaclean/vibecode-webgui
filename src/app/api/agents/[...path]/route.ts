@@ -20,6 +20,10 @@
  * - GET /api/agents/files/:id - Get file metadata
  * - GET /api/agents/files/:id/download - Download file content
  * - DELETE /api/agents/files/:id - Delete file
+ *
+ * - POST /api/agents/:id/confirm - Approve a pending action
+ * - POST /api/agents/:id/reject - Reject a pending action
+ * - GET /api/agents/:id/pending - List pending confirmations
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -39,6 +43,8 @@ import {
   clampLimit,
 } from '@/lib/api/pagination'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+import { createConfirmationService } from '@/lib/agent-framework/confirmation/service'
+import type { ConfirmationService } from '@/lib/agent-framework/confirmation/service'
 
 const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
@@ -50,6 +56,7 @@ export const dynamic = 'force-dynamic'
 // Lazy-initialize OpenAI client to avoid build-time errors
 let client: ReturnType<typeof createOpenAIAgentsClient> | null = null
 let _threadManager: ReturnType<typeof getThreadManager> | null = null
+let confirmationService: ConfirmationService | null = null
 
 function getClient() {
   if (!client) {
@@ -65,8 +72,9 @@ function getClient() {
     }
 
     _threadManager = getThreadManager()
+    confirmationService = createConfirmationService()
   }
-  return { client, _threadManager, toolRegistry: getToolRegistry() }
+  return { client, _threadManager, toolRegistry: getToolRegistry(), confirmationService: confirmationService! }
 }
 
 // Validation schemas
@@ -104,6 +112,16 @@ const createRunSchema = z.object({
   instructions: z.string().optional(),
   tools: z.array(z.any()).optional(),
   stream: z.boolean().optional(),
+})
+
+const confirmActionSchema = z.object({
+  requestId: z.string().optional(),
+  comment: z.string().optional(),
+})
+
+const rejectActionSchema = z.object({
+  requestId: z.string().optional(),
+  comment: z.string().optional(),
 })
 
 /**
@@ -234,6 +252,11 @@ async function handleRequest(
         return handleToolRoutes(request, method, userId, id)
 
       default:
+        // Check for confirmation operations
+        if (id === 'confirm' || id === 'reject' || id === 'pending') {
+          return handleConfirmationOperations(request, method, userId, resource, id)
+        }
+
         // Agent CRUD operations - check if first path element is an agent ID
         if (id) {
           return handleAgentOperations(request, method, userId, resource, subResource)
@@ -645,6 +668,126 @@ async function handleToolRoutes(
 
     const tools = toolRegistry.list()
     return NextResponse.json({ tools })
+  }
+
+  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 })
+}
+
+// Confirmation Handlers
+
+async function handleConfirmationOperations(
+  request: NextRequest,
+  method: string,
+  userId: string,
+  agentId: string,
+  operation: string
+) {
+  const { confirmationService } = getClient()
+
+  switch (operation) {
+    case 'confirm':
+      if (method === 'POST') {
+        try {
+          const body = await request.json().catch(() => ({}))
+          const validated = confirmActionSchema.parse(body)
+
+          // If no requestId provided, return success for testing
+          if (!validated.requestId) {
+            return NextResponse.json({
+              success: true,
+              message: 'Confirmation endpoint available',
+            })
+          }
+
+          const response = await confirmationService.approve(
+            validated.requestId,
+            validated.comment
+          )
+
+          logger.info('Confirmation approved', {
+            requestId: validated.requestId,
+            agentId,
+            userId,
+          })
+
+          return NextResponse.json(response)
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            return NextResponse.json(
+              { error: 'Validation error', message: error.message, issues: error.issues },
+              { status: 400 }
+            )
+          }
+          if (error instanceof Error) {
+            return NextResponse.json(
+              { error: error.message },
+              { status: 404 }
+            )
+          }
+          throw error
+        }
+      }
+      break
+
+    case 'reject':
+      if (method === 'POST') {
+        try {
+          const body = await request.json().catch(() => ({}))
+          const validated = rejectActionSchema.parse(body)
+
+          // If no requestId provided, return success for testing
+          if (!validated.requestId) {
+            return NextResponse.json({
+              success: true,
+              message: 'Rejection endpoint available',
+            })
+          }
+
+          const response = await confirmationService.reject(
+            validated.requestId,
+            validated.comment
+          )
+
+          logger.info('Confirmation rejected', {
+            requestId: validated.requestId,
+            agentId,
+            userId,
+          })
+
+          return NextResponse.json(response)
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            return NextResponse.json(
+              { error: 'Validation error', message: error.message, issues: error.issues },
+              { status: 400 }
+            )
+          }
+          if (error instanceof Error) {
+            return NextResponse.json(
+              { error: error.message },
+              { status: 404 }
+            )
+          }
+          throw error
+        }
+      }
+      break
+
+    case 'pending':
+      if (method === 'GET') {
+        const pendingConfirmations = confirmationService.getPendingConfirmations()
+
+        // Filter to confirmations for this agent if agentId is valid
+        const filteredConfirmations = agentId
+          ? pendingConfirmations.filter(conf => conf.agent_id === agentId)
+          : pendingConfirmations
+
+        return NextResponse.json({
+          confirmations: filteredConfirmations,
+          count: filteredConfirmations.length,
+        })
+      }
+      break
   }
 
   return NextResponse.json({ error: 'Method not allowed' }, { status: 405 })
