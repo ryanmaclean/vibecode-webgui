@@ -28,6 +28,11 @@ export interface ProjectTemplate {
   monitoringSetup: boolean
   monitoringConfig?: TemplateMonitoringConfig
   thumbnail?: string
+  requirements?: {
+    memory: string
+    storage: string
+    network: boolean
+  }
   documentation: {
     setup: string[]
     usage: string[]
