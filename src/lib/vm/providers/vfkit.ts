@@ -390,7 +390,10 @@ export class VfkitProvider implements VMProvider {
     
     const bootSpan = getTracer().startSpan('vfkit.boot.wait');
     const waitStart = Date.now();
-    await new Promise(resolve => setTimeout(resolve, 2500));
+
+    // Wait for VM to be ready with 30-second timeout
+    await this.waitForVMReady(config.name);
+
     bootSpan.setTag('boot.wait.ms', Date.now() - waitStart);
     bootSpan.finish();
     span.finish();
@@ -406,6 +409,29 @@ export class VfkitProvider implements VMProvider {
     };
   }
   
+  /**
+   * Wait for VM to be ready
+   */
+  private async waitForVMReady(vmId: string, maxWaitMs: number = 30000): Promise<void> {
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxWaitMs) {
+      try {
+        const status = await this.getVMStatus(vmId);
+        if (status === 'running') {
+          logger.info('VM is ready', { vmId });
+          return;
+        }
+      } catch {
+        // Keep waiting
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    throw new Error(`VM failed to start within ${maxWaitMs}ms`);
+  }
+
   /**
    * Get VM status
    */
