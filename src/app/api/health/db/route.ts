@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceLogger } from '@/lib/logging';
+import { getDatabaseTraceContext } from '@/lib/monitoring/opentelemetry';
 
 const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'health-db' });
 
@@ -273,12 +274,17 @@ export async function GET(request: NextRequest) {
     
     const endTime = Date.now();
     const latency = endTime - startTime;
-    
+
+    // Get trace context for correlation
+    const traceContext = getDatabaseTraceContext();
+
     const response = {
       status: 'ok',
       message: 'Database connection healthy',
       latency: `${latency}ms`,
       timestamp: new Date().toISOString(),
+      trace_id: traceContext.trace_id,
+      span_id: traceContext.span_id,
       database: {
         name: dbInfo?.db_name,
         user: dbInfo?.user_name,

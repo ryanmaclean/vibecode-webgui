@@ -48,6 +48,8 @@ if (!isDockerBuild) {
 }
 
 import { getDatadogApiKey } from './datadog-env'
+import { createPgInstrumentation } from './database-instrumentation'
+
 const isServer = typeof window === 'undefined'
 const serviceName = 'vibecode-webgui'
 const serviceVersion = process.env.npm_package_version || '0.1.0'
@@ -102,39 +104,50 @@ export function initializeOpenTelemetry() {
       // Debug log removed
     })
 
+    // Create PostgreSQL instrumentation
+    const pgInstrumentation = createPgInstrumentation()
+
+    // Build instrumentations array
+    const instrumentations = [
+      getNodeAutoInstrumentations({
+        // Disable some instrumentations that might be noisy in development
+        '@opentelemetry/instrumentation-dns': {
+          enabled: process.env.NODE_ENV === 'production'
+        },
+        '@opentelemetry/instrumentation-net': {
+          enabled: process.env.NODE_ENV === 'production'
+        },
+        // Enable key instrumentations
+        '@opentelemetry/instrumentation-http': {
+          enabled: true,
+          requestHook: (span: any, request: any) => {
+            // Add custom attributes to HTTP spans
+            span.setAttributes({
+              'vibecode.request.user_agent': request.headers['user-agent'] || 'unknown',
+              'vibecode.request.method': request.method || 'unknown'
+            })
+          }
+        },
+        '@opentelemetry/instrumentation-express': {
+          enabled: true
+        },
+        '@opentelemetry/instrumentation-fs': {
+          enabled: process.env.NODE_ENV === 'production'
+        }
+      })
+    ]
+
+    // Add PostgreSQL instrumentation if available
+    if (pgInstrumentation) {
+      instrumentations.push(pgInstrumentation)
+    }
+
     // Initialize SDK with auto-instrumentation
     otelSDK = new NodeSDK({
       resource,
       traceExporter: otlpExporter,
       metricReader: prometheusExporter,
-      instrumentations: [
-        getNodeAutoInstrumentations({
-          // Disable some instrumentations that might be noisy in development
-          '@opentelemetry/instrumentation-dns': {
-            enabled: process.env.NODE_ENV === 'production'
-          },
-          '@opentelemetry/instrumentation-net': {
-            enabled: process.env.NODE_ENV === 'production'
-          },
-          // Enable key instrumentations
-          '@opentelemetry/instrumentation-http': {
-            enabled: true,
-            requestHook: (span: any, request: any) => {
-              // Add custom attributes to HTTP spans
-              span.setAttributes({
-                'vibecode.request.user_agent': request.headers['user-agent'] || 'unknown',
-                'vibecode.request.method': request.method || 'unknown'
-              })
-            }
-          },
-          '@opentelemetry/instrumentation-express': {
-            enabled: true
-          },
-          '@opentelemetry/instrumentation-fs': {
-            enabled: process.env.NODE_ENV === 'production'
-          }
-        })
-      ]
+      instrumentations
     })
 
     // Start the SDK
@@ -168,6 +181,9 @@ export async function shutdownOpenTelemetry() {
  * Get current OpenTelemetry configuration
  */
 export function getOpenTelemetryConfig() {
+  const { getDatabaseInstrumentationConfig } = require('./database-instrumentation')
+  const dbConfig = getDatabaseInstrumentationConfig()
+
   return {
     initialized: !!otelSDK,
     service_name: serviceName,
@@ -175,7 +191,8 @@ export function getOpenTelemetryConfig() {
     environment: process.env.NODE_ENV || 'development',
     otlp_endpoint: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || 'http://localhost:4318/v1/traces',
     prometheus_port: process.env.OTEL_PROMETHEUS_PORT || '9090',
-    datadog_integration: !!getDatadogApiKey()
+    datadog_integration: !!getDatadogApiKey(),
+    database_instrumentation: dbConfig
   }
 }
 
@@ -302,6 +319,13 @@ export function getActiveTracer() {
     };
   }
 }
+
+// Re-export database instrumentation utilities
+export {
+  getDatabaseTraceContext,
+  traceDatabaseOperation,
+  getDatabaseInstrumentationConfig
+} from './database-instrumentation'
 
 // Re-export trace context utilities for convenience
 export {
