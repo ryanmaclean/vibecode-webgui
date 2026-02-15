@@ -175,6 +175,33 @@ def get_meter(name: str) -> Any:
     return metrics.get_meter(name)
 
 
+def get_trace_context() -> dict:
+    """
+    Get current trace context for propagation
+
+    Returns:
+        dict with trace_id, span_id, and trace_flags (empty dict if unavailable)
+    """
+    if not OTEL_AVAILABLE:
+        return {}
+
+    try:
+        span = trace.get_current_span()
+        if not span or not span.get_span_context().is_valid:
+            return {}
+
+        span_context = span.get_span_context()
+
+        return {
+            'trace_id': format(span_context.trace_id, '032x'),
+            'span_id': format(span_context.span_id, '016x'),
+            'trace_flags': format(span_context.trace_flags, '02x')
+        }
+    except Exception as e:
+        logger.error(f"Error getting trace context: {e}", exc_info=True)
+        return {}
+
+
 def shutdown():
     """Shutdown telemetry providers"""
     global _initialized, _tracer_provider, _meter_provider
