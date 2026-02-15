@@ -12,15 +12,25 @@ set -e
 init_log_aggregation
 
 
-echo "🚀 VibeCode One-Click Kubernetes Deployment"
-echo "============================================"
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
 NC='\033[0m' # No Color
+BOLD='\033[1m'
+
+# Icons
+CHECK_MARK="✓"
+CROSS_MARK="✗"
+ARROW="→"
+SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+
+# Progress tracking
+TOTAL_STEPS=8
+CURRENT_STEP=0
 
 # Parse command-line arguments
 DRY_RUN=false
@@ -58,28 +68,65 @@ NAMESPACE_PLATFORM="vibecode-platform"
 NAMESPACE_WEBGUI="vibecode-webgui"
 K8S_MANIFESTS_DIR="platforms/kubernetes/k8s"
 
-if [ "$DRY_RUN" = true ]; then
-    echo ""
-    log_info "🔍 DRY RUN MODE - No actual changes will be made"
-    echo ""
-fi
-
 # Helper functions
 log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    echo -e "${CYAN}${ARROW}${NC} $1"
 }
 
 log_success() {
-    echo -e "${GREEN}[PASS]${NC} $1"
+    echo -e "${GREEN}${CHECK_MARK}${NC} $1"
 }
 
 log_warning() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    echo -e "${YELLOW}⚠${NC}  $1"
 }
 
 log_error() {
-    echo -e "${RED}[FAIL]${NC} $1"
+    echo -e "${RED}${CROSS_MARK}${NC} $1"
 }
+
+print_header() {
+    echo ""
+    echo -e "${BOLD}${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BOLD}${BLUE}  $1${NC}"
+    echo -e "${BOLD}${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+}
+
+print_step() {
+    CURRENT_STEP=$((CURRENT_STEP + 1))
+    echo ""
+    echo -e "${BOLD}${MAGENTA}[${CURRENT_STEP}/${TOTAL_STEPS}]${NC} ${BOLD}$1${NC}"
+    echo ""
+}
+
+show_spinner() {
+    local pid=$1
+    local message=$2
+    local i=0
+
+    while kill -0 "$pid" 2>/dev/null; do
+        printf "\r${CYAN}${SPINNER_FRAMES[$i]}${NC} ${message}..."
+        i=$(( (i + 1) % 10 ))
+        sleep 0.1
+    done
+    printf "\r"
+}
+
+# ============================================================================
+# DISPLAY HEADER AND CONFIGURATION
+# ============================================================================
+
+print_header "🚀 VibeCode One-Click Kubernetes Deployment"
+
+echo -e "${CYAN}Deploying complete VibeCode environment to KIND cluster${NC}"
+echo -e "${CYAN}Cluster: ${BOLD}${CLUSTER_NAME}${NC}"
+echo ""
+
+if [ "$DRY_RUN" = true ]; then
+    echo -e "${YELLOW}${BOLD}🔍 DRY RUN MODE${NC} ${YELLOW}- No actual changes will be made${NC}"
+    echo ""
+fi
 
 # ============================================================================
 # PREREQUISITE CHECKS - ERROR HANDLING FOR COMMON FAILURES
@@ -334,9 +381,7 @@ verify_deployment_health() {
 # RUN PREREQUISITE CHECKS
 # ============================================================================
 
-echo ""
-log_info "Running prerequisite checks..."
-echo ""
+print_step "Checking Prerequisites"
 
 if [ "$DRY_RUN" = true ]; then
     log_info "DRY RUN: Would check system prerequisites"
@@ -346,13 +391,13 @@ else
     if ! check_prerequisites; then
         log_error "System prerequisite checks failed"
         echo ""
-        echo "Please fix the issues above and try again."
+        echo -e "${YELLOW}Please fix the issues above and try again.${NC}"
         exit 1
     fi
 
     # Also run the external prerequisites check script if available
     if [ -f "$(dirname "$0")/check-k8s-prerequisites.sh" ]; then
-        log_info "Running additional prerequisites check script..."
+        log_info "Running additional prerequisites check..."
         if bash "$(dirname "$0")/check-k8s-prerequisites.sh" > /dev/null 2>&1; then
             log_success "External prerequisites check passed"
         else
@@ -360,22 +405,25 @@ else
             log_info "Run manually for details: ./scripts/check-k8s-prerequisites.sh"
         fi
     fi
-fi
 
-echo ""
+    echo ""
+    log_success "All prerequisites verified"
+fi
 
 # ============================================================================
 # CREATE/VERIFY KIND CLUSTER
 # ============================================================================
 
-log_info "Checking KIND cluster..."
+print_step "Setting Up KIND Cluster"
+
 if [ "$DRY_RUN" = true ]; then
     log_info "Would check for KIND cluster: $CLUSTER_NAME"
     log_info "If cluster doesn't exist, would create it with: kind create cluster --name $CLUSTER_NAME"
     log_info "Would set kubectl context to: kind-${CLUSTER_NAME}"
 else
     if ! kind get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
-        log_info "Creating KIND cluster: $CLUSTER_NAME (this may take a few minutes)..."
+        echo -e "${CYAN}Creating KIND cluster ${BOLD}${CLUSTER_NAME}${NC}${CYAN} (this may take 2-3 minutes)...${NC}"
+        echo ""
 
         # Create cluster with error handling
         if ! kind create cluster --name "$CLUSTER_NAME" 2>&1 | tee /tmp/kind-create-${CLUSTER_NAME}.log; then
@@ -433,7 +481,8 @@ fi
 # CREATE NAMESPACES
 # ============================================================================
 
-log_info "Creating namespaces..."
+print_step "Creating Namespaces"
+
 if [ "$DRY_RUN" = true ]; then
     log_info "Would create namespace: $NAMESPACE_PLATFORM"
     log_info "Would create namespace: $NAMESPACE_WEBGUI"
@@ -445,21 +494,22 @@ else
         echo "  Verify cluster: kubectl cluster-info"
         exit 1
     fi
+    log_success "Created namespace: $NAMESPACE_PLATFORM"
 
     # Create webgui namespace
     if ! kubectl create namespace "$NAMESPACE_WEBGUI" --dry-run=client -o yaml | kubectl apply -f - &> /dev/null; then
         log_error "Failed to create namespace: $NAMESPACE_WEBGUI"
         exit 1
     fi
-
-    log_success "Namespaces created: $NAMESPACE_PLATFORM, $NAMESPACE_WEBGUI"
+    log_success "Created namespace: $NAMESPACE_WEBGUI"
 fi
 
 # ============================================================================
 # BUILD AND LOAD DOCKER IMAGE
 # ============================================================================
 
-log_info "Building and loading VibeCode WebGUI image into KIND..."
+print_step "Building Container Image"
+
 VIBECODE_IMAGE="vibecodeacr.azurecr.io/vibecode-webgui:v1.5.0"
 DOCKERFILE_LOCAL="platforms/docker/docker/Dockerfile.local"
 
@@ -472,6 +522,7 @@ if [ "$DRY_RUN" = true ]; then
     fi
 else
     if [ -f "$DOCKERFILE_LOCAL" ]; then
+        echo -e "${CYAN}Building ${BOLD}${VIBECODE_IMAGE}${NC}${CYAN}...${NC}"
         # Verify Docker is still running before building
         if ! docker info &> /dev/null; then
             log_error "Docker is not running - cannot build image"
@@ -579,7 +630,8 @@ fi
 # DEPLOY POSTGRESQL
 # ============================================================================
 
-log_info "Deploying PostgreSQL with pgvector..."
+print_step "Deploying PostgreSQL Database"
+
 if [ "$DRY_RUN" = true ]; then
     if [ -f "$K8S_MANIFESTS_DIR/postgres-deployment.yaml" ]; then
         log_info "Would deploy: $K8S_MANIFESTS_DIR/postgres-deployment.yaml"
@@ -634,7 +686,8 @@ fi
 # DEPLOY REDIS
 # ============================================================================
 
-log_info "Deploying Redis..."
+print_step "Deploying Redis Cache"
+
 if [ "$DRY_RUN" = true ]; then
     if [ -f "$K8S_MANIFESTS_DIR/redis-deployment.yaml" ]; then
         log_info "Would deploy: $K8S_MANIFESTS_DIR/redis-deployment.yaml"
@@ -676,7 +729,8 @@ fi
 # DEPLOY VIBECODE WEBGUI
 # ============================================================================
 
-log_info "Deploying VibeCode WebGUI..."
+print_step "Deploying VibeCode Application"
+
 if [ "$DRY_RUN" = true ]; then
     if [ -f "$K8S_MANIFESTS_DIR/vibecode-deployment.yaml" ]; then
         log_info "Would deploy: $K8S_MANIFESTS_DIR/vibecode-deployment.yaml"
@@ -737,9 +791,7 @@ fi
 # COMPREHENSIVE DEPLOYMENT VERIFICATION
 # ============================================================================
 
-echo ""
-echo "🔍 Verifying Deployment Health..."
-echo "=================================="
+print_step "Verifying Deployment Health"
 
 if [ "$DRY_RUN" = true ]; then
     log_info "DRY RUN: Would verify all deployments"
@@ -831,10 +883,10 @@ else
 fi
 
 # Display deployment summary
-echo ""
-echo "📊 Deployment Summary:"
-echo "  ☸️  Cluster: $CLUSTER_NAME"
-echo "  📦 Namespaces: $NAMESPACE_PLATFORM, $NAMESPACE_WEBGUI"
+print_header "📊 Deployment Summary"
+
+echo -e "${CYAN}Cluster:${NC}     ${BOLD}$CLUSTER_NAME${NC}"
+echo -e "${CYAN}Namespaces:${NC}  ${BOLD}$NAMESPACE_PLATFORM${NC}, ${BOLD}$NAMESPACE_WEBGUI${NC}"
 echo ""
 
 if [ "$DRY_RUN" = true ]; then
@@ -842,10 +894,11 @@ if [ "$DRY_RUN" = true ]; then
     log_info "DRY RUN: Would display service endpoints"
     log_info "DRY RUN: Would check for VibeCode WebGUI NodePort"
     echo ""
-    log_success "✅ DRY RUN completed - no actual changes were made"
+    echo -e "${GREEN}${BOLD}✅ DRY RUN COMPLETE${NC}"
+    echo -e "${YELLOW}No actual changes were made${NC}"
     echo ""
-    echo "📝 To deploy for real, run without --dry-run:"
-    echo "  $0"
+    echo -e "${CYAN}To deploy for real, run without --dry-run:${NC}"
+    echo -e "  ${BOLD}$0${NC}"
     echo ""
 else
     # Display detailed pod status
@@ -863,23 +916,26 @@ else
 
     # Get NodePort for VibeCode WebGUI if available
     VIBECODE_NODEPORT=$(kubectl get service vibecode-service -n "$NAMESPACE_PLATFORM" -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "")
+
+    print_header "🎉 Deployment Complete"
+
     if [ -n "$VIBECODE_NODEPORT" ]; then
+        echo -e "${GREEN}${BOLD}VibeCode WebGUI is ready!${NC}"
         echo ""
-        log_success "VibeCode WebGUI is available at: http://localhost:${VIBECODE_NODEPORT}"
-        log_info "Default login: admin@vibecode.dev / admin123"
+        echo -e "${CYAN}Access URL:${NC}  ${BOLD}${GREEN}http://localhost:${VIBECODE_NODEPORT}${NC}"
+        echo -e "${CYAN}Login:${NC}       ${BOLD}admin@vibecode.dev${NC}"
+        echo -e "${CYAN}Password:${NC}    ${BOLD}admin123${NC}"
     else
-        echo ""
         log_warning "VibeCode service not found or NodePort not configured"
-        log_info "You can access the service using port-forwarding:"
-        log_info "  kubectl port-forward -n $NAMESPACE_PLATFORM service/vibecode-service 3000:3000"
+        echo ""
+        echo -e "${CYAN}You can access the service using port-forwarding:${NC}"
+        echo -e "  ${BOLD}kubectl port-forward -n $NAMESPACE_PLATFORM service/vibecode-service 3000:3000${NC}"
     fi
 
     echo ""
-    log_success "✅ VibeCode deployment completed successfully!"
-    echo ""
-    echo "📝 Quick commands:"
-    echo "  View logs:        kubectl logs -n $NAMESPACE_PLATFORM -l app=vibecode-webgui --tail=50 -f"
-    echo "  View all pods:    kubectl get pods --all-namespaces"
-    echo "  Delete cluster:   kind delete cluster --name $CLUSTER_NAME"
+    echo -e "${BOLD}${BLUE}📝 Useful Commands:${NC}"
+    echo -e "  ${CYAN}View logs:${NC}        ${BOLD}kubectl logs -n $NAMESPACE_PLATFORM -l app=vibecode-webgui --tail=50 -f${NC}"
+    echo -e "  ${CYAN}View all pods:${NC}    ${BOLD}kubectl get pods --all-namespaces${NC}"
+    echo -e "  ${CYAN}Delete cluster:${NC}   ${BOLD}kind delete cluster --name $CLUSTER_NAME${NC}"
     echo ""
 fi
