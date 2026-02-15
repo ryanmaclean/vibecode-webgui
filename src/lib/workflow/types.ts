@@ -34,7 +34,8 @@ export type NodeType =
   | 'loop'            // Iterative execution
   | 'transform'       // Data transformation
   | 'delay'           // Time delay
-  | 'webhook';        // External webhook call
+  | 'webhook'         // External webhook call
+  | 'approval-gate';  // Human approval gate
 
 export type NodeStatus =
   | 'pending'
@@ -147,7 +148,8 @@ export type NodeConfig =
   | LoopConfig
   | TransformConfig
   | DelayConfig
-  | WebhookConfig;
+  | WebhookConfig
+  | ApprovalGateConfig;
 
 /**
  * Agent task node configuration
@@ -286,6 +288,35 @@ export interface WebhookConfig {
 
   /** Expected status codes */
   expectedStatus?: number[];
+}
+
+/**
+ * Approval gate configuration
+ */
+export interface ApprovalGateConfig {
+  /** Approval type */
+  approvalType: 'code_change' | 'deployment' | 'data_access' | 'cost_threshold' | 'security_action' | 'external_api' | 'custom';
+
+  /** Approval title */
+  title: string;
+
+  /** Approval description */
+  description: string;
+
+  /** Required approvers (user IDs or roles) */
+  requiredApprovers: string[];
+
+  /** Priority level */
+  priority?: 'low' | 'medium' | 'high' | 'critical';
+
+  /** Expiration time in minutes */
+  expiresInMinutes?: number;
+
+  /** Escalation chain (user IDs or roles) */
+  escalationChain?: string[];
+
+  /** Auto-approve if no response within timeout */
+  autoApproveOnTimeout?: boolean;
 }
 
 // ============================================================================

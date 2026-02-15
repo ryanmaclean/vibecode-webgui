@@ -5,7 +5,7 @@
  * Users can drag nodes from this palette onto the canvas to build workflows.
  *
  * Features:
- * - All workflow node types (agent-task, condition, parallel, merge, loop, transform, delay, webhook)
+ * - All workflow node types (agent-task, condition, parallel, merge, loop, transform, delay, webhook, approval-gate)
  * - Drag-and-drop functionality using HTML5 Drag & Drop API
  * - Visual categorization of node types
  * - Icon-based visual representation
@@ -28,6 +28,7 @@ import {
   Clock,
   Webhook,
   GripVertical,
+  Shield,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -125,6 +126,14 @@ const NODE_PALETTE_ITEMS: NodePaletteItem[] = [
     icon: Repeat,
     category: 'flow-control',
     color: 'bg-pink-500/10 text-pink-700 dark:text-pink-400 border-pink-500/20',
+  },
+  {
+    type: 'approval-gate',
+    name: 'Approval Gate',
+    description: 'Require human approval',
+    icon: Shield,
+    category: 'flow-control',
+    color: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20',
   },
   // Utility Nodes
   {
