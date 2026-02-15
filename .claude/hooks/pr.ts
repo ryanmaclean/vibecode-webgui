@@ -521,3 +521,203 @@ export async function getMergeRequest(mrIid: number): Promise<MergeRequestDetail
     return null
   }
 }
+
+/**
+ * Format a GitHub Pull Request into a human-readable context summary.
+ * This is useful for providing PR context to Claude in hooks.
+ *
+ * @param pr - The pull request details to format
+ * @returns A formatted string summary of the PR
+ */
+export function formatPRContext(pr: PullRequestDetails): string {
+  const lines: string[] = []
+
+  // Header with PR number, title, and state
+  const draftLabel = pr.isDraft ? ' [DRAFT]' : ''
+  lines.push(`# PR #${pr.number}: ${pr.title}${draftLabel}`)
+  lines.push('')
+
+  // State and branch info
+  lines.push(`**State:** ${pr.state}`)
+  lines.push(`**Branch:** ${pr.headRef} → ${pr.baseRef}`)
+  lines.push(`**Author:** ${pr.author.name ?? pr.author.login} (@${pr.author.login})`)
+
+  // Mergeable status
+  if (pr.mergeable !== undefined) {
+    lines.push(`**Mergeable:** ${pr.mergeable ? 'Yes' : 'No (conflicts or checks failing)'}`)
+  }
+
+  lines.push('')
+
+  // Description/body
+  if (pr.body) {
+    lines.push('## Description')
+    lines.push(pr.body)
+    lines.push('')
+  }
+
+  // Reviewers
+  if (pr.reviewers.length > 0) {
+    lines.push('## Reviewers')
+    for (const reviewer of pr.reviewers) {
+      const name = reviewer.name ?? reviewer.login
+      const state = reviewer.state ?? 'PENDING'
+      lines.push(`- ${name} (@${reviewer.login}): ${state}`)
+    }
+    lines.push('')
+  }
+
+  // Files changed summary
+  lines.push('## Changes')
+  lines.push(`**${pr.files.length} files changed** (+${pr.additions} -${pr.deletions})`)
+  lines.push('')
+
+  if (pr.files.length > 0) {
+    // Group files by status for cleaner display
+    const added = pr.files.filter((f) => f.status === 'added')
+    const modified = pr.files.filter((f) => f.status === 'modified')
+    const deleted = pr.files.filter((f) => f.status === 'deleted')
+    const renamed = pr.files.filter((f) => f.status === 'renamed')
+
+    if (added.length > 0) {
+      lines.push('**Added:**')
+      for (const f of added) {
+        lines.push(`- ${f.path} (+${f.additions})`)
+      }
+    }
+
+    if (modified.length > 0) {
+      lines.push('**Modified:**')
+      for (const f of modified) {
+        lines.push(`- ${f.path} (+${f.additions} -${f.deletions})`)
+      }
+    }
+
+    if (deleted.length > 0) {
+      lines.push('**Deleted:**')
+      for (const f of deleted) {
+        lines.push(`- ${f.path} (-${f.deletions})`)
+      }
+    }
+
+    if (renamed.length > 0) {
+      lines.push('**Renamed:**')
+      for (const f of renamed) {
+        lines.push(`- ${f.path}`)
+      }
+    }
+  }
+
+  lines.push('')
+  lines.push(`**URL:** ${pr.url}`)
+
+  return lines.join('\n')
+}
+
+/**
+ * Format a GitLab Merge Request into a human-readable context summary.
+ * This is useful for providing MR context to Claude in hooks.
+ *
+ * @param mr - The merge request details to format
+ * @returns A formatted string summary of the MR
+ */
+export function formatMRContext(mr: MergeRequestDetails): string {
+  const lines: string[] = []
+
+  // Header with MR IID, title, and state
+  const draftLabel = mr.draft || mr.workInProgress ? ' [DRAFT/WIP]' : ''
+  lines.push(`# MR !${mr.iid}: ${mr.title}${draftLabel}`)
+  lines.push('')
+
+  // State and branch info
+  lines.push(`**State:** ${mr.state}`)
+  lines.push(`**Branch:** ${mr.sourceBranch} → ${mr.targetBranch}`)
+  lines.push(`**Author:** ${mr.author.name ?? mr.author.username} (@${mr.author.username})`)
+
+  // Merge status
+  if (mr.mergeStatus) {
+    lines.push(`**Merge Status:** ${mr.mergeStatus}`)
+  }
+
+  lines.push('')
+
+  // Labels
+  if (mr.labels.length > 0) {
+    lines.push(`**Labels:** ${mr.labels.join(', ')}`)
+    lines.push('')
+  }
+
+  // Description
+  if (mr.description) {
+    lines.push('## Description')
+    lines.push(mr.description)
+    lines.push('')
+  }
+
+  // Assignees
+  if (mr.assignees.length > 0) {
+    lines.push('## Assignees')
+    for (const assignee of mr.assignees) {
+      const name = assignee.name ?? assignee.username
+      lines.push(`- ${name} (@${assignee.username})`)
+    }
+    lines.push('')
+  }
+
+  // Reviewers
+  if (mr.reviewers.length > 0) {
+    lines.push('## Reviewers')
+    for (const reviewer of mr.reviewers) {
+      const name = reviewer.name ?? reviewer.username
+      const state = reviewer.state ?? 'unreviewed'
+      lines.push(`- ${name} (@${reviewer.username}): ${state}`)
+    }
+    lines.push('')
+  }
+
+  // Changes summary
+  if (mr.changes.length > 0) {
+    lines.push('## Changes')
+    lines.push(`**${mr.changes.length} files changed**`)
+    lines.push('')
+
+    // Group changes by type
+    const newFiles = mr.changes.filter((c) => c.newFile)
+    const modified = mr.changes.filter((c) => !c.newFile && !c.deletedFile && !c.renamedFile)
+    const deleted = mr.changes.filter((c) => c.deletedFile)
+    const renamed = mr.changes.filter((c) => c.renamedFile)
+
+    if (newFiles.length > 0) {
+      lines.push('**Added:**')
+      for (const c of newFiles) {
+        lines.push(`- ${c.newPath}`)
+      }
+    }
+
+    if (modified.length > 0) {
+      lines.push('**Modified:**')
+      for (const c of modified) {
+        lines.push(`- ${c.newPath}`)
+      }
+    }
+
+    if (deleted.length > 0) {
+      lines.push('**Deleted:**')
+      for (const c of deleted) {
+        lines.push(`- ${c.oldPath}`)
+      }
+    }
+
+    if (renamed.length > 0) {
+      lines.push('**Renamed:**')
+      for (const c of renamed) {
+        lines.push(`- ${c.oldPath} → ${c.newPath}`)
+      }
+    }
+  }
+
+  lines.push('')
+  lines.push(`**URL:** ${mr.webUrl}`)
+
+  return lines.join('\n')
+}
