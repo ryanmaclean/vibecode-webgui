@@ -144,10 +144,11 @@ migration-report.txt
 # Conflict backups
 *.conflict-backup-*
 
-# Claude Code local config (but track skills and settings)
+# Claude Code local config (but track skills, settings, and hooks)
 .claude/*
 !.claude/skills/
 !.claude/settings.json
+!.claude/hooks/
 .beads/
 !.beads/issues.jsonl
 !.beads/.gitkeep
