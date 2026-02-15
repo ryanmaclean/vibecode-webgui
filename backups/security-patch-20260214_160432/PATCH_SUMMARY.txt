@@ -1,0 +1,37 @@
+================================================================================
+SECURITY PATCH SUMMARY
+================================================================================
+
+Applied Patches:
+1. @modelcontextprotocol/sdk 1.25.1 → 1.26.0
+   - Vulnerability: GHSA-8r9q-7v3j-jr4g (ReDoS)
+   - Type: Minor version update (safe)
+
+2. langchain 1.0.2 → 1.2.24
+   - Vulnerability: GHSA-r399-636x-v7f6 (Serialization Injection)
+   - Type: Minor version update (requires testing)
+
+Note: preact patch skipped (package not used in this project)
+
+Installation Time: 2026-02-14 16:04:55.404281
+Backup Location: /Users/studio/Documents/harness/.auto-claude/worktrees/tasks/003-resolve-dependabot-security-updates/backups/security-patch-20260214_160432
+
+Next Steps:
+1. Run npm test for full test suite
+2. Deploy to staging environment
+3. Run E2E tests in staging
+4. Verify all functionality works
+5. Deploy to production when confident
+6. Monitor logs for any issues
+7. Rotate credentials that may have been exposed
+
+Rollback Instructions:
+If any issues occur, rollback using:
+    cd /Users/studio/Documents/harness/.auto-claude/worktrees/tasks/003-resolve-dependabot-security-updates
+    cp /Users/studio/Documents/harness/.auto-claude/worktrees/tasks/003-resolve-dependabot-security-updates/backups/security-patch-20260214_160432/package.json .
+    cp /Users/studio/Documents/harness/.auto-claude/worktrees/tasks/003-resolve-dependabot-security-updates/backups/security-patch-20260214_160432/package-lock.json .
+    npm ci
+    git reset --hard HEAD
+
+For more details, see SECURITY_FIX_PLAN.md
+================================================================================
