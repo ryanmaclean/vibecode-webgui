@@ -527,6 +527,15 @@ main() {
         exit 1
     fi
 
+    # Pre-check disk space before beginning any testing
+    log_step "Verifying disk space availability..."
+    if ! check_disk_space "$MIN_DISK_SPACE_GB"; then
+        log_error "Insufficient disk space to begin testing. Need at least ${MIN_DISK_SPACE_GB}GB free."
+        log_error "Free up space or set MIN_DISK_SPACE_GB to a lower value."
+        exit 1
+    fi
+    log_info "Disk space check passed (>=${MIN_DISK_SPACE_GB}GB available)"
+
     # Setup cleanup trap
     trap cleanup_handler EXIT INT TERM
 
