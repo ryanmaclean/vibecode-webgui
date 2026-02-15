@@ -12,6 +12,7 @@
 import { VMProvider, VMConfig, VM, VMStatus, ExecResult, PortMapping } from '../types';
 import { logger } from '@/lib/logger';
 import { retryWithThrow, RetryPredicates } from '../utils/retry';
+import { checkProcessHealth, isProcessRunning } from '../utils/health-check';
 import { spawn, ChildProcess } from 'child_process';
 import { promisify } from 'util';
 import { exec as execCallback } from 'child_process';
@@ -79,6 +80,51 @@ export class NativeVMProvider implements VMProvider {
       __dirname,
       '../../../../platforms/macos/vm/.build/release/vibecode-vm'
     );
+  }
+
+  /**
+   * Get PID file path for a VM
+   */
+  private getPidPath(vmId: string): string {
+    return path.join(this.vmBaseDir, vmId, 'vm.pid');
+  }
+
+  /**
+   * Save process PID to file
+   */
+  private async savePid(vmId: string, pid: number): Promise<void> {
+    const pidPath = this.getPidPath(vmId);
+    await fs.writeFile(pidPath, pid.toString());
+    logger.debug('Saved VM PID', { vmId, pid, pidPath });
+  }
+
+  /**
+   * Check VM process health using PID file
+   */
+  private async checkVMProcessHealth(vmId: string): Promise<boolean> {
+    const pidPath = this.getPidPath(vmId);
+
+    try {
+      const result = await checkProcessHealth(pidPath);
+
+      if (!result.healthy) {
+        logger.warn('VM process health check failed', {
+          vmId,
+          reason: result.reason,
+          details: result.details
+        });
+        return false;
+      }
+
+      logger.debug('VM process health check passed', {
+        vmId,
+        duration: result.duration
+      });
+      return true;
+    } catch (error) {
+      logger.error('VM process health check error', { vmId, error });
+      return false;
+    }
   }
 
   /**
@@ -224,6 +270,8 @@ export class NativeVMProvider implements VMProvider {
       return;
     }
 
+    const pid = proc.pid;
+
     try {
       // Send shutdown request via JSON-RPC
       await this.sendRequest(proc, 'vm.stop', { vmId });
@@ -248,14 +296,25 @@ export class NativeVMProvider implements VMProvider {
       });
 
       if (timedOut) {
-        // Force kill if doesn't stop gracefully
-        logger.error('Failed to stop VM gracefully, forcing', { vmId });
-        proc.kill('SIGKILL');
+        // Verify process is actually still running using health check
+        if (pid && await isProcessRunning(pid)) {
+          // Force kill if doesn't stop gracefully
+          logger.error('Failed to stop VM gracefully, forcing', { vmId, pid });
+          proc.kill('SIGKILL');
+          this.processes.delete(vmId);
+          throw new Error(`VM ${vmId} failed to stop gracefully, forced kill`);
+        } else {
+          // Process already stopped, just clean up
+          logger.info('VM process already stopped', { vmId });
+          this.processes.delete(vmId);
+        }
+      } else {
+        // Verify process has stopped
+        if (pid && await isProcessRunning(pid)) {
+          logger.warn('Process still running after exit event', { vmId, pid });
+        }
         this.processes.delete(vmId);
-        throw new Error(`VM ${vmId} failed to stop gracefully, forced kill`);
       }
-
-      this.processes.delete(vmId);
     } catch (error) {
       logger.error('Failed to stop VM gracefully, forcing', { vmId, error });
       proc.kill('SIGKILL');
@@ -369,10 +428,20 @@ export class NativeVMProvider implements VMProvider {
       return 'stopped';
     }
 
+    // Verify process health before trusting the cached process
+    const isHealthy = await this.checkVMProcessHealth(vmId);
+    if (!isHealthy) {
+      // Process is not healthy, clean up and return stopped
+      logger.warn('VM process not healthy, marking as stopped', { vmId });
+      this.processes.delete(vmId);
+      return 'stopped';
+    }
+
     try {
       const result = await this.sendRequest(proc, 'vm.status', { vmId });
       return this.mapSwiftStatus(result.status);
-    } catch {
+    } catch (error) {
+      logger.error('Failed to get VM status via JSON-RPC', { vmId, error });
       return 'unknown';
     }
   }
@@ -407,6 +476,11 @@ export class NativeVMProvider implements VMProvider {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
+    // Save PID for health monitoring
+    if (proc.pid) {
+      await this.savePid(config.vmId, proc.pid);
+    }
+
     // Setup JSON-RPC communication
     this.setupJSONRPCHandlers(proc);
 
@@ -418,6 +492,12 @@ export class NativeVMProvider implements VMProvider {
         signal
       });
       this.processes.delete(config.vmId);
+
+      // Clean up PID file
+      const pidPath = this.getPidPath(config.vmId);
+      fs.unlink(pidPath).catch((error) => {
+        logger.debug('Failed to remove PID file', { pidPath, error });
+      });
     });
 
     proc.on('error', (error) => {
@@ -540,13 +620,27 @@ export class NativeVMProvider implements VMProvider {
 
     while (Date.now() - startTime < maxWaitMs) {
       try {
+        // Check process health first
+        const isHealthy = await this.checkVMProcessHealth(vmId);
+        if (!isHealthy) {
+          logger.warn('VM process not healthy during startup', { vmId });
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          continue;
+        }
+
+        // Then check VM status
         const status = await this.status(vmId);
         if (status === 'running') {
           logger.info('VM is ready', { vmId });
           return;
         }
-      } catch {
-        // Keep waiting
+
+        if (status === 'error') {
+          throw new Error('VM entered error state during startup');
+        }
+      } catch (error) {
+        // Log but keep waiting
+        logger.debug('Error while waiting for VM', { vmId, error });
       }
 
       await new Promise(resolve => setTimeout(resolve, 1000));
