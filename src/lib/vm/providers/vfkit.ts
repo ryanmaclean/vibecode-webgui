@@ -13,6 +13,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import { isProcessRunning, waitForBoot } from '../utils/health-check';
+import { retryWithThrow } from '../utils/retry';
 
 const exec = promisify(execCallback);
 const execFile = promisify(execFileCallback);
@@ -79,10 +80,19 @@ export class VfkitProvider implements VMProvider {
     await this.createDisk(vmDir, config.disk);
     sDisk.finish();
     
-    // Launch VM
+    // Launch VM with retry logic
     const sLaunch = getTracer().startSpan('vfkit.create.launch');
     try {
-      const vm = await this.launch(vmDir, config);
+      const vm = await retryWithThrow(
+        () => this.launch(vmDir, config),
+        {
+          maxAttempts: 3,
+          initialDelay: 1000,
+          backoffMultiplier: 2,
+          operationName: 'vfkit-launch',
+          context: { vmId: config.name, vmDir }
+        }
+      );
       sLaunch.finish();
       span.finish();
       return vm;
@@ -95,15 +105,25 @@ export class VfkitProvider implements VMProvider {
   
   async start(vmId: string): Promise<void> {
     logger.info('Starting vfkit VM', { vmId });
-    
+
     const vmDir = path.join(this.vmBaseDir, vmId);
-    
+
     // Read config from VM directory
     const configPath = path.join(vmDir, 'config.json');
     const configData = await fs.readFile(configPath, 'utf-8');
     const config: VMConfig = JSON.parse(configData);
-    
-    await this.launch(vmDir, config);
+
+    // Launch VM with retry logic
+    await retryWithThrow(
+      () => this.launch(vmDir, config),
+      {
+        maxAttempts: 3,
+        initialDelay: 1000,
+        backoffMultiplier: 2,
+        operationName: 'vfkit-start',
+        context: { vmId, vmDir }
+      }
+    );
   }
   
   async stop(vmId: string): Promise<void> {
