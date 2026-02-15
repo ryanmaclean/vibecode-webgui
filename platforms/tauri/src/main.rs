@@ -8,6 +8,7 @@ mod docker;
 mod mdns;
 mod menu;
 mod ml;
+mod network;
 mod platform;
 mod service;
 mod tailscale;
