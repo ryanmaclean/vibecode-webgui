@@ -2,3 +2,9 @@
 aiohttp==3.13.3
 aiohttp-cors==0.7.0
 PyYAML==6.0.1
+
+# OpenTelemetry dependencies
+opentelemetry-api==1.22.0
+opentelemetry-sdk==1.22.0
+opentelemetry-exporter-otlp-proto-http==1.22.0
+opentelemetry-instrumentation-aiohttp-server==0.43b0

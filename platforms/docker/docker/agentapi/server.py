@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 
-# -- VibeCode Telemetry --
-import sys
-import os
+# -- OpenTelemetry --
 try:
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
-    from vibecode.telemetry import init_telemetry
-    tracer = init_telemetry(os.path.basename(__file__))
+    from telemetry import init_telemetry
+    tracer = init_telemetry('agentapi')
 except ImportError:
     pass
-# ------------------------
+# ------------------
 
 """
 AgentAPI HTTP Server - MVP Implementation
