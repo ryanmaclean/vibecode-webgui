@@ -33,19 +33,60 @@ struct VibeCodeVM {
 
             // Start VM synchronously
             let semaphore = DispatchSemaphore(value: 0)
+            var startError: Error?
             vm.start { result in
                 switch result {
                 case .success:
                     print("✅ VM running!")
                     print("Press Ctrl+C to stop")
                 case .failure(let error):
-                    print("❌ VM failed to start: \(error)")
+                    // Provide detailed VZ framework error context
+                    let vzError = error as NSError
+                    print("❌ VM failed to start")
+                    print("   Error Domain: \(vzError.domain)")
+                    print("   Error Code: \(vzError.code)")
+                    print("   Description: \(vzError.localizedDescription)")
+
+                    // Provide actionable troubleshooting based on common VZ errors
+                    if vzError.domain == "VZErrorDomain" {
+                        switch vzError.code {
+                        case 1: // VZErrorInternal
+                            print("   Hint: Internal Virtualization.framework error. Try restarting your Mac.")
+                        case 2: // VZErrorInvalidVirtualMachineConfiguration
+                            print("   Hint: Invalid VM configuration. Check CPU, memory, and disk settings.")
+                        case 3: // VZErrorInvalidVirtualMachineState
+                            print("   Hint: VM is in an invalid state. Ensure it's not already running.")
+                        case 4: // VZErrorInvalidVirtualMachineStateTransition
+                            print("   Hint: Invalid state transition. Wait for current operation to complete.")
+                        case 5: // VZErrorInvalidDiskImage
+                            print("   Hint: Disk image is corrupted or invalid format. Try recreating the disk.")
+                        default:
+                            print("   Hint: Check macOS Console.app for detailed Virtualization.framework logs.")
+                        }
+                    }
+
+                    if let failureReason = vzError.localizedFailureReason {
+                        print("   Reason: \(failureReason)")
+                    }
+                    if let recoverySuggestion = vzError.localizedRecoverySuggestion {
+                        print("   Suggestion: \(recoverySuggestion)")
+                    }
+
+                    startError = error
                     semaphore.signal()
                 }
             }
 
             // Keep running
             semaphore.wait()
+
+            // If VM failed to start, exit with error
+            if let error = startError {
+                throw NSError(domain: "VibeCodeVM", code: 100, userInfo: [
+                    NSLocalizedDescriptionKey: "VM failed to start: \(error.localizedDescription)",
+                    NSUnderlyingErrorKey: error
+                ])
+            }
 
         } catch {
             print("❌ Error: \(error)")
@@ -159,8 +200,26 @@ struct VibeCodeVM {
                 efiBootLoader.variableStore = try VZEFIVariableStore(url: efiURL)
                 config.bootLoader = efiBootLoader
             } catch {
+                let vzError = error as NSError
+                var errorDetails = "Failed to create EFI variable store at \(efiPath): \(vzError.localizedDescription)"
+
+                // Provide troubleshooting for EFI variable store errors
+                errorDetails += "\n   Common causes:"
+                errorDetails += "\n   - Insufficient permissions in \(vmDir)"
+                errorDetails += "\n   - Disk full or quota exceeded"
+                errorDetails += "\n   - Corrupted existing EFI.nvram file"
+                errorDetails += "\n   Troubleshooting:"
+                errorDetails += "\n   - Try: rm \(efiPath) (to recreate)"
+                errorDetails += "\n   - Check: ls -lh \(vmDir)"
+                errorDetails += "\n   - Verify: df -h \(vmDir)"
+
+                if let failureReason = vzError.localizedFailureReason {
+                    errorDetails += "\n   Reason: \(failureReason)"
+                }
+
                 throw NSError(domain: "VibeCodeVM", code: 4, userInfo: [
-                    NSLocalizedDescriptionKey: "Failed to create EFI variable store at \(efiPath): \(error.localizedDescription)"
+                    NSLocalizedDescriptionKey: errorDetails,
+                    NSUnderlyingErrorKey: error
                 ])
             }
             
@@ -175,7 +234,7 @@ struct VibeCodeVM {
                 ])
             }
 
-            // Create disk attachment with synchronization mode
+            // Create disk attachment with synchronization mode and VZ error handling
             do {
                 let diskAttachment = try VZDiskImageStorageDeviceAttachment(
                     url: diskURL,
@@ -186,8 +245,31 @@ struct VibeCodeVM {
                 let blockDevice = VZVirtioBlockDeviceConfiguration(attachment: diskAttachment)
                 config.storageDevices = [blockDevice]
             } catch {
+                let vzError = error as NSError
+                var errorDetails = "Failed to attach disk \(diskPath): \(vzError.localizedDescription)"
+
+                // Provide specific troubleshooting for VZ disk attachment errors
+                if vzError.domain == "VZErrorDomain" {
+                    switch vzError.code {
+                    case 5: // VZErrorInvalidDiskImage
+                        errorDetails += "\n   Hint: Disk image format is invalid or corrupted"
+                        errorDetails += "\n   - Supported formats: raw (.img), qcow2 (.qcow2)"
+                        errorDetails += "\n   - Try: qemu-img check \(diskPath)"
+                        errorDetails += "\n   - Try: qemu-img convert -O raw old.qcow2 disk.img"
+                    default:
+                        errorDetails += "\n   Hint: Check file permissions and disk space"
+                        errorDetails += "\n   - Verify: ls -lh \(diskPath)"
+                        errorDetails += "\n   - Check: df -h \(vmDir)"
+                    }
+                }
+
+                if let failureReason = vzError.localizedFailureReason {
+                    errorDetails += "\n   Reason: \(failureReason)"
+                }
+
                 throw NSError(domain: "VibeCodeVM", code: 6, userInfo: [
-                    NSLocalizedDescriptionKey: "Failed to attach disk \(diskPath): \(error.localizedDescription)"
+                    NSLocalizedDescriptionKey: errorDetails,
+                    NSUnderlyingErrorKey: error
                 ])
             }
             
@@ -230,12 +312,34 @@ struct VibeCodeVM {
         // Entropy (RNG)
         config.entropyDevices = [VZVirtioEntropyDeviceConfiguration()]
 
-        // Validate configuration
+        // Validate configuration with detailed VZ error reporting
         do {
             try config.validate()
         } catch {
+            let vzError = error as NSError
+            var errorDetails = "VM configuration validation failed: \(vzError.localizedDescription)"
+
+            // Provide specific guidance based on VZ validation errors
+            if vzError.domain == "VZErrorDomain" {
+                switch vzError.code {
+                case 2: // VZErrorInvalidVirtualMachineConfiguration
+                    errorDetails += "\n   Common causes:"
+                    errorDetails += "\n   - CPU count: \(config.cpuCount) (must be >= 1 and <= host cores)"
+                    errorDetails += "\n   - Memory: \(config.memorySize / (1024 * 1024))MB (must be >= 512MB)"
+                    errorDetails += "\n   - Boot loader not properly configured"
+                    errorDetails += "\n   - Storage device configuration invalid"
+                default:
+                    errorDetails += "\n   Check Console.app for detailed Virtualization.framework logs"
+                }
+            }
+
+            if let failureReason = vzError.localizedFailureReason {
+                errorDetails += "\n   Reason: \(failureReason)"
+            }
+
             throw NSError(domain: "VibeCodeVM", code: 7, userInfo: [
-                NSLocalizedDescriptionKey: "VM configuration validation failed: \(error.localizedDescription)"
+                NSLocalizedDescriptionKey: errorDetails,
+                NSUnderlyingErrorKey: error
             ])
         }
 
