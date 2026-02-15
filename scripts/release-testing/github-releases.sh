@@ -91,14 +91,14 @@ get_all_releases() {
 
     jq_filter="${jq_filter} | .tagName"
 
-    log_info "Fetching releases from $repo (limit: $RELEASE_LIMIT)"
+    log_info "Fetching releases from $repo (limit: $RELEASE_LIMIT)" >&2
 
     if ! "$GH_CMD" release list \
         --repo "$repo" \
         --json tagName,name,publishedAt,isDraft,isPrerelease \
         --limit "$RELEASE_LIMIT" \
         --jq "$jq_filter" 2>/dev/null; then
-        log_error "Failed to fetch releases from $repo"
+        log_error "Failed to fetch releases from $repo" >&2
         return 1
     fi
 
