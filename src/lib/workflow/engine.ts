@@ -32,6 +32,8 @@ import {
   DelayConfig,
   WebhookConfig,
 } from './types';
+import { AuditTrail, AuditEntry, AuditQuery, AuditQueryResult } from './audit-trail';
+import { RollbackManager, RollbackResult } from './rollback-manager';
 
 // ============================================================================
 // DAG Graph Utilities
@@ -182,9 +184,13 @@ function evaluateExpression(expression: string, context: WorkflowContext): unkno
 export class WorkflowEngine extends EventEmitter {
   private executions = new Map<string, WorkflowExecution>();
   private agentExecutor?: (config: AgentTaskConfig, context: WorkflowContext) => Promise<unknown>;
+  private auditTrail: AuditTrail;
+  private rollbackManager: RollbackManager;
 
   constructor() {
     super();
+    this.auditTrail = new AuditTrail();
+    this.rollbackManager = new RollbackManager();
   }
 
   /**
@@ -377,7 +383,7 @@ export class WorkflowEngine extends EventEmitter {
     nodeExec.status = 'running';
     nodeExec.startedAt = new Date();
 
-    this.emitEvent(execution.id, WorkflowEventType.NODE_STARTED, { nodeId: node.id });
+    this.emitEvent(execution.id, WorkflowEventType.NODE_STARTED, { nodeId: node.id }, node.id);
     this.addLog(execution, node.id, 'info', `Executing node: ${node.name}`);
 
     const startTime = Date.now();
@@ -434,8 +440,11 @@ export class WorkflowEngine extends EventEmitter {
       this.emitEvent(execution.id, WorkflowEventType.NODE_COMPLETED, {
         nodeId: node.id,
         duration: nodeExec.duration,
-      });
+      }, node.id);
       this.addLog(execution, node.id, 'info', `Node completed in ${nodeExec.duration}ms`);
+
+      // Create checkpoint after successful node completion
+      this.createCheckpoint(execution.id, `After node: ${node.name}`);
 
     } catch (error) {
       nodeExec.status = 'failed';
@@ -448,7 +457,7 @@ export class WorkflowEngine extends EventEmitter {
       this.emitEvent(execution.id, WorkflowEventType.NODE_FAILED, {
         nodeId: node.id,
         error: nodeExec.error,
-      });
+      }, node.id);
       this.addLog(execution, node.id, 'error', `Node failed: ${nodeExec.error.message}`);
 
       if (!node.continueOnError) {
@@ -653,14 +662,20 @@ export class WorkflowEngine extends EventEmitter {
   /**
    * Emit workflow event
    */
-  private emitEvent(executionId: string, type: WorkflowEventType, data?: unknown): void {
+  private emitEvent(executionId: string, type: WorkflowEventType, data?: unknown, nodeId?: string): void {
     const event: WorkflowEvent = {
       type,
       timestamp: new Date(),
       executionId,
+      nodeId,
       data,
     };
     this.emit('event', event);
+
+    // Record to audit trail
+    const execution = this.executions.get(executionId);
+    const workflowId = execution?.workflowId;
+    this.auditTrail.recordWorkflowEvent(event, workflowId);
   }
 
   /**
@@ -713,6 +728,102 @@ export class WorkflowEngine extends EventEmitter {
 
     execution.status = 'cancelled';
     this.emitEvent(executionId, WorkflowEventType.WORKFLOW_CANCELLED);
+  }
+
+  /**
+   * Create a checkpoint for an execution
+   */
+  createCheckpoint(executionId: string, description?: string): Checkpoint {
+    const execution = this.executions.get(executionId);
+    if (!execution) {
+      throw new Error(`Execution not found: ${executionId}`);
+    }
+
+    const checkpoint = this.rollbackManager.createCheckpoint(
+      executionId,
+      execution,
+      description ? { description } : undefined
+    );
+
+    // Store checkpoint in execution
+    execution.checkpoints.push(checkpoint);
+
+    // Emit checkpoint event
+    this.emitEvent(executionId, WorkflowEventType.CHECKPOINT_CREATED, {
+      checkpointId: checkpoint.id,
+      description,
+    });
+
+    return checkpoint;
+  }
+
+  /**
+   * Rollback execution to a previous checkpoint
+   */
+  async rollbackToCheckpoint(executionId: string, checkpointId: string): Promise<RollbackResult> {
+    const execution = this.executions.get(executionId);
+    if (!execution) {
+      throw new Error(`Execution not found: ${executionId}`);
+    }
+
+    const result = this.rollbackManager.rollback(executionId, checkpointId, execution);
+
+    // Record rollback in audit trail
+    this.auditTrail.record({
+      action: 'checkpoint.restored' as any,
+      severity: 'info' as any,
+      executionId,
+      workflowId: execution.workflowId,
+      description: `Rolled back to checkpoint: ${checkpointId}`,
+      metadata: {
+        checkpointId,
+        nodesAffected: result.nodesAffected,
+      },
+    });
+
+    return result;
+  }
+
+  /**
+   * Get all checkpoints for an execution
+   */
+  getCheckpoints(executionId: string): Checkpoint[] {
+    return this.rollbackManager.getCheckpoints(executionId);
+  }
+
+  /**
+   * Query audit trail entries
+   */
+  queryAuditTrail(filter?: AuditQuery): AuditQueryResult {
+    return this.auditTrail.query(filter);
+  }
+
+  /**
+   * Get audit trail for a specific execution
+   */
+  getExecutionAudit(executionId: string): AuditEntry[] {
+    return this.auditTrail.getExecutionAudit(executionId);
+  }
+
+  /**
+   * Get audit trail for a specific workflow
+   */
+  getWorkflowAudit(workflowId: string): AuditEntry[] {
+    return this.auditTrail.getWorkflowAudit(workflowId);
+  }
+
+  /**
+   * Get audit trail instance (for advanced usage)
+   */
+  getAuditTrail(): AuditTrail {
+    return this.auditTrail;
+  }
+
+  /**
+   * Get rollback manager instance (for advanced usage)
+   */
+  getRollbackManager(): RollbackManager {
+    return this.rollbackManager;
   }
 }
 
