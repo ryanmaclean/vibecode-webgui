@@ -568,6 +568,9 @@ cmd_deploy() {
     local image=""
     local replicas=""
     local show_help=false
+    local cleanup=false
+    local cluster_name="vibecode-local"
+    local one_click_mode=false
 
     # Parse arguments
     while [ $# -gt 0 ]; do
@@ -575,6 +578,16 @@ cmd_deploy() {
             --help|-h)
                 show_help=true
                 shift
+                ;;
+            --cleanup)
+                cleanup=true
+                one_click_mode=true
+                shift
+                ;;
+            --cluster-name)
+                cluster_name="$2"
+                one_click_mode=true
+                shift 2
                 ;;
             --namespace|-n)
                 namespace="$2"
@@ -623,46 +636,131 @@ cmd_deploy() {
 USAGE:
     vibecode deploy [OPTIONS]
 
-OPTIONS:
-    -h, --help              Show this help message
-    -n, --namespace NAME    Kubernetes namespace (default: default)
-    -e, --env ENV           Environment: dev, staging, prod
+ONE-CLICK DEPLOYMENT (KIND cluster with all services):
+    vibecode deploy                           # Deploy everything to local KIND cluster
+    vibecode deploy --dry-run                 # Preview what will be deployed
+    vibecode deploy --cluster-name my-cluster # Use custom cluster name
+    vibecode deploy --cleanup                 # Delete KIND cluster and clean up
+
+ADVANCED DEPLOYMENT (kubectl wrapper):
     -c, --config FILE       Path to Kubernetes config file (YAML/JSON)
     -i, --image IMAGE       Docker image to deploy
+    -n, --namespace NAME    Kubernetes namespace (default: default)
+    -e, --env ENV           Environment: dev, staging, prod
     -r, --replicas NUM      Number of replicas (default: 1)
     --dry-run               Preview deployment without applying
     -f, --force             Force deployment without confirmation
 
+GENERAL OPTIONS:
+    -h, --help              Show this help message
+
 EXAMPLES:
-    vibecode deploy --help
+    # One-click deployment (creates KIND cluster + all services)
+    vibecode deploy
+    vibecode deploy --dry-run
+    vibecode deploy --cleanup
+
+    # Advanced deployment (kubectl wrapper)
     vibecode deploy --config ./k8s/deployment.yaml
     vibecode deploy --env prod --namespace myapp
     vibecode deploy --image myapp:v1.0.0 --replicas 3
     vibecode deploy --config ./k8s/app.yaml --dry-run
-    vibecode deploy --env staging --force
 
 PREREQUISITES:
-    - VM must be running (vibecode start)
-    - kubectl must be installed
-    - Valid kubeconfig file
-    - Docker image built (if using --image)
+    One-click mode: Docker, kubectl, KIND
+    Advanced mode:  kubectl, valid kubeconfig
 
 NOTES:
-    If --config is provided, it will be applied using kubectl apply.
-    If --image is provided, a deployment will be created/updated.
-    Use --dry-run to preview changes before applying.
+    When called without --config or --image, runs one-click deployment.
+    This creates a local KIND cluster with all VibeCode services.
+
+    Use --cleanup to delete the KIND cluster when done.
 
 EOF
         return 0
     fi
 
+    # Handle cleanup mode
+    if [ "$cleanup" = true ]; then
+        print_header "Clean Up KIND Cluster"
+
+        # Check if KIND is installed
+        if ! command -v kind &> /dev/null; then
+            print_error "KIND not found. Please install KIND."
+            print_info "Install: brew install kind"
+            exit 1
+        fi
+
+        # Check if cluster exists
+        if kind get clusters 2>/dev/null | grep -q "^${cluster_name}$"; then
+            print_warning "Deleting KIND cluster: $cluster_name"
+            echo ""
+
+            if [ "$force" = false ]; then
+                echo -n "Are you sure? [y/N] "
+                read -r response
+                case "$response" in
+                    [yY][eE][sS]|[yY])
+                        ;;
+                    *)
+                        print_info "Cleanup cancelled"
+                        exit 0
+                        ;;
+                esac
+            fi
+
+            echo ""
+            print_info "Deleting cluster..."
+            if kind delete cluster --name "$cluster_name"; then
+                print_success "Cluster deleted successfully"
+            else
+                print_error "Failed to delete cluster"
+                exit 1
+            fi
+        else
+            print_info "Cluster '$cluster_name' does not exist"
+        fi
+        return 0
+    fi
+
+    # Detect one-click mode: no --config or --image specified
+    if [ -z "$config_file" ] && [ -z "$image" ]; then
+        one_click_mode=true
+    fi
+
+    # Handle one-click deployment mode
+    if [ "$one_click_mode" = true ]; then
+        print_header "One-Click Kubernetes Deployment"
+
+        # Find the deployment script
+        local deploy_script="./scripts/vibecode-k8s-deploy.sh"
+        if [ ! -f "$deploy_script" ]; then
+            print_error "Deployment script not found: $deploy_script"
+            print_info "Make sure you're running this from the project root"
+            exit 1
+        fi
+
+        # Build arguments for deployment script
+        local deploy_args=()
+        if [ "$dry_run" = true ]; then
+            deploy_args+=("--dry-run")
+        fi
+        if [ "$cluster_name" != "vibecode-local" ]; then
+            deploy_args+=("--cluster-name" "$cluster_name")
+        fi
+
+        # Run the deployment script
+        print_info "Running one-click deployment..."
+        echo ""
+        exec bash "$deploy_script" "${deploy_args[@]}"
+    fi
+
+    # Advanced mode: kubectl wrapper
     print_header "Deploy to Kubernetes"
 
-    # Check if VM is running
+    # Check if VM is running (not needed for kubectl wrapper, but kept for compatibility)
     if ! is_vm_running; then
-        print_error "VM is not running"
-        print_info "Start with: vibecode start"
-        exit 1
+        print_warning "VM is not running (this may be OK if using remote cluster)"
     fi
 
     # Check kubectl is available
