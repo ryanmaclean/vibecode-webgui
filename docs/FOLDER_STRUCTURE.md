@@ -1023,6 +1023,363 @@ docs/services/{service}/RUNBOOK.md
 docs/guides/{guide-name}.md
 ```
 
+### Service-Specific Feature Locations
+
+This section provides detailed guidance on where to add new features for each service type.
+
+#### API Gateway (`services/api-gateway/`)
+
+| Feature Type | Location | Example |
+|-------------|----------|---------|
+| **New REST endpoint** | `src/routes/{resource}.ts` | `src/routes/users.ts` |
+| **WebSocket handler** | `src/websocket/{handler}.ts` | `src/websocket/chat-handler.ts` |
+| **Authentication middleware** | `src/middleware/auth.ts` | JWT verification, session validation |
+| **Rate limiting** | `src/middleware/rate-limit.ts` | API throttling logic |
+| **Request validation** | `src/middleware/validation.ts` | Schema validation middleware |
+| **Response formatting** | `src/handlers/response-formatter.ts` | Standardized API responses |
+| **Error handling** | `src/middleware/error-handler.ts` | Global error handling |
+| **Logging middleware** | `src/middleware/logger.ts` | Request/response logging |
+| **API tests** | `tests/integration/routes/{route}.test.ts` | Route integration tests |
+
+**Example - Adding a new REST endpoint:**
+```typescript
+// services/api-gateway/src/routes/projects.ts
+import { Router } from 'express'
+import { authenticate } from '../middleware/auth'
+import { validateRequest } from '../middleware/validation'
+
+const router = Router()
+
+router.get('/projects', authenticate, async (req, res) => {
+  // Implementation
+})
+
+export default router
+```
+
+#### AI Gateway (`services/ai-gateway/`)
+
+| Feature Type | Location | Example |
+|-------------|----------|---------|
+| **New AI provider** | `src/providers/{provider}/` | `src/providers/openai/`, `src/providers/anthropic/` |
+| **Provider adapter** | `src/providers/{provider}/adapter.ts` | Provider-specific API integration |
+| **Model routing logic** | `src/router/model-router.ts` | Route requests to appropriate model |
+| **Response caching** | `src/cache/response-cache.ts` | Cache AI responses |
+| **Rate limiting queue** | `src/queue/rate-limiter.ts` | Manage API rate limits |
+| **Token counting** | `src/utils/token-counter.ts` | Calculate token usage |
+| **Streaming handler** | `src/handlers/stream-handler.ts` | Handle streaming responses |
+| **Fallback logic** | `src/router/fallback-handler.ts` | Provider failover |
+| **Provider tests** | `tests/integration/providers/{provider}.test.ts` | Provider integration tests |
+
+**Example - Adding a new AI provider:**
+```typescript
+// services/ai-gateway/src/providers/gemini/adapter.ts
+import { AIProviderAdapter } from '../../types/provider'
+
+export class GeminiAdapter implements AIProviderAdapter {
+  async complete(prompt: string, options: CompletionOptions) {
+    // Gemini-specific implementation
+  }
+
+  async stream(prompt: string, options: CompletionOptions) {
+    // Streaming implementation
+  }
+}
+```
+
+#### Auth Service (`services/auth-service/`)
+
+| Feature Type | Location | Example |
+|-------------|----------|---------|
+| **New auth strategy** | `src/strategies/{strategy}.ts` | `src/strategies/oauth-github.ts` |
+| **JWT handling** | `src/strategies/jwt.ts` | Token generation/validation |
+| **Session management** | `src/session/session-manager.ts` | User session handling |
+| **User models** | `src/models/user.ts` | User data models |
+| **Permission checks** | `src/middleware/permissions.ts` | Role-based access control |
+| **Password hashing** | `src/utils/crypto.ts` | Bcrypt/Argon2 hashing |
+| **Token refresh** | `src/handlers/refresh-token.ts` | Refresh token logic |
+| **MFA handling** | `src/mfa/` | Multi-factor authentication |
+| **Auth tests** | `tests/integration/strategies/{strategy}.test.ts` | Strategy integration tests |
+
+**Example - Adding OAuth provider:**
+```typescript
+// services/auth-service/src/strategies/oauth-google.ts
+import { OAuthStrategy } from '../types/strategy'
+
+export class GoogleOAuthStrategy implements OAuthStrategy {
+  async authenticate(code: string) {
+    // Exchange code for tokens
+  }
+
+  async getUserProfile(accessToken: string) {
+    // Fetch user profile from Google
+  }
+}
+```
+
+#### Chat Service (`services/chat-service/`)
+
+| Feature Type | Location | Example |
+|-------------|----------|---------|
+| **WebSocket handlers** | `src/websocket/handlers/{handler}.ts` | `src/websocket/handlers/message-handler.ts` |
+| **Message processing** | `src/messages/processor.ts` | Process and validate messages |
+| **Thread management** | `src/threads/thread-manager.ts` | Conversation threading |
+| **Message storage** | `src/storage/message-store.ts` | Persist messages |
+| **Presence tracking** | `src/presence/presence-tracker.ts` | User online/offline status |
+| **Typing indicators** | `src/handlers/typing-handler.ts` | Typing status events |
+| **Message search** | `src/search/message-search.ts` | Search chat history |
+| **File attachments** | `src/attachments/attachment-handler.ts` | Handle file uploads |
+| **Chat tests** | `tests/integration/websocket/{handler}.test.ts` | WebSocket integration tests |
+
+**Example - Adding message handler:**
+```typescript
+// services/chat-service/src/websocket/handlers/reaction-handler.ts
+import { WebSocket } from 'ws'
+
+export class ReactionHandler {
+  async handleReaction(ws: WebSocket, data: ReactionData) {
+    // Validate reaction
+    // Store reaction
+    // Broadcast to thread participants
+  }
+}
+```
+
+#### Webhook Service (`services/webhook-service/`)
+
+| Feature Type | Location | Example |
+|-------------|----------|---------|
+| **New webhook handler** | `src/handlers/{source}-handler.ts` | `src/handlers/github-handler.ts` |
+| **Signature validation** | `src/validators/{source}-validator.ts` | Verify webhook authenticity |
+| **Event processing** | `src/processors/event-processor.ts` | Process webhook events |
+| **Event queue** | `src/queue/event-queue.ts` | Queue events for processing |
+| **Retry logic** | `src/queue/retry-handler.ts` | Handle failed webhook deliveries |
+| **Event transformers** | `src/transformers/{source}-transformer.ts` | Transform events to internal format |
+| **Webhook registration** | `src/registration/webhook-manager.ts` | Register/unregister webhooks |
+| **Webhook tests** | `tests/integration/handlers/{source}.test.ts` | Handler integration tests |
+
+**Example - Adding webhook handler:**
+```typescript
+// services/webhook-service/src/handlers/gitlab-handler.ts
+import { WebhookHandler } from '../types/handler'
+
+export class GitLabWebhookHandler implements WebhookHandler {
+  async validate(signature: string, payload: string) {
+    // Validate GitLab signature
+  }
+
+  async process(event: GitLabEvent) {
+    // Process GitLab webhook event
+  }
+}
+```
+
+#### Background Worker (`services/background-worker/`)
+
+| Feature Type | Location | Example |
+|-------------|----------|---------|
+| **New job type** | `src/jobs/{job-name}.ts` | `src/jobs/email-job.ts` |
+| **Job processor** | `src/processors/{processor}.ts` | Process specific job types |
+| **Queue configuration** | `src/queue/queue-config.ts` | Bull/Bee queue setup |
+| **Job scheduler** | `src/schedulers/cron-jobs.ts` | Scheduled jobs (cron) |
+| **Job retry logic** | `src/queue/retry-strategy.ts` | Job failure retry |
+| **Job monitoring** | `src/monitoring/job-monitor.ts` | Track job status |
+| **Cleanup jobs** | `src/jobs/cleanup/{cleanup-job}.ts` | Periodic cleanup tasks |
+| **Job tests** | `tests/integration/jobs/{job}.test.ts` | Job integration tests |
+
+**Example - Adding background job:**
+```typescript
+// services/background-worker/src/jobs/export-data-job.ts
+import { Job } from 'bull'
+
+export class ExportDataJob {
+  async process(job: Job<ExportDataPayload>) {
+    const { userId, format } = job.data
+
+    // Generate export
+    // Upload to storage
+    // Notify user
+
+    return { exportUrl: '...' }
+  }
+}
+```
+
+#### Git Service (`services/git-service/`)
+
+| Feature Type | Location | Example |
+|-------------|----------|---------|
+| **Gitea API client** | `src/api/gitea-client.ts` | Gitea REST API wrapper |
+| **Repository operations** | `src/api/repositories.ts` | Repo CRUD operations |
+| **Webhook handlers** | `src/webhooks/handlers/{event}.ts` | Git event handlers |
+| **Branch management** | `src/api/branches.ts` | Branch operations |
+| **PR operations** | `src/api/pull-requests.ts` | Pull request operations |
+| **Git authentication** | `src/auth/git-auth.ts` | Git credential management |
+| **Git tests** | `tests/integration/api/{operation}.test.ts` | API integration tests |
+
+**Example - Adding repository operation:**
+```typescript
+// services/git-service/src/api/tags.ts
+import { GiteaClient } from './gitea-client'
+
+export class TagOperations {
+  constructor(private client: GiteaClient) {}
+
+  async createTag(repo: string, tag: TagData) {
+    return this.client.post(`/repos/${repo}/tags`, tag)
+  }
+
+  async getTags(repo: string) {
+    return this.client.get(`/repos/${repo}/tags`)
+  }
+}
+```
+
+#### Workflow Orchestrator (`services/workflow-orchestrator/`)
+
+| Feature Type | Location | Example |
+|-------------|----------|---------|
+| **New DAG** | `dags/{workflow-name}.py` | `dags/data-pipeline.py` |
+| **Custom operators** | `plugins/operators/{operator}.py` | Custom Airflow operators |
+| **Custom sensors** | `plugins/sensors/{sensor}.py` | Custom Airflow sensors |
+| **Task callbacks** | `dags/callbacks/{callback}.py` | Success/failure callbacks |
+| **DAG configuration** | `config/dags/{dag}.yaml` | DAG-specific config |
+| **Workflow tests** | `tests/dags/test_{dag}.py` | DAG unit tests |
+
+**Example - Adding Airflow DAG:**
+```python
+# services/workflow-orchestrator/dags/model-training.py
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime
+
+dag = DAG(
+    'model_training',
+    start_date=datetime(2026, 1, 1),
+    schedule_interval='@daily'
+)
+
+def train_model():
+    # Training logic
+    pass
+
+train_task = PythonOperator(
+    task_id='train',
+    python_callable=train_model,
+    dag=dag
+)
+```
+
+### Platform-Specific Feature Locations
+
+#### Web Platform (`platforms/web/`)
+
+| Feature Type | Location | Example |
+|-------------|----------|---------|
+| **New page route** | `src/app/{route}/page.tsx` | `src/app/dashboard/page.tsx` |
+| **API route (BFF)** | `src/app/api/{endpoint}/route.ts` | `src/app/api/users/route.ts` |
+| **Shared component** | `src/components/features/{feature}/` | `src/components/features/chat/` |
+| **Layout component** | `src/components/layout/{component}.tsx` | `src/components/layout/Sidebar.tsx` |
+| **UI primitive** | `src/components/ui/{component}.tsx` | `src/components/ui/Button.tsx` |
+| **React hook** | `src/hooks/use{hook}.ts` | `src/hooks/useAuth.ts` |
+| **Client utility** | `src/lib/{utility}.ts` | `src/lib/api-client.ts` |
+| **Platform adapter** | `src/adapters/{adapter}.ts` | `src/adapters/storage-adapter.ts` |
+| **Styles** | `src/styles/{file}.css` | `src/styles/globals.css` |
+| **E2E tests** | `tests/e2e/{flow}.spec.ts` | `tests/e2e/login-flow.spec.ts` |
+
+**Example - Adding Next.js page:**
+```typescript
+// platforms/web/src/app/projects/page.tsx
+import { ProjectList } from '@/components/features/projects/ProjectList'
+
+export default async function ProjectsPage() {
+  return (
+    <div className="container">
+      <h1>Projects</h1>
+      <ProjectList />
+    </div>
+  )
+}
+```
+
+#### Desktop Platform (`platforms/desktop/tauri/`)
+
+| Feature Type | Location | Example |
+|-------------|----------|---------|
+| **Tauri command** | `src-tauri/src/commands/{command}.rs` | `src-tauri/src/commands/file.rs` |
+| **App menu** | `src-tauri/src/menu.rs` | Application menu configuration |
+| **System tray** | `src-tauri/src/tray.rs` | System tray integration |
+| **Native integration** | `src-tauri/src/native/{integration}.rs` | OS-specific features |
+| **Frontend (uses web)** | `src/` | Symlink to `platforms/web/src/` |
+
+**Example - Adding Tauri command:**
+```rust
+// platforms/desktop/tauri/src-tauri/src/commands/file.rs
+#[tauri::command]
+pub async fn read_file(path: String) -> Result<String, String> {
+    std::fs::read_to_string(path)
+        .map_err(|e| e.to_string())
+}
+```
+
+#### Mobile Platform (`platforms/mobile/`)
+
+| Feature Type | Location (iOS) | Location (Android) |
+|-------------|----------------|-------------------|
+| **New screen** | `ios/VibeCode/Views/{Screen}.swift` | `android/app/src/main/java/views/{Screen}.kt` |
+| **View model** | `ios/VibeCode/ViewModels/{ViewModel}.swift` | `android/app/src/main/java/viewmodels/{ViewModel}.kt` |
+| **API service** | `ios/VibeCode/Services/API/{Service}.swift` | `android/app/src/main/java/services/{Service}.kt` |
+| **Data model** | `ios/VibeCode/Models/{Model}.swift` | `android/app/src/main/java/models/{Model}.kt` |
+
+#### CLI Platform (`platforms/cli/`)
+
+| Feature Type | Location | Example |
+|-------------|----------|---------|
+| **New command** | `src/commands/{command}.ts` | `src/commands/deploy.ts` |
+| **CLI utility** | `src/utils/{utility}.ts` | `src/utils/prompt.ts` |
+| **CLI adapter** | `src/adapters/{adapter}.ts` | `src/adapters/config-adapter.ts` |
+
+**Example - Adding CLI command:**
+```typescript
+// platforms/cli/src/commands/status.ts
+import { Command } from 'commander'
+
+export const statusCommand = new Command('status')
+  .description('Show service status')
+  .action(async () => {
+    // Check service health
+    // Display status table
+  })
+```
+
+### Quick Reference: Feature Type → Location
+
+| Feature | Location |
+|---------|----------|
+| **REST API endpoint** | `services/api-gateway/src/routes/` |
+| **WebSocket handler** | `services/chat-service/src/websocket/handlers/` |
+| **AI provider integration** | `services/ai-gateway/src/providers/{provider}/` |
+| **Auth strategy** | `services/auth-service/src/strategies/` |
+| **Webhook handler** | `services/webhook-service/src/handlers/` |
+| **Background job** | `services/background-worker/src/jobs/` |
+| **Airflow DAG** | `services/workflow-orchestrator/dags/` |
+| **Git operation** | `services/git-service/src/api/` |
+| **Next.js page** | `platforms/web/src/app/{route}/page.tsx` |
+| **Next.js API route** | `platforms/web/src/app/api/{endpoint}/route.ts` |
+| **Shared React component** | `shared/components/src/` |
+| **Platform-specific component** | `platforms/{platform}/src/components/` |
+| **Tauri command** | `platforms/desktop/tauri/src-tauri/src/commands/` |
+| **CLI command** | `platforms/cli/src/commands/` |
+| **Shared TypeScript type** | `shared/types/src/` |
+| **Shared utility** | `shared/utils/src/` |
+| **Terraform module** | `infrastructure/terraform/modules/` |
+| **Kubernetes manifest** | `infrastructure/kubernetes/base/{service}/` |
+| **Docker Compose** | `infrastructure/docker/compose/` |
+| **Monitoring dashboard** | `infrastructure/monitoring/{tool}/dashboards/` |
+| **Architecture doc** | `docs/architecture/` |
+| **Service doc** | `docs/services/{service}/` |
+| **Guide** | `docs/guides/` |
+
 ---
 
 ## Module Boundaries
