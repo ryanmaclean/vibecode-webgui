@@ -81,6 +81,138 @@ log_error() {
     echo -e "${RED}[FAIL]${NC} $1"
 }
 
+# ============================================================================
+# HEALTH CHECK FUNCTIONS
+# ============================================================================
+
+# Check if a port is accessible
+check_port() {
+    local host=$1
+    local port=$2
+    local timeout=${3:-1}
+    nc -z -w "$timeout" "$host" "$port" > /dev/null 2>&1
+}
+
+# Check HTTP endpoint
+check_http() {
+    local url=$1
+    local timeout=${2:-2}
+    curl -s -f --connect-timeout "$timeout" "$url" > /dev/null 2>&1
+}
+
+# Wait for a Kubernetes deployment to be ready
+wait_for_deployment() {
+    local deployment=$1
+    local namespace=$2
+    local timeout=${3:-300}
+
+    log_info "Waiting for deployment/$deployment in namespace $namespace..."
+
+    if kubectl wait --for=condition=available --timeout="${timeout}s" \
+        "deployment/$deployment" -n "$namespace" > /dev/null 2>&1; then
+        log_success "Deployment $deployment is ready"
+        return 0
+    else
+        log_warning "Timeout waiting for $deployment (may still be starting)"
+        return 1
+    fi
+}
+
+# Check if pod is running and ready
+check_pod_ready() {
+    local pod_label=$1
+    local namespace=$2
+
+    local pod_status
+    pod_status=$(kubectl get pods -n "$namespace" -l "$pod_label" \
+        -o jsonpath='{.items[0].status.phase}' 2>/dev/null || echo "NotFound")
+
+    if [ "$pod_status" = "Running" ]; then
+        local ready_status
+        ready_status=$(kubectl get pods -n "$namespace" -l "$pod_label" \
+            -o jsonpath='{.items[0].status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "False")
+
+        if [ "$ready_status" = "True" ]; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# Check service health via port-forward
+check_service_health() {
+    local service=$1
+    local namespace=$2
+    local port=$3
+    local check_type=${4:-http}
+    local timeout=${5:-5}
+
+    # Start port-forward in background
+    local pf_pid
+    kubectl port-forward -n "$namespace" "service/$service" "$port:$port" > /dev/null 2>&1 &
+    pf_pid=$!
+
+    # Wait a moment for port-forward to establish
+    sleep 2
+
+    local result=1
+    if [ "$check_type" = "http" ]; then
+        if check_http "http://localhost:$port" "$timeout"; then
+            log_success "Service $service: http://localhost:$port is healthy"
+            result=0
+        else
+            log_error "Service $service: http://localhost:$port is not responding"
+            result=1
+        fi
+    else
+        if check_port "localhost" "$port" "$timeout"; then
+            log_success "Service $service: localhost:$port is accessible"
+            result=0
+        else
+            log_error "Service $service: localhost:$port is not accessible"
+            result=1
+        fi
+    fi
+
+    # Clean up port-forward
+    kill "$pf_pid" 2>/dev/null || true
+    wait "$pf_pid" 2>/dev/null || true
+
+    return $result
+}
+
+# Get pod status summary
+get_pod_status() {
+    local namespace=$1
+
+    local total running pending failed
+    total=$(kubectl get pods -n "$namespace" --no-headers 2>/dev/null | wc -l | tr -d ' ')
+    running=$(kubectl get pods -n "$namespace" --field-selector=status.phase=Running --no-headers 2>/dev/null | wc -l | tr -d ' ')
+    pending=$(kubectl get pods -n "$namespace" --field-selector=status.phase=Pending --no-headers 2>/dev/null | wc -l | tr -d ' ')
+    failed=$(kubectl get pods -n "$namespace" --field-selector=status.phase=Failed --no-headers 2>/dev/null | wc -l | tr -d ' ')
+
+    echo "Total: $total | Running: $running | Pending: $pending | Failed: $failed"
+}
+
+# Verify deployment health
+verify_deployment_health() {
+    local deployment=$1
+    local namespace=$2
+
+    local desired ready available
+    desired=$(kubectl get deployment "$deployment" -n "$namespace" -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "0")
+    ready=$(kubectl get deployment "$deployment" -n "$namespace" -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
+    available=$(kubectl get deployment "$deployment" -n "$namespace" -o jsonpath='{.status.availableReplicas}' 2>/dev/null || echo "0")
+
+    if [ "$desired" = "$ready" ] && [ "$ready" = "$available" ] && [ "$desired" != "0" ]; then
+        log_success "Deployment $deployment: $ready/$desired replicas ready"
+        return 0
+    else
+        log_warning "Deployment $deployment: $ready/$desired replicas ready (available: $available)"
+        return 1
+    fi
+}
+
 # Run prerequisites check
 log_info "Checking prerequisites..."
 if [ "$DRY_RUN" = true ]; then
