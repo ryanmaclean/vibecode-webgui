@@ -3,6 +3,9 @@
 
 import { UnifiedAIClient, type UnifiedChatMessage } from '../unified-ai-client';
 import { EventEmitter } from 'events';
+import { ConfirmationService } from './confirmation/service';
+import type { ActionPreview, ActionType } from '../../types/agent-confirmation';
+import { randomUUID } from 'crypto';
 
 // Types
 export type AgentRole = 'system' | 'user' | 'assistant' | 'tool';
@@ -21,6 +24,7 @@ export interface ToolDefinition {
   description: string;
   parameters: Record<string, any>;
   execute: (params: Record<string, any>) => Promise<any>;
+  requiresConfirmation?: boolean;
 }
 
 export interface ToolCall {
@@ -40,6 +44,8 @@ export interface AgentOptions {
   memorySize?: number;
   systemPrompt?: string;
   client?: UnifiedAIClient;
+  confirmationService?: ConfirmationService;
+  agentId?: string;
 }
 
 export interface AgentResponse {
@@ -63,6 +69,9 @@ export enum AgentEvent {
   ToolResult = 'tool_result',
   Error = 'error',
   Complete = 'complete',
+  ConfirmationRequired = 'confirmation_required',
+  ConfirmationApproved = 'confirmation_approved',
+  ConfirmationRejected = 'confirmation_rejected',
 }
 
 /**
@@ -77,10 +86,12 @@ export class Agent extends EventEmitter {
   private memory: AgentMessage[] = [];
   private memorySize: number;
   private systemPrompt: string;
+  private confirmationService: ConfirmationService;
+  private agentId: string;
 
   constructor(options: AgentOptions = {}) {
     super();
-    
+
     this.client = options.client || new UnifiedAIClient();
     this.model = options.model || 'openrouter/meta-llama/llama-3-70b-instruct';
     this.temperature = options.temperature ?? 0.7;
@@ -88,12 +99,27 @@ export class Agent extends EventEmitter {
     this.memorySize = options.memorySize ?? 20;
     this.systemPrompt = options.systemPrompt || 'You are a helpful AI assistant.';
     this.tools = new Map();
-    
+    this.confirmationService = options.confirmationService || new ConfirmationService();
+    this.agentId = options.agentId || randomUUID();
+
+    // Forward confirmation service events to agent events
+    this.confirmationService.on('confirmation_required', (event) => {
+      this.emit(AgentEvent.ConfirmationRequired, event);
+    });
+
+    this.confirmationService.on('confirmation_approved', (event) => {
+      this.emit(AgentEvent.ConfirmationApproved, event);
+    });
+
+    this.confirmationService.on('confirmation_rejected', (event) => {
+      this.emit(AgentEvent.ConfirmationRejected, event);
+    });
+
     // Register tools if provided
     if (options.tools) {
       this.registerTools(options.tools);
     }
-    
+
     // Initialize with system message
     this.addToMemory({
       role: 'system',
@@ -159,20 +185,25 @@ export class Agent extends EventEmitter {
   private async executeToolCall(toolCall: ToolCall): Promise<any> {
     const { name, arguments: argsString } = toolCall.function;
     const tool = this.tools.get(name);
-    
+
     if (!tool) {
       throw new Error(`Tool ${name} not found`);
     }
-    
+
     let args: Record<string, any>;
     try {
       args = JSON.parse(argsString);
     } catch (error) {
       throw new Error(`Invalid tool arguments: ${argsString}`);
     }
-    
+
+    // Check if tool requires confirmation
+    if (tool.requiresConfirmation) {
+      await this.requestAndAwaitConfirmation(tool, args);
+    }
+
     this.emit(AgentEvent.ToolCall, { tool: name, args });
-    
+
     try {
       const result = await tool.execute(args);
       this.emit(AgentEvent.ToolResult, { tool: name, result });
@@ -181,6 +212,123 @@ export class Agent extends EventEmitter {
       this.emit(AgentEvent.Error, { tool: name, error });
       throw error;
     }
+  }
+
+  /**
+   * Request confirmation for a tool execution and await user decision
+   */
+  private async requestAndAwaitConfirmation(
+    tool: ToolDefinition,
+    args: Record<string, any>
+  ): Promise<void> {
+    // Map tool name to action type
+    const actionTypeMap: Record<string, ActionType> = {
+      file_write: 'file_write',
+      file_edit: 'file_edit',
+      file_delete: 'file_delete',
+      code_replace: 'code_replace',
+      command_execute: 'command_execute',
+    };
+
+    const actionType = actionTypeMap[tool.name] || 'file_edit';
+
+    // Create action preview
+    const actionPreview: ActionPreview = {
+      action_id: randomUUID(),
+      action_type: actionType,
+      tool_name: tool.name,
+      file_path: args.file_path || args.path || args.file,
+      explanation: this.generateExplanation(tool, args),
+      created_at: new Date().toISOString(),
+    };
+
+    // Add diff preview if available
+    if (args.old_content && args.new_content) {
+      actionPreview.diff = {
+        old_content: args.old_content,
+        new_content: args.new_content,
+        language: args.language,
+        lines_added: this.countLines(args.new_content) - this.countLines(args.old_content),
+        lines_removed: Math.max(0, this.countLines(args.old_content) - this.countLines(args.new_content)),
+      };
+    }
+
+    // Request confirmation
+    const confirmationRequest = this.confirmationService.requestConfirmation(
+      this.agentId,
+      actionPreview,
+      {
+        timeout: 300000, // 5 minutes
+        bulkApprovable: true,
+        riskLevel: this.assessRiskLevel(tool, args),
+      }
+    );
+
+    // Await user decision
+    try {
+      const response = await this.confirmationService.awaitConfirmation(
+        confirmationRequest.request_id
+      );
+
+      if (response.decision === 'reject') {
+        throw new Error(`User rejected action: ${response.comment || 'No reason provided'}`);
+      }
+    } catch (error) {
+      throw new Error(
+        `Confirmation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Generate human-readable explanation for an action
+   */
+  private generateExplanation(tool: ToolDefinition, args: Record<string, any>): string {
+    const filePath = args.file_path || args.path || args.file;
+
+    switch (tool.name) {
+      case 'file_write':
+        return `Write new content to file: ${filePath}`;
+      case 'file_edit':
+        return `Edit existing file: ${filePath}`;
+      case 'file_delete':
+        return `Delete file: ${filePath}`;
+      case 'code_replace':
+        return `Replace code in: ${filePath}`;
+      case 'command_execute':
+        return `Execute command: ${args.command || 'unknown'}`;
+      default:
+        return `Execute ${tool.name} with parameters: ${JSON.stringify(args)}`;
+    }
+  }
+
+  /**
+   * Assess risk level of a tool action
+   */
+  private assessRiskLevel(
+    tool: ToolDefinition,
+    args: Record<string, any>
+  ): 'low' | 'medium' | 'high' {
+    // High risk: file deletion, command execution
+    if (tool.name === 'file_delete' || tool.name === 'command_execute') {
+      return 'high';
+    }
+
+    // Medium risk: file writes, code replacement
+    if (tool.name === 'file_write' || tool.name === 'code_replace') {
+      return 'medium';
+    }
+
+    // Low risk: file edits
+    return 'low';
+  }
+
+  /**
+   * Count number of lines in a string
+   */
+  private countLines(content: string): number {
+    if (!content) return 0;
+    return content.split('\n').length;
   }
 
   /**
