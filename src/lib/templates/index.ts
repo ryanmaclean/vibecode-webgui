@@ -3,6 +3,8 @@
  * Comprehensive collection of scaffolding templates for rapid development
  */
 
+import { TemplateMonitoringConfig } from './monitoring-config'
+
 export interface ProjectTemplate {
   id: string
   name: string
@@ -24,6 +26,7 @@ export interface ProjectTemplate {
   cicdTemplate: boolean
   testingSetup: boolean
   monitoringSetup: boolean
+  monitoringConfig?: TemplateMonitoringConfig
   thumbnail?: string
   documentation: {
     setup: string[]
