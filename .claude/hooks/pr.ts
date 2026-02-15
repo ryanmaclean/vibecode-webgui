@@ -1,4 +1,9 @@
 import type {
+  MergeRequest,
+  MergeRequestAssignee,
+  MergeRequestChange,
+  MergeRequestDetails,
+  MergeRequestReviewer,
   PullRequest,
   PullRequestAuthor,
   PullRequestDetails,
@@ -303,6 +308,216 @@ export async function getPullRequest(prNumber: number): Promise<PullRequestDetai
     }
   } catch {
     // Handle: not in git repo, auth errors, network errors, parse errors, invalid PR number
+    return null
+  }
+}
+
+// GitLab MR list JSON fields for glab mr list command
+// glab uses --output json flag instead of --json field names
+
+/**
+ * Raw author object from glab CLI JSON output
+ */
+interface GLAuthorRaw {
+  username?: string
+  name?: string
+  avatar_url?: string
+}
+
+/**
+ * Raw MR object from glab mr list JSON output
+ */
+interface GLMergeRequestRaw {
+  iid: number
+  title: string
+  state: string
+  author?: GLAuthorRaw
+  description: string
+  web_url: string
+  created_at: string
+  updated_at: string
+}
+
+/**
+ * Raw assignee from glab CLI output
+ */
+interface GLAssigneeRaw {
+  username?: string
+  name?: string
+}
+
+/**
+ * Raw reviewer from glab CLI output
+ */
+interface GLReviewerRaw {
+  username?: string
+  name?: string
+}
+
+/**
+ * Raw change/diff from glab CLI output
+ */
+interface GLChangeRaw {
+  old_path?: string
+  new_path?: string
+  a_mode?: string
+  b_mode?: string
+  diff?: string
+  new_file?: boolean
+  renamed_file?: boolean
+  deleted_file?: boolean
+}
+
+/**
+ * Raw MR detail object from glab mr view JSON output
+ */
+interface GLMergeRequestDetailRaw extends GLMergeRequestRaw {
+  assignees?: GLAssigneeRaw[]
+  reviewers?: GLReviewerRaw[]
+  labels?: string[]
+  changes?: GLChangeRaw[]
+  source_branch?: string
+  target_branch?: string
+  merge_status?: string
+  draft?: boolean
+  work_in_progress?: boolean
+}
+
+/**
+ * Convert raw glab CLI state to typed state
+ */
+function parseMRState(state: string): 'opened' | 'closed' | 'merged' | 'locked' {
+  const normalized = state.toLowerCase()
+  if (normalized === 'merged') return 'merged'
+  if (normalized === 'closed') return 'closed'
+  if (normalized === 'locked') return 'locked'
+  return 'opened'
+}
+
+/**
+ * List open merge requests from the current GitLab repository.
+ * Requires the glab CLI to be installed and authenticated.
+ *
+ * @returns Promise<MergeRequest[]> - Array of merge requests, empty array on error
+ */
+export async function listMergeRequests(): Promise<MergeRequest[]> {
+  // Check CLI availability first
+  const available = await isGitLabCLIAvailable()
+  if (!available) {
+    return []
+  }
+
+  try {
+    const result = await Bun.$`glab mr list --output json`.quiet()
+
+    if (result.exitCode !== 0) {
+      return []
+    }
+
+    const rawMRs = JSON.parse(result.stdout.toString()) as GLMergeRequestRaw[]
+
+    return rawMRs.map((raw) => ({
+      iid: raw.iid,
+      title: raw.title,
+      state: parseMRState(raw.state),
+      author: {
+        username: raw.author?.username ?? 'unknown',
+        name: raw.author?.name,
+        avatarUrl: raw.author?.avatar_url,
+      },
+      description: raw.description ?? '',
+      webUrl: raw.web_url,
+      createdAt: raw.created_at,
+      updatedAt: raw.updated_at,
+    }))
+  } catch {
+    // Handle: not in git repo, auth errors, network errors, parse errors
+    return []
+  }
+}
+
+/**
+ * Get detailed information for a specific merge request by IID.
+ * Requires the glab CLI to be installed and authenticated.
+ *
+ * @param mrIid - The MR IID (internal ID) to fetch
+ * @returns Promise<MergeRequestDetails | null> - MR details or null if not found/error
+ */
+export async function getMergeRequest(mrIid: number): Promise<MergeRequestDetails | null> {
+  // Check CLI availability first
+  const available = await isGitLabCLIAvailable()
+  if (!available) {
+    return null
+  }
+
+  // Validate MR IID
+  if (!Number.isInteger(mrIid) || mrIid <= 0) {
+    return null
+  }
+
+  try {
+    const result = await Bun.$`glab mr view ${mrIid} --output json`.quiet()
+
+    if (result.exitCode !== 0) {
+      return null
+    }
+
+    const raw = JSON.parse(result.stdout.toString()) as GLMergeRequestDetailRaw
+
+    // Build assignees list
+    const assignees: MergeRequestAssignee[] = (raw.assignees ?? [])
+      .filter((a) => a.username)
+      .map((a) => ({
+        username: a.username!,
+        name: a.name,
+      }))
+
+    // Build reviewers list
+    const reviewers: MergeRequestReviewer[] = (raw.reviewers ?? [])
+      .filter((r) => r.username)
+      .map((r) => ({
+        username: r.username!,
+        name: r.name,
+        state: undefined, // glab doesn't provide review state in the same way
+      }))
+
+    // Build changes list
+    const changes: MergeRequestChange[] = (raw.changes ?? []).map((c) => ({
+      oldPath: c.old_path ?? '',
+      newPath: c.new_path ?? '',
+      aMode: c.a_mode ?? '',
+      bMode: c.b_mode ?? '',
+      diff: c.diff ?? '',
+      newFile: c.new_file ?? false,
+      renamedFile: c.renamed_file ?? false,
+      deletedFile: c.deleted_file ?? false,
+    }))
+
+    return {
+      iid: raw.iid,
+      title: raw.title,
+      state: parseMRState(raw.state),
+      author: {
+        username: raw.author?.username ?? 'unknown',
+        name: raw.author?.name,
+        avatarUrl: raw.author?.avatar_url,
+      },
+      description: raw.description ?? '',
+      webUrl: raw.web_url,
+      createdAt: raw.created_at,
+      updatedAt: raw.updated_at,
+      assignees,
+      reviewers,
+      labels: raw.labels ?? [],
+      changes,
+      sourceBranch: raw.source_branch ?? '',
+      targetBranch: raw.target_branch ?? '',
+      mergeStatus: raw.merge_status ?? '',
+      draft: raw.draft ?? false,
+      workInProgress: raw.work_in_progress ?? false,
+    }
+  } catch {
+    // Handle: not in git repo, auth errors, network errors, parse errors, invalid MR IID
     return null
   }
 }
