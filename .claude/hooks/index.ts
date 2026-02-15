@@ -5,13 +5,94 @@ import type {
   PostToolUseHandler,
   PreCompactHandler,
   PreToolUseHandler,
+  PullRequest,
+  MergeRequest,
   SessionStartHandler,
   StopHandler,
   SubagentStopHandler,
   UserPromptSubmitHandler,
 } from './lib'
 import {runHook} from './lib'
+import {listPullRequests, listMergeRequests} from './pr'
 import {saveSessionData} from './session'
+
+// PR/MR detection patterns (case insensitive)
+const PR_PATTERNS = [
+  /\bpr\b/i,           // "PR" as whole word
+  /\bprs\b/i,          // "PRs" as whole word
+  /pull\s*request/i,   // "pull request" or "pullrequest"
+  /pull\s*requests/i,  // "pull requests"
+]
+
+const MR_PATTERNS = [
+  /\bmr\b/i,           // "MR" as whole word
+  /\bmrs\b/i,          // "MRs" as whole word
+  /merge\s*request/i,  // "merge request" or "mergerequest"
+  /merge\s*requests/i, // "merge requests"
+]
+
+/**
+ * Check if the prompt mentions PRs
+ */
+function hasPRMention(prompt: string): boolean {
+  return PR_PATTERNS.some((pattern) => pattern.test(prompt))
+}
+
+/**
+ * Check if the prompt mentions MRs
+ */
+function hasMRMention(prompt: string): boolean {
+  return MR_PATTERNS.some((pattern) => pattern.test(prompt))
+}
+
+/**
+ * Format PR list as context string for Claude
+ */
+function formatPRContextString(prs: PullRequest[]): string {
+  if (prs.length === 0) {
+    return 'No open pull requests found in this repository.'
+  }
+
+  const lines = ['Open Pull Requests:']
+  for (const pr of prs) {
+    lines.push(`  #${pr.number}: ${pr.title} (by ${pr.author.login}, ${pr.state})`)
+  }
+  return lines.join('\n')
+}
+
+/**
+ * Format MR list as context string for Claude
+ */
+function formatMRContextString(mrs: MergeRequest[]): string {
+  if (mrs.length === 0) {
+    return 'No open merge requests found in this repository.'
+  }
+
+  const lines = ['Open Merge Requests:']
+  for (const mr of mrs) {
+    lines.push(`  !${mr.iid}: ${mr.title} (by ${mr.author.username}, ${mr.state})`)
+  }
+  return lines.join('\n')
+}
+
+/**
+ * Non-blocking fetch with timeout
+ */
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
+  let timeoutId: Timer | undefined
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timeoutId = setTimeout(() => resolve(fallback), timeoutMs)
+  })
+
+  try {
+    const result = await Promise.race([promise, timeoutPromise])
+    if (timeoutId) clearTimeout(timeoutId)
+    return result
+  } catch {
+    if (timeoutId) clearTimeout(timeoutId)
+    return fallback
+  }
+}
 
 // SessionStart handler - called when a new Claude session starts
 const sessionStart: SessionStartHandler = async (payload) => {
@@ -145,9 +226,49 @@ const userPromptSubmit: UserPromptSubmitHandler = async (payload) => {
     return {decision: 'block', reason: 'Prompts containing "delete all" are not allowed'}
   }
 
-  // Add your custom prompt processing logic here
+  // PR/MR context enrichment - detect PR/MR mentions and add context
+  const prMention = hasPRMention(payload.prompt)
+  const mrMention = hasMRMention(payload.prompt)
 
-  return contextFiles.length > 0 ? {contextFiles} : {}
+  // Collect context strings for PR/MR information
+  const prMrContext: string[] = []
+
+  if (prMention) {
+    console.log('🔍 PR mention detected in prompt')
+    // Non-blocking fetch with 3 second timeout
+    const prs = await withTimeout(listPullRequests(), 3000, [])
+    if (prs.length > 0) {
+      console.log(`📋 Found ${prs.length} open PRs`)
+      prMrContext.push(formatPRContextString(prs))
+    } else {
+      console.log('📋 No open PRs found or GitHub CLI unavailable')
+    }
+  }
+
+  if (mrMention) {
+    console.log('🔍 MR mention detected in prompt')
+    // Non-blocking fetch with 3 second timeout
+    const mrs = await withTimeout(listMergeRequests(), 3000, [])
+    if (mrs.length > 0) {
+      console.log(`📋 Found ${mrs.length} open MRs`)
+      prMrContext.push(formatMRContextString(mrs))
+    } else {
+      console.log('📋 No open MRs found or GitLab CLI unavailable')
+    }
+  }
+
+  // Build response with context
+  const response: {contextFiles?: string[]; hookSpecificOutput?: string} = {}
+
+  if (contextFiles.length > 0) {
+    response.contextFiles = contextFiles
+  }
+
+  if (prMrContext.length > 0) {
+    response.hookSpecificOutput = prMrContext.join('\n\n')
+  }
+
+  return Object.keys(response).length > 0 ? response : {}
 }
 
 // PreCompact handler - called before Claude compacts the conversation
