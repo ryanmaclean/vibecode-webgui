@@ -162,7 +162,7 @@ export function WorkflowBuilder({
       nodeCount: workflow.nodes.length,
       edgeCount: workflow.edges.length,
       hasAgentTasks: workflow.nodes.some(n => n.type === 'agent-task'),
-      hasApprovalGates: false, // Will be updated when approval gates are added
+      hasApprovalGates: workflow.nodes.some(n => n.type === 'approval-gate'),
     }
   }, [workflow.nodes, workflow.edges])
 
@@ -207,6 +207,17 @@ export function WorkflowBuilder({
         return {
           url: 'https://example.com/webhook',
           method: 'POST',
+        }
+      case 'approval-gate':
+        return {
+          approvalType: 'custom',
+          title: 'Approval Required',
+          description: 'Human approval required to continue',
+          requiredApprovers: [],
+          priority: 'medium',
+          expiresInMinutes: 30,
+          escalationChain: [],
+          autoApproveOnTimeout: false,
         }
       default:
         return {} as never
@@ -444,6 +455,9 @@ export function WorkflowBuilder({
               </Badge>
               {workflowStats.hasAgentTasks && (
                 <Badge variant="default">Contains agent tasks</Badge>
+              )}
+              {workflowStats.hasApprovalGates && (
+                <Badge variant="default">Contains approval gates</Badge>
               )}
             </div>
           </CardContent>
