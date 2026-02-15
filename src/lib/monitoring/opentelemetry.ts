@@ -181,3 +181,135 @@ export function getOpenTelemetryConfig() {
 
 // Export SDK instance for testing/debugging
 export { otelSDK }
+
+/**
+ * Create a custom span for manual instrumentation
+ * Use this to instrument code that isn't automatically traced
+ */
+export function createCustomSpan<T>(
+  name: string,
+  attributes: Record<string, any>,
+  fn: (span: any) => Promise<T>
+): Promise<T> {
+  if (!isServer || isDockerBuild) {
+    // Execute function without tracing in Docker build or client-side
+    return fn({
+      setAttribute: () => {},
+      setAttributes: () => {},
+      setStatus: () => {},
+      recordException: () => {},
+      end: () => {},
+    });
+  }
+
+  // Dynamic import of OpenTelemetry API
+  let trace: any = null;
+  let SpanStatusCode: any = null;
+
+  try {
+    const otelApi = require('@opentelemetry/api');
+    trace = otelApi.trace;
+    SpanStatusCode = otelApi.SpanStatusCode;
+  } catch (error) {
+    // OpenTelemetry API not available, execute without tracing
+    return fn({
+      setAttribute: () => {},
+      setAttributes: () => {},
+      setStatus: () => {},
+      recordException: () => {},
+      end: () => {},
+    });
+  }
+
+  const tracer = trace.getTracer(serviceName);
+
+  return tracer.startActiveSpan(name, async (span: any) => {
+    try {
+      // Set initial attributes
+      span.setAttributes(attributes);
+
+      // Execute the function
+      const result = await fn(span);
+
+      // Mark span as successful
+      span.setStatus({ code: SpanStatusCode.OK });
+
+      return result;
+    } catch (error) {
+      // Record error in span
+      span.setStatus({
+        code: SpanStatusCode.ERROR,
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+
+      span.recordException(error as Error);
+
+      throw error;
+    } finally {
+      span.end();
+    }
+  });
+}
+
+/**
+ * Get the active tracer instance
+ */
+export function getActiveTracer() {
+  if (!isServer || isDockerBuild) {
+    // Return mock tracer for client-side or Docker build
+    return {
+      startSpan: () => ({
+        setAttribute: () => {},
+        setAttributes: () => {},
+        setStatus: () => {},
+        recordException: () => {},
+        end: () => {},
+      }),
+      startActiveSpan: (name: string, fn: Function) => {
+        return fn({
+          setAttribute: () => {},
+          setAttributes: () => {},
+          setStatus: () => {},
+          recordException: () => {},
+          end: () => {},
+        });
+      },
+    };
+  }
+
+  try {
+    const otelApi = require('@opentelemetry/api');
+    return otelApi.trace.getTracer(serviceName);
+  } catch (error) {
+    // Return mock tracer if OpenTelemetry API is not available
+    return {
+      startSpan: () => ({
+        setAttribute: () => {},
+        setAttributes: () => {},
+        setStatus: () => {},
+        recordException: () => {},
+        end: () => {},
+      }),
+      startActiveSpan: (name: string, fn: Function) => {
+        return fn({
+          setAttribute: () => {},
+          setAttributes: () => {},
+          setStatus: () => {},
+          recordException: () => {},
+          end: () => {},
+        });
+      },
+    };
+  }
+}
+
+// Re-export trace context utilities for convenience
+export {
+  createAISpan,
+  createDBSpan,
+  getCurrentTraceContext,
+  extractTraceContext,
+  createTraceparentHeader,
+  AISpanAttributes,
+  DBSpanAttributes,
+} from './trace-context'
