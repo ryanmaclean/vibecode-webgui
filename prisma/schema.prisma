@@ -23,14 +23,15 @@ model User {
   updated_at  DateTime @updatedAt
 
   // Relations
-  sessions      Session[]
-  workspaces    Workspace[]
-  projects      Project[]
-  files         File[]
-  uploads       Upload[]
-  ai_requests   AIRequest[]
-  rag_chunks    RAGChunk[]
-  conversations Conversation[]
+  sessions         Session[]
+  workspaces       Workspace[]
+  projects         Project[]
+  files            File[]
+  uploads          Upload[]
+  ai_requests      AIRequest[]
+  rag_chunks       RAGChunk[]
+  conversations    Conversation[]
+  session_contexts SessionContext[]
 
   @@map("users")
 }
@@ -50,6 +51,30 @@ model Session {
   @@map("sessions")
 }
 
+// Session Context for persistent conversation state
+model SessionContext {
+  id           Int      @id @default(autoincrement())
+  content      String   // Conversation context text
+  metadata     Json?    // Additional metadata (e.g., message count, token count, conversation summary)
+  session_id   String?  // Session identifier
+  user_id      Int
+  workspace_id Int?
+  embedding    Unsupported("vector(1536)")? // Vector embedding for semantic search
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([workspace_id])
+  @@index([session_id])
+  @@index([user_id, workspace_id, created_at]) // For querying user workspace contexts with time sorting
+  @@index([user_id, session_id]) // For retrieving contexts by user and session
+  @@map("session_contexts")
+}
+
 // Workspaces and Projects
 model Workspace {
   id           Int      @id @default(autoincrement())
@@ -64,12 +89,13 @@ model Workspace {
   updated_at   DateTime @updatedAt
 
   // Relations
-  user          User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  projects      Project[]
-  files         File[]
-  uploads       Upload[]
-  rag_chunks    RAGChunk[]
-  conversations Conversation[]
+  user             User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  projects         Project[]
+  files            File[]
+  uploads          Upload[]
+  rag_chunks       RAGChunk[]
+  conversations    Conversation[]
+  session_contexts SessionContext[]
 
   @@index([user_id])
   @@index([workspace_id])
