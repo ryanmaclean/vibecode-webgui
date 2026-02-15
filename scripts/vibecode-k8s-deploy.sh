@@ -128,6 +128,39 @@ else
     log_success "Namespaces created: $NAMESPACE_PLATFORM, $NAMESPACE_WEBGUI"
 fi
 
+# Build and load VibeCode WebGUI image into KIND
+log_info "Building and loading VibeCode WebGUI image into KIND..."
+VIBECODE_IMAGE="vibecodeacr.azurecr.io/vibecode-webgui:v1.5.0"
+DOCKERFILE_LOCAL="platforms/docker/docker/Dockerfile.local"
+
+if [ "$DRY_RUN" = true ]; then
+    if [ -f "$DOCKERFILE_LOCAL" ]; then
+        log_info "Would build image: $VIBECODE_IMAGE using $DOCKERFILE_LOCAL"
+        log_info "Would load image into KIND cluster: $CLUSTER_NAME"
+    else
+        log_warning "Dockerfile not found at $DOCKERFILE_LOCAL, would skip image build"
+    fi
+else
+    if [ -f "$DOCKERFILE_LOCAL" ]; then
+        log_info "Building VibeCode WebGUI image (this may take a few minutes)..."
+        docker build -t "$VIBECODE_IMAGE" -f "$DOCKERFILE_LOCAL" . 2>&1 | grep -E "^(Step|Successfully|#)" || true
+
+        if [ $? -eq 0 ]; then
+            log_success "Image built successfully"
+
+            log_info "Loading image into KIND cluster..."
+            kind load docker-image "$VIBECODE_IMAGE" --name "$CLUSTER_NAME"
+            log_success "Image loaded into KIND cluster"
+        else
+            log_error "Failed to build VibeCode WebGUI image"
+            log_warning "Continuing anyway - deployment will fail if image is not available"
+        fi
+    else
+        log_warning "Dockerfile not found at $DOCKERFILE_LOCAL"
+        log_warning "Deployment will attempt to pull image from registry"
+    fi
+fi
+
 # Deploy secrets
 log_info "Deploying secrets..."
 if [ "$DRY_RUN" = true ]; then
