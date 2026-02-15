@@ -13,6 +13,10 @@ processors:
   memory_limiter:
     check_interval: 1s
     limit_mib: 512
+  resourcedetection:
+    detectors: [env, docker, system]
+    timeout: 5s
+    override: false
 
 exporters:
   logging:
@@ -26,13 +30,13 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
+      processors: [resourcedetection, memory_limiter, batch]
       exporters: [logging, otlp]
     metrics:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
+      processors: [resourcedetection, memory_limiter, batch]
       exporters: [logging, otlp]
     logs:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
+      processors: [resourcedetection, memory_limiter, batch]
       exporters: [logging, otlp]

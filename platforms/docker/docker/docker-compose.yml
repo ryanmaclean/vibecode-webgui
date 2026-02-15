@@ -5,6 +5,11 @@ services:
   webgui:
     build: .
     image: vibecode-webgui-local
+    container_name: vibecode-webgui
+    labels:
+      - "com.vibecode.service=webgui"
+      - "com.vibecode.tier=application"
+      - "com.vibecode.env=staging"
     ports:
       - "3000:3000"
     environment:
@@ -42,6 +47,11 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:16
+    container_name: vibecode-postgres
+    labels:
+      - "com.vibecode.service=postgres"
+      - "com.vibecode.tier=database"
+      - "com.vibecode.env=staging"
     environment:
       - POSTGRES_DB=vibecode
       - POSTGRES_USER=postgres
@@ -68,6 +78,11 @@ services:
   # Redis for caching and sessions
   redis:
     image: redis:8.1-alpine
+    container_name: vibecode-redis
+    labels:
+      - "com.vibecode.service=redis"
+      - "com.vibecode.tier=cache"
+      - "com.vibecode.env=staging"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -89,6 +104,11 @@ services:
   # Nginx reverse proxy
   nginx:
     image: nginx:alpine
+    container_name: vibecode-nginx
+    labels:
+      - "com.vibecode.service=nginx"
+      - "com.vibecode.tier=proxy"
+      - "com.vibecode.env=staging"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
       interval: 30s
@@ -116,6 +136,11 @@ services:
   free-llm-model-updater:
     image: vibecode-webgui-local
     build: .
+    container_name: vibecode-free-llm-model-updater
+    labels:
+      - "com.vibecode.service=free-llm-model-updater"
+      - "com.vibecode.tier=worker"
+      - "com.vibecode.env=staging"
     command: >
       sh -c "mkdir -p /app/runtime/free-llm-models && while true; do node -r dd-trace/init scripts/jobs/update-openrouter-free-models.js && sleep 43200; done"
     environment:
@@ -156,6 +181,11 @@ services:
   # OpenTelemetry Collector for trace aggregation
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
+    container_name: vibecode-otel-collector
+    labels:
+      - "com.vibecode.service=otel-collector"
+      - "com.vibecode.tier=observability"
+      - "com.vibecode.env=staging"
     command: ["--config=/etc/otel-collector-config.yaml"]
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-localhost:4317}
@@ -166,6 +196,7 @@ services:
       - "8889:8889"   # Prometheus exporter metrics
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:13133/"]
       interval: 30s
