@@ -497,3 +497,6 @@ PROMISE_VERIFICATION_REPORT.md
 
 # Event logs
 .events.jsonl
+
+# Auto Claude data directory
+.auto-claude/

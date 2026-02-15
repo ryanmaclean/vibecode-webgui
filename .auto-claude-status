@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "023-plugin-architecture",
+  "state": "building",
+  "subtasks": {
+    "completed": 7,
+    "total": 22,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Plugin Manager API",
+    "id": null,
+    "total": 4
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 9,
+    "started_at": "2026-02-14T15:58:01.571566"
+  },
+  "last_update": "2026-02-14T16:20:06.602923"
+}
