@@ -206,7 +206,7 @@ export function NodePalette({
   )
 
   return (
-    <Card className={cn('flex h-full flex-col', className)}>
+    <Card data-testid="node-palette" className={cn('flex h-full flex-col', className)}>
       <CardHeader className="flex-none border-b pb-3">
         <CardTitle className="text-base font-semibold">Node Palette</CardTitle>
         <CardDescription className="text-sm">
@@ -265,6 +265,7 @@ function NodePaletteItem({
 
   return (
     <div
+      data-testid={`palette-node-${item.type}`}
       draggable
       onDragStart={(e) => onDragStart(e, item.type)}
       onDragEnd={onDragEnd}

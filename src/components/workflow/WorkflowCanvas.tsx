@@ -361,6 +361,7 @@ export function WorkflowCanvas({
 
   return (
     <div
+      data-testid="workflow-canvas"
       ref={canvasRef}
       onDragOver={onDragOver}
       onDrop={onDrop}
@@ -468,6 +469,7 @@ export function WorkflowCanvas({
                   <g key={edge.id}>
                     {/* Edge path */}
                     <path
+                      data-testid="workflow-edge"
                       d={path}
                       fill="none"
                       stroke="currentColor"
@@ -538,6 +540,7 @@ export function WorkflowCanvas({
                 return (
                   <div
                     key={node.id}
+                    data-testid={`node-${node.type}`}
                     ref={(el) => {
                       if (el) nodeRefs.current.set(node.id, el)
                       else nodeRefs.current.delete(node.id)
