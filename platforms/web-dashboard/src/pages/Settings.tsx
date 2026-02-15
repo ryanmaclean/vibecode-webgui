@@ -20,6 +20,8 @@ import {
   Info
 } from 'lucide-react'
 import { metricsApi } from '../services/api'
+import { TailscaleStatus } from '../../../../src/components/TailscaleStatus'
+import { TailscaleSetup } from '../../../../src/components/TailscaleSetup'
 
 interface SettingsSection {
   id: string
@@ -68,6 +70,12 @@ export function Settings() {
       title: 'AI Gateway',
       description: 'AI model and provider configuration',
       icon: Network
+    },
+    {
+      id: 'networking',
+      title: 'Networking',
+      description: 'Tailscale zero-trust networking',
+      icon: Globe
     },
     {
       id: 'monitoring',
@@ -163,6 +171,7 @@ export function Settings() {
               {activeSection === 'authentication' && <AuthenticationSettings settings={settings} />}
               {activeSection === 'cluster' && <ClusterSettings settings={settings} />}
               {activeSection === 'ai' && <AISettings settings={settings} />}
+              {activeSection === 'networking' && <TailscaleSettings settings={settings} />}
               {activeSection === 'monitoring' && <MonitoringSettings settings={settings} />}
               {activeSection === 'notifications' && <NotificationSettings settings={settings} />}
               {activeSection === 'users' && <UserSettings settings={settings} />}
@@ -671,5 +680,88 @@ function AppearanceSettings({ settings }: { settings: any }) {
         </div>
       </div>
     </div>
+  )
+}
+
+function TailscaleSettings({ settings }: { settings: any }) {
+  const [showSetup, setShowSetup] = useState(false)
+
+  return (
+    <>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">Tailscale Zero-Trust Networking</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Secure remote access with zero-trust network architecture
+            </p>
+          </div>
+        </div>
+
+        {/* Tailscale Status Card */}
+        <TailscaleStatus
+          autoRefresh={true}
+          refreshInterval={30000}
+          showRefreshButton={true}
+        />
+
+        {/* Setup Wizard Toggle */}
+        <div className="card p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-base font-medium text-gray-900">Setup Wizard</h4>
+              <p className="text-sm text-gray-600 mt-1">
+                Configure Tailscale for the first time or verify your setup
+              </p>
+            </div>
+            <button
+              onClick={() => setShowSetup(!showSetup)}
+              className="btn-primary"
+            >
+              {showSetup ? 'Hide Setup' : 'Show Setup Wizard'}
+            </button>
+          </div>
+        </div>
+
+        {/* Setup Wizard */}
+        {showSetup && (
+          <TailscaleSetup
+            onComplete={() => setShowSetup(false)}
+            onCancel={() => setShowSetup(false)}
+          />
+        )}
+
+        {/* Information Card */}
+        <div className="card p-6">
+          <h4 className="text-base font-medium text-gray-900 mb-4">About Tailscale</h4>
+          <div className="space-y-3 text-sm text-gray-600">
+            <p>
+              Tailscale creates a secure network overlay that allows your devices to communicate
+              safely over the internet without exposing services to the public.
+            </p>
+            <div className="space-y-2">
+              <p className="font-medium text-gray-900">Key Features:</p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>End-to-end encryption for all traffic</li>
+                <li>Zero-trust security model</li>
+                <li>No open ports to the public internet</li>
+                <li>Automatic key rotation and management</li>
+                <li>Cross-platform support</li>
+              </ul>
+            </div>
+            <p className="mt-4">
+              <a
+                href="https://tailscale.com/kb"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-600 hover:text-primary-700"
+              >
+                Learn more about Tailscale →
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
   )
 }
