@@ -61,6 +61,27 @@ interface SwiftVMInfo {
   createdAt: string;
 }
 
+/**
+ * Operation timeout configuration (milliseconds)
+ * Different operations have different timeout requirements based on typical duration
+ */
+const OPERATION_TIMEOUTS = {
+  /** VM start operations - kernel boot and initialization (60s) */
+  START: 60000,
+
+  /** VM stop operations - graceful shutdown and cleanup (30s) */
+  STOP: 30000,
+
+  /** VM exec operations - command execution can be long-running (120s) */
+  EXEC: 120000,
+
+  /** VM status operations - quick metadata queries (10s) */
+  STATUS: 10000,
+
+  /** Default timeout for other operations (30s) */
+  DEFAULT: 30000,
+} as const;
+
 export class NativeVMProvider implements VMProvider {
   name = 'native-vm';
   private vmBaseDir: string;
@@ -284,7 +305,7 @@ export class NativeVMProvider implements VMProvider {
             resolved = true;
             resolve(true);
           }
-        }, 10000);
+        }, OPERATION_TIMEOUTS.STOP);
 
         proc.once('exit', () => {
           if (!resolved) {
@@ -562,14 +583,42 @@ export class NativeVMProvider implements VMProvider {
   }
 
   /**
+   * Get appropriate timeout for a JSON-RPC method
+   */
+  private getTimeoutForMethod(method: string): number {
+    switch (method) {
+      case 'vm.start':
+        return OPERATION_TIMEOUTS.START;
+      case 'vm.stop':
+        return OPERATION_TIMEOUTS.STOP;
+      case 'vm.exec':
+        return OPERATION_TIMEOUTS.EXEC;
+      case 'vm.status':
+        return OPERATION_TIMEOUTS.STATUS;
+      default:
+        return OPERATION_TIMEOUTS.DEFAULT;
+    }
+  }
+
+  /**
    * Send JSON-RPC request to Swift process with retry logic
+   * Timeout is automatically determined based on the method type
    */
   private async sendRequest(
     proc: ChildProcess,
     method: string,
     params?: any,
-    timeoutMs: number = 30000
+    timeoutMs?: number
   ): Promise<any> {
+    // Use method-specific timeout if not explicitly provided
+    const timeout = timeoutMs ?? this.getTimeoutForMethod(method);
+
+    logger.debug('Sending JSON-RPC request', {
+      method,
+      timeout,
+      vmId: params?.vmId
+    });
+
     return retryWithThrow(
       async () => {
         const id = ++this.requestId;
@@ -582,12 +631,12 @@ export class NativeVMProvider implements VMProvider {
         };
 
         return new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => {
+          const timeoutHandle = setTimeout(() => {
             this.pendingRequests.delete(id);
-            reject(new Error(`Request timeout: ${method}`));
-          }, timeoutMs);
+            reject(new Error(`Request timeout after ${timeout}ms: ${method}`));
+          }, timeout);
 
-          this.pendingRequests.set(id, { resolve, reject, timeout });
+          this.pendingRequests.set(id, { resolve, reject, timeout: timeoutHandle });
 
           // Send request via stdin (newline-delimited JSON)
           proc.stdin?.write(JSON.stringify(request) + '\n');
@@ -614,9 +663,11 @@ export class NativeVMProvider implements VMProvider {
 
   /**
    * Wait for VM to be ready
+   * Uses START timeout by default (60s) to allow for kernel boot and initialization
    */
-  private async waitForVMReady(vmId: string, maxWaitMs: number = 30000): Promise<void> {
+  private async waitForVMReady(vmId: string, maxWaitMs: number = OPERATION_TIMEOUTS.START): Promise<void> {
     const startTime = Date.now();
+    logger.info('Waiting for VM to be ready', { vmId, maxWaitMs });
 
     while (Date.now() - startTime < maxWaitMs) {
       try {
