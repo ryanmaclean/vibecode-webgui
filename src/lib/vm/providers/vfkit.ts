@@ -12,7 +12,7 @@ import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import { isProcessRunning, waitForBoot } from '../utils/health-check';
+import { isProcessRunning, waitForBoot, checkProcessHealth, HealthCheckResult } from '../utils/health-check';
 import { retryWithThrow } from '../utils/retry';
 import { validateMemoryAllocation, getRecommendedCpus } from '../utils/system-resources';
 
@@ -163,6 +163,24 @@ export class VfkitProvider implements VMProvider {
         context: { vmId, vmDir }
       }
     );
+
+    // Validate VM is running after start
+    const stateValidation = await this.validateVMState(vmId, 'running', 'start');
+    if (!stateValidation.healthy) {
+      logger.error('VM state validation failed after start', {
+        vmId,
+        validation: stateValidation
+      });
+      throw new Error(
+        `VM state validation failed after start: ${stateValidation.reason}. ` +
+        `Expected: running, Duration: ${stateValidation.duration}ms`
+      );
+    }
+
+    logger.info('VM started and validated successfully', {
+      vmId,
+      validation: stateValidation
+    });
   }
   
   async stop(vmId: string): Promise<void> {
@@ -195,6 +213,15 @@ export class VfkitProvider implements VMProvider {
               duration: Date.now() - startTime
             });
             await fs.unlink(pidPath);
+
+            // Validate VM is stopped
+            const stateValidation = await this.validateVMState(vmId, 'stopped', 'stop-acpi');
+            if (!stateValidation.healthy) {
+              logger.warn('VM state validation failed after ACPI stop', {
+                vmId,
+                validation: stateValidation
+              });
+            }
             return;
           }
 
@@ -227,6 +254,24 @@ export class VfkitProvider implements VMProvider {
             duration: Date.now() - startTime
           });
           await fs.unlink(pidPath);
+
+          // Validate VM is stopped after SIGTERM
+          const stateValidation = await this.validateVMState(vmId, 'stopped', 'stop-sigterm');
+          if (!stateValidation.healthy) {
+            logger.error('VM state validation failed after SIGTERM stop', {
+              vmId,
+              validation: stateValidation
+            });
+            throw new Error(
+              `VM state validation failed after stop: ${stateValidation.reason}. ` +
+              `Expected: stopped, Duration: ${stateValidation.duration}ms`
+            );
+          }
+
+          logger.info('VM stopped and validated successfully', {
+            vmId,
+            validation: stateValidation
+          });
           return;
         }
 
@@ -236,6 +281,15 @@ export class VfkitProvider implements VMProvider {
           logger.error('Failed to stop VM gracefully, forcing', { vmId, pid });
           process.kill(pid, 'SIGKILL');
           await fs.unlink(pidPath);
+
+          // Validate VM is stopped after SIGKILL
+          const stateValidation = await this.validateVMState(vmId, 'stopped', 'stop-sigkill');
+          if (!stateValidation.healthy) {
+            logger.error('VM state validation failed after SIGKILL', {
+              vmId,
+              validation: stateValidation
+            });
+          }
           throw new Error(`VM ${vmId} failed to stop gracefully, forced kill`);
         }
       }
@@ -592,6 +646,153 @@ export class VfkitProvider implements VMProvider {
       return running ? 'running' : 'stopped';
     } catch {
       return 'stopped';
+    }
+  }
+
+  /**
+   * Validate VM state matches expected state
+   *
+   * @param vmId - VM identifier
+   * @param expectedState - Expected VM state ('running' or 'stopped')
+   * @param operationName - Name of operation for logging
+   * @returns Promise resolving to HealthCheckResult
+   *
+   * @example
+   * ```typescript
+   * const result = await this.validateVMState('my-vm', 'running', 'start');
+   * if (!result.healthy) {
+   *   logger.error('VM state validation failed', { result });
+   * }
+   * ```
+   */
+  private async validateVMState(
+    vmId: string,
+    expectedState: VMStatus,
+    operationName: string
+  ): Promise<HealthCheckResult> {
+    const startTime = Date.now();
+    const vmDir = path.join(this.vmBaseDir, vmId);
+    const pidPath = path.join(vmDir, 'vm.pid');
+
+    try {
+      // Check if VM directory exists
+      try {
+        await fs.access(vmDir);
+      } catch {
+        return {
+          healthy: false,
+          reason: 'VM directory does not exist',
+          attempts: 1,
+          duration: Date.now() - startTime,
+          details: { vmId, vmDir, expectedState, operationName }
+        };
+      }
+
+      // Check if config file exists
+      const configPath = path.join(vmDir, 'config.json');
+      try {
+        await fs.access(configPath);
+      } catch {
+        return {
+          healthy: false,
+          reason: 'VM config file not found',
+          attempts: 1,
+          duration: Date.now() - startTime,
+          details: { vmId, configPath, expectedState, operationName }
+        };
+      }
+
+      // Validate state based on expected state
+      if (expectedState === 'running') {
+        // For running state, check process health
+        const processHealth = await checkProcessHealth(pidPath);
+
+        if (!processHealth.healthy) {
+          return {
+            healthy: false,
+            reason: `VM expected to be running but ${processHealth.reason}`,
+            attempts: processHealth.attempts,
+            duration: Date.now() - startTime,
+            details: {
+              vmId,
+              expectedState,
+              processHealth,
+              operationName
+            }
+          };
+        }
+
+        logger.info('VM state validation passed', {
+          vmId,
+          expectedState,
+          actualState: 'running',
+          operationName,
+          duration: Date.now() - startTime
+        });
+
+        return {
+          healthy: true,
+          reason: 'VM is running as expected',
+          attempts: processHealth.attempts,
+          duration: Date.now() - startTime,
+          details: { vmId, expectedState, operationName, pid: processHealth.details?.pid }
+        };
+
+      } else if (expectedState === 'stopped') {
+        // For stopped state, verify PID file doesn't exist or process is not running
+        try {
+          const pidContent = await fs.readFile(pidPath, 'utf-8');
+          const pid = parseInt(pidContent.trim(), 10);
+
+          if (!isNaN(pid)) {
+            const running = await isProcessRunning(pid);
+
+            if (running) {
+              return {
+                healthy: false,
+                reason: 'VM expected to be stopped but process is still running',
+                attempts: 1,
+                duration: Date.now() - startTime,
+                details: { vmId, expectedState, pid, operationName }
+              };
+            }
+          }
+        } catch {
+          // PID file not found or unreadable - this is expected for stopped state
+        }
+
+        logger.info('VM state validation passed', {
+          vmId,
+          expectedState,
+          actualState: 'stopped',
+          operationName,
+          duration: Date.now() - startTime
+        });
+
+        return {
+          healthy: true,
+          reason: 'VM is stopped as expected',
+          attempts: 1,
+          duration: Date.now() - startTime,
+          details: { vmId, expectedState, operationName }
+        };
+      } else {
+        return {
+          healthy: false,
+          reason: `Unknown expected state: ${expectedState}`,
+          attempts: 1,
+          duration: Date.now() - startTime,
+          details: { vmId, expectedState, operationName }
+        };
+      }
+    } catch (error) {
+      return {
+        healthy: false,
+        reason: error instanceof Error ? error.message : 'Unknown error during state validation',
+        attempts: 1,
+        duration: Date.now() - startTime,
+        details: { vmId, expectedState, operationName, error }
+      };
     }
   }
   
