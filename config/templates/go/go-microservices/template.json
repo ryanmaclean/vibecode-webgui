@@ -1,0 +1,19 @@
+{
+  "name": "Go Microservices Starter",
+  "description": "Production-ready Go microservices template with Docker, monitoring (Prometheus/Grafana), health checks, and structured logging.",
+  "author": "VibeCode",
+  "tags": ["go", "microservices", "docker", "prometheus", "grafana", "monitoring", "rest-api"],
+  "icon": "go-microservices",
+  "version": "1.0.0",
+  "type": "application",
+  "language": "go",
+  "framework": "net/http",
+  "files": [
+    "main.go",
+    "go.mod",
+    "Dockerfile",
+    "docker-compose.yml",
+    ".env.example",
+    "README.md"
+  ]
+}
