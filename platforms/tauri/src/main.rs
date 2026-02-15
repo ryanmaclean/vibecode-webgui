@@ -120,9 +120,9 @@ fn main() {
             platform::windows::windows_check_requirements,
             #[cfg(target_os = "windows")]
             platform::windows::windows_get_setup_instructions,
-            // Tailscale commands (not yet implemented)
-            // tailscale::commands::tailscale_status,
-            // tailscale::commands::tailscale_get_ip,
+            // Tailscale commands
+            tailscale::commands::tailscale_status,
+            tailscale::commands::tailscale_get_ip,
         ])
         .setup(|app| {
             // Check if running in service mode (for Electron)
