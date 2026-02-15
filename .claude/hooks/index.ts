@@ -258,14 +258,23 @@ const userPromptSubmit: UserPromptSubmitHandler = async (payload) => {
   }
 
   // Build response with context
-  const response: {contextFiles?: string[]; hookSpecificOutput?: string} = {}
+  const response: {
+    contextFiles?: string[]
+    hookSpecificOutput?: {
+      hookEventName: 'UserPromptSubmit'
+      additionalContext?: string
+    }
+  } = {}
 
   if (contextFiles.length > 0) {
     response.contextFiles = contextFiles
   }
 
   if (prMrContext.length > 0) {
-    response.hookSpecificOutput = prMrContext.join('\n\n')
+    response.hookSpecificOutput = {
+      hookEventName: 'UserPromptSubmit',
+      additionalContext: prMrContext.join('\n\n')
+    }
   }
 
   return Object.keys(response).length > 0 ? response : {}
