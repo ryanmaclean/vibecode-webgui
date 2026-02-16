@@ -562,6 +562,128 @@ class TestSanitizeTaskLogEntry(unittest.TestCase):
         self.assertEqual(result["metadata"]["duration"], entry["metadata"]["duration"])
         self.assertEqual(result["metadata"]["exit_code"], entry["metadata"]["exit_code"])
 
+    def test_task_log_integration(self):
+        """Integration test with real task_logs.json sample."""
+        # Sample entries from a real task_logs.json file with sensitive data
+        task_log_entries = [
+            {
+                "timestamp": "2026-02-16T07:17:36.504713+00:00",
+                "type": "phase_start",
+                "content": "Starting implementation planning...",
+                "phase": "planning"
+            },
+            {
+                "timestamp": "2026-02-16T07:17:43.687152+00:00",
+                "type": "text",
+                "content": "Connecting with API key sk-1234567890abcdef1234567890abcdef1234567890ab for analysis",
+                "phase": "planning",
+                "session": 1
+            },
+            {
+                "timestamp": "2026-02-16T07:17:44.407403+00:00",
+                "type": "tool_start",
+                "content": "[Bash] export OPENAI_API_KEY=sk-ant-api03-xyz123",
+                "phase": "planning",
+                "tool_name": "Bash",
+                "tool_input": "export OPENAI_API_KEY=sk-ant-api03-xyz123 && python analyze.py",
+                "session": 1
+            },
+            {
+                "timestamp": "2026-02-16T07:17:45.810241+00:00",
+                "type": "tool_end",
+                "content": "[Bash] Done",
+                "phase": "planning",
+                "tool_name": "Bash",
+                "session": 1,
+                "detail": "Connected to postgresql://admin:supersecret@db.example.com:5432/production\nUser: dev@company.com\nAuth token: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U",
+                "collapsed": True
+            },
+            {
+                "timestamp": "2026-02-16T07:17:46.342285+00:00",
+                "type": "tool_start",
+                "content": "[Read] config.json",
+                "phase": "planning",
+                "tool_name": "Read",
+                "tool_input": "./config.json",
+                "session": 1
+            },
+            {
+                "timestamp": "2026-02-16T07:17:47.398005+00:00",
+                "type": "tool_end",
+                "content": "[Read] Done",
+                "phase": "planning",
+                "tool_name": "Read",
+                "session": 1,
+                "detail": "{\n  \"github_token\": \"ghp_1234567890abcdefABCDEF1234567890XYAB\",\n  \"aws_key\": \"AKIAIOSFODNN7EXAMPLE\",\n  \"admin_phone\": \"555-123-4567\",\n  \"support_email\": \"support@example.com\"\n}",
+                "collapsed": False
+            }
+        ]
+
+        # Sanitize each entry
+        sanitized_entries = [sanitize_task_log_entry(entry) for entry in task_log_entries]
+
+        # Test 1: Phase start entry should be unchanged (no sensitive data)
+        self.assertEqual(
+            sanitized_entries[0]["content"],
+            "Starting implementation planning..."
+        )
+        self.assertEqual(sanitized_entries[0]["type"], "phase_start")
+        self.assertEqual(sanitized_entries[0]["phase"], "planning")
+
+        # Test 2: Text entry with API key should be redacted
+        self.assertNotIn("sk-1234567890", sanitized_entries[1]["content"])
+        self.assertIn("[REDACTED:API_KEY]", sanitized_entries[1]["content"])
+        self.assertEqual(sanitized_entries[1]["session"], 1)
+
+        # Test 3: Tool start entry - API key in both content and tool_input
+        self.assertNotIn("sk-ant-api03-xyz123", sanitized_entries[2]["content"])
+        self.assertNotIn("sk-ant-api03-xyz123", sanitized_entries[2]["tool_input"])
+        self.assertIn("[REDACTED:API_KEY]", sanitized_entries[2]["content"])
+        self.assertIn("[REDACTED:API_KEY]", sanitized_entries[2]["tool_input"])
+        self.assertEqual(sanitized_entries[2]["tool_name"], "Bash")
+
+        # Test 4: Tool end entry - multiple sensitive items in detail field
+        detail = sanitized_entries[3]["detail"]
+        # Database connection string should be redacted
+        self.assertNotIn("supersecret", detail)
+        self.assertIn("[REDACTED:DB_CONNECTION]", detail)
+        # Email should be redacted
+        self.assertNotIn("dev@company.com", detail)
+        self.assertIn("[REDACTED:EMAIL]", detail)
+        # Bearer token (with JWT) should be redacted
+        self.assertNotIn("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9", detail)
+        self.assertIn("[REDACTED:BEARER_TOKEN]", detail)
+        # Collapsed boolean should be preserved
+        self.assertTrue(sanitized_entries[3]["collapsed"])
+
+        # Test 5: Config file content with multiple secrets
+        detail = sanitized_entries[5]["detail"]
+        # GitHub token should be redacted (36 chars after ghp_)
+        self.assertNotIn("ghp_1234567890abcdefABCDEF1234567890XYAB", detail)
+        self.assertIn("[REDACTED:API_KEY]", detail)
+        # AWS key should be redacted
+        self.assertNotIn("AKIAIOSFODNN7EXAMPLE", detail)
+        # Phone number should be redacted
+        self.assertNotIn("555-123-4567", detail)
+        self.assertIn("[REDACTED:PHONE]", detail)
+        # Email should be redacted
+        self.assertNotIn("support@example.com", detail)
+        # Structure keys should be preserved
+        self.assertIn("github_token", detail)
+        self.assertIn("aws_key", detail)
+        self.assertIn("admin_phone", detail)
+        self.assertIn("support_email", detail)
+        # Collapsed boolean should be preserved
+        self.assertFalse(sanitized_entries[5]["collapsed"])
+
+        # Test 6: Verify all entries have preserved timestamps
+        for i, entry in enumerate(sanitized_entries):
+            self.assertEqual(entry["timestamp"], task_log_entries[i]["timestamp"])
+
+        # Test 7: Verify structure is preserved (all keys present)
+        for i, entry in enumerate(sanitized_entries):
+            self.assertEqual(set(entry.keys()), set(task_log_entries[i].keys()))
+
 
 class TestEdgeCases(unittest.TestCase):
     """Tests for edge cases and data preservation."""
