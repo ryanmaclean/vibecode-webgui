@@ -17,11 +17,44 @@ import { createChildLogger } from '@/lib/logger'
 
 const logger = createChildLogger({ module: 'security', scope: 'keychain' })
 
-// Keychain configuration
-const KEYCHAIN_SERVICE = 'com.vibecode.secrets'
-const KEYCHAIN_ACCESS_GROUP = process.env.TEAM_ID
-  ? `${process.env.TEAM_ID}.com.vibecode.shared`
-  : undefined
+/**
+ * Configuration for macOS Keychain integration
+ */
+const KEYCHAIN_CONFIG = {
+  SERVICE: 'com.vibecode.secrets',
+  get ACCESS_GROUP() {
+    return process.env.TEAM_ID
+      ? `${process.env.TEAM_ID}.com.vibecode.shared`
+      : undefined
+  },
+  METADATA_PREFIX: 'vibe-meta:',
+} as const
+
+// Legacy constants for backward compatibility
+const KEYCHAIN_SERVICE = KEYCHAIN_CONFIG.SERVICE
+const KEYCHAIN_ACCESS_GROUP = KEYCHAIN_CONFIG.ACCESS_GROUP
+
+/**
+ * Metadata stored alongside secrets in the keychain
+ * Enables tracking of secret lifecycle information
+ *
+ * Stored as JSON in the keychain item's comment field, allowing
+ * querying without database access.
+ */
+export interface KeychainMetadata {
+  /** When the secret was stored (ISO 8601 timestamp) */
+  createdAt?: string
+  /** When the secret expires (ISO 8601 timestamp) */
+  expiresAt?: string
+  /** Last rotation timestamp (ISO 8601 timestamp) */
+  lastRotatedAt?: string
+  /** Rotation policy identifier */
+  rotationPolicy?: string
+  /** Secret status */
+  status?: 'active' | 'expired' | 'rotating' | 'revoked'
+  /** Additional custom metadata */
+  [key: string]: string | number | boolean | undefined
+}
 
 interface KeychainOptions {
   service?: string
@@ -29,14 +62,57 @@ interface KeychainOptions {
   accessGroup?: string
   accessibility?: 'whenUnlocked' | 'afterFirstUnlock' | 'whenUnlockedThisDeviceOnly'
   requireUserPresence?: boolean
+  /** Metadata to store with the secret */
+  metadata?: KeychainMetadata
 }
 
 /**
- * Store secret in macOS Keychain
+ * Serialize metadata to JSON string for keychain storage
+ * @param metadata - Metadata object to serialize
+ * @returns JSON string or empty string if no metadata
+ */
+function serializeMetadata(metadata?: KeychainMetadata): string {
+  if (!metadata || Object.keys(metadata).length === 0) {
+    return ''
+  }
+
+  try {
+    return `${KEYCHAIN_CONFIG.METADATA_PREFIX}${JSON.stringify(metadata)}`
+  } catch (error) {
+    logger.warn('Failed to serialize metadata', { error })
+    return ''
+  }
+}
+
+/**
+ * Deserialize metadata from keychain comment field
+ * @param comment - Comment string from keychain item
+ * @returns Parsed metadata object or null
+ */
+function deserializeMetadata(comment: string | null): KeychainMetadata | null {
+  if (!comment || !comment.startsWith(KEYCHAIN_CONFIG.METADATA_PREFIX)) {
+    return null
+  }
+
+  try {
+    const jsonString = comment.substring(KEYCHAIN_CONFIG.METADATA_PREFIX.length)
+    return JSON.parse(jsonString) as KeychainMetadata
+  } catch (error) {
+    logger.warn('Failed to deserialize metadata', { error, comment })
+    return null
+  }
+}
+
+/**
+ * Store secret in macOS Keychain with optional metadata
+ *
+ * Metadata is stored in the keychain item's comment field as JSON,
+ * allowing retrieval without database access. This enables offline
+ * secret lifecycle tracking.
  *
  * @param key - Secret identifier (e.g., 'openai-api-key')
  * @param value - Secret value to store
- * @param options - Keychain configuration options
+ * @param options - Keychain configuration options including metadata
  */
 export async function setSecret(
   key: string,
@@ -44,9 +120,9 @@ export async function setSecret(
   options: Partial<KeychainOptions> = {}
 ): Promise<void> {
   const opts: KeychainOptions = {
-    service: KEYCHAIN_SERVICE,
+    service: KEYCHAIN_CONFIG.SERVICE,
     account: key,
-    accessGroup: KEYCHAIN_ACCESS_GROUP,
+    accessGroup: KEYCHAIN_CONFIG.ACCESS_GROUP,
     accessibility: 'whenUnlockedThisDeviceOnly',
     ...options,
   }
@@ -54,6 +130,9 @@ export async function setSecret(
   try {
     // Properly escape value for shell
     const escapedValue = value.replace(/'/g, "'\\''")
+
+    // Serialize metadata for storage in comment field
+    const metadataComment = serializeMetadata(opts.metadata)
 
     // Build command parts as array to avoid shell escaping issues
     const commandParts = [
@@ -67,6 +146,12 @@ export async function setSecret(
       `'${escapedValue}'`,
       '-U', // Update if exists
     ]
+
+    // Add metadata as comment if provided
+    if (metadataComment) {
+      const escapedComment = metadataComment.replace(/'/g, "'\\''")
+      commandParts.push('-j', `'${escapedComment}'`)
+    }
 
     // Access control: Allow all applications for development
     // In production, use -T to restrict access to specific applications
@@ -82,6 +167,7 @@ export async function setSecret(
     logger.info('Secret stored in Keychain', {
       service: opts.service,
       account: opts.account,
+      hasMetadata: !!opts.metadata,
     })
   } catch (error) {
     logger.error('Failed to store secret in Keychain', {
@@ -104,7 +190,7 @@ export async function getSecret(
   options: Partial<KeychainOptions> = {}
 ): Promise<string | null> {
   const opts: KeychainOptions = {
-    service: KEYCHAIN_SERVICE,
+    service: KEYCHAIN_CONFIG.SERVICE,
     account: key,
     ...options,
   }
@@ -148,6 +234,101 @@ export async function getSecret(
 }
 
 /**
+ * Retrieve secret with metadata from macOS Keychain
+ *
+ * Returns both the secret value and any metadata stored with it.
+ * Metadata is extracted from the keychain item's comment field.
+ *
+ * @param key - Secret identifier
+ * @param options - Keychain configuration options
+ * @returns Object containing value and metadata, or null if not found
+ */
+export async function getSecretWithMetadata(
+  key: string,
+  options: Partial<KeychainOptions> = {}
+): Promise<{ value: string; metadata: KeychainMetadata | null } | null> {
+  const opts: KeychainOptions = {
+    service: KEYCHAIN_CONFIG.SERVICE,
+    account: key,
+    ...options,
+  }
+
+  try {
+    // Get full item details including comment field
+    const command = [
+      'security',
+      'find-generic-password',
+      '-s',
+      opts.service!,
+      '-a',
+      opts.account,
+      '-g', // Output password to stderr
+      '-w', // Output password only to stdout
+    ]
+
+    const result = execSync(command.join(' '), {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'], // Capture both stdout and stderr
+      shell: '/bin/bash',
+    })
+
+    const value = result.trim()
+
+    // Try to get comment field with metadata
+    let metadata: KeychainMetadata | null = null
+    try {
+      const commentCommand = [
+        'security',
+        'find-generic-password',
+        '-s',
+        opts.service!,
+        '-a',
+        opts.account,
+        '|',
+        'grep',
+        '"icmt"',
+        '|',
+        'sed',
+        '-E',
+        's/.*"icmt"<blob>="([^"]+)".*/\\1/',
+      ]
+
+      const commentResult = execSync(commentCommand.join(' '), {
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'ignore'],
+        shell: '/bin/bash',
+      })
+
+      const comment = commentResult.trim()
+      metadata = deserializeMetadata(comment)
+    } catch {
+      // Comment field not found or invalid - this is acceptable
+      logger.debug('No metadata found for secret', { account: key })
+    }
+
+    logger.debug('Secret with metadata retrieved from Keychain', {
+      service: opts.service,
+      account: opts.account,
+      hasMetadata: !!metadata,
+    })
+
+    return { value, metadata }
+  } catch (error) {
+    // Secret not found is not an error, just return null
+    if (error instanceof Error && error.message.includes('could not be found')) {
+      logger.debug('Secret not found in Keychain', { account: key })
+      return null
+    }
+
+    logger.error('Failed to retrieve secret with metadata from Keychain', {
+      error: error instanceof Error ? error.message : error,
+      account: key,
+    })
+    throw new Error(`Keychain retrieval with metadata failed for ${key}`)
+  }
+}
+
+/**
  * Delete secret from macOS Keychain
  *
  * @param key - Secret identifier
@@ -158,7 +339,7 @@ export async function deleteSecret(
   options: Partial<KeychainOptions> = {}
 ): Promise<void> {
   const opts: KeychainOptions = {
-    service: KEYCHAIN_SERVICE,
+    service: KEYCHAIN_CONFIG.SERVICE,
     account: key,
     ...options,
   }
@@ -318,7 +499,7 @@ export async function listSecrets(): Promise<string[]> {
       'grep',
       '-A',
       '1',
-      `"svce"<blob>="${KEYCHAIN_SERVICE}"`,
+      `"svce"<blob>="${KEYCHAIN_CONFIG.SERVICE}"`,
       '|',
       'grep',
       '"acct"',
