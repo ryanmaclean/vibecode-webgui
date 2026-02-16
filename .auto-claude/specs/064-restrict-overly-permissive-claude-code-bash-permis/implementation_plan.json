@@ -195,8 +195,9 @@
             "command": "cp .claude_settings.json .claude_settings.json.backup && test -f .claude_settings.json.backup",
             "expected": "Backup file created"
           },
-          "status": "pending",
-          "notes": "Create backup before migration to allow rollback if needed"
+          "status": "completed",
+          "notes": "✅ Successfully created backup .claude_settings.json.backup. Verified backup is identical to original using diff. Forced git add to override .gitignore and committed. Commit: 8fa36d9c3e",
+          "updated_at": "2026-02-16T09:22:15.782302+00:00"
         },
         {
           "id": "subtask-4-2",
@@ -214,8 +215,9 @@
             "command": "python -c \"import json; data = json.load(open('.claude_settings.json')); perms = data['permissions']['allow']; bash_perms = [p for p in perms if p.startswith('Bash(') and p != 'Bash(*)']; print(f'{len(bash_perms)} granular permissions')\"",
             "expected": "229 granular permissions"
           },
-          "status": "pending",
-          "notes": "Replace Bash(*) with 229 specific Bash(command) entries from security.json"
+          "status": "completed",
+          "notes": "✅ Successfully replaced .claude_settings.json with granular permissions. Removed Bash(*) wildcard and added 229 specific Bash(command) entries from .claude_settings.new.json. Verification confirmed exactly 229 granular Bash permissions present. Commit: b7988a641b",
+          "updated_at": "2026-02-16T09:24:40.821011+00:00"
         },
         {
           "id": "subtask-4-3",
@@ -229,8 +231,9 @@
             "command": "git status && git log -1 --oneline",
             "expected": "Commands execute successfully"
           },
-          "status": "pending",
-          "notes": "Smoke test to ensure git commands work with new permissions"
+          "status": "completed",
+          "notes": "Verified basic git operations (git status and git log) work correctly",
+          "updated_at": "2026-02-16T09:25:34.294719+00:00"
         }
       ]
     },
@@ -485,6 +488,6 @@
   "qa_signoff": null,
   "status": "in_progress",
   "planStatus": "in_progress",
-  "updated_at": "2026-02-16T09:20:04.077Z",
-  "last_updated": "2026-02-16T09:19:32.598878+00:00"
+  "updated_at": "2026-02-16T09:25:21.460Z",
+  "last_updated": "2026-02-16T09:25:34.294731+00:00"
 }
