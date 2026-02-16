@@ -86,6 +86,8 @@ API_KEY_PATTERNS = [
     (r"ghr_[a-zA-Z0-9]{36}", "API_KEY", "GitHub refresh token"),
     (r"AKIA[0-9A-Z]{16}", "API_KEY", "AWS Access Key ID"),
     (r"ya29\.[0-9A-Za-z\-_]+", "API_KEY", "Google OAuth access token"),
+    # Catch shorter API key formats (test data, examples, or truncated keys)
+    (r"\bsk-[a-zA-Z0-9]{3,39}\b", "API_KEY", "Short-form API key"),
 ]
 
 # PII patterns
