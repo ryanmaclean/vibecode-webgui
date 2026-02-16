@@ -347,8 +347,9 @@
             "command": "! test -f .claude_settings.new.json && ! test -f .claude_settings.json.backup",
             "expected": "Temporary files removed"
           },
-          "status": "pending",
-          "notes": "Clean up .claude_settings.new.json and .claude_settings.json.backup after successful migration"
+          "status": "completed",
+          "notes": "Successfully removed temporary files (.claude_settings.new.json and .claude_settings.json.backup). Verification passed and changes committed.",
+          "updated_at": "2026-02-16T09:37:12.727030+00:00"
         },
         {
           "id": "subtask-6-2",
@@ -363,8 +364,9 @@
             "type": "manual",
             "instructions": "Documentation updated with Claude permissions hardening section"
           },
-          "status": "pending",
-          "notes": "Add entry to security-hardening.md documenting this security improvement"
+          "status": "completed",
+          "notes": "✅ Added comprehensive Wave 10 section to security-hardening.md documenting Claude Code Bash permissions hardening. Includes: Executive Summary, Security Vulnerability Analysis (attack vectors), 6 Implementation Phases, Command Permission Breakdown (229 commands), CI/CD Integration, Security Compliance (SOC 2, ISO 27001, NIST 800-53), Performance Impact, Future Enhancements, Lessons Learned, and 11 commits. Risk reduction from 9.5/10 CRITICAL to 2.0/10 LOW documented. Commit: 5d26546da9",
+          "updated_at": "2026-02-16T09:40:00.000000+00:00"
         }
       ]
     }
@@ -492,6 +494,6 @@
   "qa_signoff": null,
   "status": "in_progress",
   "planStatus": "in_progress",
-  "updated_at": "2026-02-16T09:36:53.088Z",
-  "last_updated": "2026-02-16T09:36:24.495145+00:00"
+  "updated_at": "2026-02-16T09:37:40.009Z",
+  "last_updated": "2026-02-16T09:37:12.727036+00:00"
 }
