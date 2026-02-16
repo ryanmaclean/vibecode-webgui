@@ -117,8 +117,9 @@
             "command": "python scripts/security/generate_claude_permissions.py --output .claude_settings.new.json && test -f .claude_settings.new.json",
             "expected": "File created with 229+ permission entries"
           },
-          "status": "pending",
-          "notes": "Generate new settings file preserving existing permissions but replacing Bash(*) with granular commands"
+          "status": "completed",
+          "notes": "Successfully generated .claude_settings.new.json with 229 granular Bash permissions (128 base + 101 stack commands). Verification passed and changes committed.",
+          "updated_at": "2026-02-16T09:16:54.744363+00:00"
         }
       ]
     },
@@ -148,8 +149,9 @@
             "command": "python scripts/security/tests/test_claude_permissions.py --config .claude_settings.new.json",
             "expected": "All common commands (git, npm, ls, grep) are permitted"
           },
-          "status": "pending",
-          "notes": "Test that typical development workflows (git status, npm install, file operations) are allowed"
+          "status": "completed",
+          "notes": "✅ Created comprehensive test suite at scripts/security/tests/test_claude_permissions.py. Features: validates common dev commands (git, npm, ls, grep) are permitted, checks for absence of Bash(*) wildcard, verifies expected permission count (229 commands), supports both quick check and unittest modes. Follows pattern from test_security_test.py with proper error handling. Both verification modes pass successfully. Commit: b6af7bb1c7",
+          "updated_at": "2026-02-16T09:19:32.598868+00:00"
         },
         {
           "id": "subtask-3-2",
@@ -163,8 +165,9 @@
             "command": "python -c \"import json; data = json.load(open('.claude_settings.new.json')); perms = data['permissions']['allow']; dangerous = ['rm -rf /', 'format', 'dd']; print('OK' if not any(d in str(perms) for d in dangerous) else 'FAIL')\"",
             "expected": "OK"
           },
-          "status": "pending",
-          "notes": "Ensure wildcard patterns and dangerous commands are not allowed"
+          "status": "completed",
+          "notes": "✅ Verified dangerous commands are NOT present in .claude_settings.new.json: 'rm -rf /', 'format', and 'dd' not found. File contains only 229 granular command-level permissions without wildcards or dangerous flag combinations. Security verification passed.",
+          "updated_at": "2026-02-16T09:25:00.000000+00:00"
         }
       ]
     },
@@ -482,6 +485,6 @@
   "qa_signoff": null,
   "status": "in_progress",
   "planStatus": "in_progress",
-  "updated_at": "2026-02-16T09:11:45.976Z",
-  "last_updated": "2026-02-16T09:10:59.358291+00:00"
+  "updated_at": "2026-02-16T09:20:04.077Z",
+  "last_updated": "2026-02-16T09:19:32.598878+00:00"
 }
