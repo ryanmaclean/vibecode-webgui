@@ -78,3 +78,24 @@ The test file is complete and ready. It will run successfully once the monitorin
 - No change needed - acceptEdits is the recommended configuration
 - Committed decision with detailed rationale: 205b277b71
 - Status: COMPLETED ✓
+[2026-02-16 09:45] subtask-5-3: Add documentation for permission management
+- Created comprehensive permission management guide: docs/security/claude-permissions.md
+- Documentation completeness (627 lines):
+  ✓ (1) How to add new commands - 6-step process with security assessment
+  ✓ (2) How to regenerate permissions - 4 methods with validation examples
+  ✓ (3) Security rationale - Attack vectors, defense-in-depth, risk reduction
+- Key sections included:
+  * Overview: Permission architecture and current security posture
+  * Security Rationale: Attack vectors prevented, defense layers, risk score 9.5→2.5
+  * Permission Architecture: Manifest structure, command categories (128 base + 101 stack)
+  * How to Add Commands: Assessment criteria, category selection, validation steps
+  * How to Regenerate: Dry-run, new file, in-place, custom security file methods
+  * Best Practices: DO/DON'T guidelines, validation workflows
+  * Troubleshooting: Common issues and solutions
+  * CI/CD Integration: Drift detection, workflow triggers, fixing failures
+  * Emergency Procedures: Permission abuse, safe baseline restore, rollback
+- Followed pattern from docs/guides/security-hardening.md with professional formatting
+- Includes tables, code examples, command reference, and related docs links
+- Committed successfully: 54181329e4
+- Status: COMPLETED ✓
+

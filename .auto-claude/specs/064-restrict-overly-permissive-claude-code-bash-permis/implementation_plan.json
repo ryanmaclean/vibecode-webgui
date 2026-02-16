@@ -299,8 +299,9 @@
             "type": "manual",
             "instructions": "Documentation includes: (1) How to add new commands, (2) How to regenerate permissions, (3) Security rationale"
           },
-          "status": "pending",
-          "notes": "Create user guide for managing Claude Code permissions securely"
+          "status": "completed",
+          "notes": "✅ Created comprehensive 627-line permission management guide at docs/security/claude-permissions.md. Includes: (1) How to add new commands - 6-step process with security assessment, validation, and testing; (2) How to regenerate permissions - 4 methods (dry-run, new file, in-place, custom) with validation steps; (3) Security rationale - Attack vector analysis, defense-in-depth strategy, and risk reduction from 9.5/10 to 2.5/10. Also includes best practices, troubleshooting, CI/CD integration, and emergency procedures. Follows pattern from security-hardening.md with detailed tables, code examples, and professional formatting. Commit: 54181329e4",
+          "updated_at": "2026-02-16T09:35:00.000000+00:00"
         },
         {
           "id": "subtask-5-4",
@@ -318,8 +319,9 @@
             "command": "test -f .github/workflows/check-claude-permissions.yml",
             "expected": "Workflow file created"
           },
-          "status": "pending",
-          "notes": "Add CI check to ensure .claude_settings.json stays in sync with .auto-claude-security.json"
+          "status": "completed",
+          "notes": "✅ Created comprehensive CI workflow at .github/workflows/check-claude-permissions.yml (392 lines). Workflow includes 6 critical checks: (1) JSON syntax validation for both config files, (2) Permission count verification (manifest vs settings), (3) Wildcard Bash(*) detection, (4) Drift detection via regeneration and comparison, (5) Full test suite execution, (6) Total permission count validation (>= 229). Triggers on PR changes to permission files and pushes to main/develop. Provides detailed GitHub Step Summary with fix instructions and PR comments. Follows patterns from security-audit.yml and other existing workflows. Verification passed. Commit: e96ae130cf",
+          "updated_at": "2026-02-16T09:36:24.495137+00:00"
         }
       ]
     },
@@ -490,6 +492,6 @@
   "qa_signoff": null,
   "status": "in_progress",
   "planStatus": "in_progress",
-  "updated_at": "2026-02-16T09:28:09.641Z",
-  "last_updated": "2026-02-16T09:28:59.836459+00:00"
+  "updated_at": "2026-02-16T09:36:53.088Z",
+  "last_updated": "2026-02-16T09:36:24.495145+00:00"
 }
