@@ -211,7 +211,7 @@
     "dd-trace": "5.86.0",
     "framer-motion": "12.34.0",
     "gray-matter": "4.0.3",
-    "hot-shots": "13.2.0",
+    "hot-shots": "14.0.0",
     "ioredis": "5.9.3",
     "jsonwebtoken": "9.0.3",
     "kafkajs": "2.2.4",
