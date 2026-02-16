@@ -62,6 +62,8 @@ Usage:
     sanitized = sanitize_log_entry(data)
 """
 
+import argparse
+import json
 import re
 from typing import Any, Dict, List, Tuple
 
@@ -251,3 +253,115 @@ def sanitize_task_log_entry(log_entry: Dict[str, Any]) -> Dict[str, Any]:
     """
     # Use the recursive sanitizer which handles nested structures
     return sanitize_log_entry(log_entry)
+
+
+def main() -> int:
+    """
+    CLI entry point for log sanitization.
+
+    Supports sanitizing text from:
+    - Command line argument (--text)
+    - File input (--file)
+    - Standard input (default)
+
+    Returns:
+        0 on success, 1 on error
+    """
+    parser = argparse.ArgumentParser(
+        description="Sanitize log entries by redacting sensitive data (API keys, passwords, PII, etc.)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Sanitize text from command line
+  python log_sanitizer.py --text "API key: sk-1234567890"
+
+  # Sanitize from file
+  python log_sanitizer.py --file task_logs.json
+
+  # Sanitize from stdin
+  echo "Password: secret123" | python log_sanitizer.py
+
+  # Sanitize JSON structure
+  python log_sanitizer.py --text '{"key": "sk-123", "data": "ok"}' --json
+        """
+    )
+
+    input_group = parser.add_mutually_exclusive_group()
+    input_group.add_argument(
+        "--text",
+        type=str,
+        help="Text to sanitize (command line argument)"
+    )
+    input_group.add_argument(
+        "--file",
+        type=str,
+        help="File to sanitize (reads entire file)"
+    )
+
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Parse input as JSON and output sanitized JSON"
+    )
+
+    parser.add_argument(
+        "--output",
+        type=str,
+        help="Output file (default: stdout)"
+    )
+
+    args = parser.parse_args()
+
+    try:
+        # Get input data
+        if args.text:
+            input_data = args.text
+        elif args.file:
+            try:
+                with open(args.file, 'r', encoding='utf-8') as f:
+                    input_data = f.read()
+            except FileNotFoundError:
+                print(f"{Color.RED}❌ File not found: {args.file}{Color.NC}", file=sys.stderr)
+                return 1
+            except Exception as e:
+                print(f"{Color.RED}❌ Error reading file: {e}{Color.NC}", file=sys.stderr)
+                return 1
+        else:
+            # Read from stdin
+            input_data = sys.stdin.read()
+
+        # Process based on format
+        if args.json:
+            try:
+                data = json.loads(input_data)
+                sanitized = sanitize_log_entry(data)
+                output = json.dumps(sanitized, indent=2, ensure_ascii=False)
+            except json.JSONDecodeError as e:
+                print(f"{Color.RED}❌ Invalid JSON: {e}{Color.NC}", file=sys.stderr)
+                return 1
+        else:
+            # Treat as plain text
+            sanitized = sanitize_string(input_data)
+            output = sanitized
+
+        # Write output
+        if args.output:
+            try:
+                with open(args.output, 'w', encoding='utf-8') as f:
+                    f.write(output)
+                print(f"{Color.GREEN}✅ Sanitized output written to: {args.output}{Color.NC}")
+            except Exception as e:
+                print(f"{Color.RED}❌ Error writing output: {e}{Color.NC}", file=sys.stderr)
+                return 1
+        else:
+            print(output)
+
+        return 0
+
+    except Exception as e:
+        print(f"{Color.RED}❌ Error: {e}{Color.NC}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
