@@ -14,7 +14,6 @@ Modules:
 
 from . import setup
 from . import test
-from . import monitoring
 from . import updates
 from . import audit
 from . import scan
@@ -22,7 +21,6 @@ from . import scan
 __all__ = [
     "setup",
     "test",
-    "monitoring",
     "updates",
     "audit",
     "scan",
