@@ -50,16 +50,83 @@ Sanitizes log entries by detecting and redacting sensitive data including:
 - JWT tokens
 - Database connection strings
 
-Usage:
-    from scripts.security.log_sanitizer import sanitize_log_entry
+The module provides both a Python API for programmatic use and a CLI for
+command-line sanitization of log files and text streams.
+
+Python API Usage:
+    from scripts.security.log_sanitizer import sanitize_log_entry, sanitize_string
 
     # Sanitize a simple string
     sanitized = sanitize_log_entry("API key: sk-1234567890")
     # Result: "API key: [REDACTED:API_KEY]"
 
-    # Sanitize nested JSON structure
+    # Sanitize nested JSON structure (preserves structure)
     data = {"command": "export KEY=sk-123", "output": "Success"}
     sanitized = sanitize_log_entry(data)
+    # Result: {'command': 'export KEY=[REDACTED:API_KEY]', 'output': 'Success'}
+
+    # Sanitize list of entries
+    logs = ["User: john@example.com", "Token: Bearer abc123"]
+    sanitized = sanitize_log_entry(logs)
+    # Result: ['User: [REDACTED:EMAIL]', 'Token: [REDACTED:BEARER_TOKEN]']
+
+    # Direct string sanitization (no nesting)
+    text = "Connect to postgresql://user:pass@localhost/db"
+    sanitized = sanitize_string(text)
+    # Result: "Connect to [REDACTED:DB_CONNECTION]"
+
+CLI Usage:
+    # Sanitize text from command line
+    python log_sanitizer.py --text "API key: sk-1234567890"
+
+    # Sanitize a JSON log file
+    python log_sanitizer.py --file task_logs.json --json --output sanitized.json
+
+    # Pipe data through sanitizer
+    cat logs.txt | python log_sanitizer.py
+
+    # Sanitize JSON structure from command line
+    python log_sanitizer.py --text '{"key": "sk-123"}' --json
+
+Redaction Format:
+    All sensitive data is replaced with [REDACTED:{TYPE}] markers where TYPE indicates
+    the type of sensitive data detected:
+    - [REDACTED:API_KEY] - API keys and tokens
+    - [REDACTED:PASSWORD] - Passwords in URLs or assignments
+    - [REDACTED:EMAIL] - Email addresses
+    - [REDACTED:PHONE] - Phone numbers
+    - [REDACTED:SSN] - Social Security Numbers
+    - [REDACTED:CREDIT_CARD] - Credit card numbers
+    - [REDACTED:PRIVATE_KEY] - Private cryptographic keys
+    - [REDACTED:JWT_TOKEN] - JWT tokens
+    - [REDACTED:DB_CONNECTION] - Database connection strings
+    - [REDACTED:BEARER_TOKEN] - Bearer authentication tokens
+    - [REDACTED:BASIC_AUTH] - Basic authentication credentials
+
+Integration Example:
+    # Sanitize logs before writing to file
+    import json
+    from scripts.security.log_sanitizer import sanitize_log_entry
+
+    log_entry = {
+        "timestamp": "2026-02-15T10:30:00Z",
+        "command": "curl -H 'Authorization: Bearer secret-token-123'",
+        "output": "Success",
+        "user_email": "admin@example.com"
+    }
+
+    # Sanitize before writing
+    sanitized = sanitize_log_entry(log_entry)
+    with open('task_logs.json', 'w') as f:
+        json.dump(sanitized, f, indent=2)
+
+    # The logged entry will have sensitive data redacted:
+    # {
+    #   "timestamp": "2026-02-15T10:30:00Z",
+    #   "command": "curl -H 'Authorization: [REDACTED:BEARER_TOKEN]'",
+    #   "output": "Success",
+    #   "user_email": "[REDACTED:EMAIL]"
+    # }
 """
 
 import argparse
@@ -170,15 +237,38 @@ def sanitize_string(text: str) -> str:
     """
     Sanitize a string by replacing sensitive data with redaction markers.
 
+    This function applies pattern matching to detect and redact various types of
+    sensitive data. It handles multiple redaction types including API keys,
+    passwords, PII, private keys, and database credentials.
+
     Args:
-        text: The string to sanitize
+        text: The string to sanitize. Can contain any text including command
+              outputs, log messages, or configuration values.
 
     Returns:
-        The sanitized string with sensitive data replaced by [REDACTED:{type}] markers
+        The sanitized string with sensitive data replaced by [REDACTED:{type}]
+        markers. If the input is not a string, it is returned unchanged.
 
-    Example:
+    Examples:
         >>> sanitize_string("My API key is sk-1234567890")
         'My API key is [REDACTED:API_KEY]'
+
+        >>> sanitize_string("Email: user@example.com, Phone: 555-123-4567")
+        'Email: [REDACTED:EMAIL], Phone: [REDACTED:PHONE]'
+
+        >>> sanitize_string("https://user:password@api.example.com")
+        'https://user:[REDACTED:PASSWORD]@api.example.com'
+
+        >>> sanitize_string("Connect: postgresql://admin:secret@localhost/db")
+        'Connect: [REDACTED:DB_CONNECTION]'
+
+        >>> sanitize_string("Authorization: Bearer eyJhbGc...")
+        'Authorization: [REDACTED:BEARER_TOKEN]'
+
+    Note:
+        This function processes the entire string and may redact multiple
+        instances of sensitive data. Pattern matching is case-insensitive
+        where appropriate (e.g., password assignments).
     """
     if not isinstance(text, str):
         return text
@@ -208,18 +298,53 @@ def sanitize_log_entry(data: Any) -> Any:
     """
     Recursively sanitize a log entry (string, dict, list, or primitive).
 
-    This function handles nested structures commonly found in JSON logs,
-    sanitizing all string values while preserving the overall structure.
+    This is the main entry point for sanitizing complex log structures. It
+    handles nested dictionaries, lists, and mixed structures commonly found
+    in JSON logs, sanitizing all string values while preserving the overall
+    data structure and non-string values.
+
+    The function recursively traverses the data structure:
+    - Strings are sanitized using sanitize_string()
+    - Dictionaries have all values sanitized (keys are preserved)
+    - Lists have all elements sanitized
+    - Primitives (int, float, bool, None) are returned unchanged
 
     Args:
-        data: The data to sanitize (can be str, dict, list, or primitive types)
+        data: The data to sanitize. Can be:
+              - str: Direct string sanitization
+              - dict: Recursive sanitization of all values
+              - list: Recursive sanitization of all elements
+              - Primitives (int, float, bool, None): Returned unchanged
 
     Returns:
-        The sanitized data with the same structure but sensitive strings redacted
+        The sanitized data with the same structure but sensitive strings
+        redacted. The return type matches the input type.
 
-    Example:
+    Examples:
         >>> sanitize_log_entry({"cmd": "export KEY=sk-123", "result": "ok"})
         {'cmd': 'export KEY=[REDACTED:API_KEY]', 'result': 'ok'}
+
+        >>> sanitize_log_entry(["user@example.com", "success", 42, True])
+        ['[REDACTED:EMAIL]', 'success', 42, True]
+
+        >>> log = {
+        ...     "user": {"email": "admin@example.com", "id": 123},
+        ...     "action": "login",
+        ...     "token": "Bearer abc123xyz"
+        ... }
+        >>> sanitize_log_entry(log)
+        {'user': {'email': '[REDACTED:EMAIL]', 'id': 123}, 'action': 'login', 'token': '[REDACTED:BEARER_TOKEN]'}
+
+        >>> sanitize_log_entry("Simple string with sk-abc123")
+        'Simple string with [REDACTED:API_KEY]'
+
+        >>> sanitize_log_entry(42)
+        42
+
+    Note:
+        This function is designed to be safe for use with any JSON-serializable
+        data structure. It preserves types and structure, only modifying string
+        values that contain sensitive data.
     """
     if isinstance(data, str):
         return sanitize_string(data)
@@ -238,18 +363,53 @@ def sanitize_task_log_entry(log_entry: Dict[str, Any]) -> Dict[str, Any]:
 
     This is a specialized function for the task_logs.json structure used by
     the auto-claude orchestrator. It handles the specific fields that may
-    contain sensitive data.
+    contain sensitive data such as tool_input, detail, content, and nested
+    structures.
+
+    This function is a convenience wrapper around sanitize_log_entry() that
+    provides type hints specific to the task logging use case. It handles
+    common task log fields including:
+    - tool_input: Command inputs that may contain credentials
+    - detail: Detailed output that may contain API responses
+    - content: Log content with potential sensitive data
+    - error: Error messages that may leak sensitive information
+    - result: Tool execution results
 
     Args:
-        log_entry: A task log entry dict with fields like tool_input, detail, content
+        log_entry: A task log entry dict with fields like tool_input, detail,
+                   content, result, etc. The exact structure can vary but
+                   typically includes metadata and execution details.
 
     Returns:
-        The sanitized log entry with the same structure
+        The sanitized log entry with the same structure. All string fields
+        that contain sensitive data will have it redacted, while preserving
+        the overall log structure and non-sensitive data.
 
-    Example:
+    Examples:
         >>> entry = {"tool_input": "export KEY=sk-123", "detail": "Success"}
         >>> sanitize_task_log_entry(entry)
         {'tool_input': 'export KEY=[REDACTED:API_KEY]', 'detail': 'Success'}
+
+        >>> log = {
+        ...     "timestamp": "2026-02-15T10:30:00Z",
+        ...     "tool": "Bash",
+        ...     "tool_input": "curl -H 'Authorization: Bearer token123'",
+        ...     "result": {"status": "ok", "user": "admin@example.com"}
+        ... }
+        >>> sanitize_task_log_entry(log)
+        {'timestamp': '2026-02-15T10:30:00Z', 'tool': 'Bash', 'tool_input': "curl -H 'Authorization: [REDACTED:BEARER_TOKEN]'", 'result': {'status': 'ok', 'user': '[REDACTED:EMAIL]'}}
+
+        >>> error_log = {
+        ...     "error": "Authentication failed for user john@example.com",
+        ...     "credentials": "password=secret123"
+        ... }
+        >>> sanitize_task_log_entry(error_log)
+        {'error': 'Authentication failed for user [REDACTED:EMAIL]', 'credentials': '[REDACTED:PASSWORD]'}
+
+    Note:
+        This function is specifically designed for task_logs.json entries but
+        can be used with any dictionary structure. It delegates to
+        sanitize_log_entry() for the actual sanitization work.
     """
     # Use the recursive sanitizer which handles nested structures
     return sanitize_log_entry(log_entry)
@@ -259,13 +419,66 @@ def main() -> int:
     """
     CLI entry point for log sanitization.
 
-    Supports sanitizing text from:
-    - Command line argument (--text)
-    - File input (--file)
-    - Standard input (default)
+    Provides a command-line interface for sanitizing logs and text. Supports
+    multiple input methods and output formats for flexible integration into
+    scripts and pipelines.
+
+    Input Methods (mutually exclusive):
+        --text TEXT     Sanitize text provided as command line argument
+        --file FILE     Sanitize contents of a file
+        (default)       Read from standard input (stdin)
+
+    Output Options:
+        --json          Parse input as JSON and output sanitized JSON
+                        (preserves structure, useful for log files)
+        --output FILE   Write output to file instead of stdout
+
+    The CLI supports both plain text and JSON modes:
+    - Plain text mode: Treats input as a single string
+    - JSON mode: Parses input as JSON, sanitizes recursively, outputs JSON
 
     Returns:
-        0 on success, 1 on error
+        0 on success (sanitization completed)
+        1 on error (file not found, invalid JSON, write error, etc.)
+
+    Exit Codes:
+        0: Success - sanitization completed
+        1: Error - see stderr for details
+
+    Examples:
+        # Sanitize text from command line
+        $ python log_sanitizer.py --text "API key: sk-1234567890"
+        API key: [REDACTED:API_KEY]
+
+        # Sanitize a JSON log file
+        $ python log_sanitizer.py --file task_logs.json --json --output clean.json
+        ✅ Sanitized output written to: clean.json
+
+        # Pipe logs through sanitizer
+        $ cat application.log | python log_sanitizer.py
+        [REDACTED:EMAIL] logged in at 10:30 AM
+
+        # Sanitize JSON from command line
+        $ python log_sanitizer.py --text '{"key":"sk-123","user":"john@example.com"}' --json
+        {
+          "key": "[REDACTED:API_KEY]",
+          "user": "[REDACTED:EMAIL]"
+        }
+
+        # Chain with other commands
+        $ tail -f logs.txt | python log_sanitizer.py | tee sanitized.log
+
+    Error Handling:
+        - File not found: Prints error to stderr, exits with code 1
+        - Invalid JSON: Prints parse error to stderr, exits with code 1
+        - Write errors: Prints error to stderr, exits with code 1
+        - All errors are colored red for visibility
+
+    Notes:
+        - Input is read as UTF-8
+        - Output preserves UTF-8 characters (ensure_ascii=False)
+        - JSON output is pretty-printed with 2-space indentation
+        - Success messages are colored green when writing to files
     """
     parser = argparse.ArgumentParser(
         description="Sanitize log entries by redacting sensitive data (API keys, passwords, PII, etc.)",
