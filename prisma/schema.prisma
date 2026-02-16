@@ -576,3 +576,51 @@ model AgentSessionHandoff {
   @@index([expiresAt])
   @@map("agent_session_handoffs")
 }
+
+// ============================================
+// Secret Management and Rotation Tracking
+// Track API keys, tokens, and credentials with
+// expiration policies and rotation history
+// ============================================
+
+model SecretMetadata {
+  id               Int      @id @default(autoincrement())
+  key_name         String   @unique // Unique identifier for the secret (e.g., "GITHUB_TOKEN", "OPENAI_API_KEY")
+  created_at       DateTime @default(now())
+  expires_at       DateTime? // When the secret expires
+  last_rotated_at  DateTime? // Last successful rotation timestamp
+  rotation_policy  String?  // Policy identifier (e.g., "api_keys_90d", "auth_tokens_30d")
+  status           String   @default("active") // active, expired, rotating, revoked
+  metadata         Json?    // Additional metadata (secret type, owner, tags, etc.)
+
+  // Relations
+  rotation_history SecretRotationHistory[]
+
+  @@index([key_name])
+  @@index([status])
+  @@index([expires_at])
+  @@index([rotation_policy])
+  @@index([status, expires_at]) // For finding active secrets expiring soon
+  @@index([last_rotated_at]) // For tracking rotation schedules
+  @@map("secret_metadata")
+}
+
+model SecretRotationHistory {
+  id                  Int      @id @default(autoincrement())
+  secret_id           Int
+  rotated_at          DateTime @default(now())
+  rotated_by          String?  // User identifier or "system" for automated rotations
+  previous_expires_at DateTime? // Expiration date before rotation
+  new_expires_at      DateTime? // New expiration date after rotation
+  reason              String?  // Reason for rotation (scheduled, manual, compromised, etc.)
+  metadata            Json?    // Additional rotation context
+
+  // Relations
+  secret SecretMetadata @relation(fields: [secret_id], references: [id], onDelete: Cascade)
+
+  @@index([secret_id])
+  @@index([rotated_at])
+  @@index([rotated_by])
+  @@index([secret_id, rotated_at]) // For retrieving rotation history chronologically
+  @@map("secret_rotation_history")
+}
