@@ -1,0 +1,483 @@
+{
+  "feature": "Restrict overly permissive Claude Code bash permissions",
+  "workflow_type": "refactor",
+  "workflow_rationale": "This is a refactor workflow because we're migrating from wildcard Bash(*) permissions to granular command-based permissions while maintaining functionality. Follows the pattern: Add new system → Test → Migrate → Remove old → Harden",
+  "phases": [
+    {
+      "id": "phase-1-audit",
+      "name": "Audit & Analysis",
+      "type": "investigation",
+      "description": "Audit current permissions and validate security framework",
+      "depends_on": [],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-1-1",
+          "description": "Document current permission model and security risks",
+          "service": "config",
+          "files_to_modify": [],
+          "files_to_create": [
+            ".auto-claude/specs/064-restrict-overly-permissive-claude-code-bash-permis/AUDIT.md"
+          ],
+          "patterns_from": [
+            ".claude_settings.json",
+            ".auto-claude-security.json"
+          ],
+          "verification": {
+            "type": "manual",
+            "instructions": "Review AUDIT.md for: (1) Current Bash(*) risk assessment, (2) Command usage analysis, (3) Recommended permission model"
+          },
+          "status": "completed",
+          "notes": "✅ Created comprehensive AUDIT.md with risk assessment (9.5/10 CRITICAL), attack vectors analysis, command usage breakdown (229 commands), and recommended permission model. Commit: c314e1bd56"
+        },
+        {
+          "id": "subtask-1-2",
+          "description": "Validate .auto-claude-security.json completeness",
+          "service": "config",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [
+            ".auto-claude-security.json"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"import json; data = json.load(open('.auto-claude-security.json')); print(f'base: {len(data[\\\"base_commands\\\"])}, stack: {len(data[\\\"stack_commands\\\"])}')\"",
+            "expected": "base: 128, stack: 101"
+          },
+          "status": "pending",
+          "notes": "Ensure security.json has all necessary commands for development workflows"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-add-new-system",
+      "name": "Add Granular Permission System",
+      "type": "implementation",
+      "description": "Create script to generate granular Bash permissions from security.json",
+      "depends_on": [
+        "phase-1-audit"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-2-1",
+          "description": "Create permission generation script",
+          "service": "config",
+          "files_to_modify": [],
+          "files_to_create": [
+            "scripts/security/generate_claude_permissions.py"
+          ],
+          "patterns_from": [
+            "scripts/security/audit.py",
+            "scripts/security/scan.py"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "python scripts/security/generate_claude_permissions.py --dry-run",
+            "expected": "Generated 229 Bash permissions from security.json"
+          },
+          "status": "pending",
+          "notes": "Script reads .auto-claude-security.json and outputs Bash(command) entries for each allowed command"
+        },
+        {
+          "id": "subtask-2-2",
+          "description": "Add tests for permission generation",
+          "service": "config",
+          "files_to_modify": [],
+          "files_to_create": [
+            "scripts/security/tests/test_generate_claude_permissions.py"
+          ],
+          "patterns_from": [
+            "scripts/security/tests/test_security_test.py"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "python -m pytest scripts/security/tests/test_generate_claude_permissions.py -v",
+            "expected": "All tests pass"
+          },
+          "status": "pending",
+          "notes": "Test script correctly parses security.json and generates proper Bash(command) format"
+        },
+        {
+          "id": "subtask-2-3",
+          "description": "Generate new .claude_settings.json with granular permissions",
+          "service": "config",
+          "files_to_modify": [],
+          "files_to_create": [
+            ".claude_settings.new.json"
+          ],
+          "patterns_from": [
+            ".claude_settings.json"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "python scripts/security/generate_claude_permissions.py --output .claude_settings.new.json && test -f .claude_settings.new.json",
+            "expected": "File created with 229+ permission entries"
+          },
+          "status": "pending",
+          "notes": "Generate new settings file preserving existing permissions but replacing Bash(*) with granular commands"
+        }
+      ]
+    },
+    {
+      "id": "phase-3-test-new-system",
+      "name": "Test Granular Permissions",
+      "type": "implementation",
+      "description": "Validate new permission model works for common development tasks",
+      "depends_on": [
+        "phase-2-add-new-system"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-3-1",
+          "description": "Create test suite for common development commands",
+          "service": "config",
+          "files_to_modify": [],
+          "files_to_create": [
+            "scripts/security/tests/test_claude_permissions.py"
+          ],
+          "patterns_from": [
+            "scripts/security/tests/test_security_test.py"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "python scripts/security/tests/test_claude_permissions.py --config .claude_settings.new.json",
+            "expected": "All common commands (git, npm, ls, grep) are permitted"
+          },
+          "status": "pending",
+          "notes": "Test that typical development workflows (git status, npm install, file operations) are allowed"
+        },
+        {
+          "id": "subtask-3-2",
+          "description": "Verify dangerous commands are blocked",
+          "service": "config",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"import json; data = json.load(open('.claude_settings.new.json')); perms = data['permissions']['allow']; dangerous = ['rm -rf /', 'format', 'dd']; print('OK' if not any(d in str(perms) for d in dangerous) else 'FAIL')\"",
+            "expected": "OK"
+          },
+          "status": "pending",
+          "notes": "Ensure wildcard patterns and dangerous commands are not allowed"
+        }
+      ]
+    },
+    {
+      "id": "phase-4-migrate",
+      "name": "Migrate to Granular Permissions",
+      "type": "implementation",
+      "description": "Replace Bash(*) with granular command permissions",
+      "depends_on": [
+        "phase-3-test-new-system"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-4-1",
+          "description": "Backup current .claude_settings.json",
+          "service": "config",
+          "files_to_modify": [],
+          "files_to_create": [
+            ".claude_settings.json.backup"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "cp .claude_settings.json .claude_settings.json.backup && test -f .claude_settings.json.backup",
+            "expected": "Backup file created"
+          },
+          "status": "pending",
+          "notes": "Create backup before migration to allow rollback if needed"
+        },
+        {
+          "id": "subtask-4-2",
+          "description": "Replace .claude_settings.json with granular permissions",
+          "service": "config",
+          "files_to_modify": [
+            ".claude_settings.json"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            ".claude_settings.new.json"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"import json; data = json.load(open('.claude_settings.json')); perms = data['permissions']['allow']; bash_perms = [p for p in perms if p.startswith('Bash(') and p != 'Bash(*)']; print(f'{len(bash_perms)} granular permissions')\"",
+            "expected": "229 granular permissions"
+          },
+          "status": "pending",
+          "notes": "Replace Bash(*) with 229 specific Bash(command) entries from security.json"
+        },
+        {
+          "id": "subtask-4-3",
+          "description": "Verify basic git operations still work",
+          "service": "config",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "git status && git log -1 --oneline",
+            "expected": "Commands execute successfully"
+          },
+          "status": "pending",
+          "notes": "Smoke test to ensure git commands work with new permissions"
+        }
+      ]
+    },
+    {
+      "id": "phase-5-harden",
+      "name": "Harden Configuration",
+      "type": "implementation",
+      "description": "Further restrict defaultMode and add documentation",
+      "depends_on": [
+        "phase-4-migrate"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-5-1",
+          "description": "Evaluate defaultMode security options",
+          "service": "config",
+          "files_to_modify": [],
+          "files_to_create": [
+            ".auto-claude/specs/064-restrict-overly-permissive-claude-code-bash-permis/DEFAULT_MODE_ANALYSIS.md"
+          ],
+          "patterns_from": [
+            ".claude_settings.json"
+          ],
+          "verification": {
+            "type": "manual",
+            "instructions": "Review analysis of defaultMode options: acceptEdits vs prompt vs acceptBash, with recommendation"
+          },
+          "status": "pending",
+          "notes": "Document trade-offs between convenience (acceptEdits) and security (prompt)"
+        },
+        {
+          "id": "subtask-5-2",
+          "description": "Update defaultMode if recommended",
+          "service": "config",
+          "files_to_modify": [
+            ".claude_settings.json"
+          ],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"import json; data = json.load(open('.claude_settings.json')); print(data['permissions']['defaultMode'])\"",
+            "expected": "Updated mode (if changed) or acceptEdits (if keeping current)"
+          },
+          "status": "pending",
+          "notes": "Only change if analysis recommends it - may keep acceptEdits since Bash commands are now restricted"
+        },
+        {
+          "id": "subtask-5-3",
+          "description": "Add documentation for permission management",
+          "service": "config",
+          "files_to_modify": [],
+          "files_to_create": [
+            "docs/security/claude-permissions.md"
+          ],
+          "patterns_from": [
+            "docs/guides/security-hardening.md"
+          ],
+          "verification": {
+            "type": "manual",
+            "instructions": "Documentation includes: (1) How to add new commands, (2) How to regenerate permissions, (3) Security rationale"
+          },
+          "status": "pending",
+          "notes": "Create user guide for managing Claude Code permissions securely"
+        },
+        {
+          "id": "subtask-5-4",
+          "description": "Add CI check for permission drift",
+          "service": "config",
+          "files_to_modify": [],
+          "files_to_create": [
+            ".github/workflows/check-claude-permissions.yml"
+          ],
+          "patterns_from": [
+            ".github/workflows/"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "test -f .github/workflows/check-claude-permissions.yml",
+            "expected": "Workflow file created"
+          },
+          "status": "pending",
+          "notes": "Add CI check to ensure .claude_settings.json stays in sync with .auto-claude-security.json"
+        }
+      ]
+    },
+    {
+      "id": "phase-6-cleanup",
+      "name": "Cleanup",
+      "type": "cleanup",
+      "description": "Remove temporary files and finalize documentation",
+      "depends_on": [
+        "phase-5-harden"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-6-1",
+          "description": "Remove temporary and backup files",
+          "service": "config",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "! test -f .claude_settings.new.json && ! test -f .claude_settings.json.backup",
+            "expected": "Temporary files removed"
+          },
+          "status": "pending",
+          "notes": "Clean up .claude_settings.new.json and .claude_settings.json.backup after successful migration"
+        },
+        {
+          "id": "subtask-6-2",
+          "description": "Update security documentation with findings",
+          "service": "config",
+          "files_to_modify": [
+            "docs/guides/security-hardening.md"
+          ],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "manual",
+            "instructions": "Documentation updated with Claude permissions hardening section"
+          },
+          "status": "pending",
+          "notes": "Add entry to security-hardening.md documenting this security improvement"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_phases": 6,
+    "total_subtasks": 15,
+    "services_involved": [
+      "config"
+    ],
+    "parallelism": {
+      "max_parallel_phases": 2,
+      "parallel_groups": [
+        {
+          "phases": [
+            "phase-1-audit"
+          ],
+          "reason": "Initial audit phase can run alone"
+        },
+        {
+          "phases": [
+            "phase-2-add-new-system",
+            "phase-3-test-new-system"
+          ],
+          "reason": "After phase 2 completes, phase 3 can begin testing"
+        }
+      ],
+      "recommended_workers": 1,
+      "speedup_estimate": "Sequential execution recommended due to dependencies"
+    },
+    "startup_command": "source auto-claude/.venv/bin/activate && python auto-claude/run.py --spec 064 --parallel 1"
+  },
+  "verification_strategy": {
+    "risk_level": "high",
+    "skip_validation": false,
+    "test_creation_phase": "integrated",
+    "test_types_required": [
+      "unit",
+      "integration",
+      "security"
+    ],
+    "security_scanning_required": true,
+    "staging_deployment_required": false,
+    "acceptance_criteria": [
+      "Bash(*) replaced with 229 specific command permissions",
+      "All common development workflows (git, npm, file ops) still work",
+      "Dangerous commands (rm -rf /, format, dd) are blocked",
+      "Permission generation script has passing tests",
+      "CI check prevents permission drift",
+      "Documentation explains permission management"
+    ],
+    "verification_steps": [
+      {
+        "name": "Permission Generation Tests",
+        "command": "python -m pytest scripts/security/tests/test_generate_claude_permissions.py -v",
+        "expected_outcome": "All tests pass",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Permission Validation Tests",
+        "command": "python -m pytest scripts/security/tests/test_claude_permissions.py -v",
+        "expected_outcome": "All tests pass",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Security Scan",
+        "command": "python scripts/security/scan.py --target .claude_settings.json",
+        "expected_outcome": "No wildcard permissions detected",
+        "type": "security",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Git Operations Test",
+        "command": "git status && git log -1",
+        "expected_outcome": "Commands succeed",
+        "type": "integration",
+        "required": true,
+        "blocking": true
+      }
+    ],
+    "reasoning": "High risk security change requires comprehensive testing to ensure no functionality breaks while improving security posture"
+  },
+  "qa_acceptance": {
+    "unit_tests": {
+      "required": true,
+      "commands": [
+        "python -m pytest scripts/security/tests/test_generate_claude_permissions.py -v",
+        "python -m pytest scripts/security/tests/test_claude_permissions.py -v"
+      ],
+      "minimum_coverage": null
+    },
+    "integration_tests": {
+      "required": true,
+      "commands": [
+        "git status && git log -1 && npm list --depth=0"
+      ],
+      "services_to_test": [
+        "config"
+      ]
+    },
+    "e2e_tests": {
+      "required": false,
+      "commands": [],
+      "flows": []
+    },
+    "browser_verification": {
+      "required": false,
+      "pages": []
+    },
+    "security_verification": {
+      "required": true,
+      "checks": [
+        "No Bash(*) wildcard in .claude_settings.json",
+        "All 229 commands from security.json are present",
+        "Dangerous commands are not whitelisted",
+        "CI check workflow is in place"
+      ]
+    }
+  },
+  "qa_signoff": null,
+  "status": "in_progress",
+  "planStatus": "in_progress",
+  "updated_at": "2026-02-16T09:00:22.116Z"
+}
