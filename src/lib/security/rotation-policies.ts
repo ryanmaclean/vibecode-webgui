@@ -516,3 +516,471 @@ export function formatRotationCheckResult(result: RotationCheckResult): string {
   const policyInfo = result.policy ? ` (Policy: ${result.policy.name})` : ''
   return `${emoji} ${result.message}${policyInfo}`
 }
+
+// ============================================================================
+// ROTATION EXECUTOR - Policy Enforcement and Rotation Orchestration
+// ============================================================================
+
+/**
+ * Rotation eligibility check result
+ */
+export interface RotationEligibilityResult {
+  /** Whether rotation is allowed */
+  eligible: boolean
+
+  /** Reason for eligibility status */
+  reason: string
+
+  /** Policy being evaluated */
+  policy: RotationPolicy | null
+
+  /** Blocking issues preventing rotation */
+  blockingIssues: string[]
+
+  /** Warnings that should be considered */
+  warnings: string[]
+}
+
+/**
+ * Rotation execution options
+ */
+export interface RotationExecutionOptions {
+  /** Reason for rotation (e.g., "scheduled", "compromised", "manual") */
+  reason?: string
+
+  /** User or system initiating rotation */
+  initiatedBy?: string
+
+  /** New secret value (for manual rotations) */
+  newSecretValue?: string
+
+  /** Whether to skip approval checks */
+  skipApproval?: boolean
+
+  /** Whether this is a dry-run (validation only) */
+  dryRun?: boolean
+
+  /** Production environment flag */
+  isProduction?: boolean
+}
+
+/**
+ * Rotation execution result
+ */
+export interface RotationExecutionResult {
+  /** Whether rotation succeeded */
+  success: boolean
+
+  /** New expiration date after rotation */
+  newExpiresAt: Date | null
+
+  /** Previous expiration date */
+  previousExpiresAt: Date | null
+
+  /** Rotation timestamp */
+  rotatedAt: Date
+
+  /** Messages describing the rotation process */
+  messages: string[]
+
+  /** Errors encountered during rotation */
+  errors: string[]
+
+  /** Next steps for user (for manual rotations) */
+  nextSteps?: string[]
+}
+
+/**
+ * Validate if a secret is eligible for rotation based on policy
+ *
+ * Checks policy constraints, current secret status, and environment restrictions
+ * to determine if rotation can proceed.
+ *
+ * @param secretKeyName - Secret identifier to validate
+ * @param policyName - Rotation policy to enforce
+ * @param currentStatus - Current secret status
+ * @param lastRotatedAt - Last rotation timestamp
+ * @param options - Rotation execution options
+ * @returns Eligibility result with blocking issues and warnings
+ */
+export function validateRotationEligibility(
+  secretKeyName: string,
+  policyName: string,
+  currentStatus: 'active' | 'expired' | 'rotating' | 'revoked',
+  lastRotatedAt: Date | null,
+  options: RotationExecutionOptions = {}
+): RotationEligibilityResult {
+  const policy = getPolicy(policyName)
+  const blockingIssues: string[] = []
+  const warnings: string[] = []
+
+  // Policy not found
+  if (!policy) {
+    blockingIssues.push(`Rotation policy '${policyName}' not found`)
+    return {
+      eligible: false,
+      reason: 'Policy not found',
+      policy: null,
+      blockingIssues,
+      warnings,
+    }
+  }
+
+  // Validate policy definition
+  const policyValidation = validatePolicy(policy)
+  if (!policyValidation.valid) {
+    blockingIssues.push(...policyValidation.errors.map((e) => `Policy error: ${e}`))
+  }
+  warnings.push(...policyValidation.warnings)
+
+  // Check if secret is already being rotated
+  if (currentStatus === 'rotating') {
+    blockingIssues.push('Secret is already in rotating state')
+  }
+
+  // Check if secret is revoked
+  if (currentStatus === 'revoked') {
+    blockingIssues.push('Cannot rotate revoked secret')
+  }
+
+  // Check production rotation restrictions
+  if (options.isProduction && policy.metadata?.allowProductionRotation === false) {
+    blockingIssues.push(
+      `Policy '${policy.name}' does not allow production rotation. Rotate in staging first.`
+    )
+  }
+
+  // Check approval requirements
+  if (policy.metadata?.requiresApproval && !options.skipApproval) {
+    warnings.push(
+      'This secret requires approval before rotation. Use skipApproval flag if approved.'
+    )
+  }
+
+  // Check rotation cooldown (prevent too-frequent rotations)
+  if (lastRotatedAt) {
+    const hoursSinceRotation =
+      (Date.now() - lastRotatedAt.getTime()) / (1000 * 60 * 60)
+    const cooldownHours = 24 // Minimum 24 hours between rotations
+
+    if (hoursSinceRotation < cooldownHours) {
+      blockingIssues.push(
+        `Secret was rotated ${Math.round(hoursSinceRotation)} hours ago. ` +
+          `Wait ${Math.round(cooldownHours - hoursSinceRotation)} more hours before rotating again.`
+      )
+    }
+  }
+
+  // Strategy-specific checks
+  if (policy.strategy === 'warning-only') {
+    warnings.push('Policy is warning-only - rotation will be recorded but not enforced')
+  }
+
+  if (policy.strategy === 'provider-managed') {
+    warnings.push(
+      'Secret is provider-managed. Ensure provider rotation is completed before updating locally.'
+    )
+  }
+
+  // Add custom validation warnings if defined
+  if (policy.metadata?.customValidation) {
+    warnings.push(`Custom validation required: ${policy.metadata.customValidation}`)
+  }
+
+  const eligible = blockingIssues.length === 0
+
+  logger.debug('Rotation eligibility check completed', {
+    secretKeyName,
+    policyName,
+    eligible,
+    blockingIssuesCount: blockingIssues.length,
+    warningsCount: warnings.length,
+  })
+
+  return {
+    eligible,
+    reason: eligible
+      ? 'Secret is eligible for rotation'
+      : blockingIssues[0] || 'Unknown reason',
+    policy,
+    blockingIssues,
+    warnings,
+  }
+}
+
+/**
+ * Execute rotation with policy enforcement
+ *
+ * Orchestrates the secret rotation process according to policy rules.
+ * For manual strategies, provides guidance and validates user-supplied values.
+ * For automated strategies, coordinates rotation with external systems.
+ *
+ * @param secretKeyName - Secret identifier to rotate
+ * @param policyName - Rotation policy to enforce
+ * @param currentExpiresAt - Current expiration date
+ * @param currentStatus - Current secret status
+ * @param lastRotatedAt - Last rotation timestamp
+ * @param options - Rotation execution options
+ * @returns Rotation execution result with new expiration and next steps
+ */
+export function executeRotation(
+  secretKeyName: string,
+  policyName: string,
+  currentExpiresAt: Date | null,
+  currentStatus: 'active' | 'expired' | 'rotating' | 'revoked',
+  lastRotatedAt: Date | null,
+  options: RotationExecutionOptions = {}
+): RotationExecutionResult {
+  const now = new Date()
+  const messages: string[] = []
+  const errors: string[] = []
+  const nextSteps: string[] = []
+
+  logger.info('Executing secret rotation', {
+    secretKeyName,
+    policyName,
+    reason: options.reason || 'manual',
+    dryRun: options.dryRun || false,
+    initiatedBy: options.initiatedBy || 'system',
+  })
+
+  // Validate eligibility
+  const eligibility = validateRotationEligibility(
+    secretKeyName,
+    policyName,
+    currentStatus,
+    lastRotatedAt,
+    options
+  )
+
+  if (!eligibility.eligible) {
+    errors.push(...eligibility.blockingIssues)
+    logger.error('Rotation blocked by policy', {
+      secretKeyName,
+      policyName,
+      blockingIssues: eligibility.blockingIssues,
+    })
+
+    return {
+      success: false,
+      newExpiresAt: null,
+      previousExpiresAt: currentExpiresAt,
+      rotatedAt: now,
+      messages,
+      errors,
+      nextSteps: [],
+    }
+  }
+
+  // Log warnings
+  if (eligibility.warnings.length > 0) {
+    messages.push(...eligibility.warnings)
+    logger.warn('Rotation warnings', {
+      secretKeyName,
+      warnings: eligibility.warnings,
+    })
+  }
+
+  const policy = eligibility.policy!
+
+  // Dry run - validation only
+  if (options.dryRun) {
+    messages.push('DRY RUN: Rotation validation passed')
+    messages.push(`Policy: ${policy.name} (${policy.strategy})`)
+    messages.push(`Current expiration: ${currentExpiresAt?.toISOString() || 'None'}`)
+
+    const newExpiresAt = calculateNextExpiration(policyName)
+    messages.push(`New expiration would be: ${newExpiresAt?.toISOString() || 'Unknown'}`)
+
+    return {
+      success: true,
+      newExpiresAt,
+      previousExpiresAt: currentExpiresAt,
+      rotatedAt: now,
+      messages,
+      errors,
+      nextSteps: [],
+    }
+  }
+
+  // Strategy-specific rotation logic
+  let rotationSuccess = false
+  let newExpiresAt: Date | null = null
+
+  switch (policy.strategy) {
+    case 'manual':
+      messages.push('Manual rotation required')
+
+      // Check if new secret value provided
+      if (!options.newSecretValue) {
+        errors.push('Manual rotation requires newSecretValue in options')
+        nextSteps.push('1. Generate new secret via provider dashboard')
+        nextSteps.push('2. Call executeRotation() again with newSecretValue')
+        nextSteps.push('3. Verify old secret is revoked')
+
+        if (policy.metadata?.providerInstructions) {
+          nextSteps.push(`Provider instructions: ${policy.metadata.providerInstructions}`)
+        }
+      } else {
+        // New secret provided - rotation can proceed
+        newExpiresAt = calculateNextExpiration(policyName)
+        rotationSuccess = true
+        messages.push('Manual rotation ready to commit')
+        messages.push('New secret value will be stored in keychain')
+        messages.push('Old secret should be revoked at provider')
+      }
+      break
+
+    case 'automated':
+      errors.push('Automated rotation not yet implemented')
+      messages.push('Automated rotation requires integration with secret providers')
+      nextSteps.push('Use manual rotation strategy for now')
+      break
+
+    case 'provider-managed':
+      errors.push('Provider-managed rotation not yet implemented')
+      messages.push('Provider-managed secrets must be rotated at the provider')
+      nextSteps.push('1. Rotate secret via provider dashboard')
+      nextSteps.push('2. Update local keychain with new value')
+      nextSteps.push('3. Call executeRotation() to update metadata')
+
+      if (policy.metadata?.providerInstructions) {
+        nextSteps.push(`Instructions: ${policy.metadata.providerInstructions}`)
+      }
+      break
+
+    case 'warning-only':
+      messages.push('Warning-only policy - rotation recorded but not enforced')
+      newExpiresAt = calculateNextExpiration(policyName)
+      rotationSuccess = true
+      break
+
+    default:
+      errors.push(`Unknown rotation strategy: ${policy.strategy}`)
+  }
+
+  // Log rotation result
+  if (rotationSuccess) {
+    logger.info('Rotation executed successfully', {
+      secretKeyName,
+      policyName,
+      strategy: policy.strategy,
+      previousExpiresAt: currentExpiresAt?.toISOString(),
+      newExpiresAt: newExpiresAt?.toISOString(),
+      reason: options.reason || 'manual',
+    })
+
+    messages.push('Rotation completed successfully')
+    messages.push(`Previous expiration: ${currentExpiresAt?.toISOString() || 'None'}`)
+    messages.push(`New expiration: ${newExpiresAt?.toISOString() || 'None'}`)
+  } else {
+    logger.warn('Rotation incomplete', {
+      secretKeyName,
+      policyName,
+      errors,
+    })
+  }
+
+  return {
+    success: rotationSuccess,
+    newExpiresAt,
+    previousExpiresAt: currentExpiresAt,
+    rotatedAt: now,
+    messages,
+    errors,
+    nextSteps,
+  }
+}
+
+/**
+ * Generate rotation instructions for a secret based on its policy
+ *
+ * Provides step-by-step guidance for rotating a secret according to
+ * its policy requirements and rotation strategy.
+ *
+ * @param secretKeyName - Secret identifier
+ * @param policyName - Rotation policy
+ * @returns Array of instruction steps
+ */
+export function generateRotationInstructions(
+  secretKeyName: string,
+  policyName: string
+): string[] {
+  const policy = getPolicy(policyName)
+  const instructions: string[] = []
+
+  if (!policy) {
+    instructions.push(`⚠️  Policy '${policyName}' not found`)
+    instructions.push('Use default rotation procedure')
+    return instructions
+  }
+
+  instructions.push(`🔄 Rotation Instructions for: ${secretKeyName}`)
+  instructions.push(`📋 Policy: ${policy.name} - ${policy.description}`)
+  instructions.push(`⏰ Rotation Interval: ${policy.rotationIntervalDays} days`)
+  instructions.push('')
+
+  switch (policy.strategy) {
+    case 'manual':
+      instructions.push('📝 Manual Rotation Steps:')
+      instructions.push('1. Log in to the service provider dashboard')
+      instructions.push('2. Navigate to API/token management section')
+      instructions.push('3. Generate a new token/key')
+      instructions.push('4. Copy the new secret value')
+      instructions.push('5. Update the secret in macOS Keychain')
+      instructions.push('6. Test the new secret with your application')
+      instructions.push('7. Revoke the old secret at the provider')
+      instructions.push('8. Update rotation metadata in database')
+
+      if (policy.metadata?.providerInstructions) {
+        instructions.push('')
+        instructions.push(`💡 Provider Instructions:`)
+        instructions.push(`   ${policy.metadata.providerInstructions}`)
+      }
+      break
+
+    case 'automated':
+      instructions.push('🤖 Automated Rotation:')
+      instructions.push('Rotation will be performed automatically via API')
+      instructions.push('Monitor logs for rotation status')
+      break
+
+    case 'provider-managed':
+      instructions.push('☁️  Provider-Managed Rotation:')
+      instructions.push('1. Enable automatic rotation at the provider')
+      instructions.push('2. Configure rotation notifications')
+      instructions.push('3. Update local keychain when notified')
+      instructions.push('4. Sync metadata with database')
+
+      if (policy.metadata?.providerInstructions) {
+        instructions.push('')
+        instructions.push(`💡 Provider Instructions:`)
+        instructions.push(`   ${policy.metadata.providerInstructions}`)
+      }
+      break
+
+    case 'warning-only':
+      instructions.push('⚠️  Warning-Only Policy:')
+      instructions.push('Rotation is recommended but not enforced')
+      instructions.push('Follow manual rotation steps when convenient')
+      break
+  }
+
+  if (policy.metadata?.customValidation) {
+    instructions.push('')
+    instructions.push(`⚠️  Custom Validation Required:`)
+    instructions.push(`   ${policy.metadata.customValidation}`)
+  }
+
+  if (policy.metadata?.requiresApproval) {
+    instructions.push('')
+    instructions.push('✅ APPROVAL REQUIRED before rotation')
+  }
+
+  if (policy.metadata?.allowProductionRotation === false) {
+    instructions.push('')
+    instructions.push('🚫 Production rotation NOT allowed - rotate in staging first')
+  }
+
+  return instructions
+}
