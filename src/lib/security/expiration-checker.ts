@@ -24,6 +24,32 @@ const logger = createChildLogger({ module: 'security', scope: 'expiration-checke
 export type AlertSeverity = 'critical' | 'warning' | 'info'
 
 /**
+ * Alert thresholds configuration
+ */
+export interface ExpirationThresholds {
+  /** Days threshold for critical alerts (immediate action required) */
+  critical: number
+  /** Days threshold for warning alerts (plan rotation soon) */
+  warning: number
+  /** Days threshold for info alerts (rotation recommended) */
+  info: number
+}
+
+/**
+ * Notification configuration
+ */
+export interface NotificationConfig {
+  /** Enable/disable notifications */
+  enabled: boolean
+  /** Minimum severity level to trigger notifications */
+  minSeverity?: AlertSeverity
+  /** Renotify interval in minutes (prevent alert fatigue) */
+  renotifyInterval?: number
+  /** Include rotation policy recommendations */
+  includeRecommendations?: boolean
+}
+
+/**
  * Expiration status result
  */
 export interface ExpirationStatus {
@@ -73,13 +99,47 @@ export interface ExpirationSummary {
 }
 
 /**
+ * Default expiration thresholds
+ */
+const DEFAULT_THRESHOLDS: ExpirationThresholds = {
+  critical: 7,  // 7 days or less = critical
+  warning: 14,  // 14 days or less = warning
+  info: 30,     // 30 days or less = info
+}
+
+/**
+ * Default notification configuration
+ */
+const DEFAULT_NOTIFICATION_CONFIG: NotificationConfig = {
+  enabled: true,
+  minSeverity: 'info',
+  renotifyInterval: 60, // 1 hour
+  includeRecommendations: true,
+}
+
+/**
  * ExpirationChecker class - Monitors and alerts on secret expiration
  */
 export class ExpirationChecker {
   private prisma: PrismaClient
+  private thresholds: ExpirationThresholds
+  private notificationConfig: NotificationConfig
+  private lastNotificationTimes: Map<string, Date>
 
-  constructor(prisma: PrismaClient) {
+  constructor(
+    prisma: PrismaClient,
+    thresholds: Partial<ExpirationThresholds> = {},
+    notificationConfig: Partial<NotificationConfig> = {}
+  ) {
     this.prisma = prisma
+    this.thresholds = { ...DEFAULT_THRESHOLDS, ...thresholds }
+    this.notificationConfig = { ...DEFAULT_NOTIFICATION_CONFIG, ...notificationConfig }
+    this.lastNotificationTimes = new Map()
+
+    logger.info('ExpirationChecker initialized', {
+      thresholds: this.thresholds,
+      notificationEnabled: this.notificationConfig.enabled,
+    })
   }
 
   /**
@@ -126,7 +186,7 @@ export class ExpirationChecker {
         (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
       )
 
-      // Determine status and severity
+      // Determine status and severity using configurable thresholds
       let status: ExpirationStatus['status']
       let severity: AlertSeverity | null = null
       let message: string
@@ -134,23 +194,43 @@ export class ExpirationChecker {
       if (daysUntilExpiration < 0) {
         status = 'expired'
         severity = 'critical'
-        message = `Secret expired ${Math.abs(daysUntilExpiration)} days ago`
-      } else if (daysUntilExpiration <= 1) {
+        message = this.buildAlertMessage(
+          'EXPIRED',
+          keyName,
+          `Secret expired ${Math.abs(daysUntilExpiration)} days ago`,
+          'Rotate immediately to restore security',
+          metadata.rotation_policy
+        )
+      } else if (daysUntilExpiration <= this.thresholds.critical) {
         status = 'expiring_soon'
         severity = 'critical'
-        message = `Secret expires in ${daysUntilExpiration} day(s) - immediate action required`
-      } else if (daysUntilExpiration <= 7) {
-        status = 'expiring_soon'
-        severity = 'critical'
-        message = `Secret expires in ${daysUntilExpiration} days - rotation needed urgently`
-      } else if (daysUntilExpiration <= 14) {
+        message = this.buildAlertMessage(
+          'CRITICAL',
+          keyName,
+          `Secret expires in ${daysUntilExpiration} day(s)`,
+          'Immediate rotation required',
+          metadata.rotation_policy
+        )
+      } else if (daysUntilExpiration <= this.thresholds.warning) {
         status = 'expiring_soon'
         severity = 'warning'
-        message = `Secret expires in ${daysUntilExpiration} days - plan rotation soon`
-      } else if (daysUntilExpiration <= thresholdDays) {
+        message = this.buildAlertMessage(
+          'WARNING',
+          keyName,
+          `Secret expires in ${daysUntilExpiration} days`,
+          'Plan rotation within the next week',
+          metadata.rotation_policy
+        )
+      } else if (daysUntilExpiration <= this.thresholds.info) {
         status = 'expiring_soon'
         severity = 'info'
-        message = `Secret expires in ${daysUntilExpiration} days - rotation recommended`
+        message = this.buildAlertMessage(
+          'INFO',
+          keyName,
+          `Secret expires in ${daysUntilExpiration} days`,
+          'Consider scheduling rotation',
+          metadata.rotation_policy
+        )
       } else {
         status = 'active'
         severity = null
@@ -405,6 +485,12 @@ export class ExpirationChecker {
     options: ExpirationCheckOptions = {}
   ): Promise<ExpirationAlert[]> {
     try {
+      // Check if notifications are enabled
+      if (!this.notificationConfig.enabled) {
+        logger.debug('Notifications disabled, skipping alerts')
+        return []
+      }
+
       // Get summary with all alerts
       const summary = await this.getSummary(options)
       const { alerts } = summary
@@ -414,13 +500,25 @@ export class ExpirationChecker {
         return []
       }
 
-      // Log alerts with appropriate severity
-      for (const alert of alerts) {
+      // Filter by minimum severity if configured
+      const filteredAlerts = this.filterAlertsBySeverity(alerts)
+
+      // Apply renotification throttling
+      const alertsToSend = this.applyRenotificationThrottling(filteredAlerts)
+
+      if (alertsToSend.length === 0) {
+        logger.debug('No alerts to send after filtering and throttling')
+        return []
+      }
+
+      // Send alerts with appropriate severity
+      for (const alert of alertsToSend) {
         const metadata = {
           keyName: alert.keyName,
           expiresAt: alert.expiresAt,
           daysUntilExpiration: alert.daysUntilExpiration,
           rotationPolicy: alert.rotationPolicy,
+          severity: alert.severity,
         }
 
         switch (alert.severity) {
@@ -434,16 +532,21 @@ export class ExpirationChecker {
             logger.info(alert.message, metadata)
             break
         }
+
+        // Update last notification time
+        this.lastNotificationTimes.set(alert.keyName, new Date())
       }
 
       logger.info('Sent expiration alerts', {
-        totalAlerts: alerts.length,
-        critical: alerts.filter((a) => a.severity === 'critical').length,
-        warning: alerts.filter((a) => a.severity === 'warning').length,
-        info: alerts.filter((a) => a.severity === 'info').length,
+        totalAlerts: alertsToSend.length,
+        critical: alertsToSend.filter((a) => a.severity === 'critical').length,
+        warning: alertsToSend.filter((a) => a.severity === 'warning').length,
+        info: alertsToSend.filter((a) => a.severity === 'info').length,
+        filtered: alerts.length - filteredAlerts.length,
+        throttled: filteredAlerts.length - alertsToSend.length,
       })
 
-      return alerts
+      return alertsToSend
     } catch (error) {
       logger.error('Failed to send alerts', {
         error: error instanceof Error ? error.message : error,
@@ -522,5 +625,104 @@ export class ExpirationChecker {
       })
       throw new Error(`Failed to retrieve secrets with status: ${status}`)
     }
+  }
+
+  /**
+   * Build structured alert message following monitoring best practices
+   *
+   * @param level - Alert level (CRITICAL, WARNING, INFO, EXPIRED)
+   * @param keyName - Secret identifier
+   * @param summary - Brief summary of the issue
+   * @param action - Recommended action
+   * @param rotationPolicy - Current rotation policy if any
+   * @returns Formatted alert message
+   */
+  private buildAlertMessage(
+    level: string,
+    keyName: string,
+    summary: string,
+    action: string,
+    rotationPolicy: string | null
+  ): string {
+    const parts = [`**${level}: Secret Expiration Alert**`, '', summary]
+
+    if (this.notificationConfig.includeRecommendations) {
+      parts.push('', `**Impact**: Secret "${keyName}" may become invalid`)
+      parts.push(`**Action Required**: ${action}`)
+
+      if (rotationPolicy) {
+        parts.push(`**Rotation Policy**: ${rotationPolicy}`)
+        parts.push(
+          '**Next Steps**: ',
+          '- Review current secret usage',
+          '- Plan rotation according to policy',
+          '- Update dependent services',
+          '- Verify rotation completion'
+        )
+      } else {
+        parts.push('**Recommendation**: Configure a rotation policy for automated management')
+      }
+    }
+
+    return parts.join('\n')
+  }
+
+  /**
+   * Filter alerts by minimum severity level
+   *
+   * @param alerts - All alerts
+   * @returns Filtered alerts meeting minimum severity
+   */
+  private filterAlertsBySeverity(alerts: ExpirationAlert[]): ExpirationAlert[] {
+    if (!this.notificationConfig.minSeverity) {
+      return alerts
+    }
+
+    const severityOrder: { [key in AlertSeverity]: number } = {
+      critical: 0,
+      warning: 1,
+      info: 2,
+    }
+
+    const minLevel = severityOrder[this.notificationConfig.minSeverity]
+
+    return alerts.filter((alert) => {
+      return severityOrder[alert.severity] <= minLevel
+    })
+  }
+
+  /**
+   * Apply renotification throttling to prevent alert fatigue
+   *
+   * @param alerts - Alerts to potentially send
+   * @returns Alerts that should be sent based on throttling rules
+   */
+  private applyRenotificationThrottling(
+    alerts: ExpirationAlert[]
+  ): ExpirationAlert[] {
+    if (!this.notificationConfig.renotifyInterval) {
+      return alerts
+    }
+
+    const now = new Date()
+    const intervalMs = this.notificationConfig.renotifyInterval * 60 * 1000
+
+    return alerts.filter((alert) => {
+      const lastNotification = this.lastNotificationTimes.get(alert.keyName)
+
+      if (!lastNotification) {
+        return true // Never notified, send it
+      }
+
+      const timeSinceLastNotification = now.getTime() - lastNotification.getTime()
+
+      // Always send critical alerts regardless of interval
+      if (alert.severity === 'critical') {
+        return true
+      }
+
+      // For warning and info, respect the interval
+      return timeSinceLastNotification >= intervalMs
+    })
   }
 }
