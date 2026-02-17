@@ -237,6 +237,7 @@ export function CommitHistoryViewer({
                     <div
                       key={virtualItem.key}
                       ref={measureRef(virtualItem.index)}
+                      data-index={virtualItem.index}
                       style={{ position: 'absolute', top: virtualItem.start, width: '100%' }}
                       className="pb-3"
                     >
