@@ -820,7 +820,8 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
     files: [],
     dependencies: {
       'aws-lambda': '^1.0.0',
-      'aws-sdk': '^2.1460.0'
+      '@aws-sdk/client-s3': '^3.0.0',
+      '@aws-sdk/client-dynamodb': '^3.0.0'
     },
     devDependencies: {
       'serverless': '^3.34.0',
