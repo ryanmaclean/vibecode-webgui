@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   GitCommit,
   Calendar,
@@ -16,6 +15,7 @@ import {
   Filter,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { useVirtualList } from '@/hooks/useVirtualList'
 
 interface Commit {
   sha: string
@@ -64,6 +64,11 @@ export function CommitHistoryViewer({
     path: '',
   })
   const [showFilters, setShowFilters] = useState(false)
+
+  const { parentRef, virtualItems, totalHeight, measureRef } = useVirtualList({
+    count: commits.length,
+    estimateSize: 88,
+  })
 
   const fetchCommits = useCallback(async (pageToFetch: number) => {
     setLoading(true)
@@ -221,58 +226,70 @@ export function CommitHistoryViewer({
           </div>
         ) : (
           <>
-            <ScrollArea className="h-[600px]">
-              <div className="space-y-3">
-                {commits.map((commit) => (
-                  <div
-                    key={commit.sha}
-                    className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-                    onClick={() => onCommitClick?.(commit.sha)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-sm mb-1">
-                          {getCommitMessageTitle(commit.message)}
-                        </h3>
-                        <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                          <div className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            <span>{commit.author.name}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            <span>
-                              {formatDistanceToNow(new Date(commit.author.date), {
-                                addSuffix: true,
-                              })}
-                            </span>
-                          </div>
-                          {commit.stats && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-green-600">+{commit.stats.additions}</span>
-                              <span className="text-red-600">-{commit.stats.deletions}</span>
+            <div
+              ref={parentRef}
+              style={{ height: 600, overflow: 'auto' }}
+            >
+              <div style={{ height: totalHeight, position: 'relative' }}>
+                {virtualItems.map((virtualItem) => {
+                  const commit = commits[virtualItem.index]
+                  return (
+                    <div
+                      key={virtualItem.key}
+                      ref={measureRef(virtualItem.index)}
+                      style={{ position: 'absolute', top: virtualItem.start, width: '100%' }}
+                      className="pb-3"
+                    >
+                      <div
+                        className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                        onClick={() => onCommitClick?.(commit.sha)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-medium text-sm mb-1">
+                              {getCommitMessageTitle(commit.message)}
+                            </h3>
+                            <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                              <div className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                <span>{commit.author.name}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                <span>
+                                  {formatDistanceToNow(new Date(commit.author.date), {
+                                    addSuffix: true,
+                                  })}
+                                </span>
+                              </div>
+                              {commit.stats && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-green-600">+{commit.stats.additions}</span>
+                                  <span className="text-red-600">-{commit.stats.deletions}</span>
+                                </div>
+                              )}
                             </div>
-                          )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="font-mono text-xs">
+                              {commit.sha.substring(0, 7)}
+                            </Badge>
+                            <a
+                              href={commit.htmlUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                            </a>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="font-mono text-xs">
-                          {commit.sha.substring(0, 7)}
-                        </Badge>
-                        <a
-                          href={commit.htmlUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <ExternalLink className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-                        </a>
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
-            </ScrollArea>
+            </div>
 
             <div className="flex items-center justify-between mt-4 pt-4 border-t">
               <Button
