@@ -18,6 +18,8 @@ import type {
   CapabilityCategory,
   TaskType,
 } from '@/types/model-comparison';
+import { cacheGetOrSet, CacheKeyGenerators, TTLPresets } from '@/lib/cache/cache-utils';
+import { CACHE_HEADER_PRESETS } from '@/lib/cache/http-cache-headers';
 
 export const dynamic = 'force-dynamic'
 
@@ -158,30 +160,46 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Try to load fresh data from OpenRouter (non-blocking)
-    modelRegistry.loadFromOpenRouter().catch(() => {
-      // Silently fail - use cached data
-    });
+    // Determine cache key based on search parameters
+    const paramsString = searchParams.toString();
+    const cacheKey = paramsString
+      ? CacheKeyGenerators.aiModelsWithParams(paramsString)
+      : CacheKeyGenerators.aiModels();
 
-    // Search models
-    const result = modelRegistry.searchModels(options);
+    // Get from cache or compute fresh result
+    const responseData = await cacheGetOrSet(
+      cacheKey,
+      async () => {
+        // Try to load fresh data from OpenRouter (non-blocking)
+        modelRegistry.loadFromOpenRouter().catch(() => {
+          // Silently fail - use cached data
+        });
 
-    return NextResponse.json({
-      success: true,
-      data: result,
-      meta: {
-        totalModels: modelRegistry.getModelCount(),
-        providers: modelRegistry.getProviders().map(p => ({
-          id: p.id,
-          name: p.name,
-          tier: p.tier,
-          available: p.available,
-        })),
-        availableTags: modelRegistry.getAllTags(),
+        // Search models
+        const result = modelRegistry.searchModels(options);
+
+        return {
+          success: true,
+          data: result,
+          meta: {
+            totalModels: modelRegistry.getModelCount(),
+            providers: modelRegistry.getProviders().map(p => ({
+              id: p.id,
+              name: p.name,
+              tier: p.tier,
+              available: p.available,
+            })),
+            availableTags: modelRegistry.getAllTags(),
+          },
+        };
       },
+      { ttl: TTLPresets.AI_MODELS }
+    );
+
+    return NextResponse.json(responseData, {
+      headers: CACHE_HEADER_PRESETS.AI_MODELS,
     });
   } catch (error) {
-    console.error('Error fetching models:', error);
     return NextResponse.json(
       {
         success: false,
