@@ -429,6 +429,24 @@ export const CacheKeyGenerators = {
 
   /** Generate key for session data */
   session: (sessionId: string) => generateCacheKey(['session', sessionId], CACHE_PREFIXES.SESSION),
+
+  /** Generate key for AI models list (all models, no filter) */
+  aiModels: () => generateCacheKey(['ai', 'models', 'all']),
+
+  /** Generate key for AI models list with query parameters */
+  aiModelsWithParams: (params: string) => {
+    const parts = ['ai', 'models'];
+    if (params) {
+      parts.push(Buffer.from(params).toString('base64').slice(0, 32));
+    }
+    return generateCacheKey(parts);
+  },
+
+  /** Generate key for experiments/feature flags configuration */
+  experimentsConfig: () => generateCacheKey(['experiments', 'config', 'all']),
+
+  /** Generate key for Ollama recommended models */
+  ollamaRecommended: () => generateCacheKey(['ollama', 'recommended', 'all']),
 };
 
 /**
@@ -484,6 +502,10 @@ export const TTLPresets = {
   HEALTH_CHECK: 30,
   /** Session data (1 hour) */
   SESSION: 3600,
+  /** AI models list (10 minutes) */
+  AI_MODELS: 600,
+  /** Experiments/feature flags configuration (2 minutes) */
+  EXPERIMENTS_CONFIG: 120,
 };
 
 /**
