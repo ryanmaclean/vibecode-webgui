@@ -315,7 +315,7 @@
     "prisma": "6.19.2",
     "socket.io-client": "4.8.3",
     "terser-webpack-plugin": "5.3.16",
-    "testcontainers": "11.11.0",
+    "testcontainers": "11.12.0",
     "ts-node": "10.9.2",
     "tsx": "4.21.0",
     "typescript": "5.9.3",
