@@ -1,4 +1,4 @@
-// Streaming AI Chat API - OpenRouter integration with multi-model support and RAG
+// Streaming AI Chat API - OpenRouter and Ollama integration with multi-model support and RAG
 // Powers the AIChatInterface with real-time streaming responses and vector search context
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -12,6 +12,8 @@ import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { logger } from '@/lib/logger'
 import type { AuthenticatedRequest } from '@/lib/auth/middleware'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+import { ollamaClient } from '@/lib/ollama-client'
+import type { OllamaChatMessage } from '@/lib/ollama-client'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -57,6 +59,15 @@ function getValidatedCorsOrigin(requestOrigin: string | null): string | null {
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
+}
+
+/**
+ * Detect if a model is an Ollama model
+ * Ollama models typically have colons in their names (e.g., llama3.2:1b)
+ * or start with 'ollama/' prefix
+ */
+function isOllamaModel(modelName: string): boolean {
+  return modelName.includes(':') || modelName.startsWith('ollama/')
 }
 
 // Zod validation schema for streaming chat requests
@@ -185,11 +196,23 @@ export async function POST(req: AuthenticatedRequest & NextRequest) {
 
     const { message, model, context } = validation.data as z.infer<typeof streamingChatRequestSchema>
 
-    // Initialize OpenRouter client
-    const openrouter = new OpenAI({
-      baseURL: process.env.OPENROUTER_API_BASE,
-      apiKey: process.env.OPENROUTER_API_KEY,
-    })
+    // Detect if this is an Ollama model
+    const useOllama = isOllamaModel(model)
+
+    // Check Ollama availability if needed
+    if (useOllama) {
+      const isAvailable = await ollamaClient.isAvailable()
+      if (!isAvailable) {
+        logger.warn('Ollama model requested but Ollama not available', { model })
+        return NextResponse.json(
+          {
+            error: 'Ollama is not running',
+            details: 'Please start Ollama service or install it from https://ollama.ai'
+          },
+          { status: 503 }
+        )
+      }
+    }
 
     // Build context string
     let contextString = ''
@@ -217,44 +240,104 @@ export async function POST(req: AuthenticatedRequest & NextRequest) {
 
     messages.push({ role: 'user', content: message });
 
-    // Create a streaming completion
-    const stream = await openrouter.chat.completions.create({
-      model: model,
-      messages: messages,
-      stream: true,
-      temperature: 0.7,
-      max_tokens: 4000,
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0
-    })
-
     // Set up Server-Sent Events headers
     const { ReadableStream, TextEncoder, Response: GlobalResponse } = globalThis
     const encoder = new TextEncoder()
     const customReadable = new ReadableStream({
       async start(controller) {
         try {
-          for await (const chunk of stream) {
-            const content = chunk.choices[0]?.delta?.content || ''
+          if (useOllama) {
+            // Stream from Ollama
+            const ollamaMessages: OllamaChatMessage[] = messages.map(msg => ({
+              role: msg.role,
+              content: msg.content
+            }))
 
-            if (content) {
-              const data = JSON.stringify({
-                content,
-                model,
-                timestamp: new Date().toISOString()
-              })
+            const stream = ollamaClient.chatStream({
+              model,
+              messages: ollamaMessages,
+              stream: true,
+              options: {
+                temperature: 0.7,
+                num_predict: 4000,
+                top_p: 1
+              }
+            })
 
-              controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+            for await (const chunk of stream) {
+              const content = chunk.message?.content || ''
+
+              if (content) {
+                const data = JSON.stringify({
+                  content,
+                  model,
+                  timestamp: new Date().toISOString()
+                })
+
+                controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+              }
+
+              // Check if stream is complete
+              if (chunk.done) {
+                // Send completion signal with stats
+                const completionData = JSON.stringify({
+                  done: true,
+                  model,
+                  stats: {
+                    total_duration: chunk.total_duration,
+                    load_duration: chunk.load_duration,
+                    prompt_eval_count: chunk.prompt_eval_count,
+                    prompt_eval_duration: chunk.prompt_eval_duration,
+                    eval_count: chunk.eval_count,
+                    eval_duration: chunk.eval_duration
+                  }
+                })
+                controller.enqueue(encoder.encode(`data: ${completionData}\n\n`))
+                break
+              }
             }
+          } else {
+            // Stream from OpenRouter
+            const openrouter = new OpenAI({
+              baseURL: process.env.OPENROUTER_API_BASE,
+              apiKey: process.env.OPENROUTER_API_KEY,
+            })
+
+            const stream = await openrouter.chat.completions.create({
+              model: model,
+              messages: messages,
+              stream: true,
+              temperature: 0.7,
+              max_tokens: 4000,
+              top_p: 1,
+              frequency_penalty: 0,
+              presence_penalty: 0
+            })
+
+            for await (const chunk of stream) {
+              const content = chunk.choices[0]?.delta?.content || ''
+
+              if (content) {
+                const data = JSON.stringify({
+                  content,
+                  model,
+                  timestamp: new Date().toISOString()
+                })
+
+                controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+              }
+            }
+
+            // Send completion signal
+            controller.enqueue(encoder.encode(`data: {"done": true}\n\n`))
           }
 
-          // Send completion signal
-          controller.enqueue(encoder.encode(`data: {"done": true}\n\n`))
           controller.close()
         } catch (error) {
           logger.error('Streaming chat SSE error', {
             error: error instanceof Error ? error.message : error,
+            model,
+            provider: useOllama ? 'ollama' : 'openrouter'
           })
           controller.error(error)
         }
