@@ -14,6 +14,7 @@ import type { AuthenticatedRequest } from '@/lib/auth/middleware'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { ollamaClient } from '@/lib/ollama-client'
 import type { OllamaChatMessage } from '@/lib/ollama-client'
+import { createPerformanceTimer } from '@/lib/logging/performance-logger'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -245,6 +246,9 @@ export async function POST(req: AuthenticatedRequest & NextRequest) {
     const encoder = new TextEncoder()
     const customReadable = new ReadableStream({
       async start(controller) {
+        const streamTimer = createPerformanceTimer('chat-stream')
+        let totalTokens = 0
+
         try {
           if (useOllama) {
             // Stream from Ollama
@@ -277,12 +281,21 @@ export async function POST(req: AuthenticatedRequest & NextRequest) {
                 controller.enqueue(encoder.encode(`data: ${data}\n\n`))
               }
 
+              // Track token count
+              if (chunk.eval_count) {
+                totalTokens = chunk.eval_count
+              }
+
               // Check if stream is complete
               if (chunk.done) {
-                // Send completion signal with stats
+                const durationMs = streamTimer.stop()
+
+                // Send completion signal with stats and performance metrics
                 const completionData = JSON.stringify({
                   done: true,
                   model,
+                  provider: 'ollama',
+                  modelType: 'local',
                   stats: {
                     total_duration: chunk.total_duration,
                     load_duration: chunk.load_duration,
@@ -290,8 +303,28 @@ export async function POST(req: AuthenticatedRequest & NextRequest) {
                     prompt_eval_duration: chunk.prompt_eval_duration,
                     eval_count: chunk.eval_count,
                     eval_duration: chunk.eval_duration
+                  },
+                  performance: {
+                    streamDurationMs: durationMs,
+                    tokensPerSecond: totalTokens > 0
+                      ? Math.round((totalTokens / durationMs) * 1000)
+                      : 0,
+                    provider: 'ollama',
+                    modelType: 'local'
                   }
                 })
+
+                logger.info('Ollama stream completed', {
+                  model,
+                  provider: 'ollama',
+                  modelType: 'local',
+                  durationMs,
+                  tokensPerSecond: totalTokens > 0
+                    ? Math.round((totalTokens / durationMs) * 1000)
+                    : 0,
+                  totalTokens
+                })
+
                 controller.enqueue(encoder.encode(`data: ${completionData}\n\n`))
                 break
               }
@@ -314,10 +347,13 @@ export async function POST(req: AuthenticatedRequest & NextRequest) {
               presence_penalty: 0
             })
 
+            let chunkCount = 0
+
             for await (const chunk of stream) {
               const content = chunk.choices[0]?.delta?.content || ''
 
               if (content) {
+                chunkCount++
                 const data = JSON.stringify({
                   content,
                   model,
@@ -328,8 +364,31 @@ export async function POST(req: AuthenticatedRequest & NextRequest) {
               }
             }
 
-            // Send completion signal
-            controller.enqueue(encoder.encode(`data: {"done": true}\n\n`))
+            const durationMs = streamTimer.stop()
+
+            // Send completion signal with performance metrics
+            const completionData = JSON.stringify({
+              done: true,
+              model,
+              provider: 'openrouter',
+              modelType: 'cloud',
+              performance: {
+                streamDurationMs: durationMs,
+                chunkCount,
+                provider: 'openrouter',
+                modelType: 'cloud'
+              }
+            })
+
+            logger.info('OpenRouter stream completed', {
+              model,
+              provider: 'openrouter',
+              modelType: 'cloud',
+              durationMs,
+              chunkCount
+            })
+
+            controller.enqueue(encoder.encode(`data: ${completionData}\n\n`))
           }
 
           controller.close()

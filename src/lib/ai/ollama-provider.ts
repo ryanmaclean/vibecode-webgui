@@ -4,6 +4,7 @@
 import { OllamaClient, OllamaChatMessage, OllamaChatRequest, OllamaChatResponse } from '@/lib/ollama-client'
 import { UnifiedChatMessage, UnifiedChatResponse, UnifiedStreamChunk } from '@/lib/unified-ai-client'
 import { createServiceLogger } from '@/lib/logging'
+import { createPerformanceTimer } from '@/lib/logging/performance-logger'
 
 // Service logger for Ollama provider
 const log = createServiceLogger({
@@ -108,6 +109,8 @@ export class OllamaProvider {
       stop?: string[]
     } = {}
   ): Promise<UnifiedChatResponse> {
+    const timer = createPerformanceTimer('ollama-chat')
+
     try {
       const ollamaMessages = this.convertMessagesToOllama(messages)
 
@@ -129,10 +132,20 @@ export class OllamaProvider {
 
       const response = await this.client.chat(request)
 
-      log.debug('Ollama chat response received', {
+      const durationMs = timer.stop()
+
+      log.info('Ollama chat completed', {
         model,
+        provider: 'ollama',
+        modelType: 'local',
         contentLength: response.message.content.length,
-        done: response.done
+        durationMs,
+        done: response.done,
+        performance: {
+          durationMs,
+          provider: 'ollama',
+          modelType: 'local'
+        }
       })
 
       return this.convertResponseToUnified(response, model)
@@ -160,6 +173,8 @@ export class OllamaProvider {
       stop?: string[]
     } = {}
   ): AsyncGenerator<UnifiedStreamChunk> {
+    const timer = createPerformanceTimer('ollama-chat-stream')
+
     try {
       const ollamaMessages = this.convertMessagesToOllama(messages)
 
@@ -204,10 +219,23 @@ export class OllamaProvider {
         }
 
         if (chunk.done) {
-          log.debug('Ollama stream completed', {
+          const durationMs = timer.stop()
+
+          log.info('Ollama stream completed', {
             model,
+            provider: 'ollama',
+            modelType: 'local',
             promptTokens: totalPromptTokens,
-            completionTokens: totalCompletionTokens
+            completionTokens: totalCompletionTokens,
+            durationMs,
+            performance: {
+              durationMs,
+              provider: 'ollama',
+              modelType: 'local',
+              tokensPerSecond: totalCompletionTokens > 0
+                ? Math.round((totalCompletionTokens / durationMs) * 1000)
+                : 0
+            }
           })
           break
         }
