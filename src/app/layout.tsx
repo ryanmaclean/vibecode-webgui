@@ -6,6 +6,7 @@ import "./globals.css";
 import Providers from './providers';
 import Script from 'next/script';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
 // const geistSans = Geist({
@@ -78,6 +79,8 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
+        {/* Offline indicator - fixed position to avoid layout shift */}
+        <OfflineIndicator className="fixed top-4 right-4 z-50" />
         <Providers>
           <ErrorBoundary>
             <main id="main-content">
