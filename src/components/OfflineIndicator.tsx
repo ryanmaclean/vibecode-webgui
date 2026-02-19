@@ -25,7 +25,7 @@ const OfflineIndicator = React.memo(({ className }: OfflineIndicatorProps) => {
   }, [])
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex items-center gap-2", className)} data-testid="offline-indicator">
       <Badge
         variant={isOnline ? "default" : "secondary"}
         className={cn(
