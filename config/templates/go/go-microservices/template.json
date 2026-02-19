@@ -15,5 +15,15 @@
     "docker-compose.yml",
     ".env.example",
     "README.md"
-  ]
+  ],
+  "requirements": {
+    "memory": "1GB",
+    "storage": "2GB",
+    "network": true
+  },
+  "monitoringConfig": {
+    "enabled": true,
+    "provider": "prometheus",
+    "configFile": "../_shared/monitoring.prometheus.yml"
+  }
 }
