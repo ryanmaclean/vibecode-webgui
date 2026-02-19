@@ -158,20 +158,39 @@ function getContextValue(path: string, context: WorkflowContext): unknown {
 }
 
 /**
+ * Safely evaluate an expression, blocking dangerous patterns
+ */
+function safeEvaluate(expression: string, context: Record<string, unknown>): unknown {
+  // Only allow safe characters: alphanumeric, dots, brackets, comparisons, math, logical
+  const safePattern = /^[\w\s.[\]()><=!&|+\-*/%,'"?:]+$/;
+  if (!safePattern.test(expression)) {
+    throw new Error(`Unsafe expression: ${expression}`);
+  }
+
+  // Block dangerous patterns
+  const blocked = /\b(eval|Function|import|require|process|globalThis|window|document|fetch|XMLHttpRequest|__proto__|constructor|prototype)\b/;
+  if (blocked.test(expression)) {
+    throw new Error(`Blocked expression pattern: ${expression}`);
+  }
+
+  const func = new Function(...Object.keys(context), `"use strict"; return (${expression})`);
+  return func(...Object.values(context));
+}
+
+/**
  * Evaluate JavaScript expression safely
  */
 function evaluateExpression(expression: string, context: WorkflowContext): unknown {
   try {
     // Create function with context variables as parameters
     // Pass input, nodes, and globals as separate objects
-    const contextVars = {
+    const contextVars: Record<string, unknown> = {
       input: context.input,
       nodes: context.nodes,
       globals: context.globals,
       loops: context.loops
     };
-    const func = new Function(...Object.keys(contextVars), `return ${expression}`);
-    return func(...Object.values(contextVars));
+    return safeEvaluate(expression, contextVars);
   } catch (error) {
     throw new Error(`Expression evaluation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }

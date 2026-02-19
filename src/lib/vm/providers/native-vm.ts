@@ -15,12 +15,12 @@ import { retryWithThrow, RetryPredicates } from '../utils/retry';
 import { checkProcessHealth, isProcessRunning } from '../utils/health-check';
 import { spawn, ChildProcess } from 'child_process';
 import { promisify } from 'util';
-import { exec as execCallback } from 'child_process';
+import { execFile as execFileCallback } from 'child_process';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 
-const exec = promisify(execCallback);
+const execFile = promisify(execFileCallback);
 
 // JSON-RPC protocol types
 interface JSONRPCRequest {
@@ -164,7 +164,7 @@ export class NativeVMProvider implements VMProvider {
 
     // Check macOS version
     try {
-      const { stdout } = await exec('sw_vers -productVersion');
+      const { stdout } = await execFile('sw_vers', ['-productVersion']);
       const version = stdout.trim();
       const [major, minor] = version.split('.').map(Number);
 
@@ -733,8 +733,8 @@ export class NativeVMProvider implements VMProvider {
     const baseUrl = `https://dl-cdn.alpinelinux.org/alpine/${alpineVersion}/releases/${arch}/netboot`;
 
     try {
-      await exec(`curl -fL -o ${kernelPath} ${baseUrl}/vmlinuz-virt`);
-      await exec(`curl -fL -o ${initrdPath} ${baseUrl}/initramfs-virt`);
+      await execFile('curl', ['-fL', '-o', kernelPath, `${baseUrl}/vmlinuz-virt`]);
+      await execFile('curl', ['-fL', '-o', initrdPath, `${baseUrl}/initramfs-virt`]);
       logger.info('Kernel and initrd downloaded successfully');
     } catch (error) {
       logger.error('Failed to download kernel', { error });

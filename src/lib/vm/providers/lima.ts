@@ -5,19 +5,19 @@
 
 import { VMProvider, VMConfig, VM, VMStatus, ExecResult } from '../types';
 import { logger } from '@/lib/logger';
-import { exec as execCallback } from 'child_process';
+import { execFile as execFileCallback } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as yaml from 'yaml';
 
-const exec = promisify(execCallback);
+const execFile = promisify(execFileCallback);
 
 export class LimaProvider implements VMProvider {
   name = 'lima';
   
   async detect(): Promise<boolean> {
     try {
-      await exec('which limactl');
+      await execFile('which', ['limactl']);
       return true;
     } catch {
       return false;
@@ -35,8 +35,8 @@ export class LimaProvider implements VMProvider {
     await fs.writeFile(configPath, yaml.stringify(limaConfig));
     
     // Create and start VM
-    await exec(`limactl create --name=${config.name} ${configPath}`);
-    await exec(`limactl start ${config.name}`);
+    await execFile('limactl', ['create', `--name=${config.name}`, configPath]);
+    await execFile('limactl', ['start', config.name]);
     
     return {
       id: config.name,
@@ -51,21 +51,21 @@ export class LimaProvider implements VMProvider {
   
   async start(vmId: string): Promise<void> {
     logger.info('Starting Lima VM', { vmId });
-    await exec(`limactl start ${vmId}`);
+    await execFile('limactl', ['start', vmId]);
   }
   
   async stop(vmId: string): Promise<void> {
     logger.info('Stopping Lima VM', { vmId });
-    await exec(`limactl stop ${vmId}`);
+    await execFile('limactl', ['stop', vmId]);
   }
   
   async destroy(vmId: string): Promise<void> {
     logger.info('Destroying Lima VM', { vmId });
-    await exec(`limactl delete ${vmId}`);
+    await execFile('limactl', ['delete', vmId]);
   }
   
   async list(): Promise<VM[]> {
-    const { stdout } = await exec('limactl list --json');
+    const { stdout } = await execFile('limactl', ['list', '--json']);
 
     // Handle empty output
     if (!stdout || stdout.trim() === '') {
@@ -94,7 +94,7 @@ export class LimaProvider implements VMProvider {
     const startTime = Date.now();
     
     try {
-      const { stdout, stderr } = await exec(`limactl shell ${vmId} -- ${command}`);
+      const { stdout, stderr } = await execFile('limactl', ['shell', vmId, '--', ...command.split(' ')]);
       
       return {
         exitCode: 0,
@@ -113,7 +113,7 @@ export class LimaProvider implements VMProvider {
   }
   
   async status(vmId: string): Promise<VMStatus> {
-    const { stdout } = await exec(`limactl list ${vmId} --json`);
+    const { stdout } = await execFile('limactl', ['list', vmId, '--json']);
     const vms = JSON.parse(stdout);
     
     if (vms.length === 0) {
