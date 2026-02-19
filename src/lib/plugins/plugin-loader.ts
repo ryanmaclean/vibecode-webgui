@@ -318,8 +318,8 @@ export function clearPluginCache(): void {
 /**
  * Get cached plugin API
  */
-export function getCachedPluginAPI(pluginId: string): PluginAPI | undefined {
-  return pluginCache.get(pluginId);
+export function getCachedPluginAPI(pluginId: string): PluginAPI | null {
+  return pluginCache.get(pluginId) || null;
 }
 
 /**

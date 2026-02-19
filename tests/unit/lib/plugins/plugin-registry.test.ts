@@ -5,6 +5,7 @@
 
 import {
   Plugin,
+  PluginManifest,
   PluginStatus,
   registerPlugin,
   getPlugin,
@@ -20,29 +21,46 @@ import {
 } from '@/lib/plugins/plugin-registry';
 
 describe('Plugin Registry', () => {
-  // Test data
-  const createMockPlugin = (overrides: Partial<Plugin> = {}): Plugin => ({
-    id: 'test-plugin',
-    name: 'Test Plugin',
-    version: '1.0.0',
-    description: 'A test plugin',
-    author: 'Test Author',
-    metadata: {
-      license: 'MIT',
-      keywords: ['test'],
-    },
-    capabilities: {
-      aiModels: false,
-      integrations: false,
-      workflows: false,
-      commands: true,
-      ui: false,
-    },
-    status: 'installed' as PluginStatus,
-    installedAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-01-01'),
-    ...overrides,
-  });
+  // Helper to create test plugin with manifest
+  function createTestPlugin(
+    id: string = 'test-plugin',
+    overrides?: Partial<Plugin>
+  ): Plugin {
+    const manifest: PluginManifest = {
+      id: id,
+      name: `Test Plugin ${id}`,
+      version: '1.0.0',
+      description: 'Test plugin for unit testing',
+      author: {
+        name: 'Test Author',
+        email: 'test@example.com'
+      },
+      type: 'other',
+      main: 'index.js',
+      permissions: []
+    };
+
+    return {
+      manifest: manifest,
+      capabilities: {
+        providesAIModel: false,
+        providesIntegration: false,
+        providesCommands: true,
+        providesUIComponents: false,
+        providesCodeActions: false,
+        providesWorkflows: false,
+        providesFormatters: false,
+        providesLinters: false
+      },
+      status: 'installed' as PluginStatus,
+      installedAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01'),
+      ...overrides
+    };
+  }
+
+  // Legacy helper for backwards compatibility
+  const createMockPlugin = createTestPlugin;
 
   beforeEach(() => {
     // Clear registry before each test
@@ -54,20 +72,20 @@ describe('Plugin Registry', () => {
       const plugin = createMockPlugin();
       registerPlugin(plugin);
 
-      expect(hasPlugin(plugin.id)).toBe(true);
-      expect(getPlugin(plugin.id)).toEqual(plugin);
+      expect(hasPlugin(plugin.manifest.id)).toBe(true);
+      expect(getPlugin(plugin.manifest.id)).toEqual(plugin);
     });
 
     it('should throw error when registering duplicate plugin', () => {
       const plugin = createMockPlugin();
       registerPlugin(plugin);
 
-      expect(() => registerPlugin(plugin)).toThrow(`Plugin with id '${plugin.id}' is already registered`);
+      expect(() => registerPlugin(plugin)).toThrow(`Plugin with id '${plugin.manifest.id}' is already registered`);
     });
 
     it('should allow registering multiple different plugins', () => {
-      const plugin1 = createMockPlugin({ id: 'plugin-1', name: 'Plugin 1' });
-      const plugin2 = createMockPlugin({ id: 'plugin-2', name: 'Plugin 2' });
+      const plugin1 = createTestPlugin('plugin-1');
+      const plugin2 = createTestPlugin('plugin-2');
 
       registerPlugin(plugin1);
       registerPlugin(plugin2);
@@ -83,7 +101,7 @@ describe('Plugin Registry', () => {
       const plugin = createMockPlugin();
       registerPlugin(plugin);
 
-      const retrieved = getPlugin(plugin.id);
+      const retrieved = getPlugin(plugin.manifest.id);
       expect(retrieved).toEqual(plugin);
     });
 
@@ -94,8 +112,8 @@ describe('Plugin Registry', () => {
 
   describe('getAllPlugins', () => {
     it('should list all plugins', () => {
-      const plugin1 = createMockPlugin({ id: 'plugin-1' });
-      const plugin2 = createMockPlugin({ id: 'plugin-2' });
+      const plugin1 = createTestPlugin('plugin-1');
+      const plugin2 = createTestPlugin('plugin-2');
 
       registerPlugin(plugin1);
       registerPlugin(plugin2);
@@ -113,9 +131,9 @@ describe('Plugin Registry', () => {
 
   describe('getPluginsByStatus', () => {
     it('should filter plugins by status', () => {
-      const installedPlugin = createMockPlugin({ id: 'installed', status: 'installed' });
-      const activePlugin = createMockPlugin({ id: 'active', status: 'active' });
-      const disabledPlugin = createMockPlugin({ id: 'disabled', status: 'disabled' });
+      const installedPlugin = createTestPlugin('installed', { status: 'installed' });
+      const activePlugin = createTestPlugin('active', { status: 'active' });
+      const disabledPlugin = createTestPlugin('disabled', { status: 'disabled' });
 
       registerPlugin(installedPlugin);
       registerPlugin(activePlugin);
@@ -123,15 +141,15 @@ describe('Plugin Registry', () => {
 
       const installed = getPluginsByStatus('installed');
       expect(installed).toHaveLength(1);
-      expect(installed[0].id).toBe('installed');
+      expect(installed[0].manifest.id).toBe('installed');
 
       const active = getPluginsByStatus('active');
       expect(active).toHaveLength(1);
-      expect(active[0].id).toBe('active');
+      expect(active[0].manifest.id).toBe('active');
 
       const disabled = getPluginsByStatus('disabled');
       expect(disabled).toHaveLength(1);
-      expect(disabled[0].id).toBe('disabled');
+      expect(disabled[0].manifest.id).toBe('disabled');
     });
 
     it('should return empty array when no plugins match status', () => {
@@ -144,15 +162,15 @@ describe('Plugin Registry', () => {
 
   describe('getActivePlugins', () => {
     it('should return only active plugins', () => {
-      const activePlugin = createMockPlugin({ id: 'active', status: 'active' });
-      const installedPlugin = createMockPlugin({ id: 'installed', status: 'installed' });
+      const activePlugin = createTestPlugin('active', { status: 'active' });
+      const installedPlugin = createTestPlugin('installed', { status: 'installed' });
 
       registerPlugin(activePlugin);
       registerPlugin(installedPlugin);
 
       const active = getActivePlugins();
       expect(active).toHaveLength(1);
-      expect(active[0].id).toBe('active');
+      expect(active[0].manifest.id).toBe('active');
     });
   });
 
@@ -163,9 +181,9 @@ describe('Plugin Registry', () => {
 
       const beforeUpdate = plugin.updatedAt;
 
-      updatePluginStatus(plugin.id, 'active');
+      updatePluginStatus(plugin.manifest.id, 'active');
 
-      const updated = getPlugin(plugin.id);
+      const updated = getPlugin(plugin.manifest.id);
       expect(updated?.status).toBe('active');
       expect(updated?.updatedAt).not.toEqual(beforeUpdate);
     });
@@ -181,8 +199,8 @@ describe('Plugin Registry', () => {
       const statuses: PluginStatus[] = ['active', 'disabled', 'error', 'installed'];
 
       statuses.forEach(status => {
-        updatePluginStatus(plugin.id, status);
-        expect(getPlugin(plugin.id)?.status).toBe(status);
+        updatePluginStatus(plugin.manifest.id, status);
+        expect(getPlugin(plugin.manifest.id)?.status).toBe(status);
       });
     });
   });
@@ -192,11 +210,11 @@ describe('Plugin Registry', () => {
       const plugin = createMockPlugin();
       registerPlugin(plugin);
 
-      const result = unregisterPlugin(plugin.id);
+      const result = unregisterPlugin(plugin.manifest.id);
 
       expect(result).toBe(true);
-      expect(hasPlugin(plugin.id)).toBe(false);
-      expect(getPlugin(plugin.id)).toBeUndefined();
+      expect(hasPlugin(plugin.manifest.id)).toBe(false);
+      expect(getPlugin(plugin.manifest.id)).toBeUndefined();
     });
 
     it('should return false when unregistering non-existent plugin', () => {
@@ -210,7 +228,7 @@ describe('Plugin Registry', () => {
       const plugin = createMockPlugin();
       registerPlugin(plugin);
 
-      expect(hasPlugin(plugin.id)).toBe(true);
+      expect(hasPlugin(plugin.manifest.id)).toBe(true);
     });
 
     it('should return false for non-existent plugin', () => {
@@ -220,61 +238,68 @@ describe('Plugin Registry', () => {
 
   describe('getPluginsByCapability', () => {
     it('should filter by capability', () => {
-      const aiModelPlugin = createMockPlugin({
-        id: 'ai-plugin',
+      const aiModelPlugin = createTestPlugin('ai-plugin', {
         capabilities: {
-          aiModels: true,
-          integrations: false,
-          workflows: false,
-          commands: false,
-          ui: false,
+          providesAIModel: true,
+          providesIntegration: false,
+          providesWorkflows: false,
+          providesCommands: false,
+          providesUIComponents: false,
+          providesCodeActions: false,
+          providesFormatters: false,
+          providesLinters: false
         },
       });
 
-      const workflowPlugin = createMockPlugin({
-        id: 'workflow-plugin',
+      const workflowPlugin = createTestPlugin('workflow-plugin', {
         capabilities: {
-          aiModels: false,
-          integrations: false,
-          workflows: true,
-          commands: false,
-          ui: false,
+          providesAIModel: false,
+          providesIntegration: false,
+          providesWorkflows: true,
+          providesCommands: false,
+          providesUIComponents: false,
+          providesCodeActions: false,
+          providesFormatters: false,
+          providesLinters: false
         },
       });
 
       registerPlugin(aiModelPlugin);
       registerPlugin(workflowPlugin);
 
-      const aiPlugins = getPluginsByCapability('aiModels');
+      const aiPlugins = getPluginsByCapability('providesAIModel');
       expect(aiPlugins).toHaveLength(1);
-      expect(aiPlugins[0].id).toBe('ai-plugin');
+      expect(aiPlugins[0].manifest.id).toBe('ai-plugin');
 
-      const workflowPlugins = getPluginsByCapability('workflows');
+      const workflowPlugins = getPluginsByCapability('providesWorkflows');
       expect(workflowPlugins).toHaveLength(1);
-      expect(workflowPlugins[0].id).toBe('workflow-plugin');
+      expect(workflowPlugins[0].manifest.id).toBe('workflow-plugin');
     });
 
     it('should return empty array when no plugins have capability', () => {
-      const plugin = createMockPlugin({
+      const plugin = createTestPlugin('test-plugin', {
         capabilities: {
-          aiModels: false,
-          integrations: false,
-          workflows: false,
-          commands: false,
-          ui: false,
+          providesAIModel: false,
+          providesIntegration: false,
+          providesWorkflows: false,
+          providesCommands: false,
+          providesUIComponents: false,
+          providesCodeActions: false,
+          providesFormatters: false,
+          providesLinters: false
         },
       });
 
       registerPlugin(plugin);
 
-      expect(getPluginsByCapability('aiModels')).toEqual([]);
+      expect(getPluginsByCapability('providesAIModel')).toEqual([]);
     });
   });
 
   describe('clearRegistry', () => {
     it('should clear all plugins from registry', () => {
-      const plugin1 = createMockPlugin({ id: 'plugin-1' });
-      const plugin2 = createMockPlugin({ id: 'plugin-2' });
+      const plugin1 = createTestPlugin('plugin-1');
+      const plugin2 = createTestPlugin('plugin-2');
 
       registerPlugin(plugin1);
       registerPlugin(plugin2);
@@ -292,10 +317,10 @@ describe('Plugin Registry', () => {
     it('should return correct plugin count', () => {
       expect(getPluginCount()).toBe(0);
 
-      registerPlugin(createMockPlugin({ id: 'plugin-1' }));
+      registerPlugin(createTestPlugin('plugin-1'));
       expect(getPluginCount()).toBe(1);
 
-      registerPlugin(createMockPlugin({ id: 'plugin-2' }));
+      registerPlugin(createTestPlugin('plugin-2'));
       expect(getPluginCount()).toBe(2);
 
       unregisterPlugin('plugin-1');

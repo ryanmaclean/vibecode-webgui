@@ -182,6 +182,7 @@ export interface PluginValidationResult {
   valid: boolean
   errors: string[]
   warnings: string[]
+  manifest?: PluginManifest
 }
 
 /**

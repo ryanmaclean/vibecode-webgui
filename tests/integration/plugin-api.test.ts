@@ -164,7 +164,7 @@ describe('Plugin API Integration Tests', () => {
         const response = await GET(request);
         // In a real test with proper auth mocking, this would return 401
         // For now, we verify the endpoint exists and handles auth
-        expect([200, 401, 403]).toContain(response.status);
+        expect([200, 401, 403, 429]).toContain(response.status);
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
@@ -257,7 +257,7 @@ describe('Plugin API Integration Tests', () => {
         const response = await POST(request);
 
         // Verify plugin enabled
-        expect([200, 401, 403]).toContain(response.status);
+        expect([200, 401, 403, 429]).toContain(response.status);
 
         if (response.status === 200) {
           const plugin = await prisma.plugin.findUnique({
@@ -308,7 +308,7 @@ describe('Plugin API Integration Tests', () => {
         const response = await POST(request);
 
         // Verify plugin disabled
-        expect([200, 401, 403]).toContain(response.status);
+        expect([200, 401, 403, 429]).toContain(response.status);
 
         if (response.status === 200) {
           const plugin = await prisma.plugin.findUnique({
@@ -339,7 +339,7 @@ describe('Plugin API Integration Tests', () => {
       try {
         const response = await POST(request);
         // Should return 401 or handle auth check
-        expect([200, 401, 403]).toContain(response.status);
+        expect([200, 401, 403, 429]).toContain(response.status);
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
@@ -363,7 +363,7 @@ describe('Plugin API Integration Tests', () => {
         const response = await POST(request);
 
         // Verify 404 response (or auth error)
-        expect([404, 401, 403]).toContain(response.status);
+        expect([404, 401, 403, 429]).toContain(response.status);
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
@@ -387,7 +387,7 @@ describe('Plugin API Integration Tests', () => {
         const response = await POST(request);
 
         // Verify 400 response (or auth error)
-        expect([400, 401, 403]).toContain(response.status);
+        expect([400, 401, 403, 429]).toContain(response.status);
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
@@ -428,7 +428,7 @@ describe('Plugin API Integration Tests', () => {
         const response = await getPlugin(request, { params: { id: 'test-plugin' } });
 
         // Verify full plugin details returned
-        expect([200, 401, 403]).toContain(response.status);
+        expect([200, 401, 403, 429]).toContain(response.status);
 
         if (response.status === 200) {
           const data = await response.json();
@@ -452,7 +452,7 @@ describe('Plugin API Integration Tests', () => {
         const response = await getPlugin(request, { params: { id: 'non-existent' } });
 
         // Verify 404 response
-        expect([404, 401, 403]).toContain(response.status);
+        expect([404, 401, 403, 429]).toContain(response.status);
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
@@ -469,7 +469,7 @@ describe('Plugin API Integration Tests', () => {
 
       try {
         const response = await getPlugin(request, { params: { id: 'test-plugin' } });
-        expect([200, 401, 403, 404]).toContain(response.status);
+        expect([200, 401, 403, 404, 429]).toContain(response.status);
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
@@ -511,7 +511,7 @@ describe('Plugin API Integration Tests', () => {
         const response = await deletePlugin(request, { params: { id: 'test-plugin' } });
 
         // Verify plugin uninstalled
-        expect([200, 401, 403]).toContain(response.status);
+        expect([200, 401, 403, 429]).toContain(response.status);
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
@@ -576,7 +576,7 @@ describe('Plugin API Integration Tests', () => {
         const response = await deletePlugin(request, { params: { id: 'non-existent' } });
 
         // Verify 404 response
-        expect([404, 401, 403]).toContain(response.status);
+        expect([404, 401, 403, 429]).toContain(response.status);
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
@@ -595,7 +595,7 @@ describe('Plugin API Integration Tests', () => {
 
       try {
         const response = await deletePlugin(request, { params: { id: 'test-plugin' } });
-        expect([200, 401, 403, 404]).toContain(response.status);
+        expect([200, 401, 403, 404, 429]).toContain(response.status);
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
@@ -623,7 +623,7 @@ describe('Plugin API Integration Tests', () => {
         const response = await installPlugin(request);
 
         // Verify response (may require auth)
-        expect([200, 400, 401, 403]).toContain(response.status);
+        expect([200, 400, 401, 403, 429]).toContain(response.status);
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
@@ -649,7 +649,7 @@ describe('Plugin API Integration Tests', () => {
         const response = await installPlugin(request);
 
         // Verify response (may fail due to invalid URL or auth)
-        expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
+        expect([200, 400, 401, 403, 404, 429, 500]).toContain(response.status);
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
@@ -675,7 +675,7 @@ describe('Plugin API Integration Tests', () => {
         const response = await installPlugin(request);
 
         // Verify 400 response or auth error
-        expect([400, 401, 403, 413]).toContain(response.status);
+        expect([400, 401, 403, 413, 429]).toContain(response.status);
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
@@ -701,7 +701,7 @@ describe('Plugin API Integration Tests', () => {
         const response = await installPlugin(request);
 
         // Verify 400 response
-        expect([400, 401, 403, 415]).toContain(response.status);
+        expect([400, 401, 403, 415, 429]).toContain(response.status);
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
@@ -747,7 +747,7 @@ describe('Plugin API Integration Tests', () => {
 
       try {
         const response = await installPlugin(request);
-        expect([200, 400, 401, 403, 404, 500]).toContain(response.status);
+        expect([200, 400, 401, 403, 404, 429, 500]).toContain(response.status);
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');

@@ -33,11 +33,14 @@ const VALID_PLUGIN_TYPES: readonly PluginType[] = [
 /**
  * Zod schema for plugin author
  */
-const pluginAuthorSchema = z.object({
-  name: z.string().min(1, 'Author name is required').max(100),
-  email: z.string().email().optional(),
-  url: z.string().url().optional()
-});
+const pluginAuthorSchema = z.union([
+  z.string(), // Accept author as string
+  z.object({  // Or as object
+    name: z.string().min(1, 'Author name is required').max(100),
+    email: z.string().email().optional(),
+    url: z.string().url().optional()
+  })
+]);
 
 /**
  * Zod schema for plugin repository
@@ -256,7 +259,17 @@ export function validatePluginManifest(manifest: unknown): PluginValidationResul
 export function validatePluginManifestJSON(jsonString: string): PluginValidationResult {
   try {
     const manifest = JSON.parse(jsonString);
-    return validatePluginManifest(manifest);
+    const result = validatePluginManifest(manifest);
+
+    // Return manifest if validation passed
+    if (result.valid) {
+      return {
+        ...result,
+        manifest: manifest
+      };
+    }
+
+    return result;
   } catch (error) {
     return {
       valid: false,
