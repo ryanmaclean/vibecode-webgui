@@ -233,31 +233,7 @@ export async function loadPlugin(
 
     // Register plugin if requested
     if (opts.autoRegister) {
-      registerPlugin({
-        id: manifest.id,
-        name: manifest.name,
-        version: manifest.version,
-        description: manifest.description,
-        author: manifest.author.name,
-        metadata: {
-          homepage: manifest.homepage,
-          repository: manifest.repository?.url,
-          license: manifest.license || 'UNLICENSED',
-          keywords: manifest.keywords || [],
-          dependencies: manifest.dependencies,
-          minimumVersion: manifest.engines?.vibecode
-        },
-        capabilities: {
-          aiModels: plugin.capabilities.providesAIModel,
-          integrations: plugin.capabilities.providesIntegration,
-          workflows: plugin.capabilities.providesWorkflows,
-          commands: plugin.capabilities.providesCommands,
-          ui: plugin.capabilities.providesUIComponents
-        },
-        status: plugin.status === 'active' ? 'active' : 'installed',
-        installedAt: plugin.installedAt,
-        updatedAt: plugin.updatedAt
-      });
+      registerPlugin(plugin);
     }
 
     return {

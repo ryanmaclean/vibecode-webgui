@@ -60,9 +60,9 @@ const pluginEnginesSchema = z.object({
  */
 const pluginPermissionSchema = z.string().refine(
   (val): val is PluginPermission => isValidPermission(val),
-  (val) => ({
-    message: `Invalid permission: '${val}'. Valid permissions are: ${VALID_PERMISSIONS.join(', ')}`
-  })
+  {
+    message: `Invalid permission. Valid permissions are: ${VALID_PERMISSIONS.join(', ')}`
+  }
 );
 
 /**
@@ -146,7 +146,7 @@ export function validatePluginManifest(manifest: unknown): PluginValidationResul
 
   if (!result.success) {
     // Extract validation errors from Zod
-    const zodErrors = result.error.errors.map(err => {
+    const zodErrors = result.error.issues.map(err => {
       const path = err.path.join('.');
       return path ? `${path}: ${err.message}` : err.message;
     });

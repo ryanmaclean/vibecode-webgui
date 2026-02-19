@@ -6,6 +6,7 @@
 import path from 'path';
 import { promises as fs } from 'fs';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import {
   Plugin,
   PluginManifest,
@@ -131,7 +132,7 @@ export class PluginManager extends EventEmitter {
       const dbPlugins = await prisma.plugin.findMany({
         where: {
           status: {
-            in: ['installed', 'enabled', 'active']
+            in: ['inactive', 'active']
           }
         }
       });
@@ -251,8 +252,8 @@ export class PluginManager extends EventEmitter {
             data: {
               version: manifest.version,
               author: manifest.author.name,
-              status: 'installed',
-              manifest: manifest as unknown as Record<string, unknown>,
+              status: 'inactive',
+              manifest: manifest as unknown as Prisma.JsonObject,
               updated_at: new Date()
             }
           })
@@ -261,8 +262,8 @@ export class PluginManager extends EventEmitter {
               name: manifest.name,
               version: manifest.version,
               author: manifest.author.name,
-              status: 'installed',
-              manifest: manifest as unknown as Record<string, unknown>
+              status: 'inactive',
+              manifest: manifest as unknown as Prisma.JsonObject
             }
           });
 
@@ -441,7 +442,7 @@ export class PluginManager extends EventEmitter {
       }
 
       // Check current status
-      if (plugin.status === 'installed' || plugin.status === 'disabled') {
+      if (plugin.status === 'inactive') {
         return {
           success: false,
           error: `Plugin '${pluginId}' is already disabled`
@@ -449,13 +450,13 @@ export class PluginManager extends EventEmitter {
       }
 
       // Update registry status
-      updateRegistryStatus(pluginId, 'installed');
+      updateRegistryStatus(pluginId, 'inactive');
 
       // Update database
       await prisma.plugin.updateMany({
         where: { name: pluginId },
         data: {
-          status: 'installed',
+          status: 'inactive',
           updated_at: new Date()
         }
       });
@@ -495,7 +496,7 @@ export class PluginManager extends EventEmitter {
 
     // Filter by type
     if (criteria.type) {
-      plugins = plugins.filter(p => p.metadata.keywords.includes(criteria.type!));
+      plugins = plugins.filter(p => p.manifest.type === criteria.type || p.manifest.keywords?.includes(criteria.type!));
     }
 
     // Filter by status
@@ -508,15 +509,15 @@ export class PluginManager extends EventEmitter {
       const keyword = criteria.keyword.toLowerCase();
       plugins = plugins.filter(
         p =>
-          p.name.toLowerCase().includes(keyword) ||
-          p.description.toLowerCase().includes(keyword) ||
-          p.metadata.keywords.some(k => k.toLowerCase().includes(keyword))
+          p.manifest.name.toLowerCase().includes(keyword) ||
+          p.manifest.description.toLowerCase().includes(keyword) ||
+          p.manifest.keywords?.some((k: string) => k.toLowerCase().includes(keyword))
       );
     }
 
     // Filter by author
     if (criteria.author) {
-      plugins = plugins.filter(p => p.author.toLowerCase().includes(criteria.author!.toLowerCase()));
+      plugins = plugins.filter(p => p.manifest.author.name.toLowerCase().includes(criteria.author!.toLowerCase()));
     }
 
     return plugins;

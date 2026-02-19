@@ -78,21 +78,27 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Transform plugin for API response
+    const manifest = plugin.manifest;
+
     return NextResponse.json({
       success: true,
       plugin: {
-        id: plugin.id,
-        name: plugin.name,
-        version: plugin.version,
-        description: plugin.description,
-        author: plugin.author,
+        id: manifest.id,
+        name: manifest.name,
+        version: manifest.version,
+        description: manifest.description,
+        author: manifest.author.name,
         status: plugin.status,
         capabilities: plugin.capabilities,
-        permissions: plugin.permissions,
-        icon: plugin.icon,
-        homepage: plugin.homepage,
-        repository: plugin.repository,
-        metadata: plugin.metadata,
+        permissions: manifest.permissions,
+        icon: manifest.icon,
+        homepage: manifest.homepage || manifest.author.url,
+        repository: manifest.repository?.url,
+        metadata: {
+          license: manifest.license,
+          keywords: manifest.keywords || [],
+          dependencies: manifest.dependencies,
+        },
       },
     });
   } catch (error) {

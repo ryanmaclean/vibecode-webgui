@@ -1,40 +1,16 @@
 // Plugin Registry
 // Centralized registry for managing installed plugins
 
-export interface Plugin {
-  id: string
-  name: string
-  version: string
-  description: string
-  author: string
-  metadata: PluginMetadata
-  capabilities: PluginCapabilities
-  status: PluginStatus
-  installedAt: Date
-  updatedAt: Date
-}
-
-export interface PluginMetadata {
-  homepage?: string
-  repository?: string
-  license: string
-  keywords: string[]
-  dependencies?: Record<string, string>
-  minimumVersion?: string
-}
-
-export interface PluginCapabilities {
-  aiModels: boolean
-  integrations: boolean
-  workflows: boolean
-  commands: boolean
-  ui: boolean
-}
-
-export type PluginStatus = 'installed' | 'active' | 'disabled' | 'error'
+import { Plugin, PluginStatus } from '@/types/plugin';
 
 // Plugin registry - stores all installed plugins
+// Key is plugin ID (from manifest)
 const pluginRegistry: Map<string, Plugin> = new Map()
+
+// Helper to get plugin ID from manifest
+function getPluginId(plugin: Plugin): string {
+  return plugin.manifest.id;
+}
 
 // Utility functions
 
@@ -42,10 +18,11 @@ const pluginRegistry: Map<string, Plugin> = new Map()
  * Register a new plugin in the registry
  */
 export function registerPlugin(plugin: Plugin): void {
-  if (pluginRegistry.has(plugin.id)) {
-    throw new Error(`Plugin with id '${plugin.id}' is already registered`)
+  const pluginId = getPluginId(plugin);
+  if (pluginRegistry.has(pluginId)) {
+    throw new Error(`Plugin with id '${pluginId}' is already registered`)
   }
-  pluginRegistry.set(plugin.id, plugin)
+  pluginRegistry.set(pluginId, plugin)
 }
 
 /**
@@ -105,8 +82,11 @@ export function hasPlugin(id: string): boolean {
 /**
  * Get plugins by capability
  */
-export function getPluginsByCapability(capability: keyof PluginCapabilities): Plugin[] {
-  return getAllPlugins().filter(plugin => plugin.capabilities[capability])
+export function getPluginsByCapability(capability: string): Plugin[] {
+  return getAllPlugins().filter(plugin => {
+    const caps = plugin.capabilities as unknown as Record<string, boolean>;
+    return caps[capability] === true;
+  })
 }
 
 /**

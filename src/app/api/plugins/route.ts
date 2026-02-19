@@ -15,7 +15,7 @@ import {
   disablePlugin,
   getPluginManager,
 } from '@/lib/plugins/plugin-manager';
-import type { PluginSearchCriteria, PluginStatus } from '@/types/plugin';
+import type { PluginSearchCriteria, PluginStatus, PluginType } from '@/types/plugin';
 
 const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'plugins' });
 
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     const criteria: PluginSearchCriteria = {};
 
     if (searchParams.has('type')) {
-      criteria.type = searchParams.get('type') || undefined;
+      criteria.type = searchParams.get('type') as PluginType || undefined;
     }
     if (searchParams.has('status')) {
       criteria.status = searchParams.get('status') as PluginStatus;
@@ -82,20 +82,28 @@ export async function GET(request: NextRequest) {
       : await listAllPlugins();
 
     // Transform plugins for API response
-    const pluginList = plugins.map(plugin => ({
-      id: plugin.id,
-      name: plugin.name,
-      version: plugin.version,
-      description: plugin.description,
-      author: plugin.author,
-      status: plugin.status,
-      capabilities: plugin.capabilities,
-      permissions: plugin.permissions,
-      icon: plugin.icon,
-      homepage: plugin.homepage,
-      repository: plugin.repository,
-      metadata: plugin.metadata,
-    }));
+    const pluginList = plugins.map(plugin => {
+      const manifest = plugin.manifest;
+
+      return {
+        id: manifest.id,
+        name: manifest.name,
+        version: manifest.version,
+        description: manifest.description,
+        author: manifest.author.name,
+        status: plugin.status,
+        capabilities: plugin.capabilities,
+        permissions: manifest.permissions,
+        icon: manifest.icon,
+        homepage: manifest.homepage || manifest.author.url,
+        repository: manifest.repository?.url,
+        metadata: {
+          license: manifest.license,
+          keywords: manifest.keywords || [],
+          dependencies: manifest.dependencies,
+        },
+      };
+    });
 
     return NextResponse.json({
       success: true,
