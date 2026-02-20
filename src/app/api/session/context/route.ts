@@ -344,3 +344,141 @@ export async function GET(req: NextRequest) {
     return response
   }
 }
+
+// Query parameters schema for deleting session context
+const deleteContextSchema = z.object({
+  sessionId: z.string().min(1).max(200).optional(),
+  workspaceId: z.string().regex(/^\d+$/, 'Workspace ID must be a number').optional()
+})
+
+/**
+ * DELETE /api/session/context - Clear session context
+ */
+export async function DELETE(req: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(req)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
+  const startTime = Date.now()
+  const requestContext = apiLogger.logRequest(req)
+
+  try {
+    // Authentication
+    const session = await getServerSession(authOptions)
+    if (!session || !session.user || !session.user.id) {
+      log.warn('Unauthorized access attempt', {
+        requestId: requestContext.requestId,
+        operation: 'clear_context'
+      })
+
+      const response = createErrorResponse('Unauthorized', 401, {
+        code: 'UNAUTHORIZED',
+        detail: 'Authentication required to clear session context.',
+      })
+      apiLogger.logResponse(requestContext, response, startTime)
+      return response
+    }
+
+    const userId = parseInt(session.user.id)
+    if (isNaN(userId)) {
+      log.error('Invalid user ID in session', {
+        requestId: requestContext.requestId,
+        userId: session.user.id
+      })
+
+      const response = createErrorResponse('Invalid user ID', 400, {
+        code: 'INVALID_USER_ID',
+        detail: 'User ID must be a valid integer.',
+      })
+      apiLogger.logResponse(requestContext, response, startTime)
+      return response
+    }
+
+    // Validate query parameters
+    const validation = validateQueryParams(req, deleteContextSchema)
+    if (!validation.success) {
+      log.warn('Session context delete validation failed', {
+        requestId: requestContext.requestId,
+      })
+      apiLogger.logResponse(requestContext, validation.error, startTime)
+      return validation.error
+    }
+
+    const { sessionId, workspaceId } = validation.data
+
+    log.debug('Clearing session context', {
+      requestId: requestContext.requestId,
+      userId: userId.toString(),
+      sessionId,
+      workspaceId
+    })
+
+    // Clear context using the service
+    const timer = createPerformanceTimer('clear-session-context', {
+      requestId: requestContext.requestId,
+      userId: userId.toString()
+    })
+
+    const contextService = getContextService()
+    let deletedCount: number
+
+    if (sessionId) {
+      deletedCount = await contextService.deleteSessionContext(sessionId, userId)
+    } else if (workspaceId) {
+      deletedCount = await contextService.deleteWorkspaceContext(parseInt(workspaceId))
+    } else {
+      deletedCount = await contextService.deleteUserContext(userId)
+    }
+
+    timer.stop({ deletedCount })
+
+    log.info('Session context cleared successfully', {
+      requestId: requestContext.requestId,
+      userId: userId.toString(),
+      sessionId,
+      workspaceId,
+      deletedCount
+    })
+
+    const response = NextResponse.json(
+      {
+        status: 'success',
+        data: {
+          deletedCount
+        },
+        message: 'Session context cleared successfully'
+      },
+      { status: 200 }
+    )
+
+    response.headers.set('x-request-id', requestContext.requestId)
+    apiLogger.logResponse(requestContext, response, startTime)
+    return response
+  } catch (error) {
+    logError(error, {
+      operation: 'clear_session_context',
+      requestId: requestContext.requestId,
+      component: 'session-context-api'
+    })
+
+    const response = createErrorResponse('Failed to clear session context', 500, {
+      code: 'CLEAR_CONTEXT_ERROR',
+      detail: error instanceof Error ? error.message : 'Unknown error occurred while clearing context.',
+    })
+    apiLogger.logResponse(requestContext, response, startTime)
+    return response
+  }
+}
