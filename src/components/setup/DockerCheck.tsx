@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -54,11 +54,12 @@ export function DockerCheck({ onCheckComplete, autoCheck = false }: DockerCheckP
   }
 
   // Auto-check on mount if enabled
-  useState(() => {
+  useEffect(() => {
     if (autoCheck) {
       checkDocker()
     }
-  })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoCheck])
 
   const getStatusBadge = (status: SetupStepStatus) => {
     switch (status) {
