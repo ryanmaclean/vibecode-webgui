@@ -24,9 +24,7 @@ const apiRateLimit = createAPIRateLimit(30); // 30 requests per minute
 
 const ratingSchema = z.object({
   suggestionId: z.string().min(1, 'Suggestion ID is required'),
-  rating: z.enum(['up', 'down'], {
-    errorMap: () => ({ message: 'Rating must be "up" or "down"' }),
-  }),
+  rating: z.enum(['up', 'down']),
   comment: z.string().optional(),
   modelId: z.string().optional(),
   workspaceId: z.string().optional(),

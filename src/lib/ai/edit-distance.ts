@@ -143,9 +143,10 @@ export function calculateEditDistanceWithMetrics(
  */
 export function normalizeForComparison(text: string): string {
   return text
-    .replace(/\r\n/g, '\n') // Normalize line endings
-    .replace(/\r/g, '\n')   // Normalize line endings
-    .trim();                 // Remove leading/trailing whitespace
+    .replace(/\r\n/g, '\n')     // Normalize line endings
+    .replace(/\r/g, '\n')       // Normalize line endings
+    .replace(/\s+/g, ' ')       // Collapse multiple whitespace to single space
+    .trim();                    // Remove leading/trailing whitespace
 }
 
 /**
@@ -172,8 +173,9 @@ export function calculateEditDistanceIgnoringWhitespace(
   original: string,
   modified: string
 ): number {
-  const normalizedOriginal = normalizeForComparison(original);
-  const normalizedModified = normalizeForComparison(modified);
+  // Remove ALL whitespace for content-only comparison
+  const normalizedOriginal = original.replace(/\s+/g, '');
+  const normalizedModified = modified.replace(/\s+/g, '');
   return calculateEditDistance(normalizedOriginal, normalizedModified);
 }
 

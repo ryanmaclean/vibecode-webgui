@@ -442,14 +442,14 @@ export class QualityReportGenerator {
   ): Promise<ModelMetricsResult[]> {
     // Build where clause
     const where: any = {
-      timestamp: {
+      created_at: {
         gte: new Date(timePeriod.start),
         lte: new Date(timePeriod.end),
       },
     };
 
     if (modelIds && modelIds.length > 0) {
-      where.modelId = { in: modelIds };
+      where.model_id = { in: modelIds };
     }
 
     // Query suggestions
@@ -465,7 +465,7 @@ export class QualityReportGenerator {
     const modelMap = new Map<string, ModelMetricsResult>();
 
     for (const suggestion of suggestions) {
-      const modelId = suggestion.modelId;
+      const modelId = suggestion.model_id;
 
       if (!modelMap.has(modelId)) {
         modelMap.set(modelId, {
@@ -485,8 +485,8 @@ export class QualityReportGenerator {
       metrics.totalSuggestions++;
 
       // Count events
-      const acceptedEvents = suggestion.events.filter(e => e.eventType === 'accepted');
-      const rejectedEvents = suggestion.events.filter(e => e.eventType === 'rejected');
+      const acceptedEvents = suggestion.events.filter(e => e.event_type === 'accepted');
+      const rejectedEvents = suggestion.events.filter(e => e.event_type === 'rejected');
 
       if (acceptedEvents.length > 0) {
         metrics.acceptedSuggestions++;
@@ -497,9 +497,9 @@ export class QualityReportGenerator {
         const timesToAccept: number[] = [];
 
         for (const event of acceptedEvents) {
-          if (event.editDistance !== null) editDistances.push(event.editDistance);
-          if (event.similarity !== null) similarities.push(event.similarity);
-          if (event.timeToEvent !== null) timesToAccept.push(event.timeToEvent);
+          if (event.edit_distance !== null) editDistances.push(event.edit_distance);
+          if (event.similarity_score !== null) similarities.push(event.similarity_score);
+          if (event.time_to_decision_ms !== null) timesToAccept.push(event.time_to_decision_ms);
         }
 
         if (editDistances.length > 0) {
@@ -519,7 +519,7 @@ export class QualityReportGenerator {
 
       // Aggregate ratings
       if (suggestion.ratings.length > 0) {
-        const ratings = suggestion.ratings.map(r => r.rating);
+        const ratings = suggestion.ratings.map(r => r.rating_value);
         metrics.avgRating = this.average(ratings);
         metrics.ratingCount += ratings.length;
       }
@@ -536,31 +536,40 @@ export class QualityReportGenerator {
     modelIds?: string[]
   ): Promise<QualityMetricRecord[]> {
     const where: any = {
-      timestamp: {
+      evaluated_at: {
         gte: new Date(timePeriod.start),
         lte: new Date(timePeriod.end),
       },
     };
 
     if (modelIds && modelIds.length > 0) {
-      where.modelId = { in: modelIds };
+      where.model_id = { in: modelIds };
     }
 
     const metrics = await this.prisma.aIQualityMetric.findMany({
       where,
       select: {
-        modelId: true,
-        score: true,
+        model_id: true,
+        overall_score: true,
         relevance: true,
         completeness: true,
         accuracy: true,
         coherence: true,
-        method: true,
-        timestamp: true,
+        evaluation_method: true,
+        evaluated_at: true,
       },
     });
 
-    return metrics as QualityMetricRecord[];
+    return metrics.map(m => ({
+      modelId: m.model_id,
+      score: m.overall_score,
+      relevance: m.relevance ?? 0,
+      completeness: m.completeness ?? 0,
+      accuracy: m.accuracy ?? 0,
+      coherence: m.coherence ?? 0,
+      method: m.evaluation_method,
+      timestamp: m.evaluated_at,
+    }));
   }
 
   /**
@@ -572,22 +581,22 @@ export class QualityReportGenerator {
     granularity: 'hour' | 'day' | 'week' = 'day'
   ): Promise<TimeSeriesBucket[]> {
     const where: any = {
-      timestamp: {
+      evaluated_at: {
         gte: new Date(timePeriod.start),
         lte: new Date(timePeriod.end),
       },
     };
 
     if (modelIds && modelIds.length > 0) {
-      where.modelId = { in: modelIds };
+      where.model_id = { in: modelIds };
     }
 
     const metrics = await this.prisma.aIQualityMetric.findMany({
       where,
       select: {
-        modelId: true,
-        score: true,
-        timestamp: true,
+        model_id: true,
+        overall_score: true,
+        evaluated_at: true,
       },
     });
 
@@ -595,7 +604,7 @@ export class QualityReportGenerator {
     const bucketMap = new Map<string, TimeSeriesBucket>();
 
     for (const metric of metrics) {
-      const timestamp = new Date(metric.timestamp);
+      const timestamp = new Date(metric.evaluated_at);
       let bucketTime: Date;
 
       if (granularity === 'hour') {
@@ -609,11 +618,11 @@ export class QualityReportGenerator {
         bucketTime = timestamp;
       }
 
-      const bucketKey = `${metric.modelId}_${bucketTime.toISOString()}`;
+      const bucketKey = `${metric.model_id}_${bucketTime.toISOString()}`;
 
       if (!bucketMap.has(bucketKey)) {
         bucketMap.set(bucketKey, {
-          modelId: metric.modelId,
+          modelId: metric.model_id,
           timeBucket: bucketTime,
           avgScore: 0,
           sampleCount: 0,
@@ -621,7 +630,7 @@ export class QualityReportGenerator {
       }
 
       const bucket = bucketMap.get(bucketKey)!;
-      bucket.avgScore = (bucket.avgScore * bucket.sampleCount + metric.score) / (bucket.sampleCount + 1);
+      bucket.avgScore = (bucket.avgScore * bucket.sampleCount + metric.overall_score) / (bucket.sampleCount + 1);
       bucket.sampleCount++;
     }
 

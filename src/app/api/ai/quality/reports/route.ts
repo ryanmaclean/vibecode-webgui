@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkDashboardAuth, getDashboardUnauthorizedResponse } from '@/lib/monitoring/auth';
 import { QualityReportGenerator } from '@/lib/ai/quality-reports';
 import { prisma } from '@/lib/prisma';
-import { z } from 'zod';
+import { z, type ZodIssue } from 'zod';
 import { createServiceLogger } from '@/lib/logging';
 
 const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'ai-quality-reports' });
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Invalid query parameters',
-          message: error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          message: error.issues.map((e: ZodIssue) => `${e.path.join('.')}: ${e.message}`).join(', '),
           timestamp: new Date().toISOString(),
         },
         { status: 400 }
