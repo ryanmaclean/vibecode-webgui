@@ -2,7 +2,7 @@
 // Inspired by Claude, ChatGPT, and Lovable.dev interfaces
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Upload, Code, Settings, Eye } from 'lucide-react'
+import { Send, Bot, User, Upload, Code, Settings, Eye, Pin, X } from 'lucide-react'
 import { Button, Textarea, Card, CardContent, Badge, ScrollArea } from '@/components/ui';
 import { AIErrorBoundary } from '@/components/error/ErrorBoundary'
 import { ContextViewer } from './ContextViewer'
@@ -43,6 +43,7 @@ const AIChatInterfaceContent = ({
   const [historyError, setHistoryError] = useState<string | null>(null)
   const [selectedModel, setSelectedModel] = useState('anthropic/claude-3-sonnet')
   const [contextFiles, setContextFiles] = useState<string[]>(initialContext)
+  const [pinnedFiles, setPinnedFiles] = useState<string[]>([])
   const [showSettings, setShowSettings] = useState(false)
   const [showContextViewer, setShowContextViewer] = useState(false)
   // const [showPromptTemplates, setShowPromptTemplates] = useState(false)
@@ -73,6 +74,27 @@ const AIChatInterfaceContent = ({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Load pinned files from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedPinnedFiles = localStorage.getItem(`pinnedFiles_${workspaceId}`)
+      if (savedPinnedFiles) {
+        setPinnedFiles(JSON.parse(savedPinnedFiles))
+      }
+    } catch (error) {
+      console.error('Failed to load pinned files:', error)
+    }
+  }, [workspaceId])
+
+  // Save pinned files to localStorage when they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(`pinnedFiles_${workspaceId}`, JSON.stringify(pinnedFiles))
+    } catch (error) {
+      console.error('Failed to save pinned files:', error)
+    }
+  }, [pinnedFiles, workspaceId])
 
   // Load conversation history on mount/workspace change
   useEffect(() => {
@@ -124,6 +146,9 @@ const AIChatInterfaceContent = ({
 
       setMessages(prev => [...prev, assistantMessage])
 
+      // Combine pinned files with context files (pinned files always included)
+      const allContextFiles = [...new Set([...pinnedFiles, ...contextFiles])]
+
       // Stream response from AI
       const response = await fetch('/api/ai/chat/stream', {
         method: 'POST',
@@ -133,7 +158,8 @@ const AIChatInterfaceContent = ({
           model: selectedModel,
           context: {
             workspaceId,
-            files: contextFiles,
+            files: allContextFiles,
+            pinnedFiles: pinnedFiles,
             previousMessages: messages
           }
         })
@@ -197,6 +223,23 @@ const AIChatInterfaceContent = ({
       setContextFiles(prev => [...prev, ...fileNames])
       onFileUpload?.(event.target.files)
     }
+  }
+
+  const handleTogglePin = (file: string) => {
+    setPinnedFiles(prev => {
+      if (prev.includes(file)) {
+        // Unpin
+        return prev.filter(f => f !== file)
+      } else {
+        // Pin
+        return [...prev, file]
+      }
+    })
+  }
+
+  const handleRemoveFile = (file: string) => {
+    setContextFiles(prev => prev.filter(f => f !== file))
+    // Don't remove from pinned files - user might want to keep it pinned
   }
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
@@ -475,18 +518,85 @@ const AIChatInterfaceContent = ({
           </div>
         </div>
 
-        {contextFiles.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {contextFiles.slice(0, 3).map((file, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
-                <Code className="w-3 h-3 mr-1" />
-                {file}
-              </Badge>
-            ))}
-            {contextFiles.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{contextFiles.length - 3} more
-              </Badge>
+        {/* Context files with pin/unpin controls */}
+        {(contextFiles.length > 0 || pinnedFiles.length > 0) && (
+          <div className="mt-2 space-y-2">
+            {/* Pinned files section */}
+            {pinnedFiles.length > 0 && (
+              <div className="space-y-1">
+                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Pin className="w-3 h-3" aria-hidden="true" />
+                  <span>Pinned (always included)</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {pinnedFiles.map((file, index) => (
+                    <Badge
+                      key={`pinned-${index}`}
+                      variant="default"
+                      className="text-xs flex items-center gap-1 bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900 dark:text-blue-100"
+                    >
+                      <Code className="w-3 h-3" aria-hidden="true" />
+                      <span className="max-w-[200px] truncate">{file}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-3 w-3 p-0 hover:bg-blue-200 dark:hover:bg-blue-800"
+                        onClick={() => handleTogglePin(file)}
+                        aria-label={`Unpin ${file}`}
+                        title="Unpin from context"
+                      >
+                        <X className="w-2 h-2" aria-hidden="true" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Regular context files */}
+            {contextFiles.length > 0 && (
+              <div className="space-y-1">
+                {pinnedFiles.length > 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    Context files
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-1">
+                  {contextFiles.map((file, index) => (
+                    <Badge
+                      key={`context-${index}`}
+                      variant="outline"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      <Code className="w-3 h-3" aria-hidden="true" />
+                      <span className="max-w-[200px] truncate">{file}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-3 w-3 p-0 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        onClick={() => handleTogglePin(file)}
+                        aria-label={pinnedFiles.includes(file) ? `Unpin ${file}` : `Pin ${file}`}
+                        title={pinnedFiles.includes(file) ? "Unpin from context" : "Pin to context"}
+                      >
+                        <Pin
+                          className={`w-2 h-2 ${pinnedFiles.includes(file) ? 'fill-current' : ''}`}
+                          aria-hidden="true"
+                        />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-3 w-3 p-0 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        onClick={() => handleRemoveFile(file)}
+                        aria-label={`Remove ${file}`}
+                        title="Remove from context"
+                      >
+                        <X className="w-2 h-2" aria-hidden="true" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         )}
