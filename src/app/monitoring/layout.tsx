@@ -15,6 +15,7 @@ import {
   FileText,
   AlertTriangle,
   BarChart,
+  Brain,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -42,6 +43,11 @@ const NAV_ITEMS = [
     title: 'Vector Database',
     href: '/monitoring/vector-db',
     icon: Layers,
+  },
+  {
+    title: 'LLM Operations',
+    href: '/monitoring/llm-ops',
+    icon: Brain,
   },
   {
     title: 'API Performance',
