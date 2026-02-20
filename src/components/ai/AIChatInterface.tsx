@@ -2,9 +2,10 @@
 // Inspired by Claude, ChatGPT, and Lovable.dev interfaces
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Upload, Code, Settings } from 'lucide-react'
+import { Send, Bot, User, Upload, Code, Settings, Eye } from 'lucide-react'
 import { Button, Textarea, Card, CardContent, Badge, ScrollArea } from '@/components/ui';
 import { AIErrorBoundary } from '@/components/error/ErrorBoundary'
+import { ContextViewer } from './ContextViewer'
 // import { logger } from '@/lib/logger';
 // import PromptTemplates from './PromptTemplates'
 // import PromptEnhancer from './PromptEnhancer'
@@ -43,6 +44,7 @@ const AIChatInterfaceContent = ({
   const [selectedModel, setSelectedModel] = useState('anthropic/claude-3-sonnet')
   const [contextFiles, setContextFiles] = useState<string[]>(initialContext)
   const [showSettings, setShowSettings] = useState(false)
+  const [showContextViewer, setShowContextViewer] = useState(false)
   // const [showPromptTemplates, setShowPromptTemplates] = useState(false)
   // const [showPromptEnhancer, setShowPromptEnhancer] = useState(false)
 
@@ -245,6 +247,16 @@ const AIChatInterfaceContent = ({
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => setShowContextViewer(!showContextViewer)}
+              aria-label={showContextViewer ? 'Hide context viewer' : 'Show context viewer'}
+              aria-expanded={showContextViewer}
+              aria-controls="context-viewer-panel"
+            >
+              <Eye className="w-4 h-4" aria-hidden="true" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setShowSettings(!showSettings)}
               aria-label={showSettings ? 'Hide settings' : 'Show settings'}
               aria-expanded={showSettings}
@@ -271,6 +283,23 @@ const AIChatInterfaceContent = ({
           </div>
         </div>
       </header>
+
+      {/* Context Viewer Panel */}
+      {showContextViewer && (
+        <div
+          id="context-viewer-panel"
+          className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+          role="region"
+          aria-labelledby="context-viewer-heading"
+        >
+          <h3 id="context-viewer-heading" className="sr-only">Context Viewer</h3>
+          <ContextViewer
+            sessionId={workspaceId}
+            compact={false}
+            showExcluded={true}
+          />
+        </div>
+      )}
 
       {/* Settings Panel */}
       {showSettings && (
