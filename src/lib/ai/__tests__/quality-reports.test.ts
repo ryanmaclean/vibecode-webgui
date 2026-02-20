@@ -55,20 +55,49 @@ class MockPrismaClient {
 
       // Apply where filters
       if (params?.where) {
-        if (params.where.timestamp) {
-          if (params.where.timestamp.gte) {
-            filtered = filtered.filter(s => s.timestamp >= params.where.timestamp.gte);
+        // FIX 1: Check for created_at (not timestamp)
+        if (params.where.created_at) {
+          if (params.where.created_at.gte) {
+            filtered = filtered.filter(s => s.timestamp >= params.where.created_at.gte);
           }
-          if (params.where.timestamp.lte) {
-            filtered = filtered.filter(s => s.timestamp <= params.where.timestamp.lte);
+          if (params.where.created_at.lte) {
+            filtered = filtered.filter(s => s.timestamp <= params.where.created_at.lte);
           }
         }
-        if (params.where.modelId?.in) {
-          filtered = filtered.filter(s => params.where.modelId.in.includes(s.modelId));
+        // FIX 2: Check for model_id (not modelId)
+        if (params.where.model_id?.in) {
+          filtered = filtered.filter(s => params.where.model_id.in.includes(s.modelId));
         }
       }
 
-      return filtered;
+      // FIX 3: Transform to snake_case format matching Prisma schema
+      const transformed = filtered.map(s => ({
+        model_id: s.modelId,
+        created_at: s.timestamp,
+        events: s.events,
+        ratings: s.ratings,
+      }));
+
+      // FIX 4: Handle include clause if present
+      if (params?.include) {
+        // Keep events and ratings if included
+        return transformed;
+      }
+
+      // FIX 5: Handle select clause if present
+      if (params?.select) {
+        return transformed.map((item: any) => {
+          const selected: any = {};
+          for (const key of Object.keys(params.select)) {
+            if (params.select[key] && key in item) {
+              selected[key] = item[key];
+            }
+          }
+          return selected;
+        });
+      }
+
+      return transformed;
     }),
   };
 
@@ -78,20 +107,47 @@ class MockPrismaClient {
 
       // Apply where filters
       if (params?.where) {
-        if (params.where.timestamp) {
-          if (params.where.timestamp.gte) {
-            filtered = filtered.filter(m => m.timestamp >= params.where.timestamp.gte);
+        // FIX 1: Check for evaluated_at (not timestamp)
+        if (params.where.evaluated_at) {
+          if (params.where.evaluated_at.gte) {
+            filtered = filtered.filter(m => m.timestamp >= params.where.evaluated_at.gte);
           }
-          if (params.where.timestamp.lte) {
-            filtered = filtered.filter(m => m.timestamp <= params.where.timestamp.lte);
+          if (params.where.evaluated_at.lte) {
+            filtered = filtered.filter(m => m.timestamp <= params.where.evaluated_at.lte);
           }
         }
-        if (params.where.modelId?.in) {
-          filtered = filtered.filter(m => params.where.modelId.in.includes(m.modelId));
+        // FIX 2: Check for model_id (not modelId)
+        if (params.where.model_id?.in) {
+          filtered = filtered.filter(m => params.where.model_id.in.includes(m.modelId));
         }
       }
 
-      return filtered;
+      // FIX 3: Transform to snake_case format matching Prisma schema
+      const transformed = filtered.map(m => ({
+        model_id: m.modelId,
+        overall_score: m.score,
+        relevance: m.relevance,
+        completeness: m.completeness,
+        accuracy: m.accuracy,
+        coherence: m.coherence,
+        evaluation_method: m.method,
+        evaluated_at: m.timestamp,
+      }));
+
+      // FIX 4: Handle select clause if present
+      if (params?.select) {
+        return transformed.map((item: any) => {
+          const selected: any = {};
+          for (const key of Object.keys(params.select)) {
+            if (params.select[key] && key in item) {
+              selected[key] = item[key];
+            }
+          }
+          return selected;
+        });
+      }
+
+      return transformed;
     }),
   };
 
