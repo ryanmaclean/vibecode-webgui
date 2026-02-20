@@ -12,6 +12,7 @@ import type { AuthenticatedRequest } from '@/lib/auth/middleware'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { ContextManager } from '@/lib/ai/context/context-manager'
 import { ContextStrategy, ContextItemType, ContextPriority } from '@/types/context'
+import { buildChatContext, type FileContext, type ChatMessage } from '@/lib/ai/context/context-integration'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -59,6 +60,7 @@ interface UnifiedChatRequest {
   context: {
     workspaceId: string
     files: string[]
+    pinnedFiles?: string[]
     previousMessages: Array<{
       role: 'user' | 'assistant'
       content: string
@@ -213,21 +215,6 @@ export async function POST(request: NextRequest & AuthenticatedRequest) {
       session.user.id
     )
 
-    // Initialize ContextManager for intelligent context window management
-    const contextManager = new ContextManager({
-      defaultModel: model,
-      maxUtilization: 90, // Use 90% of available context window
-      autoRerank: true
-    })
-
-    // Create context window with hybrid strategy
-    const contextWindow = contextManager.createWindow({
-      model,
-      strategy: ContextStrategy.HYBRID,
-      maxUtilization: 90,
-      boostKeywords: ragResult ? ['code', 'function', 'implementation'] : []
-    })
-
     // Base system prompt (CRITICAL priority - always included)
     const baseSystemPrompt = `You are an expert AI coding assistant integrated into VibeCode, an open-source development platform.
 
@@ -260,101 +247,45 @@ export async function POST(request: NextRequest & AuthenticatedRequest) {
 - Local models available for sensitive code
 - All responses respect workspace boundaries`
 
-    // Add base system prompt (CRITICAL - required)
-    contextManager.addItem(
-      ContextItemType.SYSTEM_PROMPT,
-      baseSystemPrompt,
-      {
-        priority: ContextPriority.CRITICAL,
-        isRequired: true,
-        relevanceScore: 1.0
-      }
-    )
-
-    // Add RAG context if available (HIGH priority, relevance-based)
-    if (ragResult) {
-      const ragPriority = ragResult.relevanceScore === 'high'
-        ? ContextPriority.HIGH
-        : ragResult.relevanceScore === 'medium'
-          ? ContextPriority.MEDIUM
-          : ContextPriority.LOW
-
-      const ragRelevance = ragResult.relevanceScore === 'high'
-        ? 0.9
-        : ragResult.relevanceScore === 'medium'
-          ? 0.7
-          : 0.5
-
-      contextManager.addItem(
-        ContextItemType.RAG_RESULT,
-        `**📋 Relevant Code Context (${ragResult.totalLength} chars, ${ragResult.strategiesUsed} strategies):**\n${ragResult.context}`,
-        {
-          priority: ragPriority,
-          isRequired: false,
-          relevanceScore: ragRelevance,
-          metadata: {
-            source: ragResult.workspaceId,
-            custom: {
-              strategiesUsed: ragResult.strategiesUsed,
-              totalLength: ragResult.totalLength
-            }
-          }
-        }
-      )
-    }
-
-    // Add tool capabilities (MEDIUM priority - helpful but not critical)
+    // Add tool capabilities
     const toolCapabilities = generateToolCapabilities(enableTools, availableProviders)
-    if (toolCapabilities) {
-      contextManager.addItem(
-        ContextItemType.CUSTOM,
-        toolCapabilities,
-        {
-          priority: ContextPriority.MEDIUM,
-          isRequired: false,
-          relevanceScore: 0.6
-        }
-      )
-    }
+    const systemPromptWithTools = toolCapabilities ? baseSystemPrompt + toolCapabilities : baseSystemPrompt
 
-    // Add previous conversation messages (MEDIUM priority for recent, LOW for older)
-    const recentMessages = context.previousMessages.slice(-8)
-    recentMessages.forEach((msg, index) => {
-      const isRecent = index >= recentMessages.length - 4
-      const itemType = msg.role === 'assistant'
-        ? ContextItemType.ASSISTANT_MESSAGE
-        : ContextItemType.USER_MESSAGE
+    // Build file contexts with pinned status
+    const pinnedFilesSet = new Set(context.pinnedFiles || [])
+    const fileContexts: FileContext[] = context.files.map(filePath => ({
+      path: filePath,
+      content: '', // Content will be loaded if needed
+      isPinned: pinnedFilesSet.has(filePath)
+    }))
 
-      contextManager.addItem(
-        itemType,
-        msg.content,
-        {
-          priority: isRecent ? ContextPriority.MEDIUM : ContextPriority.LOW,
-          isRequired: false,
-          relevanceScore: 0.5 + (index / recentMessages.length) * 0.3, // More recent = higher relevance
-          metadata: {
-            custom: {
-              role: msg.role,
-              messageIndex: index
-            }
-          }
-        }
-      )
+    // Convert previous messages to ChatMessage format
+    const previousChatMessages: ChatMessage[] = context.previousMessages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }))
+
+    // Use buildChatContext helper for intelligent context management
+    const builtContext = await buildChatContext({
+      model,
+      strategy: ContextStrategy.HYBRID,
+      maxUtilization: 90,
+      previousMessages: previousChatMessages,
+      ragContext: ragResult ? {
+        context: ragResult.context,
+        workspaceId: ragResult.workspaceId,
+        relevanceScore: ragResult.relevanceScore,
+        strategiesUsed: ragResult.strategiesUsed,
+        totalLength: ragResult.totalLength
+      } : undefined,
+      files: fileContexts,
+      userMessage: message,
+      systemPrompt: systemPromptWithTools,
+      boostKeywords: ragResult ? ['code', 'function', 'implementation'] : []
     })
 
-    // Add current user message (CRITICAL - required)
-    contextManager.addItem(
-      ContextItemType.USER_MESSAGE,
-      message,
-      {
-        priority: ContextPriority.CRITICAL,
-        isRequired: true,
-        relevanceScore: 1.0
-      }
-    )
-
     // Get optimized context window
-    const optimizedWindow = contextManager.getWindow()
+    const optimizedWindow = builtContext.window
 
     // Build final messages array from optimized context
     const messages: UnifiedChatMessage[] = []
@@ -398,11 +329,14 @@ export async function POST(request: NextRequest & AuthenticatedRequest) {
       // Log context optimization stats
       logger.info('Context window optimized', {
         model,
-        totalTokens: optimizedWindow.totalTokens,
-        availableTokens: optimizedWindow.availableTokens,
-        utilizationPercent: optimizedWindow.utilizationPercent,
-        itemsIncluded: optimizedWindow.items.length,
-        itemsExcluded: optimizedWindow.excludedItems.length,
+        totalTokens: builtContext.summary.totalTokens,
+        utilizationPercent: builtContext.summary.utilizationPercent,
+        messageCount: builtContext.summary.messageCount,
+        fileCount: builtContext.summary.fileCount,
+        pinnedFileCount: builtContext.summary.pinnedFileCount,
+        ragIncluded: builtContext.summary.ragIncluded,
+        itemsIncluded: builtContext.includedItems.length,
+        itemsExcluded: builtContext.excludedItems.length,
         strategy: optimizedWindow.strategy
       })
     } else {
@@ -458,7 +392,8 @@ export async function POST(request: NextRequest & AuthenticatedRequest) {
                   utilizationPercent: optimizedWindow.utilizationPercent,
                   itemsIncluded: optimizedWindow.items.length,
                   itemsExcluded: optimizedWindow.excludedItems.length,
-                  strategy: optimizedWindow.strategy
+                  strategy: optimizedWindow.strategy,
+                  pinnedFileCount: builtContext.summary.pinnedFileCount
                 } : null
               })
 
@@ -488,7 +423,9 @@ export async function POST(request: NextRequest & AuthenticatedRequest) {
               itemsIncluded: optimizedWindow.items.length,
               itemsExcluded: optimizedWindow.excludedItems.length,
               strategy: optimizedWindow.strategy,
-              isAtCapacity: optimizedWindow.isAtCapacity
+              isAtCapacity: optimizedWindow.isAtCapacity,
+              pinnedFileCount: builtContext.summary.pinnedFileCount,
+              fileCount: builtContext.summary.fileCount
             } : null,
             processingTime: Date.now() - startTime,
             availableProviders: availableProviders.length,
@@ -553,7 +490,8 @@ export async function POST(request: NextRequest & AuthenticatedRequest) {
       'X-Context-Utilization': optimizedWindow?.utilizationPercent.toFixed(1) ?? '0',
       'X-Context-Items-Included': optimizedWindow?.items.length.toString() ?? '0',
       'X-Context-Items-Excluded': optimizedWindow?.excludedItems.length.toString() ?? '0',
-      'X-Context-Strategy': optimizedWindow?.strategy ?? 'none'
+      'X-Context-Strategy': optimizedWindow?.strategy ?? 'none',
+      'X-Context-Pinned-Files': builtContext.summary.pinnedFileCount.toString()
     }
 
     // Only set Access-Control-Allow-Origin if the origin is validated

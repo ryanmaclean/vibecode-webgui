@@ -14,6 +14,7 @@ import { createAPIRateLimit } from '@/lib/rate-limiting'
 import type { AuthenticatedRequest } from '@/lib/auth/middleware'
 import { ContextManager } from '@/lib/ai/context/context-manager'
 import { ContextStrategy, ContextItemType, ContextPriority } from '@/types/context'
+import { buildChatContext, type FileContext, type ChatMessage } from '@/lib/ai/context/context-integration'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -47,6 +48,7 @@ interface _EnhancedChatRequest {
   context: {
     workspaceId: string
     files: string[]
+    pinnedFiles?: string[]
     previousMessages: Array<{
       role: 'user' | 'assistant'
       content: string
@@ -69,6 +71,7 @@ const enhancedChatRequestSchema = z.object({
   context: z.object({
     workspaceId: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/, 'Invalid workspace ID format'),
     files: z.array(z.string().max(500)).max(20),
+    pinnedFiles: z.array(z.string().max(500)).max(20).optional(),
     previousMessages: z.array(z.object({
       role: z.enum(['user', 'assistant']),
       content: z.string().max(4000)
@@ -216,21 +219,6 @@ export async function POST(request: AuthenticatedRequest) {
       })
     }
 
-    // Initialize ContextManager for intelligent context window management
-    const contextManager = new ContextManager({
-      defaultModel: selectedModel,
-      maxUtilization: 90, // Use 90% of available context window
-      autoRerank: true
-    })
-
-    // Create context window with hybrid strategy
-    const contextWindow = contextManager.createWindow({
-      model: selectedModel,
-      strategy: ContextStrategy.HYBRID,
-      maxUtilization: 90,
-      boostKeywords: ragResult ? ['code', 'function', 'implementation'] : []
-    })
-
     // Base system prompt (CRITICAL priority - always included)
     const baseSystemPrompt = `You are an expert AI coding assistant integrated into VibeCode platform with enhanced multi-provider capabilities.
 
@@ -257,100 +245,45 @@ export async function POST(request: AuthenticatedRequest) {
 - Leverage the selected model's strengths (${selectedModel})
 - Ask clarifying questions when requirements are unclear`
 
-    // Add base system prompt (CRITICAL - required)
-    contextManager.addItem(
-      ContextItemType.SYSTEM_PROMPT,
-      baseSystemPrompt,
-      {
-        priority: ContextPriority.CRITICAL,
-        isRequired: true,
-        relevanceScore: 1.0
-      }
-    )
-
-    // Add RAG context if available (HIGH/MEDIUM/LOW priority based on relevance)
-    if (ragResult) {
-      const ragPriority = ragResult.relevanceScore === 'high'
-        ? ContextPriority.HIGH
-        : ragResult.relevanceScore === 'medium'
-          ? ContextPriority.MEDIUM
-          : ContextPriority.LOW
-
-      const ragRelevance = ragResult.relevanceScore === 'high'
-        ? 0.9
-        : ragResult.relevanceScore === 'medium'
-          ? 0.7
-          : 0.5
-
-      contextManager.addItem(
-        ContextItemType.RAG_RESULT,
-        `**📋 Relevant Code Context:**\n${ragResult.context}`,
-        {
-          priority: ragPriority,
-          isRequired: false,
-          relevanceScore: ragRelevance,
-          metadata: {
-            source: ragResult.workspaceId,
-            custom: {
-              relevanceScore: ragResult.relevanceScore
-            }
-          }
-        }
-      )
-    }
-
-    // Add tool capabilities (MEDIUM priority - helpful but not critical)
+    // Add tool capabilities
     const toolCapabilities = getToolCapabilities(enableTools)
-    if (toolCapabilities) {
-      contextManager.addItem(
-        ContextItemType.CUSTOM,
-        toolCapabilities,
-        {
-          priority: ContextPriority.MEDIUM,
-          isRequired: false,
-          relevanceScore: 0.6
-        }
-      )
-    }
+    const systemPromptWithTools = toolCapabilities ? baseSystemPrompt + toolCapabilities : baseSystemPrompt
 
-    // Add previous conversation messages (MEDIUM priority for recent, LOW for older)
-    const recentMessages = context.previousMessages.slice(-8)
-    recentMessages.forEach((msg, index) => {
-      const isRecent = index >= recentMessages.length - 4
-      const itemType = msg.role === 'assistant'
-        ? ContextItemType.ASSISTANT_MESSAGE
-        : ContextItemType.USER_MESSAGE
+    // Build file contexts with pinned status
+    const pinnedFilesSet = new Set(context.pinnedFiles || [])
+    const fileContexts: FileContext[] = context.files.map(filePath => ({
+      path: filePath,
+      content: '', // Content will be loaded if needed
+      isPinned: pinnedFilesSet.has(filePath)
+    }))
 
-      contextManager.addItem(
-        itemType,
-        msg.content,
-        {
-          priority: isRecent ? ContextPriority.MEDIUM : ContextPriority.LOW,
-          isRequired: false,
-          relevanceScore: 0.5 + (index / recentMessages.length) * 0.3, // More recent = higher relevance
-          metadata: {
-            custom: {
-              role: msg.role,
-              messageIndex: index
-            }
-          }
-        }
-      )
+    // Convert previous messages to ChatMessage format
+    const previousChatMessages: ChatMessage[] = context.previousMessages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }))
+
+    // Use buildChatContext helper for intelligent context management
+    const builtContext = await buildChatContext({
+      model: selectedModel,
+      strategy: ContextStrategy.HYBRID,
+      maxUtilization: 90,
+      previousMessages: previousChatMessages,
+      ragContext: ragResult ? {
+        context: ragResult.context,
+        workspaceId: ragResult.workspaceId,
+        relevanceScore: ragResult.relevanceScore,
+        strategiesUsed: 1,
+        totalLength: ragResult.context.length
+      } : undefined,
+      files: fileContexts,
+      userMessage: message,
+      systemPrompt: systemPromptWithTools,
+      boostKeywords: ragResult ? ['code', 'function', 'implementation'] : []
     })
 
-    // Add current user message (CRITICAL - required)
-    contextManager.addItem(
-      ContextItemType.USER_MESSAGE,
-      message,
-      {
-        priority: ContextPriority.CRITICAL,
-        isRequired: true,
-        relevanceScore: 1.0
-      }
-    )
-
     // Get optimized context window
-    const optimizedWindow = contextManager.getWindow()
+    const optimizedWindow = builtContext.window
 
     // Build final messages array from optimized context
     const messages: Array<{ role: 'system' | 'user' | 'assistant', content: string }> = []
@@ -394,11 +327,14 @@ export async function POST(request: AuthenticatedRequest) {
       // Log context optimization stats
       logger.info('Context window optimized', {
         model: selectedModel,
-        totalTokens: optimizedWindow.totalTokens,
-        availableTokens: optimizedWindow.availableTokens,
-        utilizationPercent: optimizedWindow.utilizationPercent,
-        itemsIncluded: optimizedWindow.items.length,
-        itemsExcluded: optimizedWindow.excludedItems.length,
+        totalTokens: builtContext.summary.totalTokens,
+        utilizationPercent: builtContext.summary.utilizationPercent,
+        messageCount: builtContext.summary.messageCount,
+        fileCount: builtContext.summary.fileCount,
+        pinnedFileCount: builtContext.summary.pinnedFileCount,
+        ragIncluded: builtContext.summary.ragIncluded,
+        itemsIncluded: builtContext.includedItems.length,
+        itemsExcluded: builtContext.excludedItems.length,
         strategy: optimizedWindow.strategy
       })
     } else {
@@ -457,7 +393,13 @@ export async function POST(request: AuthenticatedRequest) {
                 timestamp: new Date().toISOString(),
                 ragActive: !!ragResult,
                 toolsEnabled: enableTools,
-                tokenCount
+                tokenCount,
+                contextWindow: {
+                  totalTokens: optimizedWindow?.totalTokens ?? 0,
+                  availableTokens: optimizedWindow?.availableTokens ?? 0,
+                  utilizationPercent: optimizedWindow?.utilizationPercent ?? 0,
+                  pinnedFileCount: builtContext.summary.pinnedFileCount
+                }
               })
 
               controller.enqueue(encoder.encode(`data: ${data}\n\n`))
@@ -465,14 +407,23 @@ export async function POST(request: AuthenticatedRequest) {
           }
 
           // Send enhanced completion signal
-          controller.enqueue(encoder.encode(`data: {
-            "done": true, 
-            "finalTokenCount": ${tokenCount},
-            "model": "${model}",
-            "provider": "${SUPPORTED_MODELS[model]}",
-            "ragContext": ${ragResult ? `"${ragResult.relevanceScore}"` : "null"},
-            "timestamp": "${new Date().toISOString()}"
-          }\n\n`))
+          const completionData = JSON.stringify({
+            done: true,
+            finalTokenCount: tokenCount,
+            model,
+            provider: SUPPORTED_MODELS[model],
+            ragContext: ragResult ? ragResult.relevanceScore : null,
+            contextWindow: optimizedWindow ? {
+              totalTokens: optimizedWindow.totalTokens,
+              availableTokens: optimizedWindow.availableTokens,
+              utilizationPercent: optimizedWindow.utilizationPercent,
+              pinnedFileCount: builtContext.summary.pinnedFileCount,
+              fileCount: builtContext.summary.fileCount,
+              isAtCapacity: optimizedWindow.isAtCapacity
+            } : null,
+            timestamp: new Date().toISOString()
+          })
+          controller.enqueue(encoder.encode(`data: ${completionData}\n\n`))
           
           controller.close()
           
@@ -503,7 +454,11 @@ export async function POST(request: AuthenticatedRequest) {
       'X-Provider': SUPPORTED_MODELS[selectedModel],
       'X-RAG-Status': ragResult ? 'active' : 'inactive',
       'X-Tools-Enabled': enableTools.toString(),
-      'X-Enhanced-Features': 'multi-provider,rag,context-aware'
+      'X-Enhanced-Features': 'multi-provider,rag,context-aware',
+      'X-Context-Tokens-Used': optimizedWindow?.totalTokens.toString() ?? '0',
+      'X-Context-Tokens-Available': optimizedWindow?.availableTokens.toString() ?? '0',
+      'X-Context-Utilization': optimizedWindow?.utilizationPercent.toFixed(1) ?? '0',
+      'X-Context-Pinned-Files': builtContext.summary.pinnedFileCount.toString()
     }
 
     if (validatedOrigin) {
