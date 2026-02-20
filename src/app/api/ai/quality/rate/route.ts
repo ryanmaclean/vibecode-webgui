@@ -29,7 +29,7 @@ const ratingSchema = z.object({
   modelId: z.string().optional(),
   workspaceId: z.string().optional(),
   projectId: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 type RatingRequest = z.infer<typeof ratingSchema>;

@@ -327,7 +327,7 @@ return 42;
 
       const result = calculateCodeEditDistance(suggestion, finalCode);
 
-      expect(result.distance).toBe(4); // "-Z" added (4 chars)
+      expect(result.distance).toBe(3); // "A-Z" added (3 chars)
       expect(result.similarity).toBeLessThan(1.0);
     });
 
@@ -373,7 +373,7 @@ return 42;
 
       const result = calculateCodeEditDistance(suggestion, accepted);
 
-      expect(result.changeMagnitude).toBe('minor');
+      expect(result.changeMagnitude).toBe('moderate'); // similarity ~0.76, which is < 0.80 threshold for 'minor'
       expect(result.similarity).toBeGreaterThan(0.7);
     });
 

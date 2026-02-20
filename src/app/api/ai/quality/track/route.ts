@@ -28,7 +28,7 @@ const baseSuggestionSchema = z.object({
   language: z.string().optional(),
   workspaceId: z.string().optional(),
   projectId: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 const suggestionGeneratedSchema = z.object({
@@ -38,7 +38,7 @@ const suggestionGeneratedSchema = z.object({
   language: z.string().optional(),
   workspaceId: z.string().optional(),
   projectId: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 const suggestionAcceptedSchema = baseSuggestionSchema.extend({

@@ -145,7 +145,7 @@ export function normalizeForComparison(text: string): string {
   return text
     .replace(/\r\n/g, '\n')     // Normalize line endings
     .replace(/\r/g, '\n')       // Normalize line endings
-    .replace(/\s+/g, ' ')       // Collapse multiple whitespace to single space
+    .replace(/[ \t]+/g, ' ')    // Collapse multiple spaces/tabs to single space (preserve newlines)
     .trim();                    // Remove leading/trailing whitespace
 }
 
