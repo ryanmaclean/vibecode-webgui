@@ -115,7 +115,7 @@ async function buildAdvancedRAGContext(workspaceId: string, userQuery: string, u
 
     // Combine and deduplicate contexts
     const combinedContext = contexts.join('\n---\n')
-    const relevanceScore = contexts.length > 1 ? 'high' : contexts.length === 1 ? 'medium' : 'low'
+    const relevanceScore: 'high' | 'medium' | 'low' = contexts.length > 1 ? 'high' : contexts.length === 1 ? 'medium' : 'low'
 
     return {
       context: combinedContext,

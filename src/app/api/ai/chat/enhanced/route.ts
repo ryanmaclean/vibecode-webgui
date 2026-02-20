@@ -107,7 +107,7 @@ async function buildEnhancedRAGContext(workspaceId: string, userQuery: string, u
       return {
         context: relevantContext,
         workspaceId: workspace.workspace_id,
-        relevanceScore: contexts[0] ? 'high' : 'medium'
+        relevanceScore: (contexts[0] ? 'high' : 'medium') as 'high' | 'medium'
       }
     }
 
