@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { DemoBanner } from '@/components/ui/DemoBanner'
 import {
@@ -62,143 +62,6 @@ interface RecentRequest {
   status: 'success' | 'error'
 }
 
-// ── Mock Data ──────────────────────────────────────────────────────────────
-
-const MOCK_METRICS: LLMMetrics = {
-  totalRequests: 45280,
-  totalTokens: 12458900,
-  totalCost: 1247.35,
-  avgLatency: 1850,
-  successRate: 98.7,
-  errorRate: 1.3,
-}
-
-const MOCK_PROVIDERS: ProviderStats[] = [
-  {
-    name: 'OpenRouter',
-    requests: 28450,
-    tokens: 7890000,
-    cost: 789.50,
-    avgLatency: 1650,
-    errorRate: 0.8,
-    status: 'healthy',
-  },
-  {
-    name: 'OpenAI',
-    requests: 12340,
-    tokens: 3240000,
-    cost: 324.80,
-    avgLatency: 1980,
-    errorRate: 1.2,
-    status: 'healthy',
-  },
-  {
-    name: 'Anthropic',
-    requests: 4490,
-    tokens: 1328900,
-    cost: 133.05,
-    avgLatency: 2100,
-    errorRate: 0.5,
-    status: 'healthy',
-  },
-]
-
-const MOCK_MODELS: ModelUsage[] = [
-  {
-    model: 'gpt-4-turbo',
-    provider: 'OpenAI',
-    requests: 8230,
-    tokens: 2156000,
-    cost: 215.60,
-    avgLatency: 2150,
-  },
-  {
-    model: 'claude-3-sonnet',
-    provider: 'Anthropic',
-    requests: 4490,
-    tokens: 1328900,
-    cost: 133.05,
-    avgLatency: 2100,
-  },
-  {
-    model: 'gpt-3.5-turbo',
-    provider: 'OpenAI',
-    requests: 4110,
-    tokens: 1084000,
-    cost: 54.20,
-    avgLatency: 950,
-  },
-  {
-    model: 'anthropic/claude-3-haiku',
-    provider: 'OpenRouter',
-    requests: 18200,
-    tokens: 4890000,
-    cost: 489.00,
-    avgLatency: 1450,
-  },
-  {
-    model: 'openai/gpt-4o',
-    provider: 'OpenRouter',
-    requests: 10250,
-    tokens: 3000000,
-    cost: 300.50,
-    avgLatency: 1850,
-  },
-]
-
-const MOCK_RECENT_REQUESTS: RecentRequest[] = [
-  {
-    id: 'req-001',
-    timestamp: '2024-01-15 10:32:15',
-    model: 'gpt-4-turbo',
-    provider: 'OpenAI',
-    tokens: 2450,
-    latency: 2100,
-    cost: 0.49,
-    status: 'success',
-  },
-  {
-    id: 'req-002',
-    timestamp: '2024-01-15 10:31:58',
-    model: 'claude-3-sonnet',
-    provider: 'Anthropic',
-    tokens: 3200,
-    latency: 1980,
-    cost: 0.64,
-    status: 'success',
-  },
-  {
-    id: 'req-003',
-    timestamp: '2024-01-15 10:31:42',
-    model: 'gpt-3.5-turbo',
-    provider: 'OpenAI',
-    tokens: 890,
-    latency: 850,
-    cost: 0.04,
-    status: 'success',
-  },
-  {
-    id: 'req-004',
-    timestamp: '2024-01-15 10:31:20',
-    model: 'openai/gpt-4o',
-    provider: 'OpenRouter',
-    tokens: 1850,
-    latency: 1950,
-    cost: 0.37,
-    status: 'success',
-  },
-  {
-    id: 'req-005',
-    timestamp: '2024-01-15 10:30:55',
-    model: 'anthropic/claude-3-haiku',
-    provider: 'OpenRouter',
-    tokens: 1240,
-    latency: 1350,
-    cost: 0.25,
-    status: 'error',
-  },
-]
-
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function formatCost(cost: number): string {
@@ -251,6 +114,89 @@ function statusBadge(status: 'healthy' | 'degraded' | 'down'): string {
 export default function LLMOpsPage() {
   const [activeTab, setActiveTab] = useState('overview')
 
+  // State for real data
+  const [metrics, setMetrics] = useState<LLMMetrics | null>(null)
+  const [providers, setProviders] = useState<ProviderStats[]>([])
+  const [models, setModels] = useState<ModelUsage[]>([])
+  const [recentRequests, setRecentRequests] = useState<RecentRequest[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch data on mount
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true)
+
+        // Fetch from actual API endpoints
+        const [opsRes, costsRes, tokensRes] = await Promise.all([
+          fetch('/api/monitoring/llm-ops'),
+          fetch('/api/monitoring/llm-costs'),
+          fetch('/api/monitoring/llm-tokens')
+        ])
+
+        const opsData = await opsRes.json()
+        const costsData = await costsRes.json()
+        const tokensData = await tokensRes.json()
+
+        // Process and set state - map API data to component format
+        setMetrics({
+          totalRequests: opsData.requests?.total || 0,
+          totalTokens: opsData.tokens?.total || 0,
+          totalCost: opsData.costs?.total || 0,
+          avgLatency: opsData.performance?.average_latency_ms || 0,
+          successRate: opsData.requests?.success_rate || 0,
+          errorRate: ((opsData.errors?.total || 0) / (opsData.requests?.total || 1)) * 100
+        })
+
+        setProviders(costsData.providers || [])
+        setModels(tokensData.models || [])
+
+        setError(null)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchData, 60000)
+    return () => clearInterval(interval)
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading LLM operations data...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <p className="text-red-600 dark:text-red-400">Error: {error}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!metrics) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-600 dark:text-gray-400">No data available</p>
+      </div>
+    )
+  }
+
   const renderOverviewTab = () => (
     <div className="space-y-6">
       {/* Key Metrics Cards */}
@@ -260,7 +206,7 @@ export default function LLMOpsPage() {
             <Zap className="h-5 w-5 text-blue-500" />
           </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {MOCK_METRICS.totalRequests.toLocaleString()}
+            {metrics.totalRequests.toLocaleString()}
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-400">Total Requests</div>
         </div>
@@ -270,7 +216,7 @@ export default function LLMOpsPage() {
             <Brain className="h-5 w-5 text-purple-500" />
           </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {formatTokens(MOCK_METRICS.totalTokens)}
+            {formatTokens(metrics.totalTokens)}
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-400">Tokens Consumed</div>
         </div>
@@ -280,7 +226,7 @@ export default function LLMOpsPage() {
             <DollarSign className="h-5 w-5 text-green-500" />
           </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {formatCost(MOCK_METRICS.totalCost)}
+            {formatCost(metrics.totalCost)}
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-400">Total Cost (30 days)</div>
         </div>
@@ -291,20 +237,20 @@ export default function LLMOpsPage() {
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Performance Metrics</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div className="text-center">
-            <div className={`text-2xl font-bold ${latencyColor(MOCK_METRICS.avgLatency)}`}>
-              {formatLatency(MOCK_METRICS.avgLatency)}
+            <div className={`text-2xl font-bold ${latencyColor(metrics.avgLatency)}`}>
+              {formatLatency(metrics.avgLatency)}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Avg Latency</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {MOCK_METRICS.successRate}%
+              {metrics.successRate}%
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Success Rate</div>
           </div>
           <div className="text-center">
-            <div className={`text-2xl font-bold ${errorRateColor(MOCK_METRICS.errorRate)}`}>
-              {MOCK_METRICS.errorRate}%
+            <div className={`text-2xl font-bold ${errorRateColor(metrics.errorRate)}`}>
+              {metrics.errorRate}%
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Error Rate</div>
           </div>
@@ -347,7 +293,7 @@ export default function LLMOpsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {MOCK_PROVIDERS.map((provider) => (
+              {providers.map((provider) => (
                 <tr
                   key={provider.name}
                   data-testid={`provider-${provider.name.toLowerCase()}`}
@@ -397,7 +343,7 @@ export default function LLMOpsPage() {
             Model Usage Statistics
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            {MOCK_MODELS.length} models active in the last 30 days
+            {models.length} models active in the last 30 days
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -425,7 +371,7 @@ export default function LLMOpsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {MOCK_MODELS.map((model) => (
+              {models.map((model) => (
                 <tr
                   key={`${model.provider}-${model.model}`}
                   data-testid={`model-${model.model.replace(/\//g, '-')}`}
@@ -486,7 +432,7 @@ export default function LLMOpsPage() {
           </div>
         </div>
         <div data-testid="requests-container" className="divide-y divide-gray-100 dark:divide-gray-800">
-          {MOCK_RECENT_REQUESTS.map((request) => (
+          {recentRequests.map((request) => (
             <div
               key={request.id}
               data-testid={`request-${request.id}`}
@@ -571,7 +517,7 @@ export default function LLMOpsPage() {
             <DollarSign className="h-5 w-5 text-purple-500" />
           </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {formatCost(MOCK_METRICS.totalCost)}
+            {formatCost(metrics.totalCost)}
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-400">This Month</div>
         </div>
@@ -591,8 +537,8 @@ export default function LLMOpsPage() {
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-lg shadow">
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Cost Breakdown by Provider</h3>
         <div className="space-y-3">
-          {MOCK_PROVIDERS.map((provider) => {
-            const percentage = ((provider.cost / MOCK_METRICS.totalCost) * 100).toFixed(1)
+          {providers.map((provider) => {
+            const percentage = ((provider.cost / metrics.totalCost) * 100).toFixed(1)
             return (
               <div key={provider.name}>
                 <div className="flex justify-between text-sm mb-1">
