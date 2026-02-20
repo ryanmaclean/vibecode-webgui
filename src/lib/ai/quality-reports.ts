@@ -76,6 +76,40 @@ interface TimeSeriesBucket {
   sampleCount: number;
 }
 
+interface WeeklyAggregation {
+  modelId: string;
+  weekStart: string;
+  weekEnd: string;
+  sampleCount: number;
+  averageScore: number;
+  medianScore: number;
+  minScore: number;
+  maxScore: number;
+  standardDeviation: number;
+  distribution: ScoreDistribution;
+  averageMetrics: QualityMetrics;
+}
+
+interface WeekOverWeekTrend {
+  modelId: string;
+  currentWeek: {
+    start: string;
+    end: string;
+    averageScore: number;
+    sampleCount: number;
+  };
+  previousWeek: {
+    start: string;
+    end: string;
+    averageScore: number;
+    sampleCount: number;
+  };
+  scoreChange: number;
+  percentageChange: number;
+  direction: TrendDirection;
+  sampleSizeChange: number;
+}
+
 // =============================================================================
 // Quality Report Generator
 // =============================================================================
@@ -230,6 +264,171 @@ export class QualityReportGenerator {
     });
   }
 
+  /**
+   * Get weekly aggregated statistics for models
+   */
+  async getWeeklyAggregation(
+    timePeriod: { start: string; end: string },
+    modelIds?: string[]
+  ): Promise<WeeklyAggregation[]> {
+    logger.info('[QualityReportGenerator] Generating weekly aggregation', {
+      timePeriod,
+      modelIds,
+    });
+
+    const metrics = await this.getQualityMetrics(timePeriod, modelIds);
+
+    if (metrics.length === 0) {
+      return [];
+    }
+
+    // Group by week and model
+    const weeklyBuckets = new Map<string, QualityMetricRecord[]>();
+
+    for (const metric of metrics) {
+      const weekStart = this.getWeekStart(metric.timestamp);
+      const bucketKey = `${metric.modelId}_${weekStart.toISOString()}`;
+
+      if (!weeklyBuckets.has(bucketKey)) {
+        weeklyBuckets.set(bucketKey, []);
+      }
+
+      weeklyBuckets.get(bucketKey)!.push(metric);
+    }
+
+    // Calculate statistics for each week
+    const aggregations: WeeklyAggregation[] = [];
+
+    for (const [bucketKey, weekMetrics] of weeklyBuckets.entries()) {
+      const [modelId, weekStartStr] = bucketKey.split(/_(.+)/);
+      const weekStart = new Date(weekStartStr ?? '');
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 7);
+
+      const scores = weekMetrics.map(m => m.score);
+      const sorted = scores.slice().sort((a, b) => a - b);
+
+      // Calculate distribution
+      const distribution: ScoreDistribution = {
+        excellent: 0,
+        good: 0,
+        fair: 0,
+        poor: 0,
+      };
+
+      for (const score of scores) {
+        const band = getQualityBand(score);
+        distribution[band]++;
+      }
+
+      aggregations.push({
+        modelId: modelId ?? '',
+        weekStart: weekStart.toISOString(),
+        weekEnd: weekEnd.toISOString(),
+        sampleCount: weekMetrics.length,
+        averageScore: this.average(scores),
+        medianScore: this.median(scores),
+        minScore: Math.min(...scores),
+        maxScore: Math.max(...scores),
+        standardDeviation: this.standardDeviation(scores),
+        distribution,
+        averageMetrics: {
+          relevance: this.average(weekMetrics.map(m => m.relevance)),
+          completeness: this.average(weekMetrics.map(m => m.completeness)),
+          accuracy: this.average(weekMetrics.map(m => m.accuracy)),
+          coherence: this.average(weekMetrics.map(m => m.coherence)),
+        },
+      });
+    }
+
+    // Sort by model and week
+    return aggregations.sort((a, b) => {
+      const modelCompare = a.modelId.localeCompare(b.modelId);
+      if (modelCompare !== 0) return modelCompare;
+      return a.weekStart.localeCompare(b.weekStart);
+    });
+  }
+
+  /**
+   * Analyze week-over-week trends for models
+   */
+  async analyzeWeekOverWeekTrends(
+    timePeriod: { start: string; end: string },
+    modelIds?: string[]
+  ): Promise<WeekOverWeekTrend[]> {
+    logger.info('[QualityReportGenerator] Analyzing week-over-week trends', {
+      timePeriod,
+      modelIds,
+    });
+
+    const weeklyAggs = await this.getWeeklyAggregation(timePeriod, modelIds);
+
+    if (weeklyAggs.length < 2) {
+      return [];
+    }
+
+    // Group by model
+    const byModel = weeklyAggs.reduce<Record<string, WeeklyAggregation[]>>((acc, agg) => {
+      if (!acc[agg.modelId]) acc[agg.modelId] = [];
+      acc[agg.modelId].push(agg);
+      return acc;
+    }, {});
+
+    const trends: WeekOverWeekTrend[] = [];
+
+    for (const [modelId, weeks] of Object.entries(byModel)) {
+      if (weeks.length < 2) continue;
+
+      // Sort by week
+      weeks.sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+
+      // Calculate week-over-week changes
+      for (let i = 1; i < weeks.length; i++) {
+        const currentWeek = weeks[i];
+        const previousWeek = weeks[i - 1];
+
+        const scoreChange = currentWeek.averageScore - previousWeek.averageScore;
+        const percentageChange =
+          previousWeek.averageScore === 0
+            ? 0
+            : (scoreChange / previousWeek.averageScore) * 100;
+
+        // Determine trend direction
+        const threshold = 0.02; // 2% change threshold
+        let direction: TrendDirection;
+        if (Math.abs(percentageChange) < threshold * 100) {
+          direction = 'stable';
+        } else if (scoreChange > 0) {
+          direction = 'improving';
+        } else {
+          direction = 'declining';
+        }
+
+        trends.push({
+          modelId,
+          currentWeek: {
+            start: currentWeek.weekStart,
+            end: currentWeek.weekEnd,
+            averageScore: currentWeek.averageScore,
+            sampleCount: currentWeek.sampleCount,
+          },
+          previousWeek: {
+            start: previousWeek.weekStart,
+            end: previousWeek.weekEnd,
+            averageScore: previousWeek.averageScore,
+            sampleCount: previousWeek.sampleCount,
+          },
+          scoreChange,
+          percentageChange,
+          direction,
+          sampleSizeChange: currentWeek.sampleCount - previousWeek.sampleCount,
+        });
+      }
+    }
+
+    return trends;
+  }
+
   // =============================================================================
   // Private Helper Methods
   // =============================================================================
@@ -369,9 +568,9 @@ export class QualityReportGenerator {
    */
   private async getTimeSeries(
     timePeriod: { start: string; end: string },
-    modelIds?: string[]
+    modelIds?: string[],
+    granularity: 'hour' | 'day' | 'week' = 'day'
   ): Promise<TimeSeriesBucket[]> {
-    // For time series, we'll bucket by day
     const where: any = {
       timestamp: {
         gte: new Date(timePeriod.start),
@@ -392,18 +591,30 @@ export class QualityReportGenerator {
       },
     });
 
-    // Bucket by day
+    // Bucket by granularity
     const bucketMap = new Map<string, TimeSeriesBucket>();
 
     for (const metric of metrics) {
-      const date = new Date(metric.timestamp);
-      date.setHours(0, 0, 0, 0); // Truncate to day
-      const bucketKey = `${metric.modelId}_${date.toISOString()}`;
+      const timestamp = new Date(metric.timestamp);
+      let bucketTime: Date;
+
+      if (granularity === 'hour') {
+        timestamp.setMinutes(0, 0, 0);
+        bucketTime = timestamp;
+      } else if (granularity === 'week') {
+        bucketTime = this.getWeekStart(timestamp);
+      } else {
+        // day
+        timestamp.setHours(0, 0, 0, 0);
+        bucketTime = timestamp;
+      }
+
+      const bucketKey = `${metric.modelId}_${bucketTime.toISOString()}`;
 
       if (!bucketMap.has(bucketKey)) {
         bucketMap.set(bucketKey, {
           modelId: metric.modelId,
-          timeBucket: date,
+          timeBucket: bucketTime,
           avgScore: 0,
           sampleCount: 0,
         });
@@ -689,6 +900,18 @@ export class QualityReportGenerator {
     const variance = this.average(squaredDiffs);
     return Math.sqrt(variance);
   }
+
+  /**
+   * Get the start of the week (Monday) for a given date
+   */
+  private getWeekStart(date: Date): Date {
+    const result = new Date(date);
+    const day = result.getDay();
+    const diff = (day === 0 ? -6 : 1) - day; // Adjust when day is Sunday
+    result.setDate(result.getDate() + diff);
+    result.setHours(0, 0, 0, 0);
+    return result;
+  }
 }
 
 // =============================================================================
@@ -721,3 +944,9 @@ export function createQualityReportGenerator(prisma: PrismaClient): QualityRepor
 export function resetQualityReportGenerator(): void {
   globalGenerator = null;
 }
+
+// =============================================================================
+// Type Exports
+// =============================================================================
+
+export type { WeeklyAggregation, WeekOverWeekTrend };

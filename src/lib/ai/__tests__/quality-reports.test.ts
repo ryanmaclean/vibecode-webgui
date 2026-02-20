@@ -541,6 +541,319 @@ describe('QualityReportGenerator', () => {
     });
   });
 
+  describe('weekly aggregation', () => {
+    it('should aggregate metrics by week', async () => {
+      const now = new Date('2024-02-15T12:00:00Z'); // Thursday
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const twoWeeksAgo = new Date(now);
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+      // Add metrics across three weeks
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', twoWeeksAgo, 0.8));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', weekAgo, 0.85));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.9));
+
+      const aggregations = await generator.getWeeklyAggregation({
+        start: twoWeeksAgo.toISOString(),
+        end: now.toISOString(),
+      });
+
+      expect(aggregations.length).toBeGreaterThan(0);
+      expect(aggregations[0]).toHaveProperty('weekStart');
+      expect(aggregations[0]).toHaveProperty('weekEnd');
+      expect(aggregations[0]).toHaveProperty('averageScore');
+      expect(aggregations[0]).toHaveProperty('sampleCount');
+    });
+
+    it('should calculate weekly statistics correctly', async () => {
+      const now = new Date('2024-02-15T12:00:00Z');
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+
+      // Add multiple metrics in the same week
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.9));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.8));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.7));
+
+      const aggregations = await generator.getWeeklyAggregation({
+        start: weekAgo.toISOString(),
+        end: now.toISOString(),
+      });
+
+      expect(aggregations.length).toBe(1);
+      expect(aggregations[0].sampleCount).toBe(3);
+      expect(aggregations[0].averageScore).toBeCloseTo(0.8, 2);
+      expect(aggregations[0].minScore).toBe(0.7);
+      expect(aggregations[0].maxScore).toBe(0.9);
+      expect(aggregations[0].medianScore).toBe(0.8);
+    });
+
+    it('should group metrics by model and week', async () => {
+      const now = new Date('2024-02-15T12:00:00Z');
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+
+      // Add metrics for two models
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.9));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-b', now, 0.8));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', weekAgo, 0.85));
+
+      const aggregations = await generator.getWeeklyAggregation({
+        start: weekAgo.toISOString(),
+        end: now.toISOString(),
+      });
+
+      const modelAWeeks = aggregations.filter(a => a.modelId === 'model-a');
+      const modelBWeeks = aggregations.filter(a => a.modelId === 'model-b');
+
+      expect(modelAWeeks.length).toBeGreaterThan(0);
+      expect(modelBWeeks.length).toBeGreaterThan(0);
+    });
+
+    it('should calculate distribution for weekly aggregation', async () => {
+      const now = new Date('2024-02-15T12:00:00Z');
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+
+      // Add metrics in different quality bands
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.95)); // excellent
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.85)); // good
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.65)); // fair
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.45)); // poor
+
+      const aggregations = await generator.getWeeklyAggregation({
+        start: weekAgo.toISOString(),
+        end: now.toISOString(),
+      });
+
+      expect(aggregations.length).toBe(1);
+      expect(aggregations[0].distribution.excellent).toBe(1);
+      expect(aggregations[0].distribution.good).toBe(1);
+      expect(aggregations[0].distribution.fair).toBe(1);
+      expect(aggregations[0].distribution.poor).toBe(1);
+    });
+
+    it('should handle empty data for weekly aggregation', async () => {
+      const now = new Date();
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+
+      const aggregations = await generator.getWeeklyAggregation({
+        start: weekAgo.toISOString(),
+        end: now.toISOString(),
+      });
+
+      expect(aggregations).toEqual([]);
+    });
+
+    it('should filter by model IDs in weekly aggregation', async () => {
+      const now = new Date('2024-02-15T12:00:00Z');
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.9));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-b', now, 0.8));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-c', now, 0.7));
+
+      const aggregations = await generator.getWeeklyAggregation(
+        {
+          start: weekAgo.toISOString(),
+          end: now.toISOString(),
+        },
+        ['model-a', 'model-b']
+      );
+
+      const modelIds = new Set(aggregations.map(a => a.modelId));
+      expect(modelIds.has('model-a')).toBe(true);
+      expect(modelIds.has('model-b')).toBe(true);
+      expect(modelIds.has('model-c')).toBe(false);
+    });
+  });
+
+  describe('week-over-week trend analysis', () => {
+    it('should analyze week-over-week trends', async () => {
+      const now = new Date('2024-02-15T12:00:00Z'); // Thursday
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const twoWeeksAgo = new Date(now);
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+      // Add improving trend
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', twoWeeksAgo, 0.7));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', weekAgo, 0.8));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.9));
+
+      const trends = await generator.analyzeWeekOverWeekTrends({
+        start: twoWeeksAgo.toISOString(),
+        end: now.toISOString(),
+      });
+
+      expect(trends.length).toBeGreaterThan(0);
+      expect(trends[0]).toHaveProperty('currentWeek');
+      expect(trends[0]).toHaveProperty('previousWeek');
+      expect(trends[0]).toHaveProperty('scoreChange');
+      expect(trends[0]).toHaveProperty('percentageChange');
+      expect(trends[0]).toHaveProperty('direction');
+    });
+
+    it('should detect improving trend', async () => {
+      const now = new Date('2024-02-15T12:00:00Z');
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const twoWeeksAgo = new Date(now);
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+      // Previous week: 0.5, Current week: 0.8 = 60% improvement
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', twoWeeksAgo, 0.5));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.8));
+
+      const trends = await generator.analyzeWeekOverWeekTrends({
+        start: twoWeeksAgo.toISOString(),
+        end: now.toISOString(),
+      });
+
+      expect(trends.length).toBe(1);
+      expect(trends[0].direction).toBe('improving');
+      expect(trends[0].scoreChange).toBeGreaterThan(0);
+      expect(trends[0].percentageChange).toBeGreaterThan(0);
+    });
+
+    it('should detect declining trend', async () => {
+      const now = new Date('2024-02-15T12:00:00Z');
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const twoWeeksAgo = new Date(now);
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+      // Previous week: 0.9, Current week: 0.6 = decline
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', twoWeeksAgo, 0.9));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.6));
+
+      const trends = await generator.analyzeWeekOverWeekTrends({
+        start: twoWeeksAgo.toISOString(),
+        end: now.toISOString(),
+      });
+
+      expect(trends.length).toBe(1);
+      expect(trends[0].direction).toBe('declining');
+      expect(trends[0].scoreChange).toBeLessThan(0);
+      expect(trends[0].percentageChange).toBeLessThan(0);
+    });
+
+    it('should detect stable trend', async () => {
+      const now = new Date('2024-02-15T12:00:00Z');
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const twoWeeksAgo = new Date(now);
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+      // Stable at 0.8 (within 2% threshold)
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', twoWeeksAgo, 0.8));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.81));
+
+      const trends = await generator.analyzeWeekOverWeekTrends({
+        start: twoWeeksAgo.toISOString(),
+        end: now.toISOString(),
+      });
+
+      expect(trends.length).toBe(1);
+      expect(trends[0].direction).toBe('stable');
+    });
+
+    it('should track sample size changes', async () => {
+      const now = new Date('2024-02-15T12:00:00Z');
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const twoWeeksAgo = new Date(now);
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+      // Previous week: 1 sample, Current week: 3 samples
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', twoWeeksAgo, 0.8));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.8));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.85));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.9));
+
+      const trends = await generator.analyzeWeekOverWeekTrends({
+        start: twoWeeksAgo.toISOString(),
+        end: now.toISOString(),
+      });
+
+      expect(trends.length).toBe(1);
+      expect(trends[0].sampleSizeChange).toBeGreaterThan(0);
+      expect(trends[0].currentWeek.sampleCount).toBeGreaterThan(
+        trends[0].previousWeek.sampleCount
+      );
+    });
+
+    it('should handle multiple models in trend analysis', async () => {
+      const now = new Date('2024-02-15T12:00:00Z');
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const twoWeeksAgo = new Date(now);
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+      // Model A improving, Model B declining
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', twoWeeksAgo, 0.7));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.9));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-b', twoWeeksAgo, 0.9));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-b', now, 0.7));
+
+      const trends = await generator.analyzeWeekOverWeekTrends({
+        start: twoWeeksAgo.toISOString(),
+        end: now.toISOString(),
+      });
+
+      expect(trends.length).toBe(2);
+
+      const modelATrend = trends.find(t => t.modelId === 'model-a');
+      const modelBTrend = trends.find(t => t.modelId === 'model-b');
+
+      expect(modelATrend?.direction).toBe('improving');
+      expect(modelBTrend?.direction).toBe('declining');
+    });
+
+    it('should handle insufficient data for trend analysis', async () => {
+      const now = new Date();
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+
+      // Only one week of data
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.8));
+
+      const trends = await generator.analyzeWeekOverWeekTrends({
+        start: weekAgo.toISOString(),
+        end: now.toISOString(),
+      });
+
+      expect(trends).toEqual([]);
+    });
+
+    it('should filter by model IDs in trend analysis', async () => {
+      const now = new Date('2024-02-15T12:00:00Z');
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const twoWeeksAgo = new Date(now);
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', twoWeeksAgo, 0.7));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-a', now, 0.9));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-b', twoWeeksAgo, 0.8));
+      mockPrisma.addQualityMetric(createMockQualityMetric('model-b', now, 0.85));
+
+      const trends = await generator.analyzeWeekOverWeekTrends(
+        {
+          start: twoWeeksAgo.toISOString(),
+          end: now.toISOString(),
+        },
+        ['model-a']
+      );
+
+      expect(trends.length).toBe(1);
+      expect(trends[0].modelId).toBe('model-a');
+    });
+  });
+
   describe('edge cases', () => {
     it('should handle models with no quality metrics but with suggestions', async () => {
       const now = new Date();
