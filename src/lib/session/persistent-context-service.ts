@@ -509,4 +509,207 @@ export class PersistentContextService {
       throw error;
     }
   }
+
+  /**
+   * Delete a specific context entry by ID
+   * @param id The ID of the context entry to delete
+   * @param userId The user ID (for ownership verification)
+   * @returns True if deleted, false if not found
+   */
+  public async deleteContext(id: number, userId: number): Promise<boolean> {
+    try {
+      const startTime = Date.now();
+
+      const result = await this.prisma.$executeRaw`
+        DELETE FROM session_contexts
+        WHERE id = ${id} AND user_id = ${userId}
+      `;
+
+      if (this.config.enableMetrics) {
+        metrics.histogram('persistent_context.delete.duration', Date.now() - startTime);
+        metrics.increment('persistent_context.delete.success');
+      }
+
+      const deleted = result > 0;
+      if (this.config.enableLogging) {
+        console.log(`Deleted context ${id} for user ${userId}: ${deleted}`);
+      }
+
+      return deleted;
+    } catch (error) {
+      if (this.config.enableMetrics) {
+        metrics.increment('persistent_context.delete.error');
+      }
+
+      if (this.config.enableLogging) {
+        console.error('Error deleting context:', error);
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Delete all context entries for a specific session
+   * @param sessionId The session ID to delete context for
+   * @param userId The user ID (for ownership verification)
+   * @returns Number of context entries deleted
+   */
+  public async deleteSessionContext(sessionId: string, userId: number): Promise<number> {
+    try {
+      const startTime = Date.now();
+
+      const result = await this.prisma.$executeRaw`
+        DELETE FROM session_contexts
+        WHERE session_id = ${sessionId} AND user_id = ${userId}
+      `;
+
+      if (this.config.enableMetrics) {
+        metrics.histogram('persistent_context.delete_session.duration', Date.now() - startTime);
+        metrics.increment('persistent_context.delete_session.success');
+        metrics.gauge('persistent_context.delete_session.count', result);
+      }
+
+      if (this.config.enableLogging) {
+        console.log(`Deleted ${result} context(s) for session ${sessionId}, user ${userId}`);
+      }
+
+      return result;
+    } catch (error) {
+      if (this.config.enableMetrics) {
+        metrics.increment('persistent_context.delete_session.error');
+      }
+
+      if (this.config.enableLogging) {
+        console.error('Error deleting session context:', error);
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Delete all context entries for a specific user
+   * @param userId The user ID to delete context for
+   * @returns Number of context entries deleted
+   */
+  public async deleteUserContext(userId: number): Promise<number> {
+    try {
+      const startTime = Date.now();
+
+      const result = await this.prisma.$executeRaw`
+        DELETE FROM session_contexts
+        WHERE user_id = ${userId}
+      `;
+
+      if (this.config.enableMetrics) {
+        metrics.histogram('persistent_context.delete_user.duration', Date.now() - startTime);
+        metrics.increment('persistent_context.delete_user.success');
+        metrics.gauge('persistent_context.delete_user.count', result);
+      }
+
+      if (this.config.enableLogging) {
+        console.log(`Deleted ${result} context(s) for user ${userId}`);
+      }
+
+      return result;
+    } catch (error) {
+      if (this.config.enableMetrics) {
+        metrics.increment('persistent_context.delete_user.error');
+      }
+
+      if (this.config.enableLogging) {
+        console.error('Error deleting user context:', error);
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Delete all context entries for a specific workspace
+   * @param workspaceId The workspace ID to delete context for
+   * @returns Number of context entries deleted
+   */
+  public async deleteWorkspaceContext(workspaceId: number): Promise<number> {
+    try {
+      const startTime = Date.now();
+
+      const result = await this.prisma.$executeRaw`
+        DELETE FROM session_contexts
+        WHERE workspace_id = ${workspaceId}
+      `;
+
+      if (this.config.enableMetrics) {
+        metrics.histogram('persistent_context.delete_workspace.duration', Date.now() - startTime);
+        metrics.increment('persistent_context.delete_workspace.success');
+        metrics.gauge('persistent_context.delete_workspace.count', result);
+      }
+
+      if (this.config.enableLogging) {
+        console.log(`Deleted ${result} context(s) for workspace ${workspaceId}`);
+      }
+
+      return result;
+    } catch (error) {
+      if (this.config.enableMetrics) {
+        metrics.increment('persistent_context.delete_workspace.error');
+      }
+
+      if (this.config.enableLogging) {
+        console.error('Error deleting workspace context:', error);
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Clean up old context entries that haven't been updated in a specified number of days
+   * @param daysOld Delete context entries older than this many days
+   * @param userId Optional user ID to restrict cleanup to a specific user
+   * @returns Number of context entries deleted
+   */
+  public async cleanupOldContext(daysOld: number, userId?: number): Promise<number> {
+    try {
+      const startTime = Date.now();
+
+      let result: number;
+      if (userId !== undefined) {
+        result = await this.prisma.$executeRaw`
+          DELETE FROM session_contexts
+          WHERE user_id = ${userId}
+            AND updated_at < NOW() - INTERVAL '${daysOld} days'
+        `;
+      } else {
+        result = await this.prisma.$executeRaw`
+          DELETE FROM session_contexts
+          WHERE updated_at < NOW() - INTERVAL '${daysOld} days'
+        `;
+      }
+
+      if (this.config.enableMetrics) {
+        metrics.histogram('persistent_context.cleanup.duration', Date.now() - startTime);
+        metrics.increment('persistent_context.cleanup.success');
+        metrics.gauge('persistent_context.cleanup.count', result);
+      }
+
+      if (this.config.enableLogging) {
+        const userMsg = userId !== undefined ? ` for user ${userId}` : '';
+        console.log(`Cleaned up ${result} context(s) older than ${daysOld} days${userMsg}`);
+      }
+
+      return result;
+    } catch (error) {
+      if (this.config.enableMetrics) {
+        metrics.increment('persistent_context.cleanup.error');
+      }
+
+      if (this.config.enableLogging) {
+        console.error('Error cleaning up old context:', error);
+      }
+
+      throw error;
+    }
+  }
 }
