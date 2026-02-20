@@ -38,7 +38,6 @@ export async function getSetupStatus() {
       docker: {
         status: result.docker.status,
         message: result.docker.message,
-        installed: result.docker.installed,
         running: result.docker.running,
         version: result.docker.version
       },
@@ -53,7 +52,7 @@ export async function getSetupStatus() {
         status: result.database.status,
         message: result.database.message,
         initialized: result.database.initialized,
-        configured: result.database.configured
+        migrationsComplete: result.database.migrationsComplete
       },
       aiKeys: {
         status: result.aiKeys.status,

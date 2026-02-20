@@ -24,15 +24,18 @@ const log = createServiceLogger({
 export async function checkAIKeysConfiguration() {
   const result = await checkAIKeys()
 
+  const validKeys = result.validKeys ?? []
+  const missingKeys = result.missingKeys ?? []
+
   return {
     configured: result.status === 'completed',
     status: result.status,
     message: result.message,
-    validKeys: result.validKeys,
-    missingKeys: result.missingKeys,
+    validKeys,
+    missingKeys,
     details: {
-      totalConfigured: result.validKeys.length,
-      totalMissing: result.missingKeys.length
+      totalConfigured: validKeys.length,
+      totalMissing: missingKeys.length
     }
   }
 }
