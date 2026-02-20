@@ -82,6 +82,30 @@ export interface RetrieveContextOptions {
 }
 
 /**
+ * Options for semantic search of session context
+ */
+export interface SearchContextOptions {
+  /** User ID to filter by */
+  userId: number;
+  /** Session ID to filter by (optional) */
+  sessionId?: string;
+  /** Workspace ID to filter by (optional) */
+  workspaceId?: number;
+  /** Limit the number of results (default: 5) */
+  limit?: number;
+  /** Minimum similarity threshold (0-1, default: 0.7) */
+  minSimilarity?: number;
+}
+
+/**
+ * Search result with similarity score
+ */
+export interface ContextSearchResult extends StoredContext {
+  /** Similarity score (0-1, higher is more similar) */
+  similarity: number;
+}
+
+/**
  * PersistentContextService
  * Handles storing, retrieving, and managing persistent session context with vector embeddings
  */
@@ -372,6 +396,114 @@ export class PersistentContextService {
 
       if (this.config.enableLogging) {
         console.error('Error retrieving session context:', error);
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Search for similar session contexts using vector similarity
+   * @param query The search query text
+   * @param options Search options (filters, limits, threshold)
+   * @returns Array of search results with similarity scores
+   */
+  public async searchContext(query: string, options: SearchContextOptions): Promise<ContextSearchResult[]> {
+    try {
+      const startTime = Date.now();
+
+      const {
+        userId,
+        sessionId,
+        workspaceId,
+        limit = 5,
+        minSimilarity = 0.7
+      } = options;
+
+      // Generate embedding for the query
+      const queryEmbedding = await this.generateEmbedding(query);
+      const embeddingString = `[${queryEmbedding.join(',')}]`;
+
+      // Build the where clause
+      const whereConditions: string[] = [`user_id = ${userId}`];
+      if (sessionId !== undefined) {
+        whereConditions.push(`session_id = '${sessionId}'`);
+      }
+      if (workspaceId !== undefined) {
+        whereConditions.push(`workspace_id = ${workspaceId}`);
+      }
+
+      const whereClause = whereConditions.join(' AND ');
+
+      // Perform vector similarity search using cosine distance
+      // pgvector's <=> operator returns cosine distance (0 = identical, 2 = opposite)
+      // We convert to similarity score: 1 - (distance / 2)
+      const results = await this.prisma.$queryRaw<Array<{
+        id: number;
+        content: string;
+        session_id: string | null;
+        user_id: number;
+        workspace_id: number | null;
+        metadata: unknown;
+        created_at: Date;
+        updated_at: Date;
+        distance: number;
+      }>>`
+        SELECT
+          id,
+          content,
+          session_id,
+          user_id,
+          workspace_id,
+          metadata,
+          created_at,
+          updated_at,
+          (embedding <=> ${embeddingString}::vector) as distance
+        FROM session_contexts
+        WHERE ${whereClause}
+        ORDER BY embedding <=> ${embeddingString}::vector
+        LIMIT ${limit}
+      `;
+
+      // Convert distance to similarity score and filter by threshold
+      const searchResults: ContextSearchResult[] = results
+        .map(row => {
+          // Convert cosine distance to similarity: 1 - (distance / 2)
+          // Distance range is [0, 2], similarity range is [0, 1]
+          const similarity = 1 - (row.distance / 2);
+
+          return {
+            id: row.id,
+            content: row.content,
+            sessionId: row.session_id,
+            userId: row.user_id,
+            workspaceId: row.workspace_id,
+            metadata: row.metadata as Record<string, unknown> | null,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+            similarity
+          };
+        })
+        .filter(result => result.similarity >= minSimilarity);
+
+      if (this.config.enableMetrics) {
+        metrics.histogram('persistent_context.search.duration', Date.now() - startTime);
+        metrics.increment('persistent_context.search.success');
+        metrics.gauge('persistent_context.search.results', searchResults.length);
+      }
+
+      if (this.config.enableLogging) {
+        console.log(`Found ${searchResults.length} similar context(s) for user ${userId} (min similarity: ${minSimilarity})`);
+      }
+
+      return searchResults;
+    } catch (error) {
+      if (this.config.enableMetrics) {
+        metrics.increment('persistent_context.search.error');
+      }
+
+      if (this.config.enableLogging) {
+        console.error('Error searching session context:', error);
       }
 
       throw error;
