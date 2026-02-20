@@ -12,6 +12,8 @@ import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { logger } from '@/lib/logger'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 import type { AuthenticatedRequest } from '@/lib/auth/middleware'
+import { ContextManager } from '@/lib/ai/context/context-manager'
+import { ContextStrategy, ContextItemType, ContextPriority } from '@/types/context'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -203,8 +205,8 @@ export async function POST(request: AuthenticatedRequest) {
 
     // Build enhanced context with RAG
     const ragResult = await buildEnhancedRAGContext(
-      context.workspaceId, 
-      message, 
+      context.workspaceId,
+      message,
       session.user.id
     )
 
@@ -212,6 +214,204 @@ export async function POST(request: AuthenticatedRequest) {
       logger.info('Enhanced chat proceeding without RAG context', {
         workspaceId: context.workspaceId,
       })
+    }
+
+    // Initialize ContextManager for intelligent context window management
+    const contextManager = new ContextManager({
+      defaultModel: selectedModel,
+      maxUtilization: 90, // Use 90% of available context window
+      autoRerank: true
+    })
+
+    // Create context window with hybrid strategy
+    const contextWindow = contextManager.createWindow({
+      model: selectedModel,
+      strategy: ContextStrategy.HYBRID,
+      maxUtilization: 90,
+      boostKeywords: ragResult ? ['code', 'function', 'implementation'] : []
+    })
+
+    // Base system prompt (CRITICAL priority - always included)
+    const baseSystemPrompt = `You are an expert AI coding assistant integrated into VibeCode platform with enhanced multi-provider capabilities.
+
+**🎯 Current Session Context:**
+- User: ${session.user.email}
+- Workspace: ${context.workspaceId}
+- Model: ${selectedModel} (${SUPPORTED_MODELS[selectedModel]})
+- RAG Status: ${ragResult ? `Active (${ragResult.relevanceScore} relevance)` : 'Disabled'}
+- Provider: Enhanced OpenRouter Multi-Model Support
+
+**🚀 Platform Capabilities:**
+- Multi-provider model access (OpenAI, Anthropic, Google, Meta, Mistral)
+- Advanced code generation, debugging, and optimization
+- Architecture and design guidance with pattern recognition
+- Best practices for modern development across frameworks
+- Real-time workspace context and vector search integration
+- Framework-specific assistance (React, Next.js, Node.js, Python, etc.)
+
+**📐 Guidelines:**
+- Provide production-ready, secure code solutions
+- Reference specific code from context when available
+- Explain reasoning, trade-offs, and alternatives
+- Use modern patterns consistent with the existing codebase
+- Leverage the selected model's strengths (${selectedModel})
+- Ask clarifying questions when requirements are unclear`
+
+    // Add base system prompt (CRITICAL - required)
+    contextManager.addItem(
+      ContextItemType.SYSTEM_PROMPT,
+      baseSystemPrompt,
+      {
+        priority: ContextPriority.CRITICAL,
+        isRequired: true,
+        relevanceScore: 1.0
+      }
+    )
+
+    // Add RAG context if available (HIGH/MEDIUM/LOW priority based on relevance)
+    if (ragResult) {
+      const ragPriority = ragResult.relevanceScore === 'high'
+        ? ContextPriority.HIGH
+        : ragResult.relevanceScore === 'medium'
+          ? ContextPriority.MEDIUM
+          : ContextPriority.LOW
+
+      const ragRelevance = ragResult.relevanceScore === 'high'
+        ? 0.9
+        : ragResult.relevanceScore === 'medium'
+          ? 0.7
+          : 0.5
+
+      contextManager.addItem(
+        ContextItemType.RAG_RESULT,
+        `**📋 Relevant Code Context:**\n${ragResult.context}`,
+        {
+          priority: ragPriority,
+          isRequired: false,
+          relevanceScore: ragRelevance,
+          metadata: {
+            source: ragResult.workspaceId,
+            custom: {
+              relevanceScore: ragResult.relevanceScore
+            }
+          }
+        }
+      )
+    }
+
+    // Add tool capabilities (MEDIUM priority - helpful but not critical)
+    const toolCapabilities = getToolCapabilities(enableTools)
+    if (toolCapabilities) {
+      contextManager.addItem(
+        ContextItemType.CUSTOM,
+        toolCapabilities,
+        {
+          priority: ContextPriority.MEDIUM,
+          isRequired: false,
+          relevanceScore: 0.6
+        }
+      )
+    }
+
+    // Add previous conversation messages (MEDIUM priority for recent, LOW for older)
+    const recentMessages = context.previousMessages.slice(-8)
+    recentMessages.forEach((msg, index) => {
+      const isRecent = index >= recentMessages.length - 4
+      const itemType = msg.role === 'assistant'
+        ? ContextItemType.ASSISTANT_MESSAGE
+        : ContextItemType.USER_MESSAGE
+
+      contextManager.addItem(
+        itemType,
+        msg.content,
+        {
+          priority: isRecent ? ContextPriority.MEDIUM : ContextPriority.LOW,
+          isRequired: false,
+          relevanceScore: 0.5 + (index / recentMessages.length) * 0.3, // More recent = higher relevance
+          metadata: {
+            custom: {
+              role: msg.role,
+              messageIndex: index
+            }
+          }
+        }
+      )
+    })
+
+    // Add current user message (CRITICAL - required)
+    contextManager.addItem(
+      ContextItemType.USER_MESSAGE,
+      message,
+      {
+        priority: ContextPriority.CRITICAL,
+        isRequired: true,
+        relevanceScore: 1.0
+      }
+    )
+
+    // Get optimized context window
+    const optimizedWindow = contextManager.getWindow()
+
+    // Build final messages array from optimized context
+    const messages: Array<{ role: 'system' | 'user' | 'assistant', content: string }> = []
+
+    if (optimizedWindow) {
+      // Group items by type for proper message structure
+      let systemContent = ''
+      const conversationMessages: Array<{ role: 'user' | 'assistant', content: string }> = []
+
+      for (const item of optimizedWindow.items) {
+        switch (item.type) {
+          case ContextItemType.SYSTEM_PROMPT:
+          case ContextItemType.RAG_RESULT:
+          case ContextItemType.CUSTOM:
+            systemContent += item.content + '\n\n'
+            break
+          case ContextItemType.USER_MESSAGE:
+          case ContextItemType.ASSISTANT_MESSAGE:
+            // These will be added in order later
+            if (item.metadata.custom?.role) {
+              conversationMessages.push({
+                role: item.metadata.custom.role as 'user' | 'assistant',
+                content: item.content
+              })
+            }
+            break
+        }
+      }
+
+      // Add system message if we have content
+      if (systemContent.trim()) {
+        messages.push({ role: 'system', content: systemContent.trim() })
+      }
+
+      // Add conversation history (excluding the current user message)
+      messages.push(...conversationMessages.slice(0, -1))
+
+      // Add current user message last
+      messages.push({ role: 'user', content: message })
+
+      // Log context optimization stats
+      logger.info('Context window optimized', {
+        model: selectedModel,
+        totalTokens: optimizedWindow.totalTokens,
+        availableTokens: optimizedWindow.availableTokens,
+        utilizationPercent: optimizedWindow.utilizationPercent,
+        itemsIncluded: optimizedWindow.items.length,
+        itemsExcluded: optimizedWindow.excludedItems.length,
+        strategy: optimizedWindow.strategy
+      })
+    } else {
+      // Fallback to simple message structure if context manager fails
+      const systemMessage = baseSystemPrompt + (ragResult ? `\n\n**📋 Relevant Code Context:**\n${ragResult.context}` : '') + toolCapabilities
+      messages.push(
+        { role: 'system', content: systemMessage },
+        ...context.previousMessages.slice(-8).map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })),
+        { role: 'user', content: message }
+      )
     }
 
     // Enhanced OpenRouter setup with model selection
@@ -223,42 +423,6 @@ export async function POST(request: AuthenticatedRequest) {
         "X-Title": "VibeCode Enhanced Platform",
       }
     })
-
-    // Prepare system message with enhanced context
-    const systemMessage = `You are an expert AI coding assistant integrated into VibeCode platform with enhanced multi-provider capabilities.
-
-**Current Context:**
-- Workspace: ${context.workspaceId}
-- Model: ${selectedModel} (${SUPPORTED_MODELS[selectedModel]})
-- RAG Status: ${ragResult ? `Active (${ragResult.relevanceScore} relevance)` : 'Disabled'}
-- Provider: Enhanced OpenRouter Multi-Model Support
-
-${ragResult ? `**Relevant Code Context:**\n${ragResult.context}\n` : ''}
-
-**Enhanced Capabilities:**
-- Multi-provider model access (OpenAI, Anthropic, Google, Meta, Mistral)
-- Advanced code generation, debugging, and optimization
-- Architecture and design guidance with pattern recognition
-- Best practices for modern development across frameworks
-- Real-time workspace context and vector search integration
-- Framework-specific assistance (React, Next.js, Node.js, Python, etc.)
-
-${getToolCapabilities(enableTools)}
-
-**Guidelines:**
-- Reference specific code when available in context
-- Provide production-ready, secure code solutions
-- Explain reasoning, trade-offs, and alternative approaches
-- Use modern patterns consistent with the existing codebase
-- Leverage the selected model's strengths (${selectedModel})
-- Ask clarifying questions when requirements are unclear`
-
-    // Prepare messages for AI SDK
-    const messages = [
-      { role: 'system' as const, content: systemMessage },
-      ...context.previousMessages.slice(-8), // Last 8 messages for context
-      { role: 'user' as const, content: message }
-    ]
 
     // Create enhanced streaming response
     const stream = await openrouter.chat.completions.create({
