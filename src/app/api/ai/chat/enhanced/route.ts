@@ -15,6 +15,7 @@ import type { AuthenticatedRequest } from '@/lib/auth/middleware'
 import { ContextManager } from '@/lib/ai/context/context-manager'
 import { ContextStrategy, ContextItemType, ContextPriority } from '@/types/context'
 import { buildChatContext, type FileContext, type ChatMessage } from '@/lib/ai/context/context-integration'
+import { trackContextBuild } from '@/lib/ai/context/context-metrics'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -263,24 +264,31 @@ export async function POST(request: AuthenticatedRequest) {
       content: msg.content
     }))
 
-    // Use buildChatContext helper for intelligent context management
-    const builtContext = await buildChatContext({
-      model: selectedModel,
-      strategy: ContextStrategy.HYBRID,
-      maxUtilization: 90,
-      previousMessages: previousChatMessages,
-      ragContext: ragResult ? {
-        context: ragResult.context,
-        workspaceId: ragResult.workspaceId,
-        relevanceScore: ragResult.relevanceScore,
-        strategiesUsed: 1,
-        totalLength: ragResult.context.length
-      } : undefined,
-      files: fileContexts,
-      userMessage: message,
-      systemPrompt: systemPromptWithTools,
-      boostKeywords: ragResult ? ['code', 'function', 'implementation'] : []
+    // Generate request ID for metrics tracking
+    const requestId = `enhanced-${session.user.id}-${Date.now()}`
+
+    // Use buildChatContext helper for intelligent context management with metrics tracking
+    const contextBuildResult = await trackContextBuild(requestId, async () => {
+      return buildChatContext({
+        model: selectedModel,
+        strategy: ContextStrategy.HYBRID,
+        maxUtilization: 90,
+        previousMessages: previousChatMessages,
+        ragContext: ragResult ? {
+          context: ragResult.context,
+          workspaceId: ragResult.workspaceId,
+          relevanceScore: ragResult.relevanceScore,
+          strategiesUsed: 1,
+          totalLength: ragResult.context.length
+        } : undefined,
+        files: fileContexts,
+        userMessage: message,
+        systemPrompt: systemPromptWithTools,
+        boostKeywords: ragResult ? ['code', 'function', 'implementation'] : []
+      })
     })
+
+    const builtContext = contextBuildResult.result
 
     // Get optimized context window
     const optimizedWindow = builtContext.window
@@ -324,8 +332,9 @@ export async function POST(request: AuthenticatedRequest) {
       // Add current user message last
       messages.push({ role: 'user', content: message })
 
-      // Log context optimization stats
+      // Log context optimization stats with metrics
       logger.info('Context window optimized', {
+        requestId,
         model: selectedModel,
         totalTokens: builtContext.summary.totalTokens,
         utilizationPercent: builtContext.summary.utilizationPercent,
@@ -335,7 +344,9 @@ export async function POST(request: AuthenticatedRequest) {
         ragIncluded: builtContext.summary.ragIncluded,
         itemsIncluded: builtContext.includedItems.length,
         itemsExcluded: builtContext.excludedItems.length,
-        strategy: optimizedWindow.strategy
+        strategy: optimizedWindow.strategy,
+        buildDurationMs: contextBuildResult.durationMs,
+        metricsRecorded: !!contextBuildResult.metrics
       })
     } else {
       // Fallback to simple message structure if context manager fails
