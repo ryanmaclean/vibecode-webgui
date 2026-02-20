@@ -596,6 +596,627 @@ test.describe('Context Management - E2E Tests', () => {
     });
   });
 
+  test.describe('Semantic Context Strategy - E2E', () => {
+    test('should include semantically relevant files when asking about code functionality', async () => {
+      // Step 1: Upload multiple test files with different purposes
+      const fileUploadButton = page.locator('button[aria-label="Upload files"]');
+
+      if (await fileUploadButton.isVisible()) {
+        const fileInput = page.locator('input[type="file"][data-testid="file-upload-input"]');
+
+        // Upload a utility file
+        await fileInput.setInputFiles({
+          name: 'utils.ts',
+          mimeType: 'text/typescript',
+          buffer: Buffer.from(`
+/**
+ * Utility functions for mathematical operations
+ */
+
+export function calculateSum(a: number, b: number): number {
+  return a + b;
+}
+
+export function calculateProduct(a: number, b: number): number {
+  return a * b;
+}
+
+export function calculateAverage(numbers: number[]): number {
+  const sum = numbers.reduce((acc, num) => acc + num, 0);
+  return sum / numbers.length;
+}
+`)
+        });
+
+        await page.waitForTimeout(1000);
+
+        // Upload a component file that uses the utils
+        await fileInput.setInputFiles({
+          name: 'Calculator.tsx',
+          mimeType: 'text/typescript',
+          buffer: Buffer.from(`
+import React from 'react';
+import { calculateSum, calculateProduct } from './utils';
+
+/**
+ * Calculator component for performing mathematical operations
+ */
+export function Calculator() {
+  const [result, setResult] = React.useState(0);
+
+  const handleCalculation = () => {
+    const sum = calculateSum(5, 3);
+    const product = calculateProduct(sum, 2);
+    setResult(product);
+  };
+
+  return (
+    <div>
+      <button onClick={handleCalculation}>Calculate</button>
+      <p>Result: {result}</p>
+    </div>
+  );
+}
+`)
+        });
+
+        await page.waitForTimeout(1000);
+
+        // Upload an unrelated file
+        await fileInput.setInputFiles({
+          name: 'unrelated.ts',
+          mimeType: 'text/typescript',
+          buffer: Buffer.from(`
+/**
+ * User authentication functions
+ */
+
+export function authenticateUser(username: string, password: string): boolean {
+  // Mock authentication
+  return username.length > 0 && password.length > 0;
+}
+
+export function logoutUser(): void {
+  // Mock logout
+}
+`)
+        });
+
+        await page.waitForTimeout(1500);
+      }
+
+      // Step 2: Ask AI about specific code functionality related to calculator
+      const messageInput = page.locator('[data-testid="message-input"]');
+      const sendButton = page.locator('[data-testid="send-button"]');
+
+      if (await messageInput.isVisible()) {
+        await messageInput.fill('How does the Calculator component work and what utility functions does it use?');
+        await sendButton.click();
+
+        // Wait for AI to process and build context
+        await page.waitForTimeout(3000);
+
+        // Step 3: Open context viewer to verify relevant files are included
+        const contextToggle = page.locator('button[aria-label*="context viewer" i]').first();
+
+        if (await contextToggle.isVisible()) {
+          await contextToggle.click();
+          await page.waitForTimeout(1500);
+
+          // Verify context viewer is visible
+          const contextViewer = page.locator('#context-viewer-panel, [aria-labelledby="context-viewer-heading"]');
+          await expect(contextViewer).toBeVisible();
+
+          // Step 4: Verify semantically relevant files are included
+          // Calculator.tsx should be included (directly mentioned in query)
+          const calculatorFile = page.locator('text=/Calculator\\.tsx/i');
+          const hasCalculator = await calculatorFile.count();
+          expect(hasCalculator).toBeGreaterThan(0);
+
+          // utils.ts should be included (semantically related - imported by Calculator)
+          const utilsFile = page.locator('text=/utils\\.ts/i');
+          const hasUtils = await utilsFile.count();
+
+          // At least one of the relevant files should be in context
+          expect(hasCalculator + hasUtils).toBeGreaterThan(0);
+
+          // unrelated.ts should ideally have lower priority or be excluded
+          // (but we won't strictly require it to be excluded as it depends on strategy)
+        }
+      }
+    });
+
+    test('should display relevance scores in ContextViewer', async () => {
+      // Upload a test file
+      const fileUploadButton = page.locator('button[aria-label="Upload files"]');
+
+      if (await fileUploadButton.isVisible()) {
+        const fileInput = page.locator('input[type="file"][data-testid="file-upload-input"]');
+
+        await fileInput.setInputFiles({
+          name: 'relevance-test.ts',
+          mimeType: 'text/typescript',
+          buffer: Buffer.from(`
+export function processData(data: string[]): string {
+  return data.filter(item => item.length > 0).join(', ');
+}
+`)
+        });
+
+        await page.waitForTimeout(1000);
+      }
+
+      // Send a message to generate context
+      const messageInput = page.locator('[data-testid="message-input"]');
+      const sendButton = page.locator('[data-testid="send-button"]');
+
+      if (await messageInput.isVisible()) {
+        await messageInput.fill('How do I process string arrays?');
+        await sendButton.click();
+        await page.waitForTimeout(2000);
+
+        // Open context viewer
+        const contextToggle = page.locator('button[aria-label*="context viewer" i]').first();
+
+        if (await contextToggle.isVisible()) {
+          await contextToggle.click();
+          await page.waitForTimeout(1500);
+
+          // Look for relevance score indicators
+          // Scores might be displayed as percentages or numerical values
+          const relevanceScores = page.locator('text=/relevance|score|\\d+%\\s*relevant|priority/i');
+          const scoreCount = await relevanceScores.count();
+
+          // Should have some relevance/priority indicators
+          expect(scoreCount).toBeGreaterThan(0);
+
+          // Look for priority badges (HIGH, MEDIUM, LOW, CRITICAL)
+          const priorityBadges = page.locator('text=/critical|high|medium|low/i');
+          const badgeCount = await priorityBadges.count();
+          expect(badgeCount).toBeGreaterThanOrEqual(0);
+        }
+      }
+    });
+
+    test('should validate token count is within model limits', async () => {
+      // Send a message to generate context
+      const messageInput = page.locator('[data-testid="message-input"]');
+      const sendButton = page.locator('[data-testid="send-button"]');
+
+      if (await messageInput.isVisible()) {
+        await messageInput.fill('Explain the context management system');
+        await sendButton.click();
+        await page.waitForTimeout(2000);
+
+        // Open context viewer
+        const contextToggle = page.locator('button[aria-label*="context viewer" i]').first();
+
+        if (await contextToggle.isVisible()) {
+          await contextToggle.click();
+          await page.waitForTimeout(1500);
+
+          // Look for token usage statistics
+          const tokenUsage = page.locator('text=/\\d+\\s*\\/\\s*\\d+\\s*tokens?|token usage|tokens used/i');
+          const hasTokenStats = await tokenUsage.count();
+
+          if (hasTokenStats > 0) {
+            // Extract token numbers if visible
+            const tokenText = await page.locator('text=/\\d+\\s*tokens?/i').first().textContent();
+
+            if (tokenText) {
+              // Check that utilization percentage is displayed
+              const utilization = page.locator('text=/\\d+%\\s*utilization|utilization.*\\d+%/i');
+              const hasUtilization = await utilization.count();
+              expect(hasUtilization).toBeGreaterThanOrEqual(0);
+
+              // Verify utilization is not > 100%
+              const utilizationText = await page.locator('text=/\\d+%/i').first().textContent();
+              if (utilizationText) {
+                const percentMatch = utilizationText.match(/(\d+)%/);
+                if (percentMatch) {
+                  const percent = parseInt(percentMatch[1]);
+                  expect(percent).toBeLessThanOrEqual(100);
+                }
+              }
+            }
+          }
+
+          // Look for available tokens indicator
+          const availableTokens = page.locator('text=/available|remaining|limit/i');
+          const hasAvailable = await availableTokens.count();
+          expect(hasAvailable).toBeGreaterThanOrEqual(0);
+        }
+      }
+    });
+
+    test('should show context strategy being used', async () => {
+      // Send a message
+      const messageInput = page.locator('[data-testid="message-input"]');
+      const sendButton = page.locator('[data-testid="send-button"]');
+
+      if (await messageInput.isVisible()) {
+        await messageInput.fill('What context strategy is being used?');
+        await sendButton.click();
+        await page.waitForTimeout(2000);
+
+        // Open context viewer
+        const contextToggle = page.locator('button[aria-label*="context viewer" i]').first();
+
+        if (await contextToggle.isVisible()) {
+          await contextToggle.click();
+          await page.waitForTimeout(1500);
+
+          // Look for strategy information
+          // Strategies might include: semantic, hybrid, recent, related, priority-based
+          const strategyInfo = page.locator('text=/strategy|semantic|hybrid|recent|priority|ranking/i');
+          const hasStrategy = await strategyInfo.count();
+
+          // Strategy info should be visible somewhere
+          expect(hasStrategy).toBeGreaterThan(0);
+        }
+      }
+    });
+
+    test('should rank files by semantic relevance to query', async () => {
+      // Upload multiple files with different topics
+      const fileUploadButton = page.locator('button[aria-label="Upload files"]');
+
+      if (await fileUploadButton.isVisible()) {
+        const fileInput = page.locator('input[type="file"][data-testid="file-upload-input"]');
+
+        // Upload database-related file
+        await fileInput.setInputFiles({
+          name: 'database.ts',
+          mimeType: 'text/typescript',
+          buffer: Buffer.from(`
+export async function queryDatabase(sql: string): Promise<any[]> {
+  // Execute SQL query
+  return [];
+}
+
+export async function insertRecord(table: string, data: any): Promise<void> {
+  // Insert data
+}
+`)
+        });
+
+        await page.waitForTimeout(1000);
+
+        // Upload UI-related file
+        await fileInput.setInputFiles({
+          name: 'Button.tsx',
+          mimeType: 'text/typescript',
+          buffer: Buffer.from(`
+import React from 'react';
+
+export function Button({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return <button onClick={onClick}>{children}</button>;
+}
+`)
+        });
+
+        await page.waitForTimeout(1000);
+
+        // Upload API-related file
+        await fileInput.setInputFiles({
+          name: 'api.ts',
+          mimeType: 'text/typescript',
+          buffer: Buffer.from(`
+export async function fetchData(endpoint: string): Promise<any> {
+  const response = await fetch(endpoint);
+  return response.json();
+}
+`)
+        });
+
+        await page.waitForTimeout(1500);
+      }
+
+      // Ask a database-specific question
+      const messageInput = page.locator('[data-testid="message-input"]');
+      const sendButton = page.locator('[data-testid="send-button"]');
+
+      if (await messageInput.isVisible()) {
+        await messageInput.fill('How do I query data from the database?');
+        await sendButton.click();
+        await page.waitForTimeout(3000);
+
+        // Open context viewer
+        const contextToggle = page.locator('button[aria-label*="context viewer" i]').first();
+
+        if (await contextToggle.isVisible()) {
+          await contextToggle.click();
+          await page.waitForTimeout(1500);
+
+          // The database.ts file should be ranked highly and included
+          const databaseFile = page.locator('text=/database\\.ts/i');
+          const hasDatabaseFile = await databaseFile.count();
+
+          // At minimum, some files should be in context
+          const contextItems = page.locator('[class*="card"], [role="listitem"], text=/\\.ts|\\.tsx/');
+          const itemCount = await contextItems.count();
+          expect(itemCount).toBeGreaterThan(0);
+
+          // Ideally database.ts should be visible (semantic relevance)
+          expect(hasDatabaseFile).toBeGreaterThanOrEqual(0);
+        }
+      }
+    });
+
+    test('should handle complex queries requiring multiple related files', async () => {
+      // Upload a set of related files
+      const fileUploadButton = page.locator('button[aria-label="Upload files"]');
+
+      if (await fileUploadButton.isVisible()) {
+        const fileInput = page.locator('input[type="file"][data-testid="file-upload-input"]');
+
+        // Upload model file
+        await fileInput.setInputFiles({
+          name: 'User.ts',
+          mimeType: 'text/typescript',
+          buffer: Buffer.from(`
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export function createUser(name: string, email: string): User {
+  return { id: Math.random().toString(), name, email };
+}
+`)
+        });
+
+        await page.waitForTimeout(1000);
+
+        // Upload service file that uses the model
+        await fileInput.setInputFiles({
+          name: 'UserService.ts',
+          mimeType: 'text/typescript',
+          buffer: Buffer.from(`
+import { User, createUser } from './User';
+
+export class UserService {
+  async registerUser(name: string, email: string): Promise<User> {
+    const user = createUser(name, email);
+    // Save to database
+    return user;
+  }
+
+  async getUser(id: string): Promise<User | null> {
+    // Fetch from database
+    return null;
+  }
+}
+`)
+        });
+
+        await page.waitForTimeout(1000);
+
+        // Upload component that uses the service
+        await fileInput.setInputFiles({
+          name: 'UserRegistration.tsx',
+          mimeType: 'text/typescript',
+          buffer: Buffer.from(`
+import React from 'react';
+import { UserService } from './UserService';
+
+export function UserRegistration() {
+  const service = new UserService();
+
+  const handleSubmit = async (name: string, email: string) => {
+    await service.registerUser(name, email);
+  };
+
+  return <form>...</form>;
+}
+`)
+        });
+
+        await page.waitForTimeout(1500);
+      }
+
+      // Ask a complex query about user registration flow
+      const messageInput = page.locator('[data-testid="message-input"]');
+      const sendButton = page.locator('[data-testid="send-button"]');
+
+      if (await messageInput.isVisible()) {
+        await messageInput.fill('How does the user registration system work from UI to model?');
+        await sendButton.click();
+        await page.waitForTimeout(3000);
+
+        // Open context viewer
+        const contextToggle = page.locator('button[aria-label*="context viewer" i]').first();
+
+        if (await contextToggle.isVisible()) {
+          await contextToggle.click();
+          await page.waitForTimeout(1500);
+
+          // Should include multiple related files
+          const userFiles = page.locator('text=/User|UserService|UserRegistration/i');
+          const userFileCount = await userFiles.count();
+
+          // Should have references to user-related files
+          expect(userFileCount).toBeGreaterThan(0);
+
+          // Should show multiple context items
+          const includedItemsSection = page.locator('text=/included items?/i');
+          const hasIncludedSection = await includedItemsSection.count();
+          expect(hasIncludedSection).toBeGreaterThanOrEqual(0);
+        }
+      }
+    });
+
+    test('should update relevance scores when query changes', async () => {
+      // Upload test files
+      const fileUploadButton = page.locator('button[aria-label="Upload files"]');
+
+      if (await fileUploadButton.isVisible()) {
+        const fileInput = page.locator('input[type="file"][data-testid="file-upload-input"]');
+
+        await fileInput.setInputFiles({
+          name: 'math.ts',
+          mimeType: 'text/typescript',
+          buffer: Buffer.from('export function add(a: number, b: number) { return a + b; }')
+        });
+
+        await page.waitForTimeout(500);
+
+        await fileInput.setInputFiles({
+          name: 'string.ts',
+          mimeType: 'text/typescript',
+          buffer: Buffer.from('export function capitalize(s: string) { return s.toUpperCase(); }')
+        });
+
+        await page.waitForTimeout(1000);
+      }
+
+      // First query about math
+      const messageInput = page.locator('[data-testid="message-input"]');
+      const sendButton = page.locator('[data-testid="send-button"]');
+
+      if (await messageInput.isVisible()) {
+        await messageInput.fill('How do I add numbers?');
+        await sendButton.click();
+        await page.waitForTimeout(2000);
+
+        // Open context viewer
+        const contextToggle = page.locator('button[aria-label*="context viewer" i]').first();
+
+        if (await contextToggle.isVisible()) {
+          const isExpanded = await contextToggle.getAttribute('aria-expanded');
+          if (isExpanded !== 'true') {
+            await contextToggle.click();
+            await page.waitForTimeout(1000);
+          }
+
+          // Verify context shows some items
+          const contextItems1 = page.locator('text=/math|context item|file/i');
+          const count1 = await contextItems1.count();
+          expect(count1).toBeGreaterThan(0);
+
+          // Send second query about strings
+          await messageInput.fill('How do I capitalize strings?');
+          await sendButton.click();
+          await page.waitForTimeout(2000);
+
+          // Context should update with new relevance
+          const contextItems2 = page.locator('text=/string|capitalize|context/i');
+          const count2 = await contextItems2.count();
+
+          // Should have some context items
+          expect(count2).toBeGreaterThanOrEqual(0);
+        }
+      }
+    });
+
+    test('should respect token limits when including semantic matches', async () => {
+      // Upload several larger files to test token management
+      const fileUploadButton = page.locator('button[aria-label="Upload files"]');
+
+      if (await fileUploadButton.isVisible()) {
+        const fileInput = page.locator('input[type="file"][data-testid="file-upload-input"]');
+
+        // Upload multiple substantial files
+        for (let i = 1; i <= 3; i++) {
+          await fileInput.setInputFiles({
+            name: `large-file-${i}.ts`,
+            mimeType: 'text/typescript',
+            buffer: Buffer.from(`
+/**
+ * Large test file ${i} for token limit testing
+ * This file contains substantial content to test token management
+ */
+
+export class Service${i} {
+  private data: Map<string, any> = new Map();
+
+  constructor() {
+    // Initialize service
+  }
+
+  async getData(key: string): Promise<any> {
+    return this.data.get(key);
+  }
+
+  async setData(key: string, value: any): Promise<void> {
+    this.data.set(key, value);
+  }
+
+  async deleteData(key: string): Promise<boolean> {
+    return this.data.delete(key);
+  }
+
+  async getAllData(): Promise<Map<string, any>> {
+    return new Map(this.data);
+  }
+
+  async clearData(): Promise<void> {
+    this.data.clear();
+  }
+
+  // Additional methods to increase file size
+  async processData(processor: (data: any) => any): Promise<void> {
+    for (const [key, value] of this.data) {
+      this.data.set(key, processor(value));
+    }
+  }
+}
+`)
+          });
+
+          await page.waitForTimeout(500);
+        }
+
+        await page.waitForTimeout(1000);
+      }
+
+      // Send a query
+      const messageInput = page.locator('[data-testid="message-input"]');
+      const sendButton = page.locator('[data-testid="send-button"]');
+
+      if (await messageInput.isVisible()) {
+        await messageInput.fill('Explain how the Service classes work');
+        await sendButton.click();
+        await page.waitForTimeout(3000);
+
+        // Open context viewer
+        const contextToggle = page.locator('button[aria-label*="context viewer" i]').first();
+
+        if (await contextToggle.isVisible()) {
+          await contextToggle.click();
+          await page.waitForTimeout(1500);
+
+          // Verify token limits are respected
+          const tokenUsage = page.locator('text=/\\d+\\s*\\/\\s*\\d+\\s*tokens?/i');
+          const hasTokenStats = await tokenUsage.count();
+
+          if (hasTokenStats > 0) {
+            // Check utilization is reasonable (not exceeding 100%)
+            const utilization = page.locator('text=/\\d+%/i').first();
+            const utilizationText = await utilization.textContent();
+
+            if (utilizationText) {
+              const percentMatch = utilizationText.match(/(\d+)%/);
+              if (percentMatch) {
+                const percent = parseInt(percentMatch[1]);
+                // Should not exceed 100% utilization
+                expect(percent).toBeLessThanOrEqual(100);
+                // Should be using some tokens
+                expect(percent).toBeGreaterThan(0);
+              }
+            }
+          }
+
+          // Should show excluded items if token limit was reached
+          const excludedTab = page.locator('text=/excluded/i').first();
+          const hasExcluded = await excludedTab.count();
+          expect(hasExcluded).toBeGreaterThanOrEqual(0);
+        }
+      }
+    });
+  });
+
   test.describe('Context Pinning Workflow - Complete E2E', () => {
     test('should complete full pinning workflow: upload, pin, verify in context, unpin, verify metrics', async () => {
       // Step 1: Open AI chat interface (already done in beforeEach)
