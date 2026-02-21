@@ -74,6 +74,17 @@ export class VfkitProvider implements VMProvider {
         this.initialized = true;
         return;
       }
+
+      // Handle permission errors with user-friendly messages
+      if ((error as any)?.code === 'EACCES' || (error as any)?.code === 'EPERM') {
+        logger.error('Failed to initialize vfkit provider - permission denied', { error });
+        throw new Error(
+          `Failed to initialize vfkit provider due to permission denied. ` +
+          `Grant Full Disk Access in System Preferences > Security & Privacy > Privacy > Full Disk Access. ` +
+          `More info: https://support.apple.com/guide/mac-help/allow-access-to-system-folders-mh15217/mac`
+        );
+      }
+
       logger.error('Failed to initialize vfkit provider', { error });
       throw new Error(
         `Failed to initialize vfkit provider: ${error instanceof Error ? error.message : 'Unknown error'}`
