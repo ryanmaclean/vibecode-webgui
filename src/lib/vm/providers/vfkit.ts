@@ -54,13 +54,121 @@ export class VfkitProvider implements VMProvider {
       return false;
     }
   }
-  
+
+  /**
+   * Perform pre-flight checks before VM creation
+   * Validates system requirements and available resources
+   */
+  private async performPreflightChecks(config: VMConfig): Promise<void> {
+    // 1. Check if vfkit binary exists
+    const vfkitAvailable = await this.detect();
+    if (!vfkitAvailable) {
+      throw new Error(
+        'vfkit is not installed or not in PATH. Please install vfkit to use Apple Virtualization Framework:\n' +
+        '  brew install vfkit\n\n' +
+        'For more information and manual installation instructions, see:\n' +
+        '  https://github.com/crc-org/vfkit#installation'
+      );
+    }
+
+    // 2. Check if running on macOS (Virtualization.framework requirement)
+    if (os.platform() !== 'darwin') {
+      throw new Error(
+        `Apple Virtualization.framework is only available on macOS. ` +
+        `Current platform: ${os.platform()}. ` +
+        `For ${os.platform()}, please use Lima or QEMU instead:\n` +
+        '  brew install lima    # Cross-platform VM manager\n' +
+        '  brew install qemu    # Generic virtualization'
+      );
+    }
+
+    // 3. Check macOS version (requires macOS 11.0+)
+    try {
+      const { stdout } = await exec('sw_vers -productVersion');
+      const version = stdout.trim();
+      const majorVersion = parseInt(version.split('.')[0]);
+
+      if (majorVersion < 11) {
+        throw new Error(
+          `Apple Virtualization.framework requires macOS 11.0 (Big Sur) or later. ` +
+          `Current version: ${version}. ` +
+          `Please upgrade macOS or use an alternative VM provider like Lima:\n` +
+          '  brew install lima'
+        );
+      }
+    } catch (error) {
+      // If we can't check the version, log warning but continue
+      if (error instanceof Error && error.message.includes('Virtualization.framework')) {
+        throw error; // Re-throw our own errors
+      }
+      logger.warn('Unable to verify macOS version, continuing with VM creation', { error });
+    }
+
+    // 4. Check if VM with same name already exists
+    const safeName = validateVMName(config.name);
+    const vmDir = path.join(this.vmBaseDir, safeName);
+    try {
+      await fs.access(vmDir);
+      // If we get here, the directory exists
+      throw new Error(
+        `VM "${config.name}" already exists at ${vmDir}. ` +
+        `Please choose a different name or delete the existing VM first:\n` +
+        `  rm -rf "${vmDir}"`
+      );
+    } catch (error) {
+      if ((error as any)?.code !== 'ENOENT') {
+        // ENOENT is good - means directory doesn't exist
+        // Any other error should be re-thrown
+        throw error;
+      }
+      // Directory doesn't exist, which is what we want
+    }
+
+    // 5. Check available disk space (requires at least config.disk + 1GB buffer)
+    if (config.disk) {
+      try {
+        const requiredBytes = this.parseSizeToBytes(config.disk) + (1024 * 1024 * 1024); // +1GB buffer
+
+        // Check available space in vmBaseDir
+        // First ensure the base directory exists
+        await fs.mkdir(this.vmBaseDir, { recursive: true });
+
+        // Use statfs to check available space
+        // Note: Node.js doesn't have built-in statfs, so we'll use df command
+        const { stdout } = await exec(`df -k "${this.vmBaseDir}" | tail -1 | awk '{print $4}'`);
+        const availableKB = parseInt(stdout.trim());
+        const availableBytes = availableKB * 1024;
+
+        if (availableBytes < requiredBytes) {
+          const requiredGB = (requiredBytes / (1024 * 1024 * 1024)).toFixed(2);
+          const availableGB = (availableBytes / (1024 * 1024 * 1024)).toFixed(2);
+          throw new Error(
+            `Insufficient disk space. Required: ${requiredGB}GB (${config.disk} + 1GB buffer), ` +
+            `Available: ${availableGB}GB. ` +
+            `Please free up disk space or use a smaller disk size for the VM.`
+          );
+        }
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('Insufficient disk space')) {
+          throw error;
+        }
+        // Log warning but continue if we can't check disk space
+        logger.warn('Unable to verify available disk space, continuing with VM creation', { error });
+      }
+    }
+
+    logger.info('Pre-flight checks passed', { vmName: config.name });
+  }
+
   async create(config: VMConfig): Promise<VM> {
     logger.info('Creating vfkit VM', { name: config.name });
     const span = getTracer().startSpan('vfkit.create');
     span.setTag('vm.name', config.name);
 
     try {
+      // Pre-flight checks before any VM creation steps
+      await this.performPreflightChecks(config);
+
       const safeName = validateVMName(config.name);
       const vmDir = validateVMPath(this.vmBaseDir, safeName);
 
