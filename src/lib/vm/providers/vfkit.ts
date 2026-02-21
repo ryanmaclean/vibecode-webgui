@@ -36,9 +36,88 @@ function getTracer() {
 export class VfkitProvider implements VMProvider {
   name = 'vfkit';
   private vmBaseDir: string;
-  
+  private initialized: boolean = false;
+
   constructor() {
     this.vmBaseDir = path.join(os.homedir(), '.vfkit/vms');
+  }
+
+  /**
+   * Initialize the provider and restore VMs from previous session
+   * Scans VM directories, validates PIDs, and cleans up stale state
+   */
+  async initialize(): Promise<void> {
+    if (this.initialized) {
+      return;
+    }
+
+    logger.info('Initializing vfkit provider, restoring VM state');
+
+    try {
+      // Ensure base directory exists
+      await fs.mkdir(this.vmBaseDir, { recursive: true });
+
+      // Scan for existing VMs and validate their state
+      const entries = await fs.readdir(this.vmBaseDir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          await this.validateVMState(entry.name);
+        }
+      }
+
+      this.initialized = true;
+      logger.info('vfkit provider initialized');
+    } catch (error) {
+      if ((error as any)?.code === 'ENOENT') {
+        // VM base directory doesn't exist yet - this is fine for first run
+        this.initialized = true;
+        return;
+      }
+      logger.error('Failed to initialize vfkit provider', { error });
+      throw new Error(
+        `Failed to initialize vfkit provider: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Validate and restore VM state from disk
+   * Checks if VM process is still running and cleans up stale PID files
+   */
+  private async validateVMState(vmId: string): Promise<void> {
+    const vmDir = path.join(this.vmBaseDir, vmId);
+    const pidPath = path.join(vmDir, 'vm.pid');
+
+    try {
+      // Check if PID file exists
+      const pidData = await fs.readFile(pidPath, 'utf-8');
+      const pid = parseInt(pidData.trim());
+
+      if (isNaN(pid)) {
+        logger.warn('Invalid PID file, cleaning up', { vmId, pid: pidData });
+        await fs.unlink(pidPath);
+        return;
+      }
+
+      // Check if process is still running
+      try {
+        process.kill(pid, 0); // Signal 0 checks if process exists without killing it
+        logger.debug('VM process still running', { vmId, pid });
+      } catch {
+        // Process doesn't exist - clean up stale PID file
+        logger.info('Cleaning up stale PID file', { vmId, pid });
+        await fs.unlink(pidPath);
+      }
+    } catch (error) {
+      if ((error as any)?.code === 'ENOENT') {
+        // No PID file - VM is stopped, this is expected
+        logger.debug('VM has no PID file (stopped)', { vmId });
+        return;
+      }
+      // Other errors - log but continue
+      logger.warn('Error validating VM state', { vmId, error });
+    }
   }
   
   async detect(): Promise<boolean> {
@@ -52,6 +131,15 @@ export class VfkitProvider implements VMProvider {
         'For more information: https://github.com/crc-org/vfkit'
       );
       return false;
+    }
+  }
+
+  /**
+   * Ensure provider is initialized before operations
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (!this.initialized) {
+      await this.initialize();
     }
   }
 
@@ -161,6 +249,9 @@ export class VfkitProvider implements VMProvider {
   }
 
   async create(config: VMConfig): Promise<VM> {
+    // Ensure provider is initialized
+    await this.ensureInitialized();
+
     logger.info('Creating vfkit VM', { name: config.name });
     const span = getTracer().startSpan('vfkit.create');
     span.setTag('vm.name', config.name);
@@ -358,6 +449,9 @@ export class VfkitProvider implements VMProvider {
   }
   
   async list(): Promise<VM[]> {
+    // Ensure provider is initialized to restore VM state
+    await this.ensureInitialized();
+
     const vms: VM[] = [];
 
     try {
