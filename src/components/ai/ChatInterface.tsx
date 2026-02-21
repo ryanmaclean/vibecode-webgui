@@ -21,6 +21,7 @@ import {
   clearCurrentSessionId,
 } from '@/lib/session-manager';
 import ModelSelector from '@/components/ai/ModelSelector';
+import ModelDisplay from '@/components/ai/ModelDisplay';
 import type { ModelProfile } from '@/types/model-comparison';
 import { modelRegistry } from '@/lib/ai/models/model-registry';
 
@@ -292,11 +293,12 @@ export function ChatInterface({
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold">AI Chat</h2>
-          <Badge variant="outline" data-testid="model-badge">
-            {availableModels.find((m) => m.id === selectedModel)?.name || selectedModel}
-          </Badge>
+          <ModelDisplay
+            model={availableModels.find((m) => m.id === selectedModel)}
+            compact
+          />
         </div>
         <Button
           variant="outline"

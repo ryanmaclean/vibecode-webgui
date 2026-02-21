@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
 import ModelSelector from '@/components/ai/ModelSelector'
+import ModelDisplay from '@/components/ai/ModelDisplay'
 import type { ModelProfile } from '@/types/model-comparison'
 import { modelRegistry } from '@/lib/ai/models/model-registry'
 // import { logger } from '@/lib/logger';
@@ -388,13 +389,16 @@ export const EnhancedChatInterface = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
+  // Get current model for display
+  const currentModel = availableModels.find((m) => m.id === selectedModel)
+
   return (
     <TooltipProvider>
       <Card className={`flex flex-col h-full ${className}`}>
         {/* Header */}
         <CardContent className="flex-none p-4 border-b">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <MessageSquare className="w-5 h-5 text-blue-500" />
               <span className="font-semibold">Enhanced AI Chat</span>
               {conversationId && (
@@ -402,6 +406,10 @@ export const EnhancedChatInterface = ({
                   {conversationId.slice(-8)}
                 </Badge>
               )}
+              <ModelDisplay
+                model={currentModel}
+                compact
+              />
             </div>
             <div className="flex items-center space-x-2">
               <ModelSelector

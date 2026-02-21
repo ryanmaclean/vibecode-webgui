@@ -6,6 +6,7 @@ import { Send, Bot, User, Upload, Code, Settings } from 'lucide-react'
 import { Button, Textarea, Card, CardContent, Badge, ScrollArea } from '@/components/ui';
 import { AIErrorBoundary } from '@/components/error/ErrorBoundary'
 import ModelSelector from '@/components/ai/ModelSelector'
+import ModelDisplay from '@/components/ai/ModelDisplay'
 import type { ModelProfile } from '@/types/model-comparison'
 import { modelRegistry } from '@/lib/ai/models/model-registry'
 // import { logger } from '@/lib/logger';
@@ -300,10 +301,13 @@ const AIChatInterfaceContent = ({
       {/* Header */}
       <header className="border-b border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <Bot className="w-6 h-6 text-blue-600" aria-hidden="true" />
             <h2 className="font-semibold text-lg" id="chat-heading">AI Assistant</h2>
-            <Badge variant="outline" aria-label={`Current model: ${currentModelName}`}>{currentModelName}</Badge>
+            <ModelDisplay
+              model={currentModel}
+              compact
+            />
           </div>
           <div className="flex items-center space-x-1" role="toolbar" aria-label="Chat controls">
             <Button
