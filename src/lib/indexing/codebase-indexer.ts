@@ -60,6 +60,9 @@ export class CodebaseIndexer {
   private embeddingProviderLabel = 'unconfigured'
   private indexingInProgress = new Set<number>() // Track projects being indexed
   private ignorePatterns: string[] = []
+  private batchSize = 5 // Process chunks in batches to avoid rate limits
+  private batchDelayMs = 1000 // Delay between batches (1 second)
+  private embeddingDelayMs = 200 // Delay between individual embedding calls (200ms)
   private defaultIgnorePatterns: string[] = [
     'node_modules/**',
     '.git/**',
@@ -231,6 +234,13 @@ export class CodebaseIndexer {
   }
 
   /**
+   * Sleep utility for rate limiting
+   */
+  private async sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  /**
    * Generate embedding for chunk content
    */
   private async generateEmbedding(content: string): Promise<number[]> {
@@ -334,16 +344,25 @@ export class CodebaseIndexer {
       })
 
       // Process chunks in batches to avoid rate limits
-      const batchSize = 5
       let successfulChunks = 0
 
-      for (let i = 0; i < chunks.length; i += batchSize) {
-        const batch = chunks.slice(i, i + batchSize)
+      for (let i = 0; i < chunks.length; i += this.batchSize) {
+        const batch = chunks.slice(i, i + this.batchSize)
+
+        // Add delay between batches for rate limiting (except for first batch)
+        if (i > 0) {
+          await this.sleep(this.batchDelayMs)
+        }
 
         // Process each chunk individually for pgvector embedding insertion
         for (let j = 0; j < batch.length; j++) {
           const chunk = batch[j]
           const chunkIndex = i + j
+
+          // Add delay between embedding calls within batch for rate limiting
+          if (j > 0) {
+            await this.sleep(this.embeddingDelayMs)
+          }
 
           try {
             const embedding = await this.generateEmbedding(chunk.content)
@@ -493,6 +512,11 @@ export class CodebaseIndexer {
 
         if (onProgress) {
           onProgress(i + 1, files.length, file)
+        }
+
+        // Add delay between files for rate limiting (except for first file)
+        if (i > 0) {
+          await this.sleep(this.batchDelayMs)
         }
 
         const result = await this.indexFile(file, workspaceId, projectId, userId)
