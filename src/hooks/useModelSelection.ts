@@ -29,10 +29,16 @@ export function useModelSelection(options: UseModelSelectionOptions = {}) {
   } = options
 
   const [selectedModel, setSelectedModel] = useState<ModelCapability | null>(null)
+  const [previousModel, setPreviousModel] = useState<ModelCapability | null>(null)
   const [favoriteModels, setFavoriteModels] = useState<string[]>([])
   const [recentModels, setRecentModels] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notification, setNotification] = useState<{
+    message: string
+    type: 'info' | 'success' | 'error'
+    show: boolean
+  } | null>(null)
 
   // LocalStorage keys
   const STORAGE_KEYS = {
@@ -114,9 +120,22 @@ export function useModelSelection(options: UseModelSelectionOptions = {}) {
   }, [recentModels, autoSave, STORAGE_KEYS.recent])
 
   /**
+   * Detect if a model change represents a downgrade
+   */
+  const isModelDowngrade = useCallback((fromModel: ModelCapability | null, toModel: ModelCapability) => {
+    if (!fromModel) return false
+
+    const qualityOrder = { basic: 1, good: 2, excellent: 3 }
+    const fromQuality = qualityOrder[fromModel.qualityTier]
+    const toQuality = qualityOrder[toModel.qualityTier]
+
+    return toQuality < fromQuality
+  }, [])
+
+  /**
    * Select a model by ID
    */
-  const selectModel = useCallback((modelId: string) => {
+  const selectModel = useCallback((modelId: string, skipDowngradeCheck = false) => {
     setIsLoading(true)
     setError(null)
 
@@ -125,6 +144,20 @@ export function useModelSelection(options: UseModelSelectionOptions = {}) {
 
       if (!model) {
         throw new Error(`Model not found: ${modelId}`)
+      }
+
+      // Check for downgrade
+      if (!skipDowngradeCheck && isModelDowngrade(selectedModel, model)) {
+        setNotification({
+          message: `Model changed from ${selectedModel?.name} to ${model.name} (lower quality tier). You can revert this change.`,
+          type: 'info',
+          show: true,
+        })
+      }
+
+      // Store previous model before updating
+      if (selectedModel) {
+        setPreviousModel(selectedModel)
       }
 
       setSelectedModel(model)
@@ -140,7 +173,7 @@ export function useModelSelection(options: UseModelSelectionOptions = {}) {
     } finally {
       setIsLoading(false)
     }
-  }, [maxRecentModels])
+  }, [maxRecentModels, selectedModel, isModelDowngrade])
 
   /**
    * Toggle a model in favorites
@@ -225,13 +258,43 @@ export function useModelSelection(options: UseModelSelectionOptions = {}) {
     return intelligentModelSelection.getModelById(modelId)
   }, [])
 
+  /**
+   * Revert to previous model
+   */
+  const revertToPreviousModel = useCallback(() => {
+    if (!previousModel) {
+      setError('No previous model to revert to')
+      return
+    }
+
+    const modelToRevert = previousModel
+    setPreviousModel(selectedModel)
+    setSelectedModel(modelToRevert)
+    setNotification(null)
+
+    // Add to recent models
+    setRecentModels(prev => {
+      const filtered = prev.filter(id => id !== modelToRevert.id)
+      return [modelToRevert.id, ...filtered].slice(0, maxRecentModels)
+    })
+  }, [previousModel, selectedModel, maxRecentModels])
+
+  /**
+   * Dismiss notification
+   */
+  const dismissNotification = useCallback(() => {
+    setNotification(null)
+  }, [])
+
   return {
     // State
     selectedModel,
+    previousModel,
     favoriteModels,
     recentModels,
     isLoading,
     error,
+    notification,
 
     // Actions
     selectModel,
@@ -240,6 +303,8 @@ export function useModelSelection(options: UseModelSelectionOptions = {}) {
     clearRecent,
     clearFavorites,
     resetToDefault,
+    revertToPreviousModel,
+    dismissNotification,
 
     // Queries
     getAllModels,
