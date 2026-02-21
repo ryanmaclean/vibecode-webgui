@@ -26,7 +26,7 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "tauri:build:debug": "tauri build --debug",
-    "build:tauri": "cross-env NEXT_TELEMETRY_DISABLED=1 NEXT_CONFIG_FILE=next.config.tauri.js next build --webpack",
+    "build:tauri": "cross-env NEXT_TELEMETRY_DISABLED=1 NEXT_OUTPUT_MODE=export next build --webpack",
     "build:linux": "./scripts/build-linux.sh --arch all",
     "build:linux:x64": "./scripts/build-linux.sh --arch x64",
     "build:linux:arm64": "./scripts/build-linux.sh --arch arm64",
