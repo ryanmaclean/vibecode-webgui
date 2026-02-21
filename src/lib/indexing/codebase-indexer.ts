@@ -9,6 +9,7 @@ import { CodeChunker, CodeChunk } from './code-chunker'
 import { EmbeddingServiceFactory, EmbeddingServiceType } from '../ai/embeddingServiceFactory'
 import fs from 'fs/promises'
 import path from 'path'
+import { minimatch } from 'minimatch'
 
 // Check if we're in build mode
 const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' ||
@@ -58,6 +59,60 @@ export class CodebaseIndexer {
   private embeddingService: EmbeddingServiceType | null = null
   private embeddingProviderLabel = 'unconfigured'
   private indexingInProgress = new Set<number>() // Track projects being indexed
+  private ignorePatterns: string[] = []
+  private defaultIgnorePatterns: string[] = [
+    'node_modules/**',
+    '.git/**',
+    'dist/**',
+    'build/**',
+    'coverage/**',
+    '.next/**',
+    '__pycache__/**',
+    '*.pyc',
+    '.vscode/**',
+    '.idea/**',
+    '*.swp',
+    '*.swo',
+    '*~',
+    '.DS_Store',
+    'Thumbs.db',
+    '*.log',
+    'logs/**',
+    'tmp/**',
+    'temp/**',
+    '*.tmp',
+    '.env',
+    '.env.*',
+    '*.min.js',
+    '*.min.css',
+    '*.bundle.js',
+    '*.chunk.js',
+    'package-lock.json',
+    'yarn.lock',
+    'pnpm-lock.yaml',
+    '.git/**',
+    '.svn/**',
+    '.hg/**',
+    'bower_components/**',
+    'vendor/**',
+    'target/**',
+    'bin/**',
+    'obj/**',
+    '*.exe',
+    '*.dll',
+    '*.so',
+    '*.dylib',
+    '*.class',
+    '*.jar',
+    '*.war',
+    '*.o',
+    '*.a',
+    '*.img',
+    '*.iso',
+    '*.qcow2',
+    '*.cpio.gz',
+    '*.img.gz',
+  ]
 
   constructor() {
     this.codeChunker = new CodeChunker()
@@ -81,6 +136,91 @@ export class CodebaseIndexer {
         this.embeddingService = null
       }
     }
+  }
+
+  /**
+   * Load ignore patterns from .gitignore and .cursorindexingignore files
+   */
+  private async loadIgnorePatterns(projectPath: string): Promise<void> {
+    this.ignorePatterns = [...this.defaultIgnorePatterns]
+
+    // Load .gitignore
+    const gitignorePath = path.join(projectPath, '.gitignore')
+    try {
+      const gitignoreContent = await fs.readFile(gitignorePath, 'utf-8')
+      const gitignorePatterns = this.parseIgnoreFile(gitignoreContent)
+      this.ignorePatterns.push(...gitignorePatterns)
+    } catch (error) {
+      // .gitignore may not exist, which is fine
+    }
+
+    // Load .cursorindexingignore
+    const cursorIgnorePath = path.join(projectPath, '.cursorindexingignore')
+    try {
+      const cursorIgnoreContent = await fs.readFile(cursorIgnorePath, 'utf-8')
+      const cursorIgnorePatterns = this.parseIgnoreFile(cursorIgnoreContent)
+      this.ignorePatterns.push(...cursorIgnorePatterns)
+    } catch (error) {
+      // .cursorindexingignore may not exist, which is fine
+    }
+
+    // Load .vibecodeindexignore (custom ignore file)
+    const vibecodeIgnorePath = path.join(projectPath, '.vibecodeindexignore')
+    try {
+      const vibecodeIgnoreContent = await fs.readFile(vibecodeIgnorePath, 'utf-8')
+      const vibecodeIgnorePatterns = this.parseIgnoreFile(vibecodeIgnoreContent)
+      this.ignorePatterns.push(...vibecodeIgnorePatterns)
+    } catch (error) {
+      // .vibecodeindexignore may not exist, which is fine
+    }
+  }
+
+  /**
+   * Parse ignore file content into patterns
+   */
+  private parseIgnoreFile(content: string): string[] {
+    return content
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0 && !line.startsWith('#'))
+      .map(pattern => {
+        // Convert gitignore patterns to minimatch patterns
+        // Directories ending with / should match everything inside
+        if (pattern.endsWith('/')) {
+          return pattern + '**'
+        }
+        return pattern
+      })
+  }
+
+  /**
+   * Check if a file or directory should be ignored
+   */
+  private shouldIgnore(filePath: string, projectPath: string): boolean {
+    // Get relative path from project root
+    const relativePath = path.relative(projectPath, filePath)
+
+    // Normalize path separators for cross-platform compatibility
+    const normalizedPath = relativePath.split(path.sep).join('/')
+
+    // Check against all ignore patterns
+    for (const pattern of this.ignorePatterns) {
+      // Check if pattern matches the path or any parent directory
+      if (minimatch(normalizedPath, pattern, { dot: true, matchBase: true })) {
+        return true
+      }
+
+      // Also check if any parent directory matches the pattern
+      const pathParts = normalizedPath.split('/')
+      for (let i = 1; i <= pathParts.length; i++) {
+        const partialPath = pathParts.slice(0, i).join('/')
+        if (minimatch(partialPath, pattern, { dot: true, matchBase: true })) {
+          return true
+        }
+      }
+    }
+
+    return false
   }
 
   /**
@@ -507,8 +647,7 @@ export class CodebaseIndexer {
 
   /**
    * Find source files in a project directory
-   * This is a basic implementation that will be enhanced in subtask-3-2
-   * with .gitignore and .vibecodeindexignore support
+   * Uses .gitignore, .cursorindexingignore, and .vibecodeindexignore for filtering
    */
   private async findSourceFiles(projectPath: string): Promise<string[]> {
     const sourceFiles: string[] = []
@@ -519,6 +658,9 @@ export class CodebaseIndexer {
       '.md', '.markdown'
     ]
 
+    // Load ignore patterns before traversing
+    await this.loadIgnorePatterns(projectPath)
+
     const traverseDirectory = async (dirPath: string): Promise<void> => {
       try {
         const entries = await fs.readdir(dirPath, { withFileTypes: true })
@@ -526,20 +668,12 @@ export class CodebaseIndexer {
         for (const entry of entries) {
           const fullPath = path.join(dirPath, entry.name)
 
-          // Skip common directories to ignore
-          if (entry.isDirectory()) {
-            // Basic exclusions (will be enhanced in subtask-3-2)
-            if (
-              entry.name === 'node_modules' ||
-              entry.name === '.git' ||
-              entry.name === 'dist' ||
-              entry.name === 'build' ||
-              entry.name === 'coverage' ||
-              entry.name === '.next'
-            ) {
-              continue
-            }
+          // Check if path should be ignored using patterns
+          if (this.shouldIgnore(fullPath, projectPath)) {
+            continue
+          }
 
+          if (entry.isDirectory()) {
             await traverseDirectory(fullPath)
           } else if (entry.isFile()) {
             const ext = path.extname(entry.name).toLowerCase()
