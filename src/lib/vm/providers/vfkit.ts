@@ -464,6 +464,288 @@ export class VfkitProvider implements VMProvider {
   async status(vmId: string): Promise<VMStatus> {
     return await this.getVMStatus(vmId);
   }
+
+  /**
+   * Pause the VM by sending SIGSTOP to the vfkit process
+   */
+  async pause(vmId: string): Promise<void> {
+    logger.info('Pausing vfkit VM', { vmId });
+
+    const pidPath = path.join(this.vmBaseDir, vmId, 'vm.pid');
+
+    try {
+      const pid = await fs.readFile(pidPath, 'utf-8');
+      const pidNum = parseInt(pid.trim());
+
+      if (isNaN(pidNum)) {
+        throw new Error(
+          `VM "${vmId}" has invalid PID file: "${pid}" is not a valid process ID. ` +
+          `The VM may need to be cleaned up manually.`
+        );
+      }
+
+      // Send SIGSTOP to pause the VM process
+      process.kill(pidNum, 'SIGSTOP');
+      logger.info('VM paused successfully', { vmId, pid: pidNum });
+    } catch (error) {
+      if ((error as any)?.code === 'ENOENT') {
+        throw new Error(
+          `VM "${vmId}" is not running: PID file not found at ${pidPath}. ` +
+          `The VM may already be stopped or was not started properly.`
+        );
+      }
+      if ((error as any)?.code === 'ESRCH') {
+        throw new Error(
+          `VM "${vmId}" process is not running (stale PID file). ` +
+          `The VM may have been stopped externally.`
+        );
+      }
+      if ((error as any)?.code === 'EPERM') {
+        throw new Error(
+          `Permission denied when pausing VM "${vmId}". ` +
+          `The VM process may be owned by another user.`
+        );
+      }
+      logger.error('Failed to pause VM', { vmId, error });
+      throw new Error(`Failed to pause VM "${vmId}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Resume the VM by sending SIGCONT to the vfkit process
+   */
+  async resume(vmId: string): Promise<void> {
+    logger.info('Resuming vfkit VM', { vmId });
+
+    const pidPath = path.join(this.vmBaseDir, vmId, 'vm.pid');
+
+    try {
+      const pid = await fs.readFile(pidPath, 'utf-8');
+      const pidNum = parseInt(pid.trim());
+
+      if (isNaN(pidNum)) {
+        throw new Error(
+          `VM "${vmId}" has invalid PID file: "${pid}" is not a valid process ID. ` +
+          `The VM may need to be cleaned up manually.`
+        );
+      }
+
+      // Send SIGCONT to resume the VM process
+      process.kill(pidNum, 'SIGCONT');
+      logger.info('VM resumed successfully', { vmId, pid: pidNum });
+    } catch (error) {
+      if ((error as any)?.code === 'ENOENT') {
+        throw new Error(
+          `VM "${vmId}" is not running: PID file not found at ${pidPath}. ` +
+          `The VM may already be stopped or was not started properly.`
+        );
+      }
+      if ((error as any)?.code === 'ESRCH') {
+        throw new Error(
+          `VM "${vmId}" process is not running (stale PID file). ` +
+          `The VM may have been stopped externally.`
+        );
+      }
+      if ((error as any)?.code === 'EPERM') {
+        throw new Error(
+          `Permission denied when resuming VM "${vmId}". ` +
+          `The VM process may be owned by another user.`
+        );
+      }
+      logger.error('Failed to resume VM', { vmId, error });
+      throw new Error(`Failed to resume VM "${vmId}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Save VM state to a specified path
+   * Saves disk image and VM configuration for later restoration
+   */
+  async saveState(vmId: string, statePath: string): Promise<boolean> {
+    logger.info('Saving VM state', { vmId, statePath });
+
+    const vmDir = path.join(this.vmBaseDir, vmId);
+
+    try {
+      // Verify VM exists
+      try {
+        await fs.access(vmDir);
+      } catch {
+        throw new Error(`VM "${vmId}" not found at ${vmDir}`);
+      }
+
+      // Create state directory
+      await fs.mkdir(statePath, { recursive: true });
+
+      // Save disk image
+      const diskPath = path.join(vmDir, 'disk/root.img');
+      const stateDiskPath = path.join(statePath, 'root.img');
+
+      try {
+        await fs.access(diskPath);
+        logger.debug('Copying disk image', { from: diskPath, to: stateDiskPath });
+        await fs.copyFile(diskPath, stateDiskPath);
+      } catch (error) {
+        if ((error as any)?.code === 'ENOENT') {
+          logger.warn('Disk image not found, skipping', { diskPath });
+        } else {
+          throw error;
+        }
+      }
+
+      // Save VM configuration
+      const configPath = path.join(vmDir, 'config.json');
+      const stateConfigPath = path.join(statePath, 'config.json');
+
+      try {
+        await fs.access(configPath);
+        logger.debug('Copying configuration', { from: configPath, to: stateConfigPath });
+        await fs.copyFile(configPath, stateConfigPath);
+      } catch (error) {
+        if ((error as any)?.code === 'ENOENT') {
+          logger.warn('Configuration not found, skipping', { configPath });
+        } else {
+          throw error;
+        }
+      }
+
+      // Save state metadata
+      const metadata = {
+        vmId,
+        savedAt: new Date().toISOString(),
+        provider: 'vfkit',
+      };
+      const metadataPath = path.join(statePath, 'metadata.json');
+      await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+
+      logger.info('VM state saved successfully', { vmId, statePath });
+      return true;
+    } catch (error) {
+      logger.error('Failed to save VM state', { vmId, statePath, error });
+
+      if ((error as any)?.code === 'ENOSPC') {
+        throw new Error(
+          `Insufficient disk space to save VM state at ${statePath}. ` +
+          `Free up disk space and try again.`
+        );
+      }
+      if ((error as any)?.code === 'EACCES' || (error as any)?.code === 'EPERM') {
+        throw new Error(
+          `Permission denied when saving VM state to ${statePath}. ` +
+          `Ensure you have write permissions to the target directory.`
+        );
+      }
+
+      throw new Error(`Failed to save VM state: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Restore VM state from a specified path
+   * Restores disk image and VM configuration from a previous save
+   */
+  async restoreState(vmId: string, statePath: string): Promise<boolean> {
+    logger.info('Restoring VM state', { vmId, statePath });
+
+    const vmDir = path.join(this.vmBaseDir, vmId);
+
+    try {
+      // Verify state directory exists
+      try {
+        await fs.access(statePath);
+      } catch {
+        throw new Error(`State path not found: ${statePath}`);
+      }
+
+      // Verify VM directory exists
+      try {
+        await fs.access(vmDir);
+      } catch {
+        throw new Error(`VM "${vmId}" not found at ${vmDir}`);
+      }
+
+      // Verify VM is stopped before restoring
+      const status = await this.getVMStatus(vmId);
+      if (status === 'running') {
+        throw new Error(
+          `VM "${vmId}" must be stopped before restoring state. ` +
+          `Stop the VM first with the stop command.`
+        );
+      }
+
+      // Restore disk image
+      const stateDiskPath = path.join(statePath, 'root.img');
+      const diskPath = path.join(vmDir, 'disk/root.img');
+
+      try {
+        await fs.access(stateDiskPath);
+        logger.debug('Restoring disk image', { from: stateDiskPath, to: diskPath });
+        await fs.copyFile(stateDiskPath, diskPath);
+      } catch (error) {
+        if ((error as any)?.code === 'ENOENT') {
+          logger.warn('Disk image not found in state, skipping', { stateDiskPath });
+        } else {
+          throw error;
+        }
+      }
+
+      // Restore VM configuration
+      const stateConfigPath = path.join(statePath, 'config.json');
+      const configPath = path.join(vmDir, 'config.json');
+
+      try {
+        await fs.access(stateConfigPath);
+        logger.debug('Restoring configuration', { from: stateConfigPath, to: configPath });
+        await fs.copyFile(stateConfigPath, configPath);
+      } catch (error) {
+        if ((error as any)?.code === 'ENOENT') {
+          logger.warn('Configuration not found in state, skipping', { stateConfigPath });
+        } else {
+          throw error;
+        }
+      }
+
+      logger.info('VM state restored successfully', { vmId, statePath });
+      return true;
+    } catch (error) {
+      logger.error('Failed to restore VM state', { vmId, statePath, error });
+
+      if ((error as any)?.code === 'ENOSPC') {
+        throw new Error(
+          `Insufficient disk space to restore VM state to ${vmDir}. ` +
+          `Free up disk space and try again.`
+        );
+      }
+      if ((error as any)?.code === 'EACCES' || (error as any)?.code === 'EPERM') {
+        throw new Error(
+          `Permission denied when restoring VM state to ${vmDir}. ` +
+          `Ensure you have write permissions to the VM directory.`
+        );
+      }
+
+      throw new Error(`Failed to restore VM state: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get VM configuration
+   */
+  async getConfig(vmId: string): Promise<VMConfig | null> {
+    const configPath = path.join(this.vmBaseDir, vmId, 'config.json');
+
+    try {
+      const configData = await fs.readFile(configPath, 'utf-8');
+      const config: VMConfig = JSON.parse(configData);
+      return config;
+    } catch (error) {
+      if ((error as any)?.code === 'ENOENT') {
+        logger.debug('VM config not found', { vmId, configPath });
+        return null;
+      }
+      logger.error('Failed to read VM config', { vmId, error });
+      return null;
+    }
+  }
   
   /**
    * Create VM directory structure
