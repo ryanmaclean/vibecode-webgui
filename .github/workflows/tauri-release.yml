@@ -169,6 +169,29 @@ jobs:
             pkg-config \
             openssl@3
 
+      - name: Validate vibecode-vm sidecar binary
+        working-directory: platforms/tauri
+        run: |
+          echo "Checking for vibecode-vm sidecar binaries..."
+          echo "Available binaries:"
+          ls -lh binaries/
+
+          # Check for ARM64 binary (required)
+          if [ -f "binaries/vibecode-vm-aarch64-apple-darwin" ]; then
+            echo "✅ ARM64 binary found: vibecode-vm-aarch64-apple-darwin"
+          else
+            echo "❌ ERROR: ARM64 binary not found (vibecode-vm-aarch64-apple-darwin)"
+            exit 1
+          fi
+
+          # Check for x86_64 binary (optional but noted)
+          if [ -f "binaries/vibecode-vm-x86_64-apple-darwin" ]; then
+            echo "✅ Intel x86_64 binary found: vibecode-vm-x86_64-apple-darwin"
+          else
+            echo "⚠️  WARNING: Intel x86_64 binary not found (vibecode-vm-x86_64-apple-darwin)"
+            echo "    Build will be ARM64-only. Intel Mac support requires x86_64 binary."
+          fi
+
       - name: Build Tauri app (Apple Silicon)
         working-directory: platforms/tauri
         env:
@@ -177,9 +200,19 @@ jobs:
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
           NEXT_CONFIG_FILE: next.config.tauri.js
         run: |
-          # Note: Building for ARM64 only since vibecode-vm sidecar is only available for aarch64
-          echo "Building Tauri app for Apple Silicon (aarch64)..."
+          # PLATFORM SUPPORT NOTICE:
+          # Building for ARM64 only because vibecode-vm sidecar is only available for aarch64-apple-darwin
+          # Intel Mac (x86_64-apple-darwin) binary is not available
+          # To enable Intel Mac support: compile vibecode-vm for x86_64 and place in binaries/ directory
+          # See platforms/tauri/README.md for details
+
+          echo "=========================================="
+          echo "Building Tauri app for Apple Silicon ONLY"
+          echo "Target: aarch64-apple-darwin (ARM64)"
+          echo "Intel Mac builds: NOT SUPPORTED (missing x86_64 binary)"
+          echo "=========================================="
           echo "Using Next.js config: $NEXT_CONFIG_FILE"
+
           npx tauri build --target aarch64-apple-darwin --verbose || {
             echo "Build failed. Checking logs..."
             test -f target/aarch64-apple-darwin/release/build.log && cat target/aarch64-apple-darwin/release/build.log
