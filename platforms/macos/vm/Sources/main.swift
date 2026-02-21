@@ -326,12 +326,187 @@ class VMManager: NSObject {
 
 extension VMManager: VZVirtualMachineDelegate {
     func guestDidStop(_ virtualMachine: VZVirtualMachine) {
-        print("⚠️  VM stopped")
+        print("""
+        ⚠️  Virtual Machine Stopped
+
+        The VM has shut down cleanly.
+
+        Possible reasons:
+        → Guest OS initiated shutdown
+        → Application requested VM stop
+        → VM completed its boot sequence
+
+        This is a normal shutdown and not an error.
+        """)
         exit(0)
     }
-    
+
     func virtualMachine(_ virtualMachine: VZVirtualMachine, didStopWithError error: Error) {
-        print("❌ VM error: \(error.localizedDescription)")
+        let nsError = error as NSError
+
+        var errorMessage = """
+        ❌ Virtual Machine Error
+
+        The VM encountered an error and stopped unexpectedly.
+
+        """
+
+        // Provide specific guidance based on error domain and code
+        if nsError.domain == "VZErrorDomain" {
+            switch nsError.code {
+            case 1: // VZErrorInternal
+                errorMessage += """
+                Error Type: Internal virtualization error
+
+                This is usually caused by:
+                → Invalid VM configuration
+                → Corrupted disk image
+                → Insufficient system resources
+
+                Troubleshooting steps:
+                1. Check available memory and disk space
+                2. Verify VM configuration parameters
+                3. Try removing and recreating the VM bundle:
+                   rm -rf \(vmBundlePath.path)
+                4. Check Console.app for detailed system logs
+
+                """
+
+            case 2: // VZErrorInvalidVirtualMachineConfiguration
+                errorMessage += """
+                Error Type: Invalid VM configuration
+
+                The VM configuration is invalid or incompatible.
+
+                Common causes:
+                → CPU count exceeds system capabilities
+                → Memory size too large for available RAM
+                → Invalid boot loader configuration
+                → Missing or corrupted kernel/initrd files
+
+                Troubleshooting steps:
+                1. Verify kernel and initrd files exist in:
+                   \(vmBundlePath.path)
+                2. Run: ./scripts/macos-vm/download-kernel.sh
+                3. Check system resources:
+                   - Available RAM
+                   - CPU core count
+                4. Review configuration in createVMConfiguration()
+
+                """
+
+            case 3: // VZErrorInvalidVirtualMachineState
+                errorMessage += """
+                Error Type: Invalid VM state
+
+                The VM is in an invalid state for the requested operation.
+
+                This can happen when:
+                → Trying to start an already running VM
+                → Accessing VM during state transition
+                → VM is paused or suspended incorrectly
+
+                Troubleshooting steps:
+                1. Ensure no other instances are running
+                2. Restart the application
+                3. Remove VM state files:
+                   rm -rf \(vmBundlePath.path)/*.state
+
+                """
+
+            case 4: // VZErrorInvalidVirtualMachineStateTransition
+                errorMessage += """
+                Error Type: Invalid state transition
+
+                The VM cannot transition to the requested state.
+
+                Troubleshooting steps:
+                1. Wait for current operation to complete
+                2. Restart the VM from a stopped state
+                3. Check for resource contention
+
+                """
+
+            case 5: // VZErrorVirtualMachineLimitExceeded
+                errorMessage += """
+                Error Type: VM limit exceeded
+
+                Too many VMs are running on this system.
+
+                Fix this issue:
+                → Close other running virtual machines
+                → macOS limits concurrent VM instances
+                → Check Activity Monitor for other VM processes
+
+                """
+
+            default:
+                errorMessage += """
+                Error Type: Virtualization framework error (code \(nsError.code))
+
+                Troubleshooting steps:
+                1. Check system logs in Console.app
+                2. Verify virtualization entitlements
+                3. Ensure macOS is up to date
+                4. Review Apple's Virtualization framework documentation
+
+                """
+            }
+        } else if nsError.domain == NSCocoaErrorDomain {
+            // File system or resource errors
+            errorMessage += """
+            Error Type: System resource error
+
+            This is typically a file system or resource issue.
+
+            Common causes:
+            → Disk image file is corrupted or inaccessible
+            → Insufficient permissions to access VM files
+            → Out of disk space
+            → File system errors
+
+            Troubleshooting steps:
+            1. Check disk space: df -h
+            2. Verify VM directory permissions:
+               ls -la \(vmBundlePath.path)
+            3. Check file integrity:
+               ls -lh \(vmBundlePath.path)/*
+            4. Try recreating the VM:
+               rm -rf \(vmBundlePath.path)
+
+            """
+        } else {
+            // Generic error handling
+            errorMessage += """
+            Error Type: Unexpected error
+
+            An unexpected error occurred during VM operation.
+
+            Troubleshooting steps:
+            1. Check Console.app for detailed system logs
+            2. Verify all VM files are intact
+            3. Restart the application
+            4. Check for macOS updates
+
+            """
+        }
+
+        errorMessage += """
+        Error Details:
+        → Domain: \(nsError.domain)
+        → Code: \(nsError.code)
+        → Description: \(error.localizedDescription)
+        """
+
+        if let failureReason = nsError.localizedFailureReason {
+            errorMessage += "\n→ Reason: \(failureReason)"
+        }
+
+        if let recoverySuggestion = nsError.localizedRecoverySuggestion {
+            errorMessage += "\n→ Suggestion: \(recoverySuggestion)"
+        }
+
+        print(errorMessage)
         exit(1)
     }
 }
