@@ -357,10 +357,82 @@ export class VfkitProvider implements VMProvider {
     }
   }
   
+  /**
+   * Clean up VM state files (PID file, socket files, etc.)
+   * Handles locked/busy files gracefully
+   */
+  private async cleanupVMState(vmId: string): Promise<void> {
+    const vmDir = path.join(this.vmBaseDir, vmId);
+    const pidPath = path.join(vmDir, 'vm.pid');
+
+    // Clean up PID file
+    try {
+      await fs.unlink(pidPath);
+      logger.debug('Cleaned up PID file', { vmId });
+    } catch (error) {
+      const code = (error as any)?.code;
+
+      if (code === 'ENOENT') {
+        // File already removed - this is fine
+        logger.debug('PID file already removed', { vmId });
+      } else if (code === 'EBUSY' || code === 'ETXTBSY') {
+        // File is locked/busy - retry once after a delay
+        logger.warn('State file is busy, retrying cleanup', { vmId });
+        await new Promise(resolve => setTimeout(resolve, 500));
+        try {
+          await fs.unlink(pidPath);
+        } catch (retryError) {
+          // If still locked, log warning but don't fail
+          logger.warn('Unable to remove PID file (file is busy)', {
+            vmId,
+            error: retryError,
+            message: 'File may be in use by another process. It will be cleaned up on next initialization.'
+          });
+        }
+      } else if (code === 'EPERM' || code === 'EACCES') {
+        throw new Error(
+          `Permission denied when cleaning up VM "${vmId}" state files. ` +
+          `Grant Full Disk Access in System Preferences > Security & Privacy > Privacy > Full Disk Access. ` +
+          `More info: https://support.apple.com/guide/mac-help/allow-access-to-system-folders-mh15217/mac`
+        );
+      } else {
+        // Unexpected error - log but don't fail the operation
+        logger.warn('Error removing PID file during cleanup', { vmId, error });
+      }
+    }
+
+    // Clean up any additional state files (socket files, lock files, etc.)
+    try {
+      const entries = await fs.readdir(vmDir);
+      const stateFiles = entries.filter(name =>
+        name.endsWith('.sock') ||
+        name.endsWith('.lock') ||
+        name === 'state.json'
+      );
+
+      for (const file of stateFiles) {
+        try {
+          const filePath = path.join(vmDir, file);
+          await fs.unlink(filePath);
+          logger.debug('Cleaned up state file', { vmId, file });
+        } catch (error) {
+          const code = (error as any)?.code;
+          if (code !== 'ENOENT') {
+            logger.warn('Error removing state file', { vmId, file, error });
+          }
+        }
+      }
+    } catch (error) {
+      // Directory might not exist or be accessible - log but continue
+      logger.debug('Unable to scan for additional state files', { vmId, error });
+    }
+  }
+
   async stop(vmId: string): Promise<void> {
     logger.info('Stopping vfkit VM', { vmId });
 
-    const pidPath = path.join(this.vmBaseDir, vmId, 'vm.pid');
+    const vmDir = path.join(this.vmBaseDir, vmId);
+    const pidPath = path.join(vmDir, 'vm.pid');
 
     try {
       const pid = await fs.readFile(pidPath, 'utf-8');
@@ -378,8 +450,9 @@ export class VfkitProvider implements VMProvider {
       // Wait for process to stop
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Remove PID file
-      await fs.unlink(pidPath);
+      // Clean up state files after successful stop
+      await this.cleanupVMState(vmId);
+
     } catch (error) {
       if ((error as any)?.code === 'ENOENT') {
         throw new Error(
@@ -388,15 +461,15 @@ export class VfkitProvider implements VMProvider {
         );
       }
       if ((error as any)?.code === 'ESRCH') {
-        // Process doesn't exist, clean up PID file
+        // Process doesn't exist, clean up state files
         try {
-          await fs.unlink(pidPath);
-        } catch {
-          // Ignore cleanup errors
+          await this.cleanupVMState(vmId);
+        } catch (cleanupError) {
+          logger.warn('Error during state cleanup', { vmId, error: cleanupError });
         }
         throw new Error(
           `VM "${vmId}" process is not running (stale PID file). ` +
-          `The PID file has been cleaned up. You can safely start the VM again.`
+          `The state files have been cleaned up. You can safely start the VM again.`
         );
       }
       if ((error as any)?.code === 'EPERM') {
@@ -415,32 +488,64 @@ export class VfkitProvider implements VMProvider {
   async destroy(vmId: string): Promise<void> {
     logger.info('Destroying vfkit VM', { vmId });
 
-    // Stop VM if running
+    // Stop VM if running (this also cleans up state files)
     try {
       await this.stop(vmId);
     } catch (error) {
       // VM might not be running - log but continue with destruction
       logger.debug('VM stop failed during destroy (may not be running)', { vmId, error });
+
+      // Still attempt to clean up state files even if stop failed
+      try {
+        await this.cleanupVMState(vmId);
+      } catch (cleanupError) {
+        logger.debug('State cleanup failed during destroy (files may not exist)', { vmId, error: cleanupError });
+      }
     }
 
-    // Remove VM directory
+    // Remove VM directory including all state files
     const vmDir = path.join(this.vmBaseDir, vmId);
     try {
       await fs.rm(vmDir, { recursive: true, force: true });
+      logger.info('VM directory removed', { vmId, path: vmDir });
     } catch (error) {
-      if ((error as any)?.code === 'ENOENT') {
+      const code = (error as any)?.code;
+
+      if (code === 'ENOENT') {
         throw new Error(
           `VM "${vmId}" does not exist: directory not found at ${vmDir}. ` +
           `Use 'list' to see available VMs.`
         );
       }
-      if ((error as any)?.code === 'EPERM' || (error as any)?.code === 'EACCES') {
+      if (code === 'EPERM' || code === 'EACCES') {
         throw new Error(
           `Permission denied when deleting VM "${vmId}" at ${vmDir}. ` +
           `Grant Full Disk Access in System Preferences > Security & Privacy > Privacy > Full Disk Access, ` +
           `or ensure you have write permissions to the VM directory. ` +
           `More info: https://support.apple.com/guide/mac-help/allow-access-to-system-folders-mh15217/mac`
         );
+      }
+      if (code === 'EBUSY' || code === 'ETXTBSY') {
+        throw new Error(
+          `VM "${vmId}" directory is in use and cannot be deleted. ` +
+          `Some files may be locked by another process. ` +
+          `Please ensure the VM is fully stopped and no other applications are accessing the VM files. ` +
+          `You may need to restart your computer to release locked files.`
+        );
+      }
+      if (code === 'ENOTEMPTY') {
+        // Directory not empty - retry with more aggressive cleanup
+        logger.warn('Directory not empty, retrying with force', { vmId });
+        try {
+          // Try again with maxRetries
+          await fs.rm(vmDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 1000 });
+        } catch (retryError) {
+          throw new Error(
+            `VM "${vmId}" directory could not be fully deleted (some files remain). ` +
+            `Path: ${vmDir}. ` +
+            `You may need to manually delete the directory or restart your computer.`
+          );
+        }
       }
       throw new Error(
         `Failed to delete VM "${vmId}" directory at ${vmDir}: ${error instanceof Error ? error.message : 'Unknown error'}`
