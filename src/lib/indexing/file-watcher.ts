@@ -11,6 +11,7 @@ import * as chokidar from 'chokidar'
 import { EventEmitter } from 'events'
 import path from 'path'
 import * as fs from 'fs/promises'
+import * as crypto from 'crypto'
 
 /**
  * File change event types
@@ -111,6 +112,7 @@ export class FileWatcher extends EventEmitter {
   private config: FileWatcherConfig
   private watcher: chokidar.FSWatcher | null = null
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map()
+  private fileHashes: Map<string, string> = new Map() // Track file content hashes for deduplication
   private isWatching = false
 
   constructor(config: FileWatcherConfig) {
@@ -238,7 +240,20 @@ export class FileWatcher extends EventEmitter {
   }
 
   /**
-   * Handle file change with debouncing
+   * Calculate file hash for deduplication
+   */
+  private async calculateFileHash(filePath: string): Promise<string | null> {
+    try {
+      const content = await fs.readFile(filePath)
+      return crypto.createHash('sha256').update(content).digest('hex')
+    } catch (error) {
+      // File may have been deleted or is inaccessible
+      return null
+    }
+  }
+
+  /**
+   * Handle file change with debouncing and deduplication
    */
   private handleFileChange(type: FileChangeType, filePath: string): void {
     // Clear existing debounce timer for this file
@@ -248,9 +263,32 @@ export class FileWatcher extends EventEmitter {
     }
 
     // Set new debounce timer
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       this.debounceTimers.delete(filePath)
-      this.emitFileChangeEvent(type, filePath)
+
+      // For file deletions, always emit event
+      if (type === 'unlink') {
+        this.fileHashes.delete(filePath)
+        this.emitFileChangeEvent(type, filePath)
+        return
+      }
+
+      // For additions and changes, check if content actually changed
+      const currentHash = await this.calculateFileHash(filePath)
+
+      // If we can't read the file, skip this event
+      if (currentHash === null) {
+        return
+      }
+
+      const previousHash = this.fileHashes.get(filePath)
+
+      // Only emit event if hash changed (or is new file)
+      if (currentHash !== previousHash) {
+        this.fileHashes.set(filePath, currentHash)
+        this.emitFileChangeEvent(type, filePath)
+      }
+      // If hash is the same, silently skip (deduplication)
     }, this.config.debounceMs)
 
     this.debounceTimers.set(filePath, timer)
@@ -293,6 +331,9 @@ export class FileWatcher extends EventEmitter {
       clearTimeout(timer)
     }
     this.debounceTimers.clear()
+
+    // Clear file hash cache
+    this.fileHashes.clear()
 
     // Close the watcher
     if (this.watcher) {
