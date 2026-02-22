@@ -91,7 +91,7 @@ export interface UseIntersectionObserverOptions extends IntersectionObserverInit
  * )
  */
 export function useIntersectionObserver(
-  elementRef: React.RefObject<Element>,
+  elementRef: React.RefObject<Element | null>,
   options: UseIntersectionObserverOptions = {}
 ): IntersectionObserverEntry | null {
   const { root = null, rootMargin = '0px', threshold = 0, freezeOnceVisible = false } = options
@@ -163,7 +163,7 @@ export function useIntersectionObserver(
  * }, [isVisible])
  */
 export function useInView(
-  elementRef: React.RefObject<Element>,
+  elementRef: React.RefObject<Element | null>,
   options: UseIntersectionObserverOptions = {}
 ): boolean {
   const entry = useIntersectionObserver(elementRef, options)
@@ -199,7 +199,7 @@ export function useInView(
  * ))}
  */
 export function useIntersectionObserverMultiple(
-  elementsRef: React.RefObject<Element>[],
+  elementsRef: React.RefObject<Element | null>[],
   options: UseIntersectionObserverOptions = {}
 ): Map<Element, IntersectionObserverEntry> {
   const { root = null, rootMargin = '0px', threshold = 0, freezeOnceVisible = false } = options
