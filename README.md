@@ -7,6 +7,8 @@ VibeCode is the AI-native IDE and Agent Orchestrator.
 
 ## 🚀 Quick Start
 
+> **📖 New to VibeCode?** See the [Environment Setup Guide](docs/ENVIRONMENT_SETUP_GUIDE.md) for detailed configuration instructions.
+
 ### New to VibeCode? Start Here!
 Get up and running in under 5 minutes:
 ```bash
@@ -19,18 +21,15 @@ This single command will:
 - ✅ Open the onboarding wizard
 - ✅ Create a sample project for you to explore
 
-📚 **For detailed instructions and troubleshooting**, see [QUICK_START.md](docs/QUICK_START.md)
+📚 **For detailed quickstart flow and troubleshooting**, see [QUICK_START.md](docs/QUICK_START.md)
 
-### Manual Setup (Advanced)
-If you prefer to control each step:
-
-#### 1. Install Dependencies
+### 1. Install Dependencies
 ```bash
 brew install vfkit
 pip install -r scripts/requirements.txt
 ```
 
-#### 2. Launch Backend (Ubuntu VM)
+### 2. Launch Backend (Ubuntu VM)
 You can use the restored CLI tool:
 ```bash
 bin/vibecode-vm start
@@ -40,7 +39,7 @@ Or run the script directly:
 python3 scripts/launch_ubuntu_vm.py
 ```
 
-#### 3. Launch Studio
+### 3. Launch Studio
 ```bash
 npm run tauri:dev
 ```

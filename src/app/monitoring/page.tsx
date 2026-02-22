@@ -7,7 +7,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { DemoBanner } from '@/components/ui/DemoBanner'
+import { Radio, Gauge, Sparkles, ArrowRight } from 'lucide-react'
 
 export default function MonitoringDashboard() {
   const router = useRouter()
@@ -132,6 +134,66 @@ export default function MonitoringDashboard() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Specialized Monitoring Links */}
+      <div className="bg-white p-6 rounded-lg shadow border">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Specialized Monitoring</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* WebSocket Monitoring Link */}
+          <Link
+            href="/monitoring/websocket"
+            data-testid="websocket-monitoring-link"
+            className="flex items-center justify-between p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:border-blue-400 hover:shadow-md transition-all group"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-600 rounded-lg">
+                <Radio className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <div className="font-medium text-gray-900">WebSocket</div>
+                <div className="text-xs text-gray-600">Monitor connections</div>
+              </div>
+            </div>
+            <ArrowRight className="h-5 w-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
+          </Link>
+
+          {/* Rate Limit Monitoring Link */}
+          <Link
+            href="/monitoring/rate-limit"
+            data-testid="rate-limit-monitoring-link"
+            className="flex items-center justify-between p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200 hover:border-purple-400 hover:shadow-md transition-all group"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-purple-600 rounded-lg">
+                <Gauge className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <div className="font-medium text-gray-900">Rate Limit</div>
+                <div className="text-xs text-gray-600">Track API limits</div>
+              </div>
+            </div>
+            <ArrowRight className="h-5 w-5 text-purple-600 group-hover:translate-x-1 transition-transform" />
+          </Link>
+
+          {/* AI Usage Monitoring Link */}
+          <Link
+            href="/monitoring/ai-usage"
+            data-testid="ai-usage-monitoring-link"
+            className="flex items-center justify-between p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 hover:border-green-400 hover:shadow-md transition-all group"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-green-600 rounded-lg">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <div className="font-medium text-gray-900">AI Usage</div>
+                <div className="text-xs text-gray-600">Model analytics</div>
+              </div>
+            </div>
+            <ArrowRight className="h-5 w-5 text-green-600 group-hover:translate-x-1 transition-transform" />
+          </Link>
         </div>
       </div>
     </div>
