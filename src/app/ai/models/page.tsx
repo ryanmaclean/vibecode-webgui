@@ -21,6 +21,7 @@ import {
 import ModelSelector from '@/components/ai/ModelSelector';
 import ModelComparison from '@/components/ai/ModelComparison';
 import ModelDetails from '@/components/ai/ModelDetails';
+import OllamaModelManager from '@/components/ai/OllamaModelManager';
 import type { ModelProfile, TaskType } from '@/types/model-comparison';
 
 // ============================================================================
@@ -348,6 +349,9 @@ export default function AIModelsPage() {
               onModelsChange={setSelectedModels}
               onSelectModel={handleModelClick}
             />
+
+            {/* Ollama Model Manager */}
+            <OllamaModelManager showHeader />
           </div>
         )}
 

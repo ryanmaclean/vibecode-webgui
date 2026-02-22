@@ -100,7 +100,7 @@ jobs:
           fi
 
           # Move dynamic page routes that lack generateStaticParams
-          for route in "experiments" "workspace" "workspaces" "wiki"; do
+          for route in "experiments" "workspace" "workspaces" "wiki" "monitoring"; do
             if [ -d "src/app/$route" ]; then
               mv "src/app/$route" "/tmp/routes-backup/$route"
               echo "Dynamic route $route moved to /tmp/routes-backup/$route"
