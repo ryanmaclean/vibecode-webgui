@@ -24,6 +24,18 @@ AgentResponse,
 } from '@/types/agent-api'
 import { createWebSocketStreamingClient, type WebSocketStreamingClient } from '@/lib/streaming/websocket-streaming-client'
 import { parseImportsFromContent } from './import-parsing'
+import { chunkFileContent, shouldChunkFile, type FileChunk, type ChunkedFile } from './file-chunking'
+import type {
+  AIWorkerMessage,
+  AIOperationType,
+  AIProcessingConfig,
+  ProcessChunkMessage,
+  ProcessCompleteMessage,
+  StreamChunkMessage,
+  ProcessErrorMessage,
+  AIProgressMessage,
+  AIProcessingResult,
+} from '@/workers/ai-processing.worker'
 // import { logger } from '@/lib/logger';
 // ============================================================================
 // Types
@@ -139,6 +151,10 @@ export interface MonacoAgentAPIConfig {
   enableDiagnostics?: boolean
   /** Debounce delay for diagnostics (ms) */
   diagnosticsDebounce?: number
+  /** Enable Web Worker for AI operations */
+  enableWebWorker?: boolean
+  /** Enable chunked operations for large files */
+  enableChunking?: boolean
 }
 
 // ============================================================================
@@ -154,6 +170,14 @@ export class MonacoAgentAPI {
   private diagnosticsTimeout: NodeJS.Timeout | null = null
   private disposables: monaco.IDisposable[] = []
   private disposed = false
+  private aiWorker: Worker | null = null
+  private workerInitialized = false
+  private pendingWorkerOperations = new Map<string, {
+    resolve: (result: AIProcessingResult) => void
+    reject: (error: Error) => void
+    onProgress?: (progress: number, message?: string) => void
+    onStream?: (content: string, isComplete: boolean) => void
+  }>()
 
   constructor(
     editor: monaco.editor.IStandaloneCodeEditor,
@@ -170,6 +194,8 @@ export class MonacoAgentAPI {
       enableInlineSuggestions: config.enableInlineSuggestions ?? true,
       enableDiagnostics: config.enableDiagnostics ?? true,
       diagnosticsDebounce: config.diagnosticsDebounce || 1000,
+      enableWebWorker: config.enableWebWorker ?? true,
+      enableChunking: config.enableChunking ?? true,
     }
 
     // Use provided client for dependency injection (testing)
@@ -187,6 +213,11 @@ export class MonacoAgentAPI {
    */
   async initialize(): Promise<void> {
     this.log('Initializing Monaco Agent API integration')
+
+    // Initialize Web Worker if enabled
+    if (this.config.enableWebWorker) {
+      await this.initializeWorker()
+    }
 
     // Initialize WebSocket client if not already provided (dependency injection)
     if (!this.wsClient && this.config.wsUrl) {
@@ -243,6 +274,26 @@ export class MonacoAgentAPI {
       this.diagnosticsTimeout = null
     }
 
+    // Terminate Web Worker
+    if (this.aiWorker) {
+      // Cancel all pending operations
+      const cancelMessage: AIWorkerMessage = {
+        type: 'CANCEL',
+        payload: {},
+      }
+      this.aiWorker.postMessage(cancelMessage)
+
+      // Reject all pending operations
+      this.pendingWorkerOperations.forEach(({ reject }) => {
+        reject(new Error('Worker terminated'))
+      })
+      this.pendingWorkerOperations.clear()
+
+      this.aiWorker.terminate()
+      this.aiWorker = null
+      this.workerInitialized = false
+    }
+
     // Disconnect WebSocket
     if (this.wsClient) {
       this.wsClient.disconnect()
@@ -250,6 +301,217 @@ export class MonacoAgentAPI {
     }
 
     this.log('Disposal complete')
+  }
+
+  // ==========================================================================
+  // Web Worker Management
+  // ==========================================================================
+
+  /**
+   * Initialize the AI processing Web Worker
+   */
+  private async initializeWorker(): Promise<void> {
+    this.log('Initializing AI processing Web Worker')
+
+    try {
+      // Create worker instance
+      this.aiWorker = new Worker(
+        new URL('@/workers/ai-processing.worker.ts', import.meta.url),
+        { type: 'module' }
+      )
+
+      // Set up message handler
+      this.aiWorker.onmessage = (event: MessageEvent<AIWorkerMessage>) => {
+        this.handleWorkerMessage(event.data)
+      }
+
+      // Set up error handler
+      this.aiWorker.onerror = (error) => {
+        this.log('Worker error:', error)
+      }
+
+      // Wait for worker ready signal
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Worker initialization timeout'))
+        }, 5000)
+
+        const handler = (event: MessageEvent) => {
+          if (event.data.type === 'READY') {
+            clearTimeout(timeout)
+            this.aiWorker?.removeEventListener('message', handler)
+            this.workerInitialized = true
+            resolve()
+          }
+        }
+
+        this.aiWorker?.addEventListener('message', handler)
+      })
+
+      this.log('Worker initialized successfully')
+    } catch (error) {
+      this.log('Worker initialization failed:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Handle messages from the AI worker
+   */
+  private handleWorkerMessage(message: AIWorkerMessage): void {
+    switch (message.type) {
+      case 'PROCESS_COMPLETE': {
+        const { chunkId, result } = message.payload
+        const operation = this.pendingWorkerOperations.get(chunkId)
+        if (operation) {
+          operation.resolve(result)
+          this.pendingWorkerOperations.delete(chunkId)
+        }
+        break
+      }
+
+      case 'PROCESS_ERROR': {
+        const { chunkId, error } = message.payload
+        const operation = this.pendingWorkerOperations.get(chunkId)
+        if (operation) {
+          operation.reject(new Error(error))
+          this.pendingWorkerOperations.delete(chunkId)
+        }
+        break
+      }
+
+      case 'STREAM_CHUNK': {
+        const { chunkId, content, isComplete } = message.payload
+        const operation = this.pendingWorkerOperations.get(chunkId)
+        if (operation?.onStream) {
+          operation.onStream(content, isComplete)
+        }
+        break
+      }
+
+      case 'PROGRESS': {
+        const { chunkId, progress, message: progressMessage } = message.payload
+        const operation = this.pendingWorkerOperations.get(chunkId)
+        if (operation?.onProgress) {
+          operation.onProgress(progress, progressMessage)
+        }
+        break
+      }
+
+      default:
+        // Ignore unknown message types
+        break
+    }
+  }
+
+  /**
+   * Process a file chunk using the AI worker
+   */
+  private async processChunkWithWorker(
+    chunk: FileChunk,
+    operationType: AIOperationType,
+    config: Partial<AIProcessingConfig> = {},
+    callbacks?: {
+      onProgress?: (progress: number, message?: string) => void
+      onStream?: (content: string, isComplete: boolean) => void
+    }
+  ): Promise<AIProcessingResult> {
+    if (!this.aiWorker || !this.workerInitialized) {
+      throw new Error('AI worker not initialized')
+    }
+
+    // Generate unique chunk ID
+    const chunkId = `chunk-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+    // Create promise for operation completion
+    const operationPromise = new Promise<AIProcessingResult>((resolve, reject) => {
+      this.pendingWorkerOperations.set(chunkId, {
+        resolve,
+        reject,
+        onProgress: callbacks?.onProgress,
+        onStream: callbacks?.onStream,
+      })
+    })
+
+    // Send processing request to worker
+    const message: ProcessChunkMessage = {
+      type: 'PROCESS_CHUNK',
+      payload: {
+        chunk,
+        config: {
+          operationType,
+          model: this.config.model,
+          streaming: config.streaming ?? false,
+          ...config,
+        },
+        chunkId,
+        context: {
+          fileLanguage: this.editor.getModel()?.getLanguageId(),
+          fileName: this.editor.getModel()?.uri.path,
+        },
+      },
+    }
+
+    this.aiWorker.postMessage(message)
+
+    return operationPromise
+  }
+
+  /**
+   * Process content with chunking if needed
+   */
+  private async processContentWithChunking(
+    content: string,
+    operationType: AIOperationType,
+    config: Partial<AIProcessingConfig> = {},
+    callbacks?: {
+      onProgress?: (progress: number, message?: string) => void
+      onStream?: (content: string, isComplete: boolean) => void
+    }
+  ): Promise<string> {
+    // Check if chunking is needed
+    const lines = content.split('\n')
+    const bytes = new Blob([content]).size
+    const needsChunking = this.config.enableChunking && shouldChunkFile(lines.length, bytes)
+
+    if (!needsChunking || !this.config.enableWebWorker) {
+      // Process without chunking - use WebSocket fallback
+      return content
+    }
+
+    // Chunk the content
+    const chunkedFile = chunkFileContent(content, {
+      operationType: 'AI_PROCESSING',
+      forceChunking: false,
+    })
+
+    this.log(`Processing ${chunkedFile.metadata.totalChunks} chunks`)
+
+    // Process chunks sequentially (could be parallelized for some operations)
+    const results: string[] = []
+    let processedChunks = 0
+
+    for (const chunk of chunkedFile.chunks) {
+      const result = await this.processChunkWithWorker(
+        chunk,
+        operationType,
+        config,
+        {
+          onProgress: (progress, message) => {
+            // Calculate overall progress across all chunks
+            const overallProgress = (processedChunks + progress) / chunkedFile.metadata.totalChunks
+            callbacks?.onProgress?.(overallProgress, message)
+          },
+          onStream: callbacks?.onStream,
+        }
+      )
+
+      results.push(result.content)
+      processedChunks++
+    }
+
+    // Combine results
+    return results.join('\n')
   }
 
   // ==========================================================================
@@ -399,11 +661,6 @@ export class MonacoAgentAPI {
   }
 
   private async runDiagnostics(): Promise<void> {
-    if (!this.wsClient || !this.wsClient.isConnected()) {
-      this.log('WebSocket not connected, skipping diagnostics')
-      return
-    }
-
     const context = this.extractEditorContext()
     const model = this.editor.getModel()
     if (!model) return
@@ -411,6 +668,38 @@ export class MonacoAgentAPI {
     try {
       const diagnostics: AgentDiagnostic[] = []
       let completed = false
+
+      // Use Web Worker for large files if enabled
+      if (this.config.enableWebWorker && this.workerInitialized) {
+        const content = context.content
+        const lines = content.split('\n')
+        const bytes = new Blob([content]).size
+
+        if (this.config.enableChunking && shouldChunkFile(lines.length, bytes)) {
+          this.log('Running diagnostics with chunked processing')
+
+          // Process with chunking
+          await this.processContentWithChunking(
+            content,
+            'analyze',
+            { streaming: false },
+            {
+              onProgress: (progress, message) => {
+                this.log(`Diagnostics progress: ${(progress * 100).toFixed(0)}%`, message)
+              },
+            }
+          )
+
+          // Note: In production, this would extract diagnostics from the worker result
+          // For now, fall through to WebSocket if no diagnostics received
+        }
+      }
+
+      // Fall back to WebSocket streaming
+      if (!this.wsClient || !this.wsClient.isConnected()) {
+        this.log('WebSocket not connected, skipping diagnostics')
+        return
+      }
 
       await this.wsClient.stream(
         {
@@ -503,6 +792,30 @@ export class MonacoAgentAPI {
       const completions: AgentCompletion[] = []
       let completed = false
 
+      // Use Web Worker for large files if enabled
+      if (this.config.enableWebWorker && this.workerInitialized) {
+        const content = editorContext.content
+        const lines = content.split('\n')
+        const bytes = new Blob([content]).size
+
+        if (this.config.enableChunking && shouldChunkFile(lines.length, bytes)) {
+          // Process with chunking
+          await this.processContentWithChunking(
+            content,
+            'complete',
+            { streaming: false },
+            {
+              onProgress: (progress, message) => {
+                this.log(`Completion progress: ${(progress * 100).toFixed(0)}%`, message)
+              },
+            }
+          )
+          // Note: In production, this would parse completions from the worker result
+          // For now, fall through to WebSocket if no completions received
+        }
+      }
+
+      // Fall back to WebSocket streaming
       if (this.wsClient && this.wsClient.isConnected()) {
         await this.wsClient.stream(
           {
@@ -548,6 +861,25 @@ export class MonacoAgentAPI {
     try {
       let hoverInfo: AgentHover | null = null
 
+      // Use Web Worker for large files if enabled
+      if (this.config.enableWebWorker && this.workerInitialized) {
+        const content = editorContext.content
+        const lines = content.split('\n')
+        const bytes = new Blob([content]).size
+
+        if (this.config.enableChunking && shouldChunkFile(lines.length, bytes)) {
+          // Process with chunking for hover (explain operation)
+          await this.processContentWithChunking(
+            content,
+            'explain',
+            { streaming: false }
+          )
+          // Note: In production, this would parse hover info from the worker result
+          // For now, fall through to WebSocket if no hover info received
+        }
+      }
+
+      // Fall back to WebSocket streaming
       if (this.wsClient && this.wsClient.isConnected()) {
         await this.wsClient.stream(
           {
@@ -585,6 +917,25 @@ export class MonacoAgentAPI {
     try {
       const actions: AgentCodeAction[] = []
 
+      // Use Web Worker for large files if enabled
+      if (this.config.enableWebWorker && this.workerInitialized) {
+        const content = editorContext.content
+        const lines = content.split('\n')
+        const bytes = new Blob([content]).size
+
+        if (this.config.enableChunking && shouldChunkFile(lines.length, bytes)) {
+          // Process with chunking for code actions (refactor operation)
+          await this.processContentWithChunking(
+            content,
+            'refactor',
+            { streaming: false }
+          )
+          // Note: In production, this would parse code actions from the worker result
+          // For now, fall through to WebSocket if no actions received
+        }
+      }
+
+      // Fall back to WebSocket streaming
       if (this.wsClient && this.wsClient.isConnected()) {
         await this.wsClient.stream(
           {
