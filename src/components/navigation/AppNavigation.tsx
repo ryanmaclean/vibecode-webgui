@@ -26,6 +26,8 @@ import {
 } from 'lucide-react'
 import { KeyboardShortcuts } from '@/design-system/components/KeyboardShortcuts'
 import { useKeyboardShortcuts, shortcutCategories } from '@/hooks/useKeyboardShortcuts'
+import { CommandPalette } from '@/components/command-palette/CommandPalette'
+import { useCommandPalette } from '@/hooks/useCommandPalette'
 
 interface NavItem {
   title: string
@@ -174,6 +176,7 @@ export function AppNavigation() {
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const { isShortcutsOpen, setIsShortcutsOpen } = useKeyboardShortcuts()
+  const { isOpen: isCommandPaletteOpen, closeCommandPalette } = useCommandPalette()
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -342,6 +345,10 @@ export function AppNavigation() {
         isOpen={isShortcutsOpen}
         onClose={() => setIsShortcutsOpen(false)}
         shortcuts={shortcutCategories}
+      />
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={closeCommandPalette}
       />
     </header>
   )
