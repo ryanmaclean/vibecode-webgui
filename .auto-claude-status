@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "017-one-click-kubernetes-deployment",
+  "spec": "021-multi-agent-orchestration-framework",
   "state": "building",
   "subtasks": {
-    "completed": 10,
-    "total": 11,
+    "completed": 12,
+    "total": 15,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "End-to-End Integration Testing",
+    "current": "Audit Trail & Rollback UI",
     "id": null,
-    "total": 1
+    "total": 3
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 2,
-    "started_at": "2026-02-14T20:51:29.251310"
+    "number": 7,
+    "started_at": "2026-02-14T19:55:53.802146"
   },
-  "last_update": "2026-02-14T20:56:47.939201"
+  "last_update": "2026-02-14T20:14:07.356406"
 }

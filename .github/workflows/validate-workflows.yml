@@ -1,0 +1,183 @@
+name: Validate Workflow Configurations
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - 'tests/workflows/**'
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - '.github/workflows/**'
+      - 'tests/workflows/**'
+  workflow_dispatch:  # Allow manual trigger
+
+concurrency:
+  group: validate-workflows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-workflows:
+    name: Validate Workflow Best Practices
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1  # Only need current commit for validation
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml
+
+      - name: Run workflow validation tests
+        id: validate
+        run: |
+          echo "::group::Workflow Validation"
+          python tests/workflows/test_workflow_validation.py
+          echo "::endgroup::"
+
+      - name: Validation summary
+        if: always()
+        run: |
+          if [ ${{ steps.validate.outcome }} == 'success' ]; then
+            echo "✅ All workflow validations passed!"
+            echo "::notice::All workflow files passed validation checks"
+          else
+            echo "❌ Workflow validation failed"
+            echo "::error::One or more workflow files failed validation. See logs above for details."
+            exit 1
+          fi
+
+      - name: Check for systemic anti-patterns
+        if: success()
+        run: |
+          echo "::group::Checking for systemic anti-patterns"
+
+          # Check for excessive continue-on-error usage
+          CONTINUE_ON_ERROR_COUNT=$(grep -r "continue-on-error: true" .github/workflows/ 2>/dev/null | wc -l || echo "0")
+          echo "Found $CONTINUE_ON_ERROR_COUNT instances of 'continue-on-error: true'"
+
+          if [ "$CONTINUE_ON_ERROR_COUNT" -gt 10 ]; then
+            echo "::warning::High usage of continue-on-error ($CONTINUE_ON_ERROR_COUNT instances). Consider if all are necessary."
+          fi
+
+          # Check for workflows without concurrency control
+          WORKFLOWS_WITHOUT_CONCURRENCY=0
+          for workflow in .github/workflows/*.yml; do
+            if [ -f "$workflow" ] && ! grep -q "^concurrency:" "$workflow" && ! grep -q "workflow_call" "$workflow"; then
+              echo "::warning file=$workflow::Workflow missing concurrency control"
+              WORKFLOWS_WITHOUT_CONCURRENCY=$((WORKFLOWS_WITHOUT_CONCURRENCY + 1))
+            fi
+          done
+
+          if [ "$WORKFLOWS_WITHOUT_CONCURRENCY" -gt 0 ]; then
+            echo "Found $WORKFLOWS_WITHOUT_CONCURRENCY workflows without concurrency control"
+          else
+            echo "✅ All workflows have concurrency control"
+          fi
+
+          # Check for hardcoded repository references
+          HARDCODED_REFS=$(grep -r "ryanmaclean\|vibecode-webgui" .github/workflows/ 2>/dev/null | grep -v "github.repository" | wc -l || echo "0")
+          if [ "$HARDCODED_REFS" -gt 0 ]; then
+            echo "::warning::Found $HARDCODED_REFS potential hardcoded repository references. Consider using github.repository variables."
+          fi
+
+          echo "::endgroup::"
+
+      - name: Generate validation report
+        if: always()
+        run: |
+          cat > workflow-validation-report.md << 'EOF'
+          # Workflow Validation Report
+
+          **Date**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Branch**: ${{ github.ref_name }}
+          **Commit**: ${{ github.sha }}
+          **Status**: ${{ steps.validate.outcome }}
+
+          ## Summary
+
+          This automated validation ensures all GitHub Actions workflows follow best practices
+          identified during the CI/CD pipeline fix (Task #002).
+
+          ## Validated Patterns
+
+          - ✅ **YAML Syntax**: All workflow files are valid YAML
+          - ✅ **Basic Structure**: Required fields present (name, on, jobs)
+          - ✅ **Concurrency Control**: Workflows prevent resource waste
+          - ✅ **Fail-Fast Behavior**: Critical steps don't use continue-on-error
+          - ✅ **Dynamic Configuration**: No hardcoded repository values
+          - ✅ **Unique Container Tags**: Tags include run_id or SHA
+          - ✅ **Timeout Protection**: Jobs have timeout limits
+
+          ## What This Prevents
+
+          - **Systemic Pattern 1**: Weak CI Enforcement (continue-on-error abuse)
+          - **Systemic Pattern 3**: Missing Concurrency Controls
+          - **Systemic Pattern 5**: Hardcoded Values
+          - **Systemic Pattern 6**: Tag Collisions
+          - **Systemic Pattern 8**: Poor Error Handling
+
+          ## Next Steps
+
+          If validation failed:
+          1. Review the error messages in the workflow logs
+          2. Fix the identified issues in your workflow files
+          3. Consult `.github/workflows/TROUBLESHOOTING.md` for guidance
+          4. Re-run this validation
+
+          For best practices, see `.github/workflows/README.md`
+          EOF
+
+          echo "Generated validation report"
+
+      - name: Comment on PR (if validation failed)
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = 'workflow-validation-report.md';
+            let report = '';
+
+            if (fs.existsSync(reportPath)) {
+              report = fs.readFileSync(reportPath, 'utf8');
+            }
+
+            const comment = `## ❌ Workflow Validation Failed
+
+            The workflow validation checks have detected issues with the workflow configuration changes.
+
+            ${report}
+
+            **Action Required**: Please review the validation errors above and update your workflow files accordingly.
+
+            ---
+            <sub>Generated by validate-workflows.yml | [View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})</sub>`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Upload validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workflow-validation-report
+          path: workflow-validation-report.md
+          retention-days: 30
