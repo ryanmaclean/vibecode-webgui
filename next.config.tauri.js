@@ -15,8 +15,8 @@ const nextConfig = {
   skipMiddlewareUrlNormalize: true,
   skipTrailingSlashRedirect: true,
 
-  // NOTE: API routes are physically excluded during build by moving src/app/api
-  // to src/app/api.excluded in the workflow. This is required because:
+  // NOTE: API and selected dynamic routes are temporarily moved out of src/app
+  // by scripts/build-tauri-local.sh (used by `npm run build:tauri`). This is required because:
   // 1. API routes use force-dynamic which is incompatible with output: export
   // 2. exportPathMap is not compatible with App Router
   // 3. API routes will be handled by Tauri's Rust backend instead

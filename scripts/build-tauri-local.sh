@@ -19,7 +19,9 @@ TAURI_DIR="$PROJECT_ROOT/platforms/tauri"
 # Default options
 DEV_MODE=false
 SKIP_FRONTEND=false
+FRONTEND_ONLY=false
 TARGET="aarch64-apple-darwin"  # Default to ARM64 for Apple Silicon
+ROUTES_BACKUP_DIR=""
 
 # Colors for output
 RED='\033[0;31m'
@@ -55,6 +57,10 @@ while [[ $# -gt 0 ]]; do
             SKIP_FRONTEND=true
             shift
             ;;
+        --frontend-only)
+            FRONTEND_ONLY=true
+            shift
+            ;;
         --target)
             case $2 in
                 aarch64|arm64)
@@ -74,11 +80,12 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --help)
-            echo "Usage: $0 [--dev] [--skip-frontend] [--target aarch64|x86_64|universal]"
+            echo "Usage: $0 [--dev] [--skip-frontend] [--frontend-only] [--target aarch64|x86_64|universal]"
             echo ""
             echo "Options:"
             echo "  --dev              Build in dev mode (faster, for testing)"
             echo "  --skip-frontend    Skip frontend build (use existing build)"
+            echo "  --frontend-only    Build frontend export only (no Rust/Tauri build)"
             echo "  --target TARGET    Target architecture:"
             echo "                     - aarch64|arm64: Apple Silicon (default)"
             echo "                     - x86_64|x64|intel: Intel Mac"
@@ -99,6 +106,11 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+if [[ "$FRONTEND_ONLY" == true && "$SKIP_FRONTEND" == true ]]; then
+    log_error "--frontend-only and --skip-frontend cannot be used together"
+    exit 1
+fi
+
 check_dependency() {
     local cmd=$1
     local install_msg=$2
@@ -116,16 +128,20 @@ check_dependencies() {
 
     local missing=0
 
-    # Core build tools
-    check_dependency "rustc" "Install Rust from https://rustup.rs" || missing=1
-    check_dependency "cargo" "Install Rust from https://rustup.rs" || missing=1
+    if [[ "$FRONTEND_ONLY" != true ]]; then
+        check_dependency "rustc" "Install Rust from https://rustup.rs" || missing=1
+        check_dependency "cargo" "Install Rust from https://rustup.rs" || missing=1
+        check_dependency "rustup" "Install Rustup from https://rustup.rs" || missing=1
+    fi
+
     check_dependency "node" "Install Node.js 20+ from https://nodejs.org" || missing=1
     check_dependency "npm" "Install Node.js 20+ from https://nodejs.org" || missing=1
 
-    # Check Rust version
-    local rust_version
-    rust_version=$(rustc --version | cut -d' ' -f2)
-    log_info "Rust version: $rust_version"
+    if [[ "$FRONTEND_ONLY" != true ]]; then
+        local rust_version
+        rust_version=$(rustc --version | cut -d' ' -f2)
+        log_info "Rust version: $rust_version"
+    fi
 
     # Check Node version
     local node_version
@@ -175,31 +191,42 @@ build_frontend() {
         npm ci --legacy-peer-deps
     fi
 
-    # Backup original config and use Tauri-specific config
-    if [ -f next.config.js ]; then
-        cp next.config.js next.config.js.backup
-    fi
-    if [ -f next.config.mjs ]; then
-        mv next.config.mjs next.config.mjs.backup
-    fi
+    cleanup_frontend() {
+        local exit_code=$?
+        local route route_name
 
-    # Use Tauri config for static export
-    cp next.config.tauri.js next.config.js
+        if [[ -n "$ROUTES_BACKUP_DIR" && -d "$ROUTES_BACKUP_DIR" ]]; then
+            shopt -s nullglob
+            for route in "$ROUTES_BACKUP_DIR"/*; do
+                route_name=$(basename "$route")
+                mv "$route" "$PROJECT_ROOT/src/app/$route_name" 2>/dev/null || true
+                log_info "Restored $route_name"
+            done
+            shopt -u nullglob
+            rmdir "$ROUTES_BACKUP_DIR" 2>/dev/null || true
+        fi
 
-    # Move incompatible routes out of src/app for static export
+        ROUTES_BACKUP_DIR=""
+        trap - EXIT INT TERM
+        return $exit_code
+    }
+
+    # Move incompatible routes out of src/app for static export.
+    # Static export fails when dynamic API/routes are present in src/app.
     log_info "Temporarily moving incompatible routes..."
-    mkdir -p /tmp/routes-backup
+    ROUTES_BACKUP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/vibecode-tauri-routes.XXXXXX")"
+    trap cleanup_frontend EXIT INT TERM
 
     # Move API routes
     if [ -d "src/app/api" ]; then
-        mv src/app/api /tmp/routes-backup/api
+        mv src/app/api "$ROUTES_BACKUP_DIR/api"
         log_info "Moved API routes to temporary location"
     fi
 
     # Move dynamic page routes that lack generateStaticParams
     for route in "experiments" "workspace" "workspaces" "wiki"; do
         if [ -d "src/app/$route" ]; then
-            mv "src/app/$route" "/tmp/routes-backup/$route"
+            mv "src/app/$route" "$ROUTES_BACKUP_DIR/$route"
             log_info "Moved dynamic route $route to temporary location"
         fi
     done
@@ -207,49 +234,30 @@ build_frontend() {
     # Clean Next.js cache
     log_info "Cleaning Next.js cache..."
     rm -rf .next
+    rm -rf out
+    rm -rf platforms/public
 
-    # Build with static export
-    npm run build
-    BUILD_STATUS=$?
-
-    # Restore all routes immediately after build
-    log_info "Restoring routes..."
-    if [ -d "/tmp/routes-backup" ]; then
-        for route in /tmp/routes-backup/*; do
-            route_name=$(basename "$route")
-            mv "$route" "src/app/$route_name"
-            log_info "Restored $route_name"
-        done
-        rmdir /tmp/routes-backup
-    fi
-
-    # Check if build succeeded
-    if [ $BUILD_STATUS -ne 0 ]; then
-        log_error "Frontend build failed with status $BUILD_STATUS"
-        exit $BUILD_STATUS
-    fi
-
-    # Restore original config
-    if [ -f next.config.js.backup ]; then
-        mv next.config.js.backup next.config.js
-    fi
-    if [ -f next.config.mjs.backup ]; then
-        mv next.config.mjs.backup next.config.mjs
+    # Build static export with the main Next.js config in export mode.
+    if ! NEXT_TELEMETRY_DISABLED=1 NEXT_OUTPUT_MODE=export npx next build --webpack; then
+        log_error "Frontend build failed"
+        return 1
     fi
 
     # Verify static export was created
     if [ ! -d "out" ]; then
         log_error "Static export directory 'out' not created"
-        exit 1
+        return 1
     fi
 
     # Copy to platforms/public
     log_info "Copying static export to platforms/public..."
-    rm -rf platforms/public
-    cp -r out platforms/public
+    mkdir -p platforms/public
+    cp -r out/. platforms/public/
 
     local file_count=$(find platforms/public -type f | wc -l | tr -d ' ')
     log_success "Frontend build complete - $file_count files"
+
+    cleanup_frontend
 }
 
 verify_sidecar_binary() {
@@ -310,15 +318,15 @@ build_tauri() {
     fi
 
     # Build command
-    local build_cmd="npx tauri build --target $TARGET"
+    local -a build_cmd=(npx tauri build --target "$TARGET")
 
     if [[ "$DEV_MODE" == true ]]; then
-        build_cmd="npx tauri build --debug --target $TARGET"
+        build_cmd=(npx tauri build --debug --target "$TARGET")
         log_info "Building in DEBUG mode (faster, larger binaries)"
     fi
 
-    log_info "Running: $build_cmd"
-    eval "$build_cmd"
+    log_info "Running: ${build_cmd[*]}"
+    "${build_cmd[@]}"
 
     log_success "Tauri build completed"
 }
@@ -367,9 +375,19 @@ main() {
     log_info "Target: $TARGET"
     log_info "Mode: $([ "$DEV_MODE" = true ] && echo "Development" || echo "Production")"
     log_info "Skip frontend: $SKIP_FRONTEND"
+    log_info "Frontend only: $FRONTEND_ONLY"
     echo ""
 
     check_dependencies
+
+    if [[ "$FRONTEND_ONLY" == true ]]; then
+        build_frontend
+        echo ""
+        log_success "Frontend export complete!"
+        echo ""
+        exit 0
+    fi
+
     install_rust_targets
 
     if [[ "$SKIP_FRONTEND" != true ]]; then
