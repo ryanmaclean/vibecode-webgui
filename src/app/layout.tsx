@@ -6,6 +6,7 @@ import "./globals.css";
 import Providers from './providers';
 import Script from 'next/script';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
+import BrowserTelemetryInit from '@/components/monitoring/BrowserTelemetryInit';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
 // const geistSans = Geist({
@@ -79,6 +80,10 @@ export default function RootLayout({
           Skip to main content
         </a>
         <Providers>
+          {/* Initialize OpenTelemetry browser instrumentation */}
+          {process.env.NEXT_PUBLIC_OTEL_ENABLED !== 'false' && process.env.NEXT_PUBLIC_SKIP_MONITORING !== 'true' && (
+            <BrowserTelemetryInit />
+          )}
           <ErrorBoundary>
             <main id="main-content">
               {children}
