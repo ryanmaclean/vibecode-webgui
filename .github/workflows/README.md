@@ -16,6 +16,27 @@ This directory contains all GitHub Actions workflows for the Vibecode WebGUI pro
 
 ---
 
+## Self-Hosted Runner Opt-In For Core CI
+
+Core CI workflows (`ci.yml`, `pr-checks.yml`, `ci-simplified.yml`, `main-branch-ci.yml`) now default to GitHub-hosted runners and only switch to self-hosted when explicitly enabled.
+
+Set these repository variables in `Settings -> Secrets and variables -> Actions -> Variables`:
+
+```bash
+CI_USE_SELF_HOSTED=true
+CI_SELF_HOSTED_LABELS_JSON=["self-hosted","linux","x64"]
+```
+
+Behavior:
+- Default/fallback (safe): `CI_USE_SELF_HOSTED` unset or not `true` -> uses `ubuntu-latest`
+- Opt-in path: `CI_USE_SELF_HOSTED=true` -> uses labels from `CI_SELF_HOSTED_LABELS_JSON`
+- Label fallback: if `CI_SELF_HOSTED_LABELS_JSON` is unset, defaults to `["self-hosted","linux","x64"]`
+
+Rollback:
+- Set `CI_USE_SELF_HOSTED=false` (or remove it) to immediately route core CI jobs back to `ubuntu-latest`
+
+---
+
 ## Workflow Details
 
 ### ci-simplified.yml

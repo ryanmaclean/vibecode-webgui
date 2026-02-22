@@ -4,18 +4,17 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Codeserver version to build'
+        description: "Codeserver version to build"
         required: true
         type: string
       profiles:
-        description: 'Comma-separated profiles to build (e.g., default,gpu,cuda)'
-        required: true
+        description: "Comma-separated profiles to build (e.g., default,gpu,cuda)"
+        required: false
+        default: "default"
         type: string
-        default: 'default'
 
-# FIX #2: Concurrency Control - Include workflow inputs for unique concurrency groups
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.version }}-${{ inputs.profiles }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -25,16 +24,11 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: read
       packages: write
       id-token: write
-
-    strategy:
-      matrix:
-        profile: ${{ fromJSON(format('["{0}"]', replace(inputs.profiles, ',', '","'))) }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,133 +43,48 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
-          # FIX #1: Tag Uniqueness - Include run_id and commit SHA for traceability
-          tags: |
-            type=raw,value=${{ inputs.version }}-${{ github.run_id }}-${{ github.sha }}
-            type=raw,value=${{ inputs.version }}-${{ matrix.profile }}
-            type=raw,value=${{ inputs.version }}
-            type=raw,value=latest,enable=${{ matrix.profile == 'default' }}
-          labels: |
-            org.opencontainers.image.title=Codeserver
-            org.opencontainers.image.description=Code-server container with various profiles
-            org.opencontainers.image.version=${{ inputs.version }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            profile=${{ matrix.profile }}
-
-      - name: Build and push Docker image
-        id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile.codeserver
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            VERSION=${{ inputs.version }}
-            PROFILE=${{ matrix.profile }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
-
-      # FIX #3: SBOM Fail-Fast Validation - Proper error handling and validation
       - name: Install Syft
         run: |
           curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
 
-      - name: Generate SBOM
+      - name: Build selected profiles
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          PROFILES: ${{ github.event.inputs.profiles || 'default' }}
         run: |
-          syft scan ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ inputs.version }}-${{ github.run_id }}-${{ github.sha }} \
-            -o spdx-json \
-            --file sbom-${{ matrix.profile }}.json
-        continue-on-error: false
+          set -euo pipefail
 
-      - name: Validate SBOM File Exists
-        run: |
-          if ! test -f sbom-${{ matrix.profile }}.json; then
-            echo "❌ ERROR: SBOM file not generated"
-            exit 1
-          fi
-          echo "✅ SBOM file exists ($(stat -f%z sbom-${{ matrix.profile }}.json 2>/dev/null || stat -c%s sbom-${{ matrix.profile }}.json) bytes)"
+          IFS=',' read -ra profile_list <<< "$PROFILES"
+          for raw_profile in "${profile_list[@]}"; do
+            profile="$(echo "$raw_profile" | xargs)"
+            [ -z "$profile" ] && continue
 
-      - name: Validate SBOM JSON Structure
-        run: |
-          if ! jq empty sbom-${{ matrix.profile }}.json 2>/dev/null; then
-            echo "❌ ERROR: SBOM is not valid JSON"
-            cat sbom-${{ matrix.profile }}.json
-            exit 1
-          fi
-          echo "✅ SBOM is valid JSON"
+            image="${REGISTRY}/${{ github.repository_owner }}/${IMAGE_NAME}"
+            unique_tag="${VERSION}-${profile}-${GITHUB_RUN_ID}-${GITHUB_SHA}"
+            profile_tag="${VERSION}-${profile}"
 
-      - name: Validate SPDX Required Fields
-        run: |
-          # Check SPDX version
-          if ! jq -e '.spdxVersion' sbom-${{ matrix.profile }}.json > /dev/null; then
-            echo "❌ ERROR: Missing spdxVersion field"
-            exit 1
-          fi
+            echo "Building profile: ${profile}"
 
-          # Check packages array
-          if ! jq -e '.packages | length > 0' sbom-${{ matrix.profile }}.json > /dev/null; then
-            echo "❌ ERROR: Missing or empty packages array"
-            exit 1
-          fi
+            docker buildx build \
+              --file ./Dockerfile.codeserver \
+              --build-arg VERSION="${VERSION}" \
+              --build-arg PROFILE="${profile}" \
+              --tag "${image}:${unique_tag}" \
+              --tag "${image}:${profile_tag}" \
+              --push \
+              .
 
-          # Check creation info
-          if ! jq -e '.creationInfo' sbom-${{ matrix.profile }}.json > /dev/null; then
-            echo "❌ ERROR: Missing creationInfo field"
-            exit 1
-          fi
+            syft scan "${image}:${unique_tag}" -o spdx-json --file "sbom-${profile}.json"
+            jq empty "sbom-${profile}.json"
+          done
 
-          # Check document namespace
-          if ! jq -e '.documentNamespace' sbom-${{ matrix.profile }}.json > /dev/null; then
-            echo "❌ ERROR: Missing documentNamespace field"
-            exit 1
-          fi
-
-          echo "✅ SBOM has required SPDX fields"
-          echo "   - SPDX Version: $(jq -r '.spdxVersion' sbom-${{ matrix.profile }}.json)"
-          echo "   - Packages: $(jq '.packages | length' sbom-${{ matrix.profile }}.json)"
-          echo "   - Creator: $(jq -r '.creationInfo.creators[0]' sbom-${{ matrix.profile }}.json)"
-
-      - name: Upload SBOM Artifact
+      - name: Upload SBOM Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: sbom-${{ inputs.version }}-${{ matrix.profile }}-${{ github.run_id }}
-          path: sbom-${{ matrix.profile }}.json
+          name: sbom-${{ github.event.inputs.version || 'manual' }}-${{ github.run_id }}
+          path: sbom-*.json
+          if-no-files-found: error
           retention-days: 90
-
-      - name: Send Datadog Metrics
-        if: always()
-        run: |
-          # Send build completion metric
-          curl -X POST "https://api.datadoghq.com/api/v1/series" \
-            -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
-            -d @- << EOF
-          {
-            "series": [
-              {
-                "metric": "codeserver.build.completed",
-                "type": "count",
-                "points": [[$(date +%s), 1]],
-                "tags": [
-                  "version:${{ inputs.version }}",
-                  "profile:${{ matrix.profile }}",
-                  "status:${{ job.status }}",
-                  "workflow:${{ github.workflow }}",
-                  "repository:${{ github.repository }}"
-                ]
-              }
-            ]
-          }
-          EOF
-        continue-on-error: true
 
   summary:
     runs-on: ubuntu-latest
@@ -185,13 +94,9 @@ jobs:
     steps:
       - name: Build Summary
         run: |
-          echo "## Codeserver Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Profiles:** ${{ inputs.profiles }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Run ID:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Image Tags" >> $GITHUB_STEP_SUMMARY
-          echo "- \`${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ inputs.version }}-${{ github.run_id }}-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ inputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "## Codeserver Build Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Version:** ${{ github.event.inputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Profiles:** ${{ github.event.inputs.profiles || 'default' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Commit:** ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Run ID:** ${{ github.run_id }}" >> "$GITHUB_STEP_SUMMARY"

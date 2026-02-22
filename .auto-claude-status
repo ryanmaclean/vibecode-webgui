@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "049-plugin-extension-ecosystem",
+  "spec": "059-add-vector-embedding-similarity-explorer",
   "state": "building",
   "subtasks": {
-    "completed": 21,
-    "total": 22,
+    "completed": 2,
+    "total": 5,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Integration & Documentation",
+    "current": "Vector Explorer Page",
     "id": null,
-    "total": 5
+    "total": 1
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 23,
-    "started_at": "2026-02-21T22:08:15.694140"
+    "number": 4,
+    "started_at": "2026-02-21T20:22:35.382132"
   },
-  "last_update": "2026-02-21T23:23:42.414705"
+  "last_update": "2026-02-21T20:33:01.080723"
 }

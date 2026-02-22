@@ -16,6 +16,10 @@ import {
   AlertTriangle,
   BarChart,
   Container,
+  Brain,
+  Radio,
+  Gauge,
+  Sparkles,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -33,6 +37,21 @@ const NAV_ITEMS = [
     title: 'Connection Pool',
     href: '/monitoring/connection-pool',
     icon: Network,
+  },
+  {
+    title: 'WebSocket',
+    href: '/monitoring/websocket',
+    icon: Radio,
+  },
+  {
+    title: 'Rate Limit',
+    href: '/monitoring/rate-limit',
+    icon: Gauge,
+  },
+  {
+    title: 'AI Usage',
+    href: '/monitoring/ai-usage',
+    icon: Sparkles,
   },
   {
     title: 'Database',

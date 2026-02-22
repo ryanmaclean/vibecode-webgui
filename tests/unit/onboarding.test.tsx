@@ -3,12 +3,13 @@
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import React from 'react'
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
+  useSearchParams: jest.fn(),
 }))
 
 // Mock UserPreferencesProvider
@@ -34,11 +35,15 @@ const OnboardingPage = require('@/app/onboarding/page').default
 
 describe('Onboarding Flow', () => {
   const mockPush = jest.fn()
+  const mockGet = jest.fn()
 
   beforeEach(() => {
     jest.clearAllMocks()
     ;(useRouter as jest.Mock).mockReturnValue({
       push: mockPush,
+    })
+    ;(useSearchParams as jest.Mock).mockReturnValue({
+      get: mockGet,
     })
     global.fetch = jest.fn()
   })
