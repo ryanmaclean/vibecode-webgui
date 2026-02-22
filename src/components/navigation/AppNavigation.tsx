@@ -28,6 +28,7 @@ import { KeyboardShortcuts } from '@/design-system/components/KeyboardShortcuts'
 import { useKeyboardShortcuts, shortcutCategories } from '@/hooks/useKeyboardShortcuts'
 import { CommandPalette } from '@/components/command-palette/CommandPalette'
 import { useCommandPalette } from '@/hooks/useCommandPalette'
+import { KeyboardHint } from '@/components/ui/KeyboardHint'
 
 interface NavItem {
   title: string
@@ -94,6 +95,13 @@ const NAV_ITEMS: NavItem[] = [
   },
 ]
 
+// Keyboard shortcuts mapping for navigation items
+const NAV_SHORTCUTS: Record<string, string[]> = {
+  '/vm': ['⌘', 'T'],
+  '/health': ['⌘', 'Shift', 'H'],
+  '/settings': ['⌘', 'Shift', 'S'],
+}
+
 function isActive(pathname: string, href: string): boolean {
   if (href === '/') return pathname === '/'
   return pathname === href || pathname.startsWith(href + '/')
@@ -126,12 +134,13 @@ function DropdownMenu({
 
   const Icon = item.icon
   const active = isActive(pathname, item.href) || isChildActive(pathname, item.children)
+  const shortcut = NAV_SHORTCUTS[item.href]
 
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+        className={`group relative flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
           active
             ? 'bg-primary/10 text-primary'
             : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -140,6 +149,11 @@ function DropdownMenu({
         <Icon className="h-4 w-4" />
         {item.title}
         <ChevronDown className={`h-3 w-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+        {shortcut && (
+          <div className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <KeyboardHint keys={shortcut} size="sm" variant="muted" />
+          </div>
+        )}
       </button>
 
       {open && (
@@ -217,12 +231,13 @@ export function AppNavigation() {
 
             const Icon = item.icon
             const active = isActive(pathname, item.href)
+            const shortcut = NAV_SHORTCUTS[item.href]
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`group relative flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   active
                     ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -230,6 +245,11 @@ export function AppNavigation() {
               >
                 <Icon className="h-4 w-4" />
                 {item.title}
+                {shortcut && (
+                  <div className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <KeyboardHint keys={shortcut} size="sm" variant="muted" />
+                  </div>
+                )}
               </Link>
             )
           })}
@@ -273,18 +293,24 @@ export function AppNavigation() {
         <nav className="md:hidden border-t border-border bg-card px-4 py-3 space-y-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon
+            const shortcut = NAV_SHORTCUTS[item.href]
 
             if (item.children) {
               const groupActive = isActive(pathname, item.href) || isChildActive(pathname, item.children)
               return (
                 <div key={item.title}>
                   <div
-                    className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md ${
+                    className={`flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md ${
                       groupActive ? 'text-primary' : 'text-muted-foreground'
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
-                    {item.title}
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4" />
+                      {item.title}
+                    </div>
+                    {shortcut && (
+                      <KeyboardHint keys={shortcut} size="sm" variant="muted" />
+                    )}
                   </div>
                   <div className="ml-6 space-y-1">
                     {item.children.map((child) => {
@@ -315,14 +341,19 @@ export function AppNavigation() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   active
                     ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                 }`}
               >
-                <Icon className="h-4 w-4" />
-                {item.title}
+                <div className="flex items-center gap-2">
+                  <Icon className="h-4 w-4" />
+                  {item.title}
+                </div>
+                {shortcut && (
+                  <KeyboardHint keys={shortcut} size="sm" variant="muted" />
+                )}
               </Link>
             )
           })}

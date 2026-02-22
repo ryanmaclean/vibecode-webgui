@@ -123,8 +123,8 @@ const KeyboardHint = React.memo<KeyboardHintProps>(({
         <React.Fragment key={index}>
           <KeyBadge
             keyName={key}
-            size={size}
-            variant={variant}
+            size={size ?? 'md'}
+            variant={variant ?? 'default'}
           />
           {showSeparator && index < keys.length - 1 && (
             <span
