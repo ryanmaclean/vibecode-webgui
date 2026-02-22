@@ -6,12 +6,15 @@
  */
 
 describe('Feature Audit: Interactive Console (#1527)', () => {
-  describe('ConsoleMode component implementation', () => {
-    test('component file exists', async () => {
+  describe('Interactive console implementation', () => {
+    test('console implementation files exist', async () => {
       const fs = await import('fs');
       const path = await import('path');
-      const componentPath = path.join(process.cwd(), 'src/components/console/ConsoleMode.tsx');
-      expect(fs.existsSync(componentPath)).toBe(true);
+
+      const consoleModePath = path.join(process.cwd(), 'src/components/console/ConsoleMode.tsx');
+      const consoleModalPath = path.join(process.cwd(), 'src/components/console/ConsoleModal.tsx');
+      expect(fs.existsSync(consoleModePath)).toBe(true);
+      expect(fs.existsSync(consoleModalPath)).toBe(true);
     });
 
     test('uses code-server client session APIs', async () => {
