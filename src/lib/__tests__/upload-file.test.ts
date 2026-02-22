@@ -1,15 +1,32 @@
 /**
  * Unit tests for upload-file.ts
- * Tests S3 file upload utility using AWS SDK v3 @aws-sdk/client-s3
+ * Tests S3 file upload utility using AWS SDK v3
  */
 
-const mockSend = jest.fn();
+const mockUploadDone = jest.fn();
+const mockUploadConstructor = jest.fn();
+const mockLoggerError = jest.fn();
+const originalEnv = process.env;
 
 jest.mock('@aws-sdk/client-s3', () => ({
   S3Client: jest.fn().mockImplementation(() => ({
-    send: mockSend,
+    send: jest.fn(),
   })),
-  PutObjectCommand: jest.fn().mockImplementation((input) => ({ input })),
+}));
+
+jest.mock('@aws-sdk/lib-storage', () => ({
+  Upload: jest.fn().mockImplementation((options) => {
+    mockUploadConstructor(options);
+    return {
+      done: mockUploadDone,
+    };
+  }),
+}));
+
+jest.mock('../logger', () => ({
+  logger: {
+    error: (...args: unknown[]) => mockLoggerError(...args),
+  },
 }));
 
 describe('Upload File Module', () => {
@@ -17,51 +34,47 @@ describe('Upload File Module', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    mockSend.mockReset();
-
-    // Re-mock after resetModules
-    jest.mock('@aws-sdk/client-s3', () => ({
-      S3Client: jest.fn().mockImplementation(() => ({
-        send: mockSend,
-      })),
-      PutObjectCommand: jest.fn().mockImplementation((input) => ({ input })),
-    }));
-
-    uploadFileModule = require('../upload-file');
+    process.env = { ...originalEnv };
+    mockUploadDone.mockReset();
+    mockUploadConstructor.mockReset();
+    mockLoggerError.mockReset();
   });
 
   afterEach(() => {
+    process.env = originalEnv;
     jest.restoreAllMocks();
   });
 
   describe('Module exports', () => {
     it('should export uploadFile function', () => {
+      uploadFileModule = require('../upload-file');
       expect(uploadFileModule.uploadFile).toBeDefined();
       expect(typeof uploadFileModule.uploadFile).toBe('function');
     });
   });
 
   describe('uploadFile', () => {
-    it('should call S3Client send with PutObjectCommand and return location', async () => {
-      mockSend.mockResolvedValueOnce({});
+    it('should upload file and return encoded location URL', async () => {
+      uploadFileModule = require('../upload-file');
+      mockUploadDone.mockResolvedValueOnce({});
 
       const result = await uploadFileModule.uploadFile({
         bucket: 'my-bucket',
-        key: 'path/to/file.txt',
+        key: 'path/to/file name.txt',
         body: 'file content',
       });
 
-      expect(mockSend).toHaveBeenCalledTimes(1);
+      expect(mockUploadConstructor).toHaveBeenCalledTimes(1);
       expect(result).toEqual({
-        location: 'https://my-bucket.s3.amazonaws.com/path/to/file.txt',
+        location: 'https://my-bucket.s3.amazonaws.com/path/to/file%20name.txt',
         bucket: 'my-bucket',
-        key: 'path/to/file.txt',
+        key: 'path/to/file name.txt',
       });
     });
 
     it('should include ContentType when provided', async () => {
-      const { PutObjectCommand } = require('@aws-sdk/client-s3');
-      mockSend.mockResolvedValueOnce({});
+      uploadFileModule = require('../upload-file');
+      mockUploadDone.mockResolvedValueOnce({});
 
       await uploadFileModule.uploadFile({
         bucket: 'my-bucket',
@@ -70,18 +83,20 @@ describe('Upload File Module', () => {
         contentType: 'image/png',
       });
 
-      expect(PutObjectCommand).toHaveBeenCalledWith(
+      expect(mockUploadConstructor).toHaveBeenCalledWith(
         expect.objectContaining({
-          Bucket: 'my-bucket',
-          Key: 'image.png',
-          ContentType: 'image/png',
+          params: expect.objectContaining({
+            Bucket: 'my-bucket',
+            Key: 'image.png',
+            ContentType: 'image/png',
+          }),
         })
       );
     });
 
     it('should not include ContentType when not provided', async () => {
-      const { PutObjectCommand } = require('@aws-sdk/client-s3');
-      mockSend.mockResolvedValueOnce({});
+      uploadFileModule = require('../upload-file');
+      mockUploadDone.mockResolvedValueOnce({});
 
       await uploadFileModule.uploadFile({
         bucket: 'my-bucket',
@@ -89,12 +104,14 @@ describe('Upload File Module', () => {
         body: 'content',
       });
 
-      const callArg = PutObjectCommand.mock.calls[0][0];
+      const callArg = mockUploadConstructor.mock.calls[0][0].params;
       expect(callArg.ContentType).toBeUndefined();
     });
 
-    it('should throw when S3Client send rejects', async () => {
-      mockSend.mockRejectedValueOnce(new Error('S3 upload failed'));
+    it('should log and throw when upload rejects', async () => {
+      uploadFileModule = require('../upload-file');
+      const error = new Error('S3 upload failed');
+      mockUploadDone.mockRejectedValueOnce(error);
 
       await expect(
         uploadFileModule.uploadFile({
@@ -103,10 +120,26 @@ describe('Upload File Module', () => {
           body: 'content',
         })
       ).rejects.toThrow('S3 upload failed');
+
+      expect(mockLoggerError).toHaveBeenCalledWith(
+        'Failed to upload file to S3',
+        expect.objectContaining({
+          bucket: 'my-bucket',
+          key: 'file.txt',
+          error: 'S3 upload failed',
+        })
+      );
     });
 
-    it('should construct correct S3 URL with bucket and key', async () => {
-      mockSend.mockResolvedValueOnce({});
+    it('should include session token in explicit credentials when provided', async () => {
+      process.env.AWS_REGION = 'us-west-2';
+      process.env.AWS_ACCESS_KEY_ID = 'test-access-key';
+      process.env.AWS_SECRET_ACCESS_KEY = 'test-secret-key';
+      process.env.AWS_SESSION_TOKEN = 'test-session-token';
+
+      uploadFileModule = require('../upload-file');
+      const { S3Client } = require('@aws-sdk/client-s3');
+      mockUploadDone.mockResolvedValueOnce({});
 
       const result = await uploadFileModule.uploadFile({
         bucket: 'test-bucket',
@@ -114,8 +147,18 @@ describe('Upload File Module', () => {
         body: 'pdf content',
       });
 
+      expect(S3Client).toHaveBeenCalledWith(
+        expect.objectContaining({
+          region: 'us-west-2',
+          credentials: expect.objectContaining({
+            accessKeyId: 'test-access-key',
+            secretAccessKey: 'test-secret-key',
+            sessionToken: 'test-session-token',
+          }),
+        })
+      );
       expect(result.location).toBe(
-        'https://test-bucket.s3.amazonaws.com/folder/subfolder/document.pdf'
+        'https://test-bucket.s3.us-west-2.amazonaws.com/folder/subfolder/document.pdf'
       );
       expect(result.bucket).toBe('test-bucket');
       expect(result.key).toBe('folder/subfolder/document.pdf');
