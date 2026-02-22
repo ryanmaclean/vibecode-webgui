@@ -20,6 +20,17 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   AlertCircle,
   DollarSign,
@@ -60,6 +71,8 @@ import {
   CostSettings,
   TimePeriod,
   ModelPricing,
+  AlertType,
+  AlertSeverity,
 } from '@/types/cost-estimation';
 import { getCostTracker, CostTracker, MODEL_PRICING } from '@/lib/ai/cost/cost-tracker';
 import { CostSettingsPanel } from '@/components/ai/CostSettingsPanel';
@@ -498,6 +511,15 @@ export default function CostDashboard({
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
+  // Alert creation dialog state
+  const [isCreateAlertOpen, setIsCreateAlertOpen] = useState(false);
+  const [newAlertType, setNewAlertType] = useState<AlertType>('budget_threshold');
+  const [newAlertThreshold, setNewAlertThreshold] = useState<string>('10.00');
+  const [newAlertSeverity, setNewAlertSeverity] = useState<AlertSeverity>('warning');
+  const [newAlertResetPeriod, setNewAlertResetPeriod] = useState<TimePeriod>('monthly');
+  const [newAlertEnabled, setNewAlertEnabled] = useState(true);
+  const [newAlertNotify, setNewAlertNotify] = useState(true);
+
   // Load dashboard data
   const loadData = useCallback(() => {
     try {
@@ -570,6 +592,39 @@ export default function CostDashboard({
     },
     [tracker, selectedPeriod]
   );
+
+  // Handle alert creation
+  const handleCreateAlert = useCallback(() => {
+    try {
+      const threshold = parseFloat(newAlertThreshold);
+      if (isNaN(threshold) || threshold <= 0) {
+        return;
+      }
+
+      tracker.createAlert({
+        type: newAlertType,
+        threshold,
+        enabled: newAlertEnabled,
+        notifyOnTrigger: newAlertNotify,
+        notificationChannels: newAlertNotify ? ['in_app'] : [],
+        resetPeriod: newAlertResetPeriod,
+      });
+
+      // Reset form and close dialog
+      setNewAlertType('budget_threshold');
+      setNewAlertThreshold('10.00');
+      setNewAlertSeverity('warning');
+      setNewAlertResetPeriod('monthly');
+      setNewAlertEnabled(true);
+      setNewAlertNotify(true);
+      setIsCreateAlertOpen(false);
+
+      // Reload data to show new alert
+      loadData();
+    } catch (error) {
+      console.error('Failed to create alert:', error);
+    }
+  }, [tracker, newAlertType, newAlertThreshold, newAlertSeverity, newAlertResetPeriod, newAlertEnabled, newAlertNotify, loadData]);
 
   if (isLoading || !data) {
     return (
@@ -822,10 +877,18 @@ export default function CostDashboard({
         <TabsContent value="alerts" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Cost Alerts</CardTitle>
-              <CardDescription>
-                Configure alerts to monitor your AI spending
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Cost Alerts</CardTitle>
+                  <CardDescription>
+                    Configure alerts to monitor your AI spending
+                  </CardDescription>
+                </div>
+                <Button onClick={() => setIsCreateAlertOpen(true)}>
+                  <Bell className="h-4 w-4 mr-2" />
+                  Create Alert
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {alerts.length === 0 ? (
@@ -834,7 +897,7 @@ export default function CostDashboard({
                   <p className="text-muted-foreground mb-4">
                     No alerts configured. Set up alerts to monitor your spending.
                   </p>
-                  <Button>Create Alert</Button>
+                  <Button onClick={() => setIsCreateAlertOpen(true)}>Create Alert</Button>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -901,6 +964,116 @@ export default function CostDashboard({
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Create Alert Dialog */}
+      <Dialog open={isCreateAlertOpen} onOpenChange={setIsCreateAlertOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Create Cost Alert</DialogTitle>
+            <DialogDescription>
+              Set up a new alert to monitor your AI spending
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="alert-type">Alert Type</Label>
+              <Select
+                value={newAlertType}
+                onValueChange={(v) => setNewAlertType(v as AlertType)}
+              >
+                <SelectTrigger id="alert-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="budget_threshold">Budget Threshold</SelectItem>
+                  <SelectItem value="daily_limit">Daily Limit</SelectItem>
+                  <SelectItem value="session_limit">Session Limit</SelectItem>
+                  <SelectItem value="rate_spike">Rate Spike</SelectItem>
+                  <SelectItem value="unusual_usage">Unusual Usage</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="alert-threshold">Threshold (USD)</Label>
+              <Input
+                id="alert-threshold"
+                type="number"
+                step="0.01"
+                min="0"
+                value={newAlertThreshold}
+                onChange={(e) => setNewAlertThreshold(e.target.value)}
+                placeholder="10.00"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="alert-severity">Severity</Label>
+              <Select
+                value={newAlertSeverity}
+                onValueChange={(v) => setNewAlertSeverity(v as AlertSeverity)}
+              >
+                <SelectTrigger id="alert-severity">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info">Info</SelectItem>
+                  <SelectItem value="warning">Warning</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="alert-reset-period">Reset Period</Label>
+              <Select
+                value={newAlertResetPeriod}
+                onValueChange={(v) => setNewAlertResetPeriod(v as TimePeriod)}
+              >
+                <SelectTrigger id="alert-reset-period">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hourly">Hourly</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="alert-enabled"
+                checked={newAlertEnabled}
+                onCheckedChange={setNewAlertEnabled}
+              />
+              <Label htmlFor="alert-enabled" className="cursor-pointer">
+                Enable alert immediately
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="alert-notify"
+                checked={newAlertNotify}
+                onCheckedChange={setNewAlertNotify}
+              />
+              <Label htmlFor="alert-notify" className="cursor-pointer">
+                Send notifications when triggered
+              </Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateAlertOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateAlert}>Create Alert</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Footer */}
       <div className="text-xs text-muted-foreground text-center">
