@@ -1,17 +1,17 @@
 {
   "active": true,
-  "spec": "021-multi-agent-orchestration-framework",
+  "spec": "058-add-resource-monitoring-dashboards-following-conne",
   "state": "building",
   "subtasks": {
-    "completed": 12,
-    "total": 15,
+    "completed": 5,
+    "total": 18,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Audit Trail & Rollback UI",
+    "current": "Rate Limiting Monitoring Dashboard",
     "id": null,
-    "total": 3
+    "total": 5
   },
   "workers": {
     "active": 0,
@@ -19,7 +19,7 @@
   },
   "session": {
     "number": 7,
-    "started_at": "2026-02-14T19:55:53.802146"
+    "started_at": "2026-02-21T20:29:54.119370"
   },
-  "last_update": "2026-02-14T20:14:07.356406"
+  "last_update": "2026-02-21T20:46:38.745184"
 }
