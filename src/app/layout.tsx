@@ -91,6 +91,8 @@ export default function RootLayout({
               {children}
             </main>
           </ErrorBoundary>
+          {/* Global command palette accessible from any page via Cmd+Shift+P or Cmd+K */}
+          <GlobalCommandPalette />
         </Providers>
       </body>
     </html>

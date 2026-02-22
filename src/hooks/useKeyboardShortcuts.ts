@@ -111,4 +111,18 @@ export const shortcutCategories: ShortcutCategory[] = [
       { keys: ['⌘', 'Shift', 'M'], description: 'Switch model', context: 'Chat view' },
     ],
   },
+  {
+    name: 'Vim Mode',
+    shortcuts: [
+      { keys: ['j'], description: 'Scroll down', context: 'When vim mode enabled' },
+      { keys: ['k'], description: 'Scroll up', context: 'When vim mode enabled' },
+      { keys: ['Ctrl', 'd'], description: 'Scroll page down', context: 'When vim mode enabled' },
+      { keys: ['Ctrl', 'u'], description: 'Scroll page up', context: 'When vim mode enabled' },
+      { keys: ['g', 'g'], description: 'Scroll to top', context: 'When vim mode enabled' },
+      { keys: ['G'], description: 'Scroll to bottom', context: 'When vim mode enabled' },
+      { keys: ['⌘', 'h'], description: 'Navigate back', context: 'When vim mode enabled' },
+      { keys: ['⌘', 'l'], description: 'Navigate forward', context: 'When vim mode enabled' },
+      { keys: [':'], description: 'Open command palette', context: 'When vim mode enabled' },
+    ],
+  },
 ]

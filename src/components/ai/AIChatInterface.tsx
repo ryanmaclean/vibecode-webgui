@@ -571,9 +571,13 @@ const AIChatInterfaceContent = ({
               onClick={handleSendMessage}
               disabled={!input.trim() || isStreaming}
               size="sm"
-              aria-label="Send"
+              aria-label="Send message"
+              className="group relative"
             >
               <Send className="w-4 h-4" />
+              <span className="ml-2 hidden sm:inline-flex items-center">
+                <KeyboardHint keys={['⌘', 'Enter']} size="sm" variant="muted" />
+              </span>
             </Button>
           </div>
         </div>

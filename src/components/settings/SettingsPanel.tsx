@@ -66,6 +66,7 @@ import {
   DEFAULT_APP_SETTINGS,
   DEFAULT_AI_MODELS,
 } from '@/types/settings';
+import { isVimModeEnabled, setVimModeEnabled } from '@/lib/keyboard/vim-bindings';
 
 // ============================================================================
 // Types
@@ -264,6 +265,9 @@ export function SettingsPanel({
     anthropic: '',
   });
 
+  // Vim mode state (stored in localStorage separately)
+  const [vimModeEnabled, setVimModeEnabledState] = useState(false);
+
   const settingsManager = useMemo(() => getSettingsManager(), []);
 
   // Load settings on mount
@@ -274,6 +278,8 @@ export function SettingsPanel({
         const loaded = await settingsManager.load();
         setSettings(loaded);
         setOriginalSettings(loaded);
+        // Load vim mode setting from localStorage
+        setVimModeEnabledState(isVimModeEnabled());
       } catch (error) {
         console.error('Failed to load settings:', error);
       } finally {
@@ -406,9 +412,20 @@ export function SettingsPanel({
         [category]: defaults[category],
       }));
       setSaveStatus('idle');
+
+      // Reset vim mode if resetting general settings
+      if (category === 'general') {
+        setVimModeEnabledState(false);
+        setVimModeEnabled(false);
+      }
     },
     []
   );
+
+  const handleVimModeToggle = useCallback((checked: boolean) => {
+    setVimModeEnabledState(checked);
+    setVimModeEnabled(checked);
+  }, []);
 
   // ==========================================================================
   // Render
@@ -589,6 +606,19 @@ export function SettingsPanel({
                   updateGeneral({ autoSaveInterval: parseInt(e.target.value, 10) || 0 })
                 }
                 className="w-24"
+              />
+            </SettingRow>
+
+            <SettingRow
+              id="vim-mode"
+              label="Vim Mode"
+              description="Enable vim-style keyboard navigation (j/k for scrolling, etc.)"
+            >
+              <Switch
+                id="vim-mode"
+                checked={vimModeEnabled}
+                onCheckedChange={handleVimModeToggle}
+                aria-label="Enable vim mode"
               />
             </SettingRow>
           </TabsContent>
