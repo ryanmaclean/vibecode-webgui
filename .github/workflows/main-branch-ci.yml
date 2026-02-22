@@ -16,7 +16,7 @@ permissions:
   security-events: write
 
 env:
-  NODE_VERSION: '20.11.0'
+  NODE_VERSION: '20.19.0'
   DD_SERVICE: ${{ github.event.repository.name }}
   DD_ENV: ci
   DD_VERSION: ${{ github.sha }}
