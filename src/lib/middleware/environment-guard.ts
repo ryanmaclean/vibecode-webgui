@@ -9,6 +9,7 @@ import type {
   PermissionAction,
   OperationMetadata,
   PermissionCheckResult,
+  DetectionSignal,
 } from '../environment/types';
 import { getEnvironmentContext } from '../env-validation';
 import { getPermissionManager, EnvironmentPermissionManager } from '../environment/permissions';
@@ -180,8 +181,8 @@ export async function checkAgentOperation(
   if (globalConfig.bypassInTest && environment === 'test') {
     // SECURITY: Verify this is actually a test environment with high confidence
     const confidence = envContext?.current?.confidence || 'low';
-    const signals = envContext?.detectionResult?.signals || [];
-    const testSignals = signals.filter(s => s.indicates === 'test');
+    const signals = envContext?.current?.signals || [];
+    const testSignals = signals.filter((s: DetectionSignal) => s.indicates === 'test');
 
     // Require high confidence from multiple independent sources
     if (confidence !== 'high' || testSignals.length < 2) {

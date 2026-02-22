@@ -17,6 +17,22 @@ import { EnvironmentPermissionManager } from '../../environment/permissions';
 import type { HITLManager, ApprovalRequest } from '@/lib/workflow/hitl-manager';
 import type { OperationMetadata } from '../../environment/types';
 
+/**
+ * Helper function to set environment variables
+ * Uses Object.defineProperty to avoid read-only property errors
+ */
+function setEnv(key: string, value: string | undefined) {
+  if (value === undefined) {
+    delete process.env[key];
+  } else {
+    Object.defineProperty(process.env, key, {
+      value,
+      configurable: true,
+      writable: true,
+    });
+  }
+}
+
 describe('Production Operations Approval Workflow Integration', () => {
   let originalEnv: NodeJS.ProcessEnv;
   let mockHITLManager: jest.Mocked<HITLManager>;
@@ -78,7 +94,7 @@ describe('Production Operations Approval Workflow Integration', () => {
 
   describe('production file operations', () => {
     beforeEach(() => {
-      process.env.NODE_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
     });
 
     it('write_file operation triggers approval workflow', async () => {
@@ -117,7 +133,7 @@ describe('Production Operations Approval Workflow Integration', () => {
 
   describe('production database operations', () => {
     beforeEach(() => {
-      process.env.NODE_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
     });
 
     it('database_write operation triggers approval workflow', async () => {
@@ -164,7 +180,7 @@ describe('Production Operations Approval Workflow Integration', () => {
 
   describe('production deployment operations', () => {
     beforeEach(() => {
-      process.env.NODE_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
     });
 
     it('deployment operation triggers approval workflow', async () => {
@@ -194,7 +210,7 @@ describe('Production Operations Approval Workflow Integration', () => {
 
   describe('production system configuration operations', () => {
     beforeEach(() => {
-      process.env.NODE_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
     });
 
     it('system_config operation triggers approval workflow', async () => {
@@ -223,7 +239,7 @@ describe('Production Operations Approval Workflow Integration', () => {
 
   describe('development environment operations', () => {
     beforeEach(() => {
-      process.env.NODE_ENV = 'development';
+      setEnv('NODE_ENV', 'development');
     });
 
     it('write_file operation is allowed without approval', async () => {
@@ -280,7 +296,7 @@ describe('Production Operations Approval Workflow Integration', () => {
 
   describe('staging environment operations', () => {
     beforeEach(() => {
-      process.env.NODE_ENV = 'staging';
+      setEnv('NODE_ENV', 'staging');
     });
 
     it('write_file operation triggers approval for medium+ risk', async () => {
@@ -330,7 +346,7 @@ describe('Production Operations Approval Workflow Integration', () => {
 
   describe('approval request details', () => {
     beforeEach(() => {
-      process.env.NODE_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
     });
 
     it('includes operation details in approval request', async () => {
@@ -398,7 +414,7 @@ describe('Production Operations Approval Workflow Integration', () => {
 
   describe('cross-environment comparison', () => {
     const testOperation = async (env: string) => {
-      process.env.NODE_ENV = env;
+      setEnv('NODE_ENV', env);
       mockCreateRequest.mockClear();
       __TEST__resetEnvironmentGuard();
       EnvironmentPermissionManager.resetInstance();
@@ -443,7 +459,7 @@ describe('Production Operations Approval Workflow Integration', () => {
 
   describe('error handling without HITL manager', () => {
     beforeEach(() => {
-      process.env.NODE_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
       __TEST__resetEnvironmentGuard();
       EnvironmentPermissionManager.resetInstance();
 
@@ -472,7 +488,7 @@ describe('Production Operations Approval Workflow Integration', () => {
 
   describe('edge cases', () => {
     it('handles unknown environment with default deny', async () => {
-      process.env.NODE_ENV = 'unknown-env';
+      setEnv('NODE_ENV', 'unknown-env');
 
       const result = await checkFileOperation('write', '/app/data.txt', 'medium');
 
@@ -482,7 +498,7 @@ describe('Production Operations Approval Workflow Integration', () => {
     });
 
     it('includes timestamp in guard result', async () => {
-      process.env.NODE_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
       const before = new Date();
 
       const result = await checkFileOperation('write', '/app/test.txt', 'low');
@@ -494,7 +510,7 @@ describe('Production Operations Approval Workflow Integration', () => {
     });
 
     it('handles operation without agent ID', async () => {
-      process.env.NODE_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
 
       const result = await checkFileOperation('write', '/app/test.txt', 'medium');
 

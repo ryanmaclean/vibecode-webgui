@@ -415,15 +415,9 @@ export class SettingsManager {
       ...this.settings.environment,
       permissions: {
         ...this.settings.environment.permissions,
-        development: this.settings.environment.permissions.development
-          ? { ...this.settings.environment.permissions.development }
-          : undefined,
-        staging: this.settings.environment.permissions.staging
-          ? { ...this.settings.environment.permissions.staging }
-          : undefined,
-        production: this.settings.environment.permissions.production
-          ? { ...this.settings.environment.permissions.production }
-          : undefined,
+        development: { ...this.settings.environment.permissions.development },
+        staging: { ...this.settings.environment.permissions.staging },
+        production: { ...this.settings.environment.permissions.production },
       },
     };
   }

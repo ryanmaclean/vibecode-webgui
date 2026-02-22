@@ -238,21 +238,21 @@ export interface EnvironmentSettings {
     /** Whether to log permission checks */
     logChecks: boolean;
     /** Development environment permissions */
-    development?: {
+    development: {
       enabled: boolean;
       defaultDecision: 'allowed' | 'denied' | 'requires_approval';
       /** List of approvers for this environment */
       approvers: string[];
     };
     /** Staging environment permissions */
-    staging?: {
+    staging: {
       enabled: boolean;
       defaultDecision: 'allowed' | 'denied' | 'requires_approval';
       /** List of approvers for this environment */
       approvers: string[];
     };
     /** Production environment permissions */
-    production?: {
+    production: {
       enabled: boolean;
       defaultDecision: 'allowed' | 'denied' | 'requires_approval';
       /** List of approvers for this environment */

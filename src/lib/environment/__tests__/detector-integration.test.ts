@@ -30,20 +30,20 @@ describe('Environment Detection Integration Tests', () => {
     originalEnv = { ...process.env };
 
     // Clear all environment variables that affect detection
-    delete process.env.NODE_ENV;
-    delete process.env.DD_ENV;
-    delete process.env.ENVIRONMENT;
-    delete process.env.APP_ENV;
-    delete process.env.DEPLOYMENT_ENV;
-    delete process.env.VERCEL_ENV;
-    delete process.env.RAILWAY_ENVIRONMENT;
-    delete process.env.RENDER_ENV;
-    delete process.env.HOSTNAME;
-    delete process.env.VERCEL_GIT_COMMIT_REF;
-    delete process.env.RAILWAY_GIT_BRANCH;
-    delete process.env.RENDER_GIT_BRANCH;
-    delete process.env.GIT_BRANCH;
-    delete process.env.BRANCH_NAME;
+    setEnv('NODE_ENV', undefined);
+    setEnv('DD_ENV', undefined);
+    setEnv('ENVIRONMENT', undefined);
+    setEnv('APP_ENV', undefined);
+    setEnv('DEPLOYMENT_ENV', undefined);
+    setEnv('VERCEL_ENV', undefined);
+    setEnv('RAILWAY_ENVIRONMENT', undefined);
+    setEnv('RENDER_ENV', undefined);
+    setEnv('HOSTNAME', undefined);
+    setEnv('VERCEL_GIT_COMMIT_REF', undefined);
+    setEnv('RAILWAY_GIT_BRANCH', undefined);
+    setEnv('RENDER_GIT_BRANCH', undefined);
+    setEnv('GIT_BRANCH', undefined);
+    setEnv('BRANCH_NAME', undefined);
   });
 
   afterEach(() => {
