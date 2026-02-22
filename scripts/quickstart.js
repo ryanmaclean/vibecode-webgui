@@ -42,6 +42,11 @@ const log = {
     console.log('\n' + colors.magenta + '═'.repeat(60));
     console.log(`  ${msg}`);
     console.log('═'.repeat(60) + colors.reset);
+  },
+  progress: (current, total, msg) => {
+    const percentage = Math.round((current / total) * 100);
+    const bar = '█'.repeat(Math.floor(percentage / 5)) + '░'.repeat(20 - Math.floor(percentage / 5));
+    console.log(`${colors.cyan}[${current}/${total}] ${bar} ${percentage}% ${colors.reset}${msg}`);
   }
 };
 
@@ -122,6 +127,192 @@ function checkNodeVersion() {
   }
 
   return true;
+}
+
+/**
+ * Check if npm is available
+ */
+function checkNpmAvailable() {
+  try {
+    const npmVersion = execSync('npm --version', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim();
+    log.success(`npm ${npmVersion} is available`);
+    return true;
+  } catch (error) {
+    log.error('npm is not available');
+    log.info('Please install Node.js which includes npm');
+    return false;
+  }
+}
+
+/**
+ * Check if Git is available
+ */
+function checkGitAvailable() {
+  try {
+    const gitVersion = execSync('git --version', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim();
+    log.success(`${gitVersion} is available`);
+    return true;
+  } catch (error) {
+    log.warn('Git is not available (optional for running, required for development)');
+    return true; // Non-blocking warning
+  }
+}
+
+/**
+ * Check available disk space
+ */
+function checkDiskSpace() {
+  try {
+    const platform = process.platform;
+    let dfOutput;
+
+    if (platform === 'darwin' || platform === 'linux') {
+      dfOutput = execSync('df -h .', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
+      const lines = dfOutput.split('\n');
+      if (lines.length >= 2) {
+        const parts = lines[1].split(/\s+/);
+        const available = parts[3];
+        log.success(`Disk space available: ${available}`);
+      }
+    } else if (platform === 'win32') {
+      // Windows disk check
+      const driveLetter = process.cwd().charAt(0);
+      dfOutput = execSync(`wmic logicaldisk where "DeviceID='${driveLetter}:'" get FreeSpace`,
+        { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
+      const lines = dfOutput.split('\n').filter(l => l.trim());
+      if (lines.length >= 2) {
+        const bytes = parseInt(lines[1].trim());
+        const gb = (bytes / (1024 * 1024 * 1024)).toFixed(2);
+        log.success(`Disk space available: ${gb} GB`);
+      }
+    }
+    return true;
+  } catch (error) {
+    log.warn('Could not check disk space');
+    return true; // Non-blocking
+  }
+}
+
+/**
+ * Check if a port is available
+ */
+function checkPortAvailable(port) {
+  const net = require('net');
+
+  return new Promise((resolve) => {
+    const server = net.createServer();
+
+    server.once('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        log.warn(`Port ${port} is already in use`);
+        resolve(false);
+      } else {
+        resolve(true);
+      }
+    });
+
+    server.once('listening', () => {
+      server.close();
+      log.success(`Port ${port} is available`);
+      resolve(true);
+    });
+
+    server.listen(port);
+  });
+}
+
+/**
+ * Check if package.json is valid
+ */
+function checkPackageJson() {
+  const packagePath = path.join(__dirname, '..', 'package.json');
+
+  try {
+    if (!fs.existsSync(packagePath)) {
+      log.error('package.json not found');
+      return false;
+    }
+
+    const packageData = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+
+    if (!packageData.name || !packageData.version) {
+      log.error('package.json is invalid (missing name or version)');
+      return false;
+    }
+
+    log.success(`Found ${packageData.name}@${packageData.version}`);
+    return true;
+  } catch (error) {
+    log.error('package.json is invalid: ' + error.message);
+    return false;
+  }
+}
+
+/**
+ * Run all health checks
+ */
+async function runHealthChecks(dryRun) {
+  log.section('System Health Checks');
+
+  if (dryRun) {
+    log.info('Would check:');
+    log.info('  ✓ Node.js version (18+)');
+    log.info('  ✓ npm availability');
+    log.info('  ✓ Git availability (optional)');
+    log.info('  ✓ Disk space');
+    log.info('  ✓ Port availability (3000)');
+    log.info('  ✓ package.json validity');
+    return { passed: true, warnings: 0 };
+  }
+
+  let passed = true;
+  let warnings = 0;
+
+  // Node.js version
+  log.step('Checking Node.js version...');
+  if (!checkNodeVersion()) {
+    passed = false;
+  }
+
+  // npm availability
+  log.step('Checking npm availability...');
+  if (!checkNpmAvailable()) {
+    passed = false;
+  }
+
+  // Git availability (non-blocking)
+  log.step('Checking Git availability...');
+  if (!checkGitAvailable()) {
+    warnings++;
+  }
+
+  // Disk space (non-blocking)
+  log.step('Checking disk space...');
+  if (!checkDiskSpace()) {
+    warnings++;
+  }
+
+  // Port availability (non-blocking)
+  log.step('Checking port availability...');
+  const portAvailable = await checkPortAvailable(3000);
+  if (!portAvailable) {
+    warnings++;
+    log.info('Service may not start on default port');
+  }
+
+  // package.json validity
+  log.step('Checking package.json...');
+  if (!checkPackageJson()) {
+    passed = false;
+  }
+
+  if (passed) {
+    log.success(`All critical health checks passed${warnings > 0 ? ` (${warnings} warnings)` : ''}`);
+  } else {
+    log.error('Some health checks failed');
+  }
+
+  return { passed, warnings };
 }
 
 /**
@@ -318,8 +509,13 @@ ${colors.cyan}Steps to execute:${colors.reset}
 
   let stepNum = 1;
 
-  console.log(`  ${stepNum++}. ${colors.yellow}Check Node.js version${colors.reset}`);
-  console.log(`      Verify Node.js 18+ is installed\n`);
+  console.log(`  ${stepNum++}. ${colors.yellow}Run system health checks${colors.reset}`);
+  console.log(`      - Check Node.js version (18+)`);
+  console.log(`      - Check npm availability`);
+  console.log(`      - Check Git availability (optional)`);
+  console.log(`      - Check available disk space`);
+  console.log(`      - Check port availability (3000)`);
+  console.log(`      - Validate package.json\n`);
 
   if (isFirst) {
     console.log(`  ${stepNum++}. ${colors.yellow}Run development setup${colors.reset}`);
@@ -396,7 +592,6 @@ async function main() {
   log.section('VibeCode Quick Start');
 
   // Step 1: Check if this is the first run
-  log.step('Checking first-run status...');
   const isFirst = firstRun.isFirstRun();
 
   if (isFirst) {
@@ -410,19 +605,40 @@ async function main() {
 
   // Dry-run mode: show plan and exit
   if (args.dryRun) {
+    await runHealthChecks(true);
     showExecutionPlan(isFirst);
     process.exit(0);
   }
 
-  // Step 2: Check Node.js version
-  log.step('Checking Node.js version...');
-  if (!checkNodeVersion()) {
+  // Calculate total steps
+  let totalSteps = 4; // Health checks, dependencies, launch, completion
+  if (isFirst && !args.skipSetup) {
+    totalSteps += 2; // Setup + sample project
+  }
+  if (isFirst && !args.skipLaunch) {
+    totalSteps += 1; // Onboarding
+  }
+
+  let currentStep = 0;
+
+  // Step: Run health checks
+  currentStep++;
+  log.progress(currentStep, totalSteps, 'Running system health checks');
+  const healthStatus = await runHealthChecks(args.dryRun);
+
+  if (!healthStatus.passed) {
+    log.error('Critical health checks failed. Please fix errors and try again.');
     process.exit(1);
   }
-  log.success(`Node.js ${process.version} is compatible`);
 
-  // Step 3: Run setup for first-time users
+  if (healthStatus.warnings > 0) {
+    log.warn(`Continuing with ${healthStatus.warnings} warning(s)`);
+  }
+
+  // Step: Run setup for first-time users
   if (isFirst && !args.skipSetup) {
+    currentStep++;
+    log.progress(currentStep, totalSteps, 'Setting up development environment');
     if (!runSetup(args.dryRun)) {
       log.error('Setup failed. Please fix errors and try again.');
       process.exit(1);
@@ -431,15 +647,18 @@ async function main() {
     log.info('Skipping setup (--skip-setup flag)');
   }
 
-  // Step 3.5: Create sample project for first-time users
-  if (isFirst) {
+  // Step: Create sample project for first-time users
+  if (isFirst && !args.skipSetup) {
+    currentStep++;
+    log.progress(currentStep, totalSteps, 'Creating sample project');
     if (!copySampleProject(args.dryRun)) {
       log.warn('Failed to create sample project, continuing anyway');
     }
   }
 
-  // Step 4: Install dependencies
-  log.step('Installing dependencies...');
+  // Step: Install dependencies
+  currentStep++;
+  log.progress(currentStep, totalSteps, 'Installing dependencies');
   try {
     execSync('npm install', {
       stdio: 'inherit',
@@ -452,12 +671,16 @@ async function main() {
     process.exit(1);
   }
 
-  // Step 5: Launch services
+  // Step: Launch services
   if (!args.skipLaunch) {
+    currentStep++;
+    log.progress(currentStep, totalSteps, 'Launching services');
     await launchServices(args.dryRun);
 
-    // Step 6: Open onboarding for first-time users
+    // Step: Open onboarding for first-time users
     if (isFirst) {
+      currentStep++;
+      log.progress(currentStep, totalSteps, 'Opening onboarding wizard');
       // Wait a bit more for services to be ready
       await new Promise(resolve => setTimeout(resolve, 3000));
       openOnboarding(args.dryRun);
@@ -466,7 +689,10 @@ async function main() {
     log.info('Skipping service launch (--skip-launch flag)');
   }
 
-  // Step 7: Show completion summary
+  // Final step: Show completion summary
+  currentStep++;
+  log.progress(currentStep, totalSteps, 'Quick start complete');
+
   const elapsed = formatElapsedTime(startTime);
   log.section('Quick Start Complete');
   log.success(`Total time: ${elapsed}`);
