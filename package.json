@@ -150,6 +150,7 @@
     "mcp": "npm run mcp:start",
     "check": "npm run lint && npm run type-check",
     "quick-test": "npm run test:unit -- --maxWorkers=2",
+    "quickstart": "node scripts/quickstart.js",
     "test:unit:monaco": "jest --runTestsByPath tests/unit/monaco-monacopilot.test.ts",
     "lint:markdown": "markdownlint-cli2"
   },
