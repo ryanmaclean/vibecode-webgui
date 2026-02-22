@@ -79,6 +79,8 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
+        {/* Offline indicator - fixed position to avoid layout shift */}
+        <OfflineIndicator className="fixed top-4 right-4 z-50" />
         <Providers>
           {/* Initialize OpenTelemetry browser instrumentation */}
           {process.env.NEXT_PUBLIC_OTEL_ENABLED !== 'false' && process.env.NEXT_PUBLIC_SKIP_MONITORING !== 'true' && (
