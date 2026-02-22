@@ -50,6 +50,11 @@ const NAV_ITEMS = [
     icon: Layers,
   },
   {
+    title: 'LLM Operations',
+    href: '/monitoring/llm-ops',
+    icon: Brain,
+  },
+  {
     title: 'API Performance',
     href: '/monitoring/api-performance',
     icon: Zap,

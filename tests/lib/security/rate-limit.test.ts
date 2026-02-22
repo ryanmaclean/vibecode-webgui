@@ -14,7 +14,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 
 // Mock dependencies
-jest.mock('next-auth');
+jest.mock('next-auth', () => ({
+  getServerSession: jest.fn(),
+}));
 jest.mock('@/lib/cache/valkey-client', () => ({
   cache: {
     incr: jest.fn(),

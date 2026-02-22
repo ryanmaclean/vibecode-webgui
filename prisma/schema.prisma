@@ -125,6 +125,7 @@ model Project {
   files       File[]
   ai_requests AIRequest[]
   rag_chunks  RAGChunk[]
+  ai_suggestions AISuggestion[]
 
   @@index([user_id])
   @@index([workspace_id])
@@ -601,6 +602,24 @@ model AgentSessionHandoff {
   @@index([activeBeadId])
   @@index([expiresAt])
   @@map("agent_session_handoffs")
+}
+
+// Plugin System
+model Plugin {
+  id           String   @id @default(uuid())
+  name         String
+  version      String
+  author       String?  // Plugin author/creator
+  status       String   @default("installed") // installed, enabled, disabled
+  manifest     Json     // Plugin manifest with capabilities, permissions, config
+  installed_at DateTime @default(now()) @map("installed_at")
+  updated_at   DateTime @updatedAt @map("updated_at")
+
+  @@unique([name, version], name: "plugin_name_version")
+  @@index([name])
+  @@index([status])
+  @@index([installed_at])
+  @@map("plugins")
 }
 
 // ============================================
