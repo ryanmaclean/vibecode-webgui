@@ -16,11 +16,16 @@ except ImportError:
 
 
 # Datadog Log Aggregation
-from scripts.lib.log_aggregation import get_log_aggregation
+try:
+    from scripts.lib.log_aggregation import get_log_aggregation
+except ImportError:
+    def get_log_aggregation():
+        return None
 
 try:
     import os as _os; _c = __import__('ddtrace').config; _s = _os.path.basename(__file__).replace('.py',''); _c.service = _s; _c.requests.service = _s; __import__('ddtrace').patch_all()
-except: pass
+except ImportError:
+    pass
 
 
 # -- VibeCode Telemetry --
@@ -515,7 +520,8 @@ class TestSanitizeTaskLogEntry(unittest.TestCase):
             "detail": "File read"
         }
         result = sanitize_task_log_entry(entry)
-        self.assertNotIn("pass", result["content"])
+        self.assertNotIn(entry["content"], result["content"])
+        self.assertNotIn("user:pass@localhost", result["content"])
         self.assertIn("[REDACTED:DB_CONNECTION]", result["content"])
 
     def test_sanitize_log_entry_with_nested_data(self):

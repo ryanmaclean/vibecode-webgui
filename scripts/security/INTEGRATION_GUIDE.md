@@ -231,8 +231,8 @@ class TaskLogger:
 
         # Add timestamp if not present
         if 'timestamp' not in entry:
-            from datetime import datetime
-            entry['timestamp'] = datetime.utcnow().isoformat()
+            from datetime import datetime, timezone
+            entry['timestamp'] = datetime.now(timezone.utc).isoformat()
 
         # Append and save
         self.logs.append(entry)
@@ -342,7 +342,11 @@ import json
 from scripts.security.log_sanitizer import sanitize_log_entry
 
 def sanitize_large_file(input_file: str, output_file: str, batch_size: int = 1000):
-    """Sanitize large log files in batches."""
+    """Sanitize large log files in batches.
+
+    Note: this approach still loads the full JSON file into memory via json.load.
+    It reduces processing spikes, not peak memory usage.
+    """
 
     with open(input_file, 'r') as f:
         logs = json.load(f)
@@ -382,7 +386,7 @@ Typical performance on a modern laptop:
 - **10,000 entries**: ~10-20 seconds
 
 Optimize by:
-1. Using compiled regex patterns (already done in the module)
+1. Using focused regex patterns (avoid overly broad expressions)
 2. Processing only string fields (non-strings are skipped)
 3. Early termination when no patterns match
 
@@ -477,9 +481,9 @@ The module includes comprehensive tests:
 pytest scripts/security/tests/test_log_sanitizer.py -v
 
 # Run specific test category
-pytest scripts/security/tests/test_log_sanitizer.py::test_api_keys -v
-pytest scripts/security/tests/test_log_sanitizer.py::test_pii_patterns -v
-pytest scripts/security/tests/test_log_sanitizer.py::test_task_log_integration -v
+pytest scripts/security/tests/test_log_sanitizer.py::TestSanitizeStringAPIKeys -v
+pytest scripts/security/tests/test_log_sanitizer.py::TestSanitizeStringPII -v
+pytest scripts/security/tests/test_log_sanitizer.py::TestSanitizeTaskLogEntry::test_task_log_integration -v
 
 # Run with coverage
 pytest scripts/security/tests/test_log_sanitizer.py --cov=scripts.security.log_sanitizer --cov-report=html

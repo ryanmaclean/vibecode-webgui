@@ -16,11 +16,11 @@ except ImportError:
 
 
 # Datadog Log Aggregation
-from scripts.lib.log_aggregation import get_log_aggregation
-
 try:
-    import os as _os; _c = __import__('ddtrace').config; _s = _os.path.basename(__file__).replace('.py',''); _c.service = _s; _c.requests.service = _s; __import__('ddtrace').patch_all()
-except: pass
+    from scripts.lib.log_aggregation import get_log_aggregation
+except ImportError:
+    def get_log_aggregation():
+        return None
 
 
 # -- VibeCode Telemetry --
@@ -132,7 +132,7 @@ Integration Example:
 import argparse
 import json
 import re
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Literal, Tuple
 
 
 class Color:
@@ -146,8 +146,8 @@ class Color:
 
 # API key patterns (from scripts/security/scan.py)
 API_KEY_PATTERNS = [
-    (r"sk-[a-zA-Z0-9]{40,}", "API_KEY", "OpenAI/OpenRouter API key"),
-    (r"sk-ant-[a-zA-Z0-9]{40,}", "API_KEY", "Anthropic API key"),
+    (r"sk-ant-[a-zA-Z0-9-]{20,}", "API_KEY", "Anthropic API key"),
+    (r"sk-[a-zA-Z0-9-]{40,}", "API_KEY", "OpenAI/OpenRouter API key"),
     (r"ghp_[a-zA-Z0-9]{36}", "API_KEY", "GitHub Personal Access Token"),
     (r"gho_[a-zA-Z0-9]{36}", "API_KEY", "GitHub OAuth token"),
     (r"ghu_[a-zA-Z0-9]{36}", "API_KEY", "GitHub user token"),
@@ -156,15 +156,15 @@ API_KEY_PATTERNS = [
     (r"AKIA[0-9A-Z]{16}", "API_KEY", "AWS Access Key ID"),
     (r"ya29\.[0-9A-Za-z\-_]+", "API_KEY", "Google OAuth access token"),
     # Catch shorter API key formats (test data, examples, or truncated keys)
-    (r"\bsk-[a-zA-Z0-9]{3,39}\b", "API_KEY", "Short-form API key"),
+    (r"\bsk-[a-zA-Z0-9-]{3,39}\b", "API_KEY", "Short-form API key"),
 ]
 
 # PII patterns
 PII_PATTERNS = [
     # Email addresses
-    (r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", "EMAIL", "Email address"),
+    (r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", "EMAIL", "Email address"),
     # US Phone numbers (various formats)
-    (r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b", "PHONE", "Phone number"),
+    (r"(?<!\d)(?:\+?1[-.\s])?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}(?!\d)", "PHONE", "Phone number"),
     # Social Security Numbers (US)
     (r"\b\d{3}-\d{2}-\d{4}\b", "SSN", "Social Security Number"),
     # Credit card numbers (basic pattern - 13-19 digits with optional spaces/dashes)
@@ -174,9 +174,9 @@ PII_PATTERNS = [
 # Password and credential patterns
 PASSWORD_PATTERNS = [
     # Passwords in URLs (http://user:pass@host or https://user:pass@host)
-    (r"(https?://[^:@\s]+):([^@\s]+)@", "PASSWORD", "Password in URL"),
+    (r"(https?://[^:/@\s]+):(.+?)@([^/\s]+)", "PASSWORD", "Password in URL", "url_password"),
     # Common password patterns in environment variables or configs
-    (r"(?i)(password|passwd|pwd)\s*[=:]\s*['\"]?([^\s'\"]+)", "PASSWORD", "Password assignment"),
+    (r"(?i)(password|passwd|pwd)(\s*[=:]\s*)['\"]?([^\s'\"]+)", "PASSWORD", "Password assignment", "password_assignment"),
     # Bearer tokens
     (r"Bearer\s+[A-Za-z0-9\-._~+/]+=*", "BEARER_TOKEN", "Bearer token"),
     # Basic auth (base64)
@@ -218,18 +218,22 @@ DATABASE_PATTERNS = [
 
 # Datadog API key pattern (requires context to avoid false positives)
 DATADOG_PATTERNS = [
-    (r"(?i)(api[_\s.-]?key|datadog|dd[_\s.-]?api[_\s.-]?key)['\"\s:=]+([a-f0-9]{32})", "API_KEY", "Datadog API key"),
+    (r"(?i)(api[_\s.-]?key|datadog|dd[_\s.-]?api[_\s.-]?key)(['\"\s:=]+)([a-f0-9]{32})", "API_KEY", "Datadog API key", "datadog_context"),
 ]
 
+PatternStrategy = Literal["default", "url_password", "password_assignment", "datadog_context"]
+PatternDefinition = Tuple[str, str, str]
+PatternDefinitionWithStrategy = Tuple[str, str, str, PatternStrategy]
+
 # Combine all patterns (order matters - more specific patterns first)
-ALL_PATTERNS: List[Tuple[str, str, str]] = (
+ALL_PATTERNS: List[PatternDefinition | PatternDefinitionWithStrategy] = (
     PRIVATE_KEY_PATTERNS +  # Process private keys first (they can contain special chars)
     DATABASE_PATTERNS +      # Process database URLs before general password patterns
     PASSWORD_PATTERNS +      # Process password patterns before email (URLs contain @)
     API_KEY_PATTERNS +       # Process API keys
+    DATADOG_PATTERNS +       # Process Datadog context before general PII matching
     JWT_PATTERNS +           # Process JWT tokens
-    PII_PATTERNS +          # Process PII last (emails are more general)
-    DATADOG_PATTERNS
+    PII_PATTERNS            # Process PII last (emails are more general)
 )
 
 
@@ -276,17 +280,23 @@ def sanitize_string(text: str) -> str:
     sanitized = text
 
     # Apply all patterns
-    for pattern, redaction_type, description in ALL_PATTERNS:
-        # Special handling for password patterns with capture groups
-        if redaction_type == "PASSWORD" and "https?://" in pattern:
-            # Replace password in URL while keeping structure
-            sanitized = re.sub(pattern, r"\1:[REDACTED:PASSWORD]@", sanitized)
-        elif redaction_type == "PASSWORD" and "password" in pattern.lower():
-            # Replace password assignment value
-            sanitized = re.sub(pattern, rf"\1=[REDACTED:PASSWORD]", sanitized, flags=re.IGNORECASE)
-        elif redaction_type == "API_KEY" and "datadog" in description.lower():
-            # Special handling for Datadog pattern with context
-            sanitized = re.sub(pattern, rf"\1=[REDACTED:API_KEY]", sanitized, flags=re.IGNORECASE)
+    for pattern_entry in ALL_PATTERNS:
+        if len(pattern_entry) == 4:
+            pattern, redaction_type, _description, strategy = pattern_entry
+        else:
+            pattern, redaction_type, _description = pattern_entry
+            strategy = "default"
+
+        # Special handling for patterns with capture groups
+        if strategy == "url_password":
+            # Preserve username/host while redacting the password segment.
+            sanitized = re.sub(pattern, r"\1:[REDACTED:PASSWORD]@\3", sanitized)
+        elif strategy == "password_assignment":
+            # Preserve original separator formatting (: or =) and spacing.
+            sanitized = re.sub(pattern, r"\1\2[REDACTED:PASSWORD]", sanitized, flags=re.IGNORECASE)
+        elif strategy == "datadog_context":
+            # Preserve contextual key text and separator while redacting value.
+            sanitized = re.sub(pattern, r"\1\2[REDACTED:API_KEY]", sanitized, flags=re.IGNORECASE)
         else:
             # Standard replacement
             sanitized = re.sub(pattern, f"[REDACTED:{redaction_type}]", sanitized)
@@ -294,7 +304,7 @@ def sanitize_string(text: str) -> str:
     return sanitized
 
 
-def sanitize_log_entry(data: Any) -> Any:
+def sanitize_log_entry(data: Any, _depth: int = 0, _max_depth: int = 25) -> Any:
     """
     Recursively sanitize a log entry (string, dict, list, or primitive).
 
@@ -346,12 +356,15 @@ def sanitize_log_entry(data: Any) -> Any:
         data structure. It preserves types and structure, only modifying string
         values that contain sensitive data.
     """
+    if _depth >= _max_depth:
+        return data
+
     if isinstance(data, str):
         return sanitize_string(data)
     elif isinstance(data, dict):
-        return {key: sanitize_log_entry(value) for key, value in data.items()}
+        return {key: sanitize_log_entry(value, _depth=_depth + 1, _max_depth=_max_depth) for key, value in data.items()}
     elif isinstance(data, list):
-        return [sanitize_log_entry(item) for item in data]
+        return [sanitize_log_entry(item, _depth=_depth + 1, _max_depth=_max_depth) for item in data]
     else:
         # Return primitives (int, float, bool, None) unchanged
         return data
@@ -527,7 +540,7 @@ Examples:
 
     try:
         # Get input data
-        if args.text:
+        if args.text is not None:
             input_data = args.text
         elif args.file:
             try:
