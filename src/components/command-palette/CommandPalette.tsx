@@ -10,12 +10,47 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fuzzySearch, type Searchable } from '@/lib/keyboard/fuzzy-search';
 
 export interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
   className?: string;
 }
+
+// Sample commands for demonstration (will be replaced with actual command registry)
+const SAMPLE_COMMANDS: Searchable[] = [
+  {
+    id: 'go-dashboard',
+    label: 'Go to Dashboard',
+    description: 'Navigate to the main dashboard',
+    keywords: ['home', 'overview'],
+  },
+  {
+    id: 'go-vm',
+    label: 'Go to VM Management',
+    description: 'Manage virtual machines',
+    keywords: ['virtual', 'machine', 'vms'],
+  },
+  {
+    id: 'go-ai-chat',
+    label: 'Go to AI Chat',
+    description: 'Open AI chat interface',
+    keywords: ['assistant', 'conversation'],
+  },
+  {
+    id: 'go-settings',
+    label: 'Open Settings',
+    description: 'Configure application settings',
+    keywords: ['preferences', 'config', 'configuration'],
+  },
+  {
+    id: 'go-monitoring',
+    label: 'Go to Monitoring',
+    description: 'View system monitoring and metrics',
+    keywords: ['metrics', 'performance', 'stats'],
+  },
+];
 
 /**
  * Main CommandPalette component
@@ -27,6 +62,14 @@ export function CommandPalette({
 }: CommandPaletteProps) {
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
+
+  // Fuzzy search results
+  const searchResults = React.useMemo(() => {
+    return fuzzySearch(SAMPLE_COMMANDS, searchQuery, {
+      limit: 10,
+      threshold: 0,
+    });
+  }, [searchQuery]);
 
   // Close on Escape key
   React.useEffect(() => {
@@ -171,7 +214,7 @@ export function CommandPalette({
                 </div>
               </div>
 
-              {/* Results area (placeholder for now) */}
+              {/* Results area */}
               <div
                 className={cn(
                   'max-h-96 overflow-y-auto',
@@ -180,7 +223,43 @@ export function CommandPalette({
                 role="listbox"
                 aria-label="Command results"
               >
-                {searchQuery ? (
+                {searchResults.length > 0 ? (
+                  <div className="space-y-1">
+                    {searchResults.map((result, index) => (
+                      <div
+                        key={result.item.id}
+                        role="option"
+                        aria-selected={index === 0}
+                        className={cn(
+                          'px-3 py-2 rounded',
+                          'cursor-pointer',
+                          'hover:bg-neutral-100 dark:hover:bg-neutral-800',
+                          'transition-colors',
+                          'focus:outline-none focus:ring-2 focus:ring-blue-500'
+                        )}
+                        tabIndex={0}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
+                              {result.item.label}
+                            </div>
+                            {result.item.description && (
+                              <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                                {result.item.description}
+                              </div>
+                            )}
+                          </div>
+                          {result.score > 0 && (
+                            <div className="flex-shrink-0 text-xs text-neutral-400 dark:text-neutral-500">
+                              {Math.round(result.score)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : searchQuery ? (
                   <div className="p-8 text-center text-neutral-500 dark:text-neutral-400">
                     <p className="text-sm">
                       No commands found for &quot;{searchQuery}&quot;
