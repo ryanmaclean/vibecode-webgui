@@ -1,6 +1,5 @@
 {
   "base_commands": [
-    ".",
     "[",
     "[[",
     "ag",
@@ -27,7 +26,6 @@
     "du",
     "echo",
     "egrep",
-    "env",
     "exit",
     "expand",
     "export",
@@ -91,7 +89,6 @@
     "shuf",
     "sleep",
     "sort",
-    "source",
     "split",
     "stat",
     "tail",
@@ -118,8 +115,7 @@
     "xargs",
     "yes",
     "yq",
-    "zip",
-    "zsh"
+    "zip"
   ],
   "stack_commands": [
     "ant",
@@ -256,8 +252,8 @@
     "cargo_aliases": [],
     "shell_scripts": []
   },
-  "project_dir": "/Users/studio/Documents/harness",
+  "project_dir": "vibecode-webgui",
   "created_at": "2026-02-14T16:40:46.822637",
-  "project_hash": "e1bd6907055e9666b61d3a0307998ae5",
-  "inherited_from": "/Users/studio/Documents/harness"
+  "project_hash": "21f54980cc35108602d33f50aae56966",
+  "inherited_from": "vibecode-webgui"
 }
