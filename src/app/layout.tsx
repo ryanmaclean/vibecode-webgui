@@ -6,6 +6,7 @@ import "./globals.css";
 import Providers from './providers';
 import Script from 'next/script';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
+import { GlobalCommandPalette } from '@/components/command-palette/GlobalCommandPalette';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
 // const geistSans = Geist({
@@ -84,6 +85,8 @@ export default function RootLayout({
               {children}
             </main>
           </ErrorBoundary>
+          {/* Global command palette accessible from any page via Cmd+Shift+P or Cmd+K */}
+          <GlobalCommandPalette />
         </Providers>
       </body>
     </html>
