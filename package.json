@@ -263,6 +263,7 @@
     "zustand": "5.0.11"
   },
   "overrides": {
+    "lodash": "^4.17.23",
     "ignore": "^7.0.5",
     "tmp": "^0.2.4",
     "@octokit/openapi-types": "24.0.0",

@@ -38,6 +38,7 @@
     "vite": "^7.1.11"
   },
   "overrides": {
+    "lodash": "^4.17.23",
     "esbuild": "^0.25.9",
     "brace-expansion": "^2.0.2",
     "nanoid": "^3.3.8"

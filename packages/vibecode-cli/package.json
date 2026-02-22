@@ -37,6 +37,7 @@
     "typescript": "^5.0.0"
   },
   "overrides": {
+    "lodash": "^4.17.23",
     "minimatch": "^10.2.1"
   }
 }

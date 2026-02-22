@@ -4,6 +4,9 @@
   "description": "Codex CLI project-scoped dependencies for MCP servers",
   "license": "MIT",
   "type": "module",
+  "overrides": {
+    "ajv": "^8.18.0"
+  },
   "dependencies": {
     "@modelcontextprotocol/server-sequential-thinking": "^2025.7.1"
   }
