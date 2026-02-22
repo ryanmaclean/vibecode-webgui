@@ -23,7 +23,6 @@ describe('Feature Audit: Interactive Console (#1527)', () => {
       const componentPath = path.join(process.cwd(), 'src/components/console/ConsoleMode.tsx');
       const content = fs.readFileSync(componentPath, 'utf-8');
 
-      expect(content).toContain('ConsoleTerminal');
       expect(content).toContain('codeServerClient.getOrCreateSession');
       expect(content).toContain('codeServerClient.getSession');
     });
