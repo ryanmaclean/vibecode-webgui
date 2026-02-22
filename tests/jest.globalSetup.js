@@ -37,8 +37,18 @@ async function checkTcpConnection(host, port, timeout = 2000) {
  * Check Redis connectivity
  */
 async function checkRedis() {
-  const redisHost = process.env.REDIS_HOST || '10.0.3.70';
-  const redisPort = parseInt(process.env.REDIS_PORT || '6379', 10);
+  let redisHost = process.env.REDIS_HOST || '10.0.3.70';
+  let redisPort = parseInt(process.env.REDIS_PORT || '6379', 10);
+
+  if (process.env.REDIS_URL) {
+    try {
+      const url = new URL(process.env.REDIS_URL);
+      redisHost = url.hostname;
+      redisPort = parseInt(url.port || '6379', 10);
+    } catch {
+      // fallback to defaults
+    }
+  }
 
   try {
     const isConnected = await checkTcpConnection(redisHost, redisPort);
