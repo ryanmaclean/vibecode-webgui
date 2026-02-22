@@ -17,6 +17,7 @@ export { AgentMarketplace } from './AgentMarketplace'
 export { AgentMonitoringDashboard } from './AgentMonitoringDashboard'
 export { AgentBuilderWorkflowEmbed } from './AgentBuilderWorkflowEmbed'
 export { DiffViewer } from './DiffViewer'
+export { ConfirmationDialog } from './ConfirmationDialog'
 
 // Type exports
 export type {
@@ -71,3 +72,10 @@ export type {
   DiffViewerProps,
   DiffStats
 } from './DiffViewer'
+
+export type {
+  ConfirmationDialogProps,
+  RiskBadgeProps,
+  ActionTypeBadgeProps,
+  MetadataSectionProps
+} from './ConfirmationDialog'
