@@ -1,0 +1,40 @@
+name: Auto-Claude PR Maintenance
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: auto-claude-pr-maintenance
+  cancel-in-progress: false
+
+jobs:
+  refresh-auto-claude-prs:
+    runs-on: ubuntu-latest
+    if: github.repository == 'ryanmaclean/vibecode-webgui'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Refresh auto-claude branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 scripts/automation/update_auto_claude_prs.py --repo "${{ github.repository }}"
