@@ -18,6 +18,7 @@ export { AgentMonitoringDashboard } from './AgentMonitoringDashboard'
 export { AgentBuilderWorkflowEmbed } from './AgentBuilderWorkflowEmbed'
 export { DiffViewer } from './DiffViewer'
 export { ConfirmationDialog } from './ConfirmationDialog'
+export { PendingConfirmations } from './PendingConfirmations'
 
 // Type exports
 export type {
@@ -79,3 +80,7 @@ export type {
   ActionTypeBadgeProps,
   MetadataSectionProps
 } from './ConfirmationDialog'
+
+export type {
+  PendingConfirmationsProps
+} from './PendingConfirmations'
