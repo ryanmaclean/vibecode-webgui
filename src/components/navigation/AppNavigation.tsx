@@ -29,6 +29,7 @@ import { useKeyboardShortcuts, shortcutCategories } from '@/hooks/useKeyboardSho
 import { CommandPalette } from '@/components/command-palette/CommandPalette'
 import { useCommandPalette } from '@/hooks/useCommandPalette'
 import { KeyboardHint } from '@/components/ui/KeyboardHint'
+import { createRovingTabIndex } from '@/lib/keyboard/focus-management'
 
 interface NavItem {
   title: string
@@ -121,7 +122,10 @@ function DropdownMenu({
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const itemRefs = useRef<(HTMLAnchorElement | null)[]>([])
 
+  // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -132,6 +136,57 @@ function DropdownMenu({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Setup roving tabindex when dropdown opens
+  useEffect(() => {
+    if (!open || !dropdownRef.current || !item.children) {
+      return
+    }
+
+    // Filter out null refs
+    const items = itemRefs.current.filter((el): el is HTMLAnchorElement => el !== null)
+    if (items.length === 0) {
+      return
+    }
+
+    // Create roving tabindex manager
+    const rovingTabIndex = createRovingTabIndex(dropdownRef.current, items, {
+      initialIndex: 0,
+      wrap: true,
+      direction: 'vertical',
+    })
+
+    // Custom keyboard handler for Enter and Escape
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Let roving tabindex handle arrow keys, Home, End
+      rovingTabIndex.handleKeyDown(event)
+
+      // Handle Enter key to activate link
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        const currentItem = items[rovingTabIndex.currentIndex]
+        if (currentItem) {
+          currentItem.click()
+        }
+      }
+
+      // Handle Escape key to close dropdown
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setOpen(false)
+        // Return focus to dropdown button
+        const button = ref.current?.querySelector('button')
+        button?.focus()
+      }
+    }
+
+    dropdownRef.current.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      dropdownRef.current?.removeEventListener('keydown', handleKeyDown)
+      rovingTabIndex.destroy()
+    }
+  }, [open, item.children])
+
   const Icon = item.icon
   const active = isActive(pathname, item.href) || isChildActive(pathname, item.children)
   const shortcut = NAV_SHORTCUTS[item.href]
@@ -140,6 +195,20 @@ function DropdownMenu({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((prev) => !prev)}
+        onKeyDown={(e) => {
+          // Open dropdown with Enter or Space
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setOpen(true)
+          }
+          // Close dropdown with Escape
+          if (e.key === 'Escape' && open) {
+            e.preventDefault()
+            setOpen(false)
+          }
+        }}
+        aria-expanded={open}
+        aria-haspopup="true"
         className={`group relative flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
           active
             ? 'bg-primary/10 text-primary'
@@ -157,16 +226,26 @@ function DropdownMenu({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1 w-48 rounded-md border border-border bg-card shadow-lg z-50">
+        <div
+          ref={dropdownRef}
+          className="absolute left-0 top-full mt-1 w-48 rounded-md border border-border bg-card shadow-lg z-50"
+          role="menu"
+          aria-label={`${item.title} menu`}
+        >
           <div className="py-1">
-            {item.children?.map((child) => {
+            {item.children?.map((child, index) => {
               const ChildIcon = child.icon
               const childActive = isActive(pathname, child.href)
               return (
                 <Link
                   key={child.href}
                   href={child.href}
+                  ref={(el) => {
+                    itemRefs.current[index] = el
+                  }}
                   onClick={() => setOpen(false)}
+                  role="menuitem"
+                  tabIndex={-1}
                   className={`flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
                     childActive
                       ? 'bg-primary/10 text-primary'
