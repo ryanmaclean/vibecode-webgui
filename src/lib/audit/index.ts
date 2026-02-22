@@ -119,3 +119,18 @@ export {
   type StreamingExportHandler,
   type ValidatedExportOptions,
 } from './export';
+
+// Audit middleware
+export {
+  withAuditLogging,
+  withAIAuditLogging,
+  withAdminAuditLogging,
+  withDataAccessAuditLogging,
+  createAuditContextFromRequest,
+  logAuditFromRequest,
+  composeMiddleware,
+  type AuditedRequest,
+  type AuditMiddlewareOptions,
+  type AIAuditOptions,
+  type AdminAuditOptions,
+} from './middleware';
