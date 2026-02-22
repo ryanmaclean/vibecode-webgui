@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 import { createServiceLogger } from '@/lib/logging';
+import { z } from '@/lib/zod-compat';
 import {
   listAllPlugins,
   findPlugins,
@@ -22,6 +23,35 @@ const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'plu
 export const dynamic = 'force-dynamic';
 
 const apiRateLimit = createAPIRateLimit(60); // 60 requests per minute
+const VALID_PLUGIN_TYPES: PluginType[] = [
+  'ai-model',
+  'integration',
+  'workflow',
+  'ui-extension',
+  'code-generator',
+  'linter',
+  'formatter',
+  'other',
+];
+const VALID_PLUGIN_STATUSES: PluginStatus[] = [
+  'active',
+  'inactive',
+  'error',
+  'installing',
+  'uninstalling',
+];
+
+const pluginQuerySchema = z.object({
+  type: z.enum(VALID_PLUGIN_TYPES as [PluginType, ...PluginType[]]).optional(),
+  status: z.enum(VALID_PLUGIN_STATUSES as [PluginStatus, ...PluginStatus[]]).optional(),
+  keyword: z.string().trim().min(1).optional(),
+  author: z.string().trim().min(1).optional(),
+});
+
+const pluginActionSchema = z.object({
+  action: z.enum(['enable', 'disable']),
+  pluginId: z.string().trim().min(1),
+});
 
 /**
  * GET /api/plugins
@@ -57,20 +87,14 @@ export async function GET(request: NextRequest) {
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
-    const criteria: PluginSearchCriteria = {};
-
-    if (searchParams.has('type')) {
-      criteria.type = searchParams.get('type') as PluginType || undefined;
-    }
-    if (searchParams.has('status')) {
-      criteria.status = searchParams.get('status') as PluginStatus;
-    }
-    if (searchParams.has('keyword')) {
-      criteria.keyword = searchParams.get('keyword') || undefined;
-    }
-    if (searchParams.has('author')) {
-      criteria.author = searchParams.get('author') || undefined;
-    }
+    const rawQuery = {
+      type: searchParams.get('type') || undefined,
+      status: searchParams.get('status') || undefined,
+      keyword: searchParams.get('keyword') || undefined,
+      author: searchParams.get('author') || undefined,
+    };
+    const parsedQuery = pluginQuerySchema.safeParse(rawQuery);
+    const criteria: PluginSearchCriteria = parsedQuery.success ? parsedQuery.data : {};
 
     // Initialize plugin manager
     const manager = getPluginManager();
@@ -81,29 +105,16 @@ export async function GET(request: NextRequest) {
       ? await findPlugins(criteria)
       : await listAllPlugins();
 
-    // Transform plugins for API response
-    const pluginList = plugins.map(plugin => {
-      const manifest = plugin.manifest;
-
-      return {
-        id: manifest.id,
-        name: manifest.name,
-        version: manifest.version,
-        description: manifest.description,
-        author: manifest.author.name,
-        status: plugin.status,
-        capabilities: plugin.capabilities,
-        permissions: manifest.permissions,
-        icon: manifest.icon,
-        homepage: manifest.homepage || manifest.author.url,
-        repository: manifest.repository?.url,
-        metadata: {
-          license: manifest.license,
-          keywords: manifest.keywords || [],
-          dependencies: manifest.dependencies,
-        },
-      };
-    });
+    // Return plugin shape expected by plugin manager UI
+    const pluginList = plugins.map((plugin) => ({
+      manifest: plugin.manifest,
+      capabilities: plugin.capabilities,
+      status: plugin.status,
+      installedAt: plugin.installedAt,
+      updatedAt: plugin.updatedAt,
+      enabledAt: plugin.enabledAt,
+      lastError: plugin.lastError,
+    }));
 
     return NextResponse.json({
       success: true,
@@ -151,22 +162,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { action, pluginId } = body;
-
-    if (!action) {
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
       return NextResponse.json(
-        { error: 'Missing action parameter' },
+        { error: 'Invalid JSON body' },
         { status: 400 }
       );
     }
 
-    if (!pluginId) {
+    const parsedBody = pluginActionSchema.safeParse(body);
+    if (!parsedBody.success) {
       return NextResponse.json(
-        { error: 'Missing pluginId parameter' },
+        {
+          error: 'Invalid request body',
+          details: parsedBody.error.issues,
+        },
         { status: 400 }
       );
     }
+
+    const { action, pluginId } = parsedBody.data;
 
     // Initialize plugin manager
     const manager = getPluginManager();

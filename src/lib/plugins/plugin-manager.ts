@@ -4,17 +4,18 @@
  */
 
 import path from 'path';
+import os from 'os';
 import { promises as fs } from 'fs';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import {
   Plugin,
-  PluginManifest,
   PluginInstallOptions,
   PluginSearchCriteria,
   PluginEvent,
   PluginEventType,
-  PluginStatus,
   PluginSandboxConfig
 } from '@/types/plugin';
 import {
@@ -24,7 +25,6 @@ import {
   PluginLoadOptions
 } from './plugin-loader';
 import {
-  registerPlugin,
   getPlugin as getRegistryPlugin,
   getAllPlugins as getAllRegistryPlugins,
   getPluginsByStatus,
@@ -37,6 +37,10 @@ import {
   sanitizeManifest
 } from './plugin-validator';
 import { EventEmitter } from 'events';
+import { createServiceLogger } from '@/lib/logging';
+
+const execFileAsync = promisify(execFile);
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'plugin-manager' });
 
 /**
  * Plugin installation result
@@ -178,12 +182,17 @@ export class PluginManager extends EventEmitter {
    * Install a plugin from a source (directory, URL, or package)
    */
   async install(options: PluginInstallOptions): Promise<PluginInstallResult> {
+    let resolvedSourcePath: string | null = null;
+    let shouldCleanupResolvedSource = false;
+
     try {
       // Resolve plugin source
-      const pluginPath = await this.resolvePluginSource(options.source);
+      const sourceResolution = await this.resolvePluginSource(options.source);
+      resolvedSourcePath = sourceResolution.path;
+      shouldCleanupResolvedSource = sourceResolution.cleanup;
 
       // Load and validate manifest
-      const manifestPath = path.join(pluginPath, 'plugin.json');
+      const manifestPath = path.join(sourceResolution.path, 'plugin.json');
       const manifestData = await fs.readFile(manifestPath, 'utf-8');
       const manifestObj = JSON.parse(manifestData);
 
@@ -227,7 +236,7 @@ export class PluginManager extends EventEmitter {
       // Check if plugin already exists
       const existingPlugin = await prisma.plugin.findFirst({
         where: {
-          name: manifest.name,
+          name: manifest.id,
           version: manifest.version
         }
       });
@@ -235,15 +244,17 @@ export class PluginManager extends EventEmitter {
       if (existingPlugin && !options.force) {
         return {
           success: false,
-          error: `Plugin ${manifest.name}@${manifest.version} is already installed. Use force option to reinstall.`
+          error: `Plugin ${manifest.id}@${manifest.version} is already installed. Use force option to reinstall.`
         };
       }
 
       // Copy plugin to plugins directory if from external source
-      const targetPath = path.join(this.config.pluginsDirectory, manifest.name);
-      if (pluginPath !== targetPath) {
-        await this.copyPlugin(pluginPath, targetPath);
+      const targetPath = path.join(this.config.pluginsDirectory, manifest.id);
+      if (sourceResolution.path !== targetPath) {
+        await this.copyPlugin(sourceResolution.path, targetPath);
       }
+
+      const authorName = typeof manifest.author === 'string' ? manifest.author : manifest.author.name;
 
       // Install or update in database
       const dbPlugin = existingPlugin
@@ -251,7 +262,7 @@ export class PluginManager extends EventEmitter {
             where: { id: existingPlugin.id },
             data: {
               version: manifest.version,
-              author: manifest.author.name,
+              author: authorName,
               status: 'inactive',
               manifest: manifest as unknown as Prisma.JsonObject,
               updated_at: new Date()
@@ -259,9 +270,9 @@ export class PluginManager extends EventEmitter {
           })
         : await prisma.plugin.create({
             data: {
-              name: manifest.name,
+              name: manifest.id,
               version: manifest.version,
-              author: manifest.author.name,
+              author: authorName,
               status: 'inactive',
               manifest: manifest as unknown as Prisma.JsonObject
             }
@@ -275,6 +286,15 @@ export class PluginManager extends EventEmitter {
       });
 
       if (!loadResult.success) {
+        try {
+          await fs.rm(targetPath, { recursive: true, force: true });
+        } catch (cleanupError) {
+          logger.warn('Plugin install rollback failed to remove plugin directory', {
+            targetPath,
+            error: cleanupError,
+          });
+        }
+
         // Rollback database entry
         await prisma.plugin.delete({
           where: { id: dbPlugin.id }
@@ -306,6 +326,17 @@ export class PluginManager extends EventEmitter {
         success: false,
         error: `Installation failed: ${(error as Error).message}`
       };
+    } finally {
+      if (shouldCleanupResolvedSource && resolvedSourcePath) {
+        try {
+          await fs.rm(resolvedSourcePath, { recursive: true, force: true });
+        } catch (cleanupError) {
+          logger.warn('Failed to cleanup resolved plugin source', {
+            sourcePath: resolvedSourcePath,
+            error: cleanupError,
+          });
+        }
+      }
     }
   }
 
@@ -395,9 +426,6 @@ export class PluginManager extends EventEmitter {
         };
       }
 
-      // Update registry status
-      updateRegistryStatus(pluginId, 'active');
-
       // Update database
       await prisma.plugin.updateMany({
         where: { name: pluginId },
@@ -406,6 +434,9 @@ export class PluginManager extends EventEmitter {
           updated_at: new Date()
         }
       });
+
+      // Update in-memory status only after persistence succeeds
+      updateRegistryStatus(pluginId, 'active');
 
       // Emit event
       this.emitPluginEvent('plugin:enabled', pluginId);
@@ -449,9 +480,6 @@ export class PluginManager extends EventEmitter {
         };
       }
 
-      // Update registry status
-      updateRegistryStatus(pluginId, 'inactive');
-
       // Update database
       await prisma.plugin.updateMany({
         where: { name: pluginId },
@@ -460,6 +488,9 @@ export class PluginManager extends EventEmitter {
           updated_at: new Date()
         }
       });
+
+      // Update in-memory status only after persistence succeeds
+      updateRegistryStatus(pluginId, 'inactive');
 
       // Emit event
       this.emitPluginEvent('plugin:disabled', pluginId);
@@ -533,20 +564,86 @@ export class PluginManager extends EventEmitter {
   /**
    * Resolve plugin source (directory, URL, or npm package)
    */
-  private async resolvePluginSource(source: string): Promise<string> {
+  private async resolvePluginSource(source: string): Promise<{ path: string; cleanup: boolean }> {
+    // Handle URL sources by downloading to a temporary file first
+    if (/^https?:\/\//i.test(source)) {
+      const downloadDir = await fs.mkdtemp(path.join(os.tmpdir(), 'vibecode-plugin-download-'));
+      const sourceUrl = new URL(source);
+      const fileName = path.basename(sourceUrl.pathname) || 'plugin.zip';
+      const downloadedFilePath = path.join(downloadDir, fileName);
+      const response = await fetch(source);
+
+      if (!response.ok) {
+        throw new Error(`Failed to download plugin source: ${response.status} ${response.statusText}`);
+      }
+
+      const bytes = await response.arrayBuffer();
+      await fs.writeFile(downloadedFilePath, Buffer.from(bytes));
+
+      const extractedPath = await this.extractPluginArchive(downloadedFilePath);
+      return { path: extractedPath, cleanup: true };
+    }
+
     // Check if it's a local directory
     try {
       const stats = await fs.stat(source);
       if (stats.isDirectory()) {
-        return path.resolve(source);
+        return { path: path.resolve(source), cleanup: false };
+      }
+
+      if (stats.isFile()) {
+        const extractedPath = await this.extractPluginArchive(path.resolve(source));
+        return { path: extractedPath, cleanup: true };
       }
     } catch (error) {
       // Not a local directory, continue to other resolution methods
     }
 
-    // TODO: Add support for URLs and npm packages
-    // For now, only support local directories
     throw new Error(`Plugin source resolution not implemented for: ${source}`);
+  }
+
+  private async extractPluginArchive(archivePath: string): Promise<string> {
+    const tempExtractDir = await fs.mkdtemp(path.join(os.tmpdir(), 'vibecode-plugin-extract-'));
+    const extension = archivePath.toLowerCase();
+
+    if (extension.endsWith('.zip')) {
+      await execFileAsync('unzip', ['-q', archivePath, '-d', tempExtractDir]);
+    } else if (extension.endsWith('.tar.gz') || extension.endsWith('.tgz')) {
+      await execFileAsync('tar', ['-xzf', archivePath, '-C', tempExtractDir]);
+    } else if (extension.endsWith('.tar')) {
+      await execFileAsync('tar', ['-xf', archivePath, '-C', tempExtractDir]);
+    } else {
+      throw new Error(`Unsupported plugin archive format: ${archivePath}`);
+    }
+
+    return this.findPluginRootDirectory(tempExtractDir);
+  }
+
+  private async findPluginRootDirectory(baseDir: string): Promise<string> {
+    const manifestAtRoot = path.join(baseDir, 'plugin.json');
+    try {
+      await fs.access(manifestAtRoot);
+      return baseDir;
+    } catch {
+      // Continue searching child directories
+    }
+
+    const entries = await fs.readdir(baseDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+
+      const candidate = path.join(baseDir, entry.name);
+      try {
+        await fs.access(path.join(candidate, 'plugin.json'));
+        return candidate;
+      } catch {
+        // Continue searching remaining entries
+      }
+    }
+
+    throw new Error('Plugin archive does not contain plugin.json');
   }
 
   /**

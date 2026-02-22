@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { Plus, Search, Filter, RefreshCw, Package, AlertCircle } from 'lucide-react';
 import { PluginCard } from '@/components/plugins/PluginCard';
 import { PluginInstaller } from '@/components/plugins/PluginInstaller';
@@ -38,7 +37,6 @@ interface PluginsResponse {
  * Main page for managing installed plugins and installing new ones
  */
 export default function PluginsPage() {
-  const router = useRouter();
   const [plugins, setPlugins] = useState<Plugin[]>([]);
   const [filteredPlugins, setFilteredPlugins] = useState<Plugin[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,8 +67,15 @@ export default function PluginsPage() {
       const data: PluginsResponse = await response.json();
 
       if (data.success) {
-        setPlugins(data.plugins);
-        setFilteredPlugins(data.plugins);
+        const hydratedPlugins = data.plugins.map((plugin) => ({
+          ...plugin,
+          installedAt: new Date(plugin.installedAt),
+          updatedAt: new Date(plugin.updatedAt),
+          enabledAt: plugin.enabledAt ? new Date(plugin.enabledAt) : undefined,
+        }));
+
+        setPlugins(hydratedPlugins);
+        setFilteredPlugins(hydratedPlugins);
       } else {
         throw new Error('Invalid response from server');
       }

@@ -66,17 +66,6 @@ const typeText: Record<PluginType, string> = {
 };
 
 /**
- * Format date for display
- */
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  }).format(date);
-}
-
-/**
  * Format relative time
  */
 function formatRelativeTime(date: Date): string {

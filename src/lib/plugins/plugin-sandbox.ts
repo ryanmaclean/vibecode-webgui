@@ -332,13 +332,22 @@ export class PluginSandbox {
       let result: T;
 
       if (options.allowAsync) {
-        // For async code, wrap in async function
-        const wrappedCode = `(async () => { ${code} })()`;
-        const script = new vm.Script(wrappedCode);
-        result = await script.runInContext(this.sandboxContext, {
+        const script = new vm.Script(code);
+        const executionResult = script.runInContext(this.sandboxContext, {
           timeout,
           displayErrors: true
-        }) as T;
+        });
+
+        if (executionResult && typeof (executionResult as PromiseLike<unknown>).then === 'function') {
+          result = await Promise.race([
+            executionResult as Promise<T>,
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('Async execution timed out')), timeout)
+            ),
+          ]);
+        } else {
+          result = executionResult as T;
+        }
       } else {
         // Synchronous execution
         const script = new vm.Script(code);

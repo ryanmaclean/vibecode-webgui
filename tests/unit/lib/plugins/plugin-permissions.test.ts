@@ -19,7 +19,6 @@ import {
   getPermissionsByCategory,
   getPermissionPrerequisites,
   getPermissionConflicts,
-  VALID_PERMISSIONS,
 } from '@/lib/plugins/plugin-permissions';
 import { PluginPermission } from '@/types/plugin';
 

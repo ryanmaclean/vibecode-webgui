@@ -15,8 +15,7 @@ import {
 
 import {
   AIProvider,
-  AIModel,
-  ProviderCapabilities
+  AIModel
 } from '@/lib/ai-providers';
 
 // Import the manifest

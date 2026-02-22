@@ -34,7 +34,7 @@ const VALID_PLUGIN_TYPES: readonly PluginType[] = [
  * Zod schema for plugin author
  */
 const pluginAuthorSchema = z.union([
-  z.string(), // Accept author as string
+  z.string().min(1).transform(name => ({ name })), // Accept and normalize author string
   z.object({  // Or as object
     name: z.string().min(1, 'Author name is required').max(100),
     email: z.string().email().optional(),
@@ -365,6 +365,10 @@ export function sanitizeManifest(manifest: unknown): PluginManifest | null {
   // Normalize data
   return {
     ...validManifest,
+    author: {
+      ...validManifest.author,
+      name: validManifest.author.name.trim(),
+    },
     id: validManifest.id.toLowerCase().trim(),
     name: validManifest.name.trim(),
     version: validManifest.version.trim(),

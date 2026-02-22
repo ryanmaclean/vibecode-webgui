@@ -16,6 +16,7 @@ import {
   isPluginAPI
 } from '@/types/plugin';
 import { registerPlugin } from './plugin-registry';
+import { createServiceLogger } from '@/lib/logging';
 
 export interface PluginLoadOptions {
   autoRegister?: boolean;
@@ -37,6 +38,7 @@ const defaultLoadOptions: PluginLoadOptions = {
 
 // Cache loaded plugin APIs to avoid reloading
 const pluginCache: Map<string, PluginAPI> = new Map();
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'plugin-loader' });
 
 /**
  * Create a logger instance for a plugin
@@ -46,16 +48,16 @@ function createPluginLogger(pluginId: string): PluginLogger {
 
   return {
     debug: (message: string, ...args: unknown[]) => {
-      console.debug(`${prefix} ${message}`, ...args);
+      logger.debug(`${prefix} ${message}`, { args });
     },
     info: (message: string, ...args: unknown[]) => {
-      console.info(`${prefix} ${message}`, ...args);
+      logger.info(`${prefix} ${message}`, { args });
     },
     warn: (message: string, ...args: unknown[]) => {
-      console.warn(`${prefix} ${message}`, ...args);
+      logger.warn(`${prefix} ${message}`, { args });
     },
     error: (message: string, ...args: unknown[]) => {
-      console.error(`${prefix} ${message}`, ...args);
+      logger.error(`${prefix} ${message}`, { args });
     }
   };
 }
@@ -111,7 +113,15 @@ async function loadPluginCode(
   pluginPath: string,
   manifest: PluginManifest
 ): Promise<PluginAPI> {
-  const mainPath = path.join(pluginPath, manifest.main);
+  if (path.isAbsolute(manifest.main) || manifest.main.includes('..')) {
+    throw new Error('Plugin main path must be a relative path within the plugin directory');
+  }
+
+  const resolvedPluginPath = path.resolve(pluginPath);
+  const mainPath = path.resolve(resolvedPluginPath, manifest.main);
+  if (!(mainPath === resolvedPluginPath || mainPath.startsWith(`${resolvedPluginPath}${path.sep}`))) {
+    throw new Error('Plugin main path escapes plugin directory');
+  }
 
   try {
     // Check if file exists
@@ -205,8 +215,10 @@ export async function loadPlugin(
 
     // Check cache first
     let pluginAPI: PluginAPI;
+    let isCachedPlugin = false;
     if (pluginCache.has(manifest.id)) {
       pluginAPI = pluginCache.get(manifest.id)!;
+      isCachedPlugin = true;
     } else {
       // Load plugin code
       pluginAPI = await loadPluginCode(pluginPath, manifest);
@@ -216,8 +228,10 @@ export async function loadPlugin(
     // Create plugin context
     const context = createPluginContext(manifest, pluginPath);
 
-    // Initialize plugin
-    await pluginAPI.initialize(context);
+    // Only initialize on fresh load; cached plugins are already initialized.
+    if (!isCachedPlugin) {
+      await pluginAPI.initialize(context);
+    }
 
     // Create plugin instance
     const plugin: Plugin = {
@@ -303,7 +317,7 @@ export async function unloadPlugin(pluginId: string): Promise<boolean> {
 
     return true;
   } catch (error) {
-    console.error(`Failed to unload plugin ${pluginId}:`, error);
+    logger.error(`Failed to unload plugin ${pluginId}`, { error });
     return false;
   }
 }

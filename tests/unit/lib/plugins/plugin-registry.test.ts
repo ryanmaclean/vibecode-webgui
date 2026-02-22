@@ -4,9 +4,6 @@
  */
 
 import {
-  Plugin,
-  PluginManifest,
-  PluginStatus,
   registerPlugin,
   getPlugin,
   getAllPlugins,
@@ -19,6 +16,7 @@ import {
   clearRegistry,
   getPluginCount,
 } from '@/lib/plugins/plugin-registry';
+import { Plugin, PluginManifest, PluginStatus } from '@/types/plugin';
 
 describe('Plugin Registry', () => {
   // Helper to create test plugin with manifest
@@ -52,7 +50,7 @@ describe('Plugin Registry', () => {
         providesFormatters: false,
         providesLinters: false
       },
-      status: 'installed' as PluginStatus,
+      status: 'inactive',
       installedAt: new Date('2024-01-01'),
       updatedAt: new Date('2024-01-01'),
       ...overrides
@@ -131,29 +129,29 @@ describe('Plugin Registry', () => {
 
   describe('getPluginsByStatus', () => {
     it('should filter plugins by status', () => {
-      const installedPlugin = createTestPlugin('installed', { status: 'installed' });
+      const inactivePlugin = createTestPlugin('inactive', { status: 'inactive' });
       const activePlugin = createTestPlugin('active', { status: 'active' });
-      const disabledPlugin = createTestPlugin('disabled', { status: 'disabled' });
+      const errorPlugin = createTestPlugin('error', { status: 'error' });
 
-      registerPlugin(installedPlugin);
+      registerPlugin(inactivePlugin);
       registerPlugin(activePlugin);
-      registerPlugin(disabledPlugin);
+      registerPlugin(errorPlugin);
 
-      const installed = getPluginsByStatus('installed');
-      expect(installed).toHaveLength(1);
-      expect(installed[0].manifest.id).toBe('installed');
+      const inactive = getPluginsByStatus('inactive');
+      expect(inactive).toHaveLength(1);
+      expect(inactive[0].manifest.id).toBe('inactive');
 
       const active = getPluginsByStatus('active');
       expect(active).toHaveLength(1);
       expect(active[0].manifest.id).toBe('active');
 
-      const disabled = getPluginsByStatus('disabled');
-      expect(disabled).toHaveLength(1);
-      expect(disabled[0].manifest.id).toBe('disabled');
+      const error = getPluginsByStatus('error');
+      expect(error).toHaveLength(1);
+      expect(error[0].manifest.id).toBe('error');
     });
 
     it('should return empty array when no plugins match status', () => {
-      const plugin = createMockPlugin({ status: 'installed' });
+      const plugin = createMockPlugin('test-plugin', { status: 'inactive' });
       registerPlugin(plugin);
 
       expect(getPluginsByStatus('error')).toEqual([]);
@@ -163,10 +161,10 @@ describe('Plugin Registry', () => {
   describe('getActivePlugins', () => {
     it('should return only active plugins', () => {
       const activePlugin = createTestPlugin('active', { status: 'active' });
-      const installedPlugin = createTestPlugin('installed', { status: 'installed' });
+      const inactivePlugin = createTestPlugin('inactive', { status: 'inactive' });
 
       registerPlugin(activePlugin);
-      registerPlugin(installedPlugin);
+      registerPlugin(inactivePlugin);
 
       const active = getActivePlugins();
       expect(active).toHaveLength(1);
@@ -176,7 +174,7 @@ describe('Plugin Registry', () => {
 
   describe('updatePluginStatus', () => {
     it('should update plugin status', () => {
-      const plugin = createMockPlugin({ status: 'installed' });
+      const plugin = createMockPlugin('test-plugin', { status: 'inactive' });
       registerPlugin(plugin);
 
       const beforeUpdate = plugin.updatedAt;
@@ -193,10 +191,10 @@ describe('Plugin Registry', () => {
     });
 
     it('should allow transitioning between all statuses', () => {
-      const plugin = createMockPlugin({ status: 'installed' });
+      const plugin = createMockPlugin('test-plugin', { status: 'inactive' });
       registerPlugin(plugin);
 
-      const statuses: PluginStatus[] = ['active', 'disabled', 'error', 'installed'];
+      const statuses: PluginStatus[] = ['active', 'inactive', 'error', 'installing', 'uninstalling'];
 
       statuses.forEach(status => {
         updatePluginStatus(plugin.manifest.id, status);

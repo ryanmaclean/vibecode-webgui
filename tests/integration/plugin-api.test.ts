@@ -3,7 +3,7 @@
  * @jest-environment node
  */
 
-import { GET, POST, DELETE } from '@/app/api/plugins/route';
+import { GET, POST } from '@/app/api/plugins/route';
 import { GET as getPlugin, DELETE as deletePlugin } from '@/app/api/plugins/[id]/route';
 import { POST as installPlugin } from '@/app/api/plugins/install/route';
 import { prisma } from '@/lib/db/prisma';
@@ -207,8 +207,6 @@ describe('Plugin API Integration Tests', () => {
         // Verify rate limit enforced (60 req/min)
         // Some requests should succeed, but after rate limit, should get 429
         const statusCodes = responses.map(r => r.status);
-        const hasRateLimitResponse = statusCodes.some(code => code === 429);
-
         // Note: Rate limiting may not be enforced in test environment
         // so we just verify the endpoint handles multiple requests
         expect(responses.length).toBe(65);
