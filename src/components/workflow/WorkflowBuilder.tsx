@@ -31,8 +31,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Loader, Save, Play, Settings, Grid } from 'lucide-react'
 import { z } from '@/lib/zod-compat'
-import { NodePalette } from './NodePalette'
-import { WorkflowCanvas } from './WorkflowCanvas'
+import { NodePalette } from '@/components/workflow/NodePalette'
+import { WorkflowCanvas } from '@/components/workflow/WorkflowCanvas'
 
 export interface WorkflowBuilderProps {
   /** Initial workflow definition */
@@ -100,7 +100,7 @@ export function WorkflowBuilder({
       return true
     } catch (error) {
       if (error instanceof z.ZodError) {
-        setValidationError(error.errors[0]?.message || 'Validation error')
+        setValidationError(error.issues[0]?.message || 'Validation error')
       } else {
         setValidationError('Unknown validation error')
       }
@@ -227,7 +227,7 @@ export function WorkflowBuilder({
   // Add a node to the workflow
   const addNode = useCallback(
     (nodeType: NodeType, position: { x: number; y: number }) => {
-      const nodeId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const nodeId = `node-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
 
       const newNode: WorkflowNode = {
         id: nodeId,
@@ -301,25 +301,6 @@ export function WorkflowBuilder({
   // Handle edges change (for adding/removing edges)
   const handleEdgesChange = useCallback((edges: WorkflowEdge[]) => {
     setWorkflow(prev => ({ ...prev, edges }))
-  }, [])
-
-  // Handle node update
-  const handleNodeUpdate = useCallback((nodeId: string, updates: Partial<WorkflowNode>) => {
-    setWorkflow(prev => ({
-      ...prev,
-      nodes: prev.nodes.map(node =>
-        node.id === nodeId ? { ...node, ...updates } : node
-      ),
-    }))
-  }, [])
-
-  // Handle node removal
-  const handleNodeRemove = useCallback((nodeId: string) => {
-    setWorkflow(prev => ({
-      ...prev,
-      nodes: prev.nodes.filter(node => node.id !== nodeId),
-      edges: prev.edges.filter(edge => edge.source !== nodeId && edge.target !== nodeId),
-    }))
   }, [])
 
   return (

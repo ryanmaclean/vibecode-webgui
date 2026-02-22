@@ -30,16 +30,16 @@ const createWorkflowSchema = z.object({
   tags: z.array(z.string()).optional(),
   nodes: z.array(z.any()),
   edges: z.array(z.any()),
-  config: z.record(z.any()).optional(),
-  inputs: z.record(z.any()).optional(),
-  outputs: z.record(z.any()).optional(),
+  config: z.record(z.string(), z.any()).optional(),
+  inputs: z.record(z.string(), z.any()).optional(),
+  outputs: z.record(z.string(), z.any()).optional(),
 })
 
 const executeWorkflowSchema = z.object({
   workflowId: z.string().optional(),
   workflowYAML: z.string().optional(),
   definition: z.any().optional(),
-  inputs: z.record(z.any()).optional(),
+  inputs: z.record(z.string(), z.any()).optional(),
 })
 
 /**
@@ -78,8 +78,6 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
-
-    const engine = getWorkflowEngine()
 
     // For now, return empty arrays since we don't have persistent storage yet
     // This will be enhanced when database integration is added
