@@ -30,7 +30,7 @@
 
 VibeCode Desktop depends on the `vibecode-vm` sidecar binary for container management and VM operations. Tauri automatically selects the appropriate architecture-specific binary at build time using the pattern:
 
-```
+```text
 binaries/vibecode-vm-{target-triple}
 ```
 

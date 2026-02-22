@@ -119,6 +119,7 @@ jobs:
       - name: Build Tauri app (Apple Silicon)
         working-directory: platforms/tauri
         env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
           # Build optimizations
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}

@@ -30,19 +30,19 @@ See [Tauri Sidecar Documentation](https://v2.tauri.app/develop/sidecar/) for mor
 ## Quick Start
 
 ```bash
-# Initialize Tauri project (once scaffolding is complete)
-npx tauri init
+# Build for Apple Silicon (production)
+npm run build:macos:local
 
-# Run in development mode
-npm run tauri:dev
+# Build in dev/debug mode
+npm run build:macos:local:dev
 
-# Build for production
-npm run tauri:build
+# Skip frontend rebuild (use existing build artifacts)
+npm run build:macos:local:skip-frontend
 ```
 
 ## Project Structure (After Init)
 
-```
+```text
 src-tauri/
 ├── Cargo.toml           # Rust dependencies
 ├── tauri.conf.json      # Tauri configuration

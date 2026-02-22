@@ -254,7 +254,8 @@ build_frontend() {
     mkdir -p platforms/public
     cp -r out/. platforms/public/
 
-    local file_count=$(find platforms/public -type f | wc -l | tr -d ' ')
+    local file_count
+    file_count=$(find platforms/public -type f | wc -l | tr -d ' ')
     log_success "Frontend build complete - $file_count files"
 
     cleanup_frontend
@@ -353,7 +354,7 @@ show_output_locations() {
     fi
 
     local app_bundle="$bundle_dir/$target_subdir/$build_type/bundle/macos/VibeCode.app"
-    local dmg_file="$bundle_dir/$target_subdir/$build_type/bundle/macos/VibeCode.dmg"
+    local dmg_file="$bundle_dir/$target_subdir/$build_type/bundle/dmg/VibeCode.dmg"
 
     if [ -d "$app_bundle" ]; then
         echo -e "  ${GREEN}App Bundle:${NC} $app_bundle"
