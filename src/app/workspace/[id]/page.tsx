@@ -24,6 +24,8 @@ import {
 } from 'lucide-react'
 import VSCodeIntegration from '@/components/ai/VSCodeIntegration'
 import { AIChatInterface } from '@/components/ai/AIChatInterface'
+import { WorkspaceProvider } from '@/components/workspace/WorkspaceProvider'
+import { IndexingStatus } from '@/components/indexing/IndexingStatus'
 
 interface WorkspaceInfo {
   id: string
@@ -129,26 +131,36 @@ export default function WorkspacePage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900 text-white">
-      {/* Header */}
-      <header className="flex items-center justify-between p-2 border-b border-gray-700 bg-gray-800">
-        <div className="flex items-center space-x-4">
-          <h1 className="text-xl font-bold">{workspace.name}</h1>
-          <Badge variant={workspace.status === 'running' ? 'default' : 'destructive'}>
-            {workspace.status}
-          </Badge>
-          <div className="flex items-center text-sm text-gray-400">
-            <Folder className="w-4 h-4 mr-2" />
-            <span>{workspace.branch}</span>
+    <WorkspaceProvider initialWorkspace={{
+      id: parseInt(workspaceId),
+      name: workspace.name,
+      project_id: 1, // TODO: Get from actual workspace data
+      project_path: '/home/coder/project', // TODO: Get from actual workspace data
+      userId: 1, // TODO: Get from session
+    }}>
+      <div className="h-screen flex flex-col bg-gray-900 text-white">
+        {/* Header */}
+        <header className="flex items-center justify-between p-2 border-b border-gray-700 bg-gray-800">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-xl font-bold">{workspace.name}</h1>
+            <Badge variant={workspace.status === 'running' ? 'default' : 'destructive'}>
+              {workspace.status}
+            </Badge>
+            <div className="flex items-center text-sm text-gray-400">
+              <Folder className="w-4 h-4 mr-2" />
+              <span>{workspace.branch}</span>
+            </div>
+            <div className="ml-4">
+              <IndexingStatus compact />
+            </div>
           </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button size="sm" variant="outline">
-            <Settings className="w-4 h-4 mr-2" />
-            Settings
-          </Button>
-        </div>
-      </header>
+          <div className="flex items-center space-x-2">
+            <Button size="sm" variant="outline">
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
+          </div>
+        </header>
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
@@ -222,5 +234,6 @@ export default function WorkspacePage() {
         </Card>
       </div>
     </div>
+    </WorkspaceProvider>
   )
 }

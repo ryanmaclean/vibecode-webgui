@@ -16,19 +16,20 @@ except ImportError:
     pass
 
 
-# Datadog Log Aggregation
-from scripts.lib.log_aggregation import get_log_aggregation
-
-
-
 """Migrate secrets from .env files into the macOS Keychain."""
-
-# Initialize log aggregation
-log_agg = get_log_aggregation()
 
 # -- VibeCode Telemetry --
 import sys
 import os
+
+# Initialize log aggregation
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from scripts.lib.log_aggregation import get_log_aggregation
+    log_agg = get_log_aggregation()
+except ImportError:
+    log_agg = None
+
 try:
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
     from vibecode.telemetry import init_telemetry
@@ -174,6 +175,178 @@ def ensure_macos() -> None:
         sys.exit(1)
 
 
+def connect_to_database() -> Optional[object]:
+    """Connect to the PostgreSQL database using DATABASE_URL."""
+    database_url = os.environ.get("DATABASE_URL")
+
+    if not database_url:
+        color_print(YELLOW, "⚠️  Warning: DATABASE_URL not set, skipping database registration")
+        color_print(YELLOW, "   Secrets will be stored in Keychain but not tracked in database")
+        return None
+
+    try:
+        import psycopg2
+        from psycopg2.extras import RealDictCursor
+
+        conn = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
+        return conn
+    except ImportError:
+        color_print(YELLOW, "⚠️  Warning: psycopg2 not installed, skipping database registration")
+        color_print(YELLOW, "   Install with: pip install psycopg2-binary")
+        return None
+    except Exception as e:
+        color_print(YELLOW, f"⚠️  Warning: Could not connect to database: {e}")
+        color_print(YELLOW, "   Secrets will be stored in Keychain but not tracked in database")
+        return None
+
+
+# Rotation policies with their default expiration periods (in days)
+ROTATION_POLICIES = {
+    "api_keys": 90,
+    "auth_tokens": 30,
+    "db_credentials": 180,
+    "monitoring": 90,
+    "custom": 90,
+}
+
+
+def infer_policy_from_key_name(key_name: str) -> str:
+    """
+    Infer the rotation policy based on the secret's key name.
+
+    Args:
+        key_name: The name of the secret key
+
+    Returns:
+        Policy name (api_keys, auth_tokens, db_credentials, monitoring, or custom)
+    """
+    key_lower = key_name.lower()
+
+    # API Keys
+    if (
+        "api_key" in key_lower
+        or "apikey" in key_lower
+        or key_lower.endswith("_key")
+    ):
+        return "api_keys"
+
+    # Auth tokens
+    if (
+        "token" in key_lower
+        or "secret" in key_lower
+        or "oauth" in key_lower
+        or "jwt" in key_lower
+    ):
+        return "auth_tokens"
+
+    # Database credentials
+    if (
+        "database" in key_lower
+        or "db_" in key_lower
+        or "postgres" in key_lower
+        or "mysql" in key_lower
+        or "mongo" in key_lower
+        or "connection_string" in key_lower
+    ):
+        return "db_credentials"
+
+    # Monitoring
+    if "dd_" in key_lower or "datadog" in key_lower:
+        return "monitoring"
+
+    # Default to custom
+    return "custom"
+
+
+def register_secret_in_database(
+    conn: object,
+    key_name: str,
+    policy_name: str,
+) -> bool:
+    """
+    Register a secret in the database with metadata tracking.
+
+    Args:
+        conn: Database connection
+        key_name: Name of the secret
+        policy_name: Rotation policy to apply
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        import json
+        from datetime import datetime, timedelta, timezone
+
+        cursor = conn.cursor()
+
+        # Calculate expiration date
+        days = ROTATION_POLICIES.get(policy_name, 90)
+        now = datetime.now(timezone.utc)
+        expires_at = now + timedelta(days=days)
+
+        # Check if secret already exists
+        check_query = "SELECT id FROM secret_metadata WHERE key_name = %s"
+        cursor.execute(check_query, (key_name,))
+        existing = cursor.fetchone()
+
+        if existing:
+            # Update existing record
+            update_query = """
+                UPDATE secret_metadata
+                SET rotation_policy = %s,
+                    expires_at = %s,
+                    status = 'active',
+                    last_rotated_at = %s,
+                    metadata = %s
+                WHERE key_name = %s
+            """
+            metadata = json.dumps({
+                "migrated_at": now.isoformat(),
+                "migration_source": "migrate_secrets_to_keychain.py",
+            })
+            cursor.execute(update_query, (
+                policy_name,
+                expires_at,
+                now,
+                metadata,
+                key_name,
+            ))
+        else:
+            # Insert new record
+            insert_query = """
+                INSERT INTO secret_metadata (
+                    key_name,
+                    rotation_policy,
+                    expires_at,
+                    status,
+                    last_rotated_at,
+                    metadata,
+                    created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            metadata = json.dumps({
+                "migrated_at": now.isoformat(),
+                "migration_source": "migrate_secrets_to_keychain.py",
+            })
+            cursor.execute(insert_query, (
+                key_name,
+                policy_name,
+                expires_at,
+                "active",
+                now,
+                metadata,
+                now,
+            ))
+
+        conn.commit()
+        cursor.close()
+        return True
+    except Exception as e:
+        color_print(YELLOW, f"⚠️  Warning: Could not register {key_name} in database: {e}")
+        return False
+
+
 def detect_env_file(explicit: Optional[str]) -> Path:
     if explicit:
         path = Path(explicit)
@@ -223,10 +396,11 @@ def parse_env_file(path: Path) -> Dict[str, str]:
     return values
 
 
-def migrate_secrets(env_path: Path, values: Dict[str, str], migrator: KeychainMigrator) -> None:
+def migrate_secrets(env_path: Path, values: Dict[str, str], migrator: KeychainMigrator, db_conn: Optional[object] = None) -> None:
     color_print(BLUE, "📦 Migrating secrets to Keychain...\n")
     migrated = 0
     failed = 0
+    db_registered = 0
     for secret in SECRETS:
         value = values.get(secret) or os.getenv(secret)
         if not value:
@@ -234,13 +408,21 @@ def migrate_secrets(env_path: Path, values: Dict[str, str], migrator: KeychainMi
             continue
         if migrator.store_secret(secret, value):
             migrated += 1
-            color_print(GREEN, f"  ✅ {secret}")
+            policy = infer_policy_from_key_name(secret)
+            color_print(GREEN, f"  ✅ {secret} (policy: {policy})")
+
+            # Register in database if connection available
+            if db_conn:
+                if register_secret_in_database(db_conn, secret, policy):
+                    db_registered += 1
         else:
             failed += 1
             color_print(RED, f"  ❌ {secret} (failed)")
     print("\n" + BLUE + "========================================" + NC)
     color_print(GREEN, "✅ Migration complete!")
     print(f"   Migrated: {migrated}")
+    if db_conn:
+        print(f"   Registered in DB: {db_registered}")
     if failed:
         color_print(RED, f"   Failed: {failed}")
     print(BLUE + "========================================" + NC + "\n")
@@ -315,12 +497,29 @@ def main(argv: list[str] | None = None) -> int:
         color_print(RED, f"❌ {exc}")
         return 1
     color_print(GREEN, f"✅ Found environment file: {env_path}")
+
+    # Connect to database for secret tracking
+    db_conn = connect_to_database()
+    if db_conn:
+        color_print(GREEN, "✅ Connected to database for secret tracking\n")
+    else:
+        print()  # Add spacing
+
     values = parse_env_file(env_path)
     migrator = KeychainMigrator(service=args.service, access_group=access_group)
-    migrate_secrets(env_path, values, migrator)
-    maybe_backup_env(env_path)
-    color_print(GREEN, "✅ Secret migration complete!")
-    return 0
+
+    try:
+        migrate_secrets(env_path, values, migrator, db_conn)
+        maybe_backup_env(env_path)
+        color_print(GREEN, "✅ Secret migration complete!")
+        return 0
+    finally:
+        # Close database connection if it was opened
+        if db_conn:
+            try:
+                db_conn.close()
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":

@@ -188,6 +188,74 @@ export class ProviderFactory {
   }
   
   /**
+   * Detect if Apple Virtualization.framework is available
+   * @returns Object with isSupported flag and error message if not supported
+   */
+  static async detectVirtualizationSupport(): Promise<{ isSupported: boolean; error?: string }> {
+    // Only applicable on macOS
+    if (os.platform() !== 'darwin') {
+      return {
+        isSupported: false,
+        error: 'Virtualization.framework is only available on macOS'
+      };
+    }
+
+    // Check macOS version >= 11.0 (Big Sur)
+    try {
+      const { stdout } = await execAsync('sw_vers -productVersion');
+      const version = stdout.trim();
+      const majorVersion = parseInt(version.split('.')[0], 10);
+
+      if (majorVersion < 11) {
+        return {
+          isSupported: false,
+          error: `Virtualization.framework requires macOS 11.0 or later (current: ${version}). Please upgrade your system.`
+        };
+      }
+    } catch (error) {
+      logger.error('Failed to detect macOS version', { error });
+      return {
+        isSupported: false,
+        error: 'Unable to detect macOS version'
+      };
+    }
+
+    // Check CPU virtualization support
+    try {
+      const { stdout } = await execAsync('sysctl -n kern.hv_support');
+      const hvSupport = stdout.trim();
+
+      if (hvSupport !== '1') {
+        return {
+          isSupported: false,
+          error: 'CPU does not support hardware virtualization. Virtualization.framework requires a CPU with virtualization extensions.'
+        };
+      }
+    } catch (error) {
+      logger.warn('Failed to check virtualization support', { error });
+      // Some older macOS versions may not have kern.hv_support
+      // Fall through to continue checking
+    }
+
+    // Check if vfkit can access Virtualization.framework
+    // This implicitly checks entitlements and permissions
+    try {
+      // Try to invoke vfkit with --version to verify it has proper entitlements
+      if (await this.hasVfkit()) {
+        await execAsync('vfkit --version');
+      }
+    } catch (error) {
+      logger.warn('vfkit not available or missing entitlements', { error });
+      // Not a hard failure - vfkit might not be installed yet
+      // The actual entitlement check happens at runtime when creating VMs
+    }
+
+    return {
+      isSupported: true
+    };
+  }
+
+  /**
    * Check if command exists
    */
   private static async commandExists(command: string): Promise<boolean> {

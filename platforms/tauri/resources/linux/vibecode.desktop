@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=VibeCode
+Comment=AI-Powered Development Environment
+Exec=vibecode
+Icon=vibecode
+Terminal=false
+Type=Application
+Categories=Development;IDE;
+StartupNotify=true

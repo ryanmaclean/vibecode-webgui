@@ -1,0 +1,201 @@
+# Datadog Monitoring Configuration
+# OpenTelemetry integration for comprehensive observability
+
+# Service Configuration
+service:
+  name: ${SERVICE_NAME:-vibecode-service}
+  version: ${SERVICE_VERSION:-1.0.0}
+  namespace: ${SERVICE_NAMESPACE:-vibecode}
+  environment: ${DEPLOYMENT_ENVIRONMENT:-development}
+
+# Datadog Agent Configuration
+datadog:
+  # API key for Datadog authentication
+  api_key: ${DD_API_KEY}
+  site: ${DD_SITE:-datadoghq.com}
+
+  # APM (Application Performance Monitoring)
+  apm:
+    enabled: true
+    # Port for trace agent
+    receiver_port: 8126
+    # Sample rate (0.0 to 1.0)
+    sample_rate: ${DD_TRACE_SAMPLE_RATE:-1.0}
+
+  # Logs
+  logs:
+    enabled: true
+    # Log level: trace, debug, info, warn, error
+    level: ${LOG_LEVEL:-info}
+    # JSON formatting for structured logs
+    json: true
+
+  # DogStatsD for metrics
+  dogstatsd:
+    enabled: true
+    port: 8125
+    # Non-local traffic (for containerized environments)
+    non_local_traffic: true
+
+# OpenTelemetry Collector Configuration
+otel:
+  # Receivers
+  receivers:
+    otlp:
+      protocols:
+        http:
+          endpoint: 0.0.0.0:4318
+        grpc:
+          endpoint: 0.0.0.0:4317
+
+  # Exporters
+  exporters:
+    # Datadog exporter
+    datadog:
+      api:
+        key: ${DD_API_KEY}
+        site: ${DD_SITE:-datadoghq.com}
+
+      # Traces configuration
+      traces:
+        endpoint: https://trace.agent.${DD_SITE:-datadoghq.com}
+        # Span name remapping
+        span_name_remapping:
+          agent.task: "AgentTask"
+          http.request: "HTTPRequest"
+
+      # Metrics configuration
+      metrics:
+        endpoint: https://api.${DD_SITE:-datadoghq.com}
+        # Histogram aggregation
+        histograms:
+          mode: distributions
+          send_count_sum_metrics: true
+
+      # Host metadata
+      host_metadata:
+        enabled: true
+        hostname_source: first_resource
+
+  # Processors
+  processors:
+    # Batch processing for efficiency
+    batch:
+      timeout: 10s
+      send_batch_size: 100
+      send_batch_max_size: 1000
+
+    # Resource detection
+    resourcedetection:
+      detectors: [env, system, docker]
+      timeout: 5s
+
+    # Attributes processor for enrichment
+    attributes:
+      actions:
+        - key: deployment.environment
+          value: ${DEPLOYMENT_ENVIRONMENT:-development}
+          action: upsert
+        - key: service.namespace
+          value: ${SERVICE_NAMESPACE:-vibecode}
+          action: upsert
+
+  # Service pipelines
+  service:
+    pipelines:
+      # Traces pipeline
+      traces:
+        receivers: [otlp]
+        processors: [batch, resourcedetection, attributes]
+        exporters: [datadog]
+
+      # Metrics pipeline
+      metrics:
+        receivers: [otlp]
+        processors: [batch, resourcedetection, attributes]
+        exporters: [datadog]
+
+# Custom Metrics Configuration
+metrics:
+  # Agent metrics
+  agent:
+    - name: agent_task_duration_seconds
+      type: histogram
+      description: Duration of agent task execution in seconds
+      unit: s
+      tags:
+        - agent_type
+        - success
+
+    - name: agent_success_total
+      type: counter
+      description: Total number of successfully completed agent tasks
+      unit: "1"
+      tags:
+        - agent_type
+
+    - name: agent_failure_total
+      type: counter
+      description: Total number of failed agent tasks
+      unit: "1"
+      tags:
+        - agent_type
+        - failure_reason
+
+    - name: agent_output_lines_total
+      type: counter
+      description: Total lines of output produced by agents
+      unit: "1"
+      tags:
+        - agent_id
+        - agent_type
+
+    - name: agent_errors_total
+      type: counter
+      description: Total errors encountered by agents
+      unit: "1"
+      tags:
+        - agent_id
+        - agent_type
+        - error_type
+
+  # HTTP metrics
+  http:
+    - name: http_requests_total
+      type: counter
+      description: Total HTTP requests
+      unit: "1"
+      tags:
+        - method
+        - route
+        - status_code
+
+    - name: http_request_duration_seconds
+      type: histogram
+      description: HTTP request duration in seconds
+      unit: s
+      tags:
+        - method
+        - route
+        - status_code
+
+# Alerting Rules (optional - configured in Datadog UI)
+alerts:
+  enabled: ${DD_ALERTS_ENABLED:-false}
+  # Configure monitors in Datadog UI or via Terraform/API
+
+# Tags for service identification
+tags:
+  - service:${SERVICE_NAME:-vibecode-service}
+  - env:${DEPLOYMENT_ENVIRONMENT:-development}
+  - version:${SERVICE_VERSION:-1.0.0}
+  - namespace:${SERVICE_NAMESPACE:-vibecode}
+
+# Additional configuration
+config:
+  # Enable runtime metrics
+  runtime_metrics_enabled: true
+  # Profiling
+  profiling_enabled: ${DD_PROFILING_ENABLED:-false}
+  # Log injection (correlate logs with traces)
+  log_injection: true

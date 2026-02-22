@@ -119,13 +119,34 @@ export interface VM {
   updatedAt: Date;
 }
 
-export type VMStatus = 
+export type VMStatus =
   | 'creating'
   | 'running'
   | 'stopped'
   | 'stopping'
   | 'error'
   | 'unknown';
+
+/**
+ * VM Error Types
+ * Categorizes common VM failures for better error handling and user messaging
+ */
+export enum VMError {
+  /** VM failed to boot within timeout period (default: 30 seconds) */
+  BOOT_TIMEOUT = 'BOOT_TIMEOUT',
+
+  /** Virtualization framework or permissions denied */
+  PERMISSION_DENIED = 'PERMISSION_DENIED',
+
+  /** Apple Virtualization.framework is not available on this system */
+  FRAMEWORK_UNAVAILABLE = 'FRAMEWORK_UNAVAILABLE',
+
+  /** Failed to load VM state from disk */
+  STATE_LOAD_FAILED = 'STATE_LOAD_FAILED',
+
+  /** Failed to save VM state to disk */
+  STATE_SAVE_FAILED = 'STATE_SAVE_FAILED',
+}
 
 export interface PortMapping {
   /** Guest (VM) port */
