@@ -8,6 +8,10 @@ on:
       - main-branch-ci
       - pr-checks
       - vibecode-tests
+      - ci-simplified
+      - build-and-push-image
+      - release
+      - codeserver-profiles
     types:
       - completed
 
@@ -15,41 +19,392 @@ env:
   DD_SERVICE: ${{ github.event.repository.name }}
   DD_ENV: ci
   DD_VERSION: ${{ github.sha }}
-  DD_TAGS: team:platform,component:ci
+  DD_TAGS: team:platform,component:ci-notifications
 
 jobs:
-  notify:
-    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+  notify-and-monitor:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
     env:
       GASTOWN_WEBHOOK: ${{ secrets.GASTOWN_WEBHOOK }}
       GITHUB_WEBHOOK_SECRET: ${{ secrets.GITHUB_WEBHOOK_SECRET }}
     steps:
-      - name: Post failure details to Gas Town
+      - name: Extract workflow information
+        id: workflow-info
         env:
           WORKFLOW_EVENT_JSON: ${{ toJson(github.event) }}
         run: |
           set -euo pipefail
 
+          # Extract key information from the workflow run event
+          workflow_name="${{ github.event.workflow_run.name }}"
+          workflow_id="${{ github.event.workflow_run.id }}"
+          workflow_run_number="${{ github.event.workflow_run.run_number }}"
+          workflow_conclusion="${{ github.event.workflow_run.conclusion }}"
+          workflow_status="${{ github.event.workflow_run.status }}"
+          head_branch="${{ github.event.workflow_run.head_branch }}"
+          head_sha="${{ github.event.workflow_run.head_sha }}"
+          actor="${{ github.event.workflow_run.actor.login }}"
+          html_url="${{ github.event.workflow_run.html_url }}"
+          repository="${{ github.repository }}"
+
+          # Calculate duration
+          started_at="${{ github.event.workflow_run.run_started_at }}"
+          updated_at="${{ github.event.workflow_run.updated_at }}"
+
+          # Convert timestamps to seconds and calculate duration
+          if command -v gdate &> /dev/null; then
+            # macOS with GNU coreutils
+            start_epoch=$(gdate -d "$started_at" +%s 2>/dev/null || echo "0")
+            end_epoch=$(gdate -d "$updated_at" +%s 2>/dev/null || echo "0")
+          else
+            # Linux
+            start_epoch=$(date -d "$started_at" +%s 2>/dev/null || echo "0")
+            end_epoch=$(date -d "$updated_at" +%s 2>/dev/null || echo "0")
+          fi
+
+          duration=$((end_epoch - start_epoch))
+          if [ "$duration" -lt 0 ]; then
+            duration=0
+          fi
+
+          # Get commit message (first line only)
+          commit_message=$(echo '${{ toJson(github.event.workflow_run.head_commit.message) }}' | jq -r '.' | head -1)
+
+          # Store outputs
+          echo "workflow_name=$workflow_name" >> $GITHUB_OUTPUT
+          echo "workflow_id=$workflow_id" >> $GITHUB_OUTPUT
+          echo "workflow_run_number=$workflow_run_number" >> $GITHUB_OUTPUT
+          echo "workflow_conclusion=$workflow_conclusion" >> $GITHUB_OUTPUT
+          echo "workflow_status=$workflow_status" >> $GITHUB_OUTPUT
+          echo "head_branch=$head_branch" >> $GITHUB_OUTPUT
+          echo "head_sha=$head_sha" >> $GITHUB_OUTPUT
+          echo "short_sha=${head_sha:0:7}" >> $GITHUB_OUTPUT
+          echo "actor=$actor" >> $GITHUB_OUTPUT
+          echo "html_url=$html_url" >> $GITHUB_OUTPUT
+          echo "repository=$repository" >> $GITHUB_OUTPUT
+          echo "duration=$duration" >> $GITHUB_OUTPUT
+          echo "commit_message=$commit_message" >> $GITHUB_OUTPUT
+
+          # Save full event payload for notification
+          printf '%s' "${WORKFLOW_EVENT_JSON}" > payload.json
+
+          echo "📊 Workflow Info Extracted:"
+          echo "  Name: $workflow_name"
+          echo "  Conclusion: $workflow_conclusion"
+          echo "  Duration: ${duration}s"
+          echo "  Branch: $head_branch"
+          echo "  Commit: ${head_sha:0:7}"
+
+      - name: Fetch failure details
+        id: failure-details
+        if: github.event.workflow_run.conclusion == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          workflow_id="${{ steps.workflow-info.outputs.workflow_id }}"
+          repository="${{ steps.workflow-info.outputs.repository }}"
+
+          echo "🔍 Fetching job details for failed workflow..."
+
+          # Fetch jobs for this workflow run
+          jobs_json=$(curl -s \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${repository}/actions/runs/${workflow_id}/jobs")
+
+          # Extract failed jobs and their details
+          failed_jobs=$(echo "$jobs_json" | jq -r '.jobs[] | select(.conclusion == "failure") | {name: .name, conclusion: .conclusion, html_url: .html_url}')
+
+          # Get first failed job details
+          first_failed_job_name=$(echo "$jobs_json" | jq -r '.jobs[] | select(.conclusion == "failure") | .name' | head -1)
+          first_failed_job_url=$(echo "$jobs_json" | jq -r '.jobs[] | select(.conclusion == "failure") | .html_url' | head -1)
+
+          # Count failed jobs
+          failed_job_count=$(echo "$jobs_json" | jq '[.jobs[] | select(.conclusion == "failure")] | length')
+
+          # Extract failed step names from first failed job
+          failed_steps=$(echo "$jobs_json" | jq -r '.jobs[] | select(.conclusion == "failure") | .steps[] | select(.conclusion == "failure") | .name' | head -5)
+
+          # Build error summary
+          if [ "$failed_job_count" -eq 0 ]; then
+            error_summary="Workflow failed but job details not available yet"
+            first_failed_job_name="Unknown"
+            first_failed_job_url="${{ steps.workflow-info.outputs.html_url }}"
+          elif [ -n "$failed_steps" ]; then
+            error_summary="Failed job: ${first_failed_job_name}"$'\n'"Failed steps:"$'\n'"${failed_steps}"
+          else
+            error_summary="Failed job: ${first_failed_job_name} (step details not available)"
+          fi
+
+          # Build failed jobs list for notifications
+          failed_jobs_list=""
+          if [ "$failed_job_count" -gt 0 ]; then
+            failed_jobs_list=$(echo "$jobs_json" | jq -r '.jobs[] | select(.conclusion == "failure") | "- [\(.name)](\(.html_url))"' | head -5)
+            if [ "$failed_job_count" -gt 5 ]; then
+              failed_jobs_list="${failed_jobs_list}"$'\n'"- ... and $((failed_job_count - 5)) more"
+            fi
+          fi
+
+          # Store outputs (escape for GitHub Actions)
+          {
+            echo "error_summary<<EOF"
+            echo "$error_summary"
+            echo "EOF"
+            echo "failed_job_count=$failed_job_count"
+            echo "first_failed_job_name=$first_failed_job_name"
+            echo "first_failed_job_url=$first_failed_job_url"
+            echo "failed_jobs_list<<EOF"
+            echo "$failed_jobs_list"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+          echo "📊 Failure Details:"
+          echo "  Failed Jobs: $failed_job_count"
+          echo "  First Failed: $first_failed_job_name"
+          echo ""
+          echo "Error Summary:"
+          echo "$error_summary"
+
+      - name: Send Datadog Metrics - Workflow Completion
+        if: always() && secrets.DATADOG_API_KEY != ''
+        env:
+          DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          current_timestamp=$(date +%s)
+          workflow_name="${{ steps.workflow-info.outputs.workflow_name }}"
+          workflow_conclusion="${{ steps.workflow-info.outputs.workflow_conclusion }}"
+          duration="${{ steps.workflow-info.outputs.duration }}"
+          branch="${{ steps.workflow-info.outputs.head_branch }}"
+
+          # Determine status value (1 for success, 0 for failure)
+          status_value=0
+          if [ "$workflow_conclusion" == "success" ]; then
+            status_value=1
+          fi
+
+          # Send workflow completion metrics to Datadog
+          curl -X POST "https://api.datadoghq.com/api/v1/series" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${DD_API_KEY}" \
+            -d @- << EOF
+          {
+            "series": [
+              {
+                "metric": "github.actions.workflow.completed",
+                "type": "count",
+                "points": [[$current_timestamp, 1]],
+                "tags": [
+                  "workflow:${workflow_name}",
+                  "conclusion:${workflow_conclusion}",
+                  "branch:${branch}",
+                  "repository:${{ steps.workflow-info.outputs.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}"
+                ]
+              },
+              {
+                "metric": "github.actions.workflow.duration",
+                "type": "gauge",
+                "points": [[$current_timestamp, $duration]],
+                "tags": [
+                  "workflow:${workflow_name}",
+                  "conclusion:${workflow_conclusion}",
+                  "branch:${branch}",
+                  "repository:${{ steps.workflow-info.outputs.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}"
+                ]
+              },
+              {
+                "metric": "github.actions.workflow.status",
+                "type": "gauge",
+                "points": [[$current_timestamp, $status_value]],
+                "tags": [
+                  "workflow:${workflow_name}",
+                  "branch:${branch}",
+                  "repository:${{ steps.workflow-info.outputs.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}"
+                ]
+              }
+            ]
+          }
+          EOF
+
+          echo "✅ Workflow completion metrics sent to Datadog"
+        continue-on-error: true
+
+      - name: Send Datadog Event - Failure Alert
+        if: github.event.workflow_run.conclusion == 'failure' && secrets.DATADOG_API_KEY != ''
+        env:
+          DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          current_timestamp=$(date +%s)
+          workflow_name="${{ steps.workflow-info.outputs.workflow_name }}"
+          workflow_url="${{ steps.workflow-info.outputs.html_url }}"
+          short_sha="${{ steps.workflow-info.outputs.short_sha }}"
+          branch="${{ steps.workflow-info.outputs.head_branch }}"
+          actor="${{ steps.workflow-info.outputs.actor }}"
+          commit_message="${{ steps.workflow-info.outputs.commit_message }}"
+          duration="${{ steps.workflow-info.outputs.duration }}"
+          failed_job_count="${{ steps.failure-details.outputs.failed_job_count }}"
+          error_summary="${{ steps.failure-details.outputs.error_summary }}"
+          failed_jobs_list="${{ steps.failure-details.outputs.failed_jobs_list }}"
+
+          # Build error details section
+          error_details=""
+          if [ -n "$error_summary" ]; then
+            error_details="\n\n**Error Details**:\n\`\`\`\n${error_summary}\n\`\`\`\n\n**Failed Jobs** (${failed_job_count}):\n${failed_jobs_list}"
+          fi
+
+          # Create failure event in Datadog
+          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${DD_API_KEY}" \
+            -d @- << EOF
+          {
+            "title": "❌ Workflow Failed: ${workflow_name}",
+            "text": "## Workflow Failure Alert\n\n**Workflow**: ${workflow_name}\n**Repository**: ${{ steps.workflow-info.outputs.repository }}\n**Branch**: ${branch}\n**Commit**: ${short_sha}\n**Author**: ${actor}\n**Duration**: ${duration}s\n\n**Commit Message**:\n\`\`\`\n${commit_message}\n\`\`\`${error_details}\n\n**Actions Required**:\n1. [View Workflow Logs](${workflow_url})\n2. Check for test failures or build errors\n3. Review recent commits for issues\n4. Fix and re-run workflow\n\n---\n*Automated alert from GitHub Actions CI/CD monitoring*",
+            "tags": [
+              "source:github-actions",
+              "workflow:${workflow_name}",
+              "branch:${branch}",
+              "repository:${{ steps.workflow-info.outputs.repository }}",
+              "service:${{ env.DD_SERVICE }}",
+              "env:${{ env.DD_ENV }}",
+              "event_type:workflow_failure",
+              "actor:${actor}",
+              "failed_jobs:${failed_job_count}"
+            ],
+            "alert_type": "error",
+            "date_happened": $current_timestamp,
+            "priority": "normal"
+          }
+          EOF
+
+          echo "✅ Failure event sent to Datadog"
+        continue-on-error: true
+
+      - name: Send Datadog Metric - Failure Counter
+        if: github.event.workflow_run.conclusion == 'failure' && secrets.DATADOG_API_KEY != ''
+        env:
+          DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          current_timestamp=$(date +%s)
+          workflow_name="${{ steps.workflow-info.outputs.workflow_name }}"
+          branch="${{ steps.workflow-info.outputs.head_branch }}"
+
+          # Increment failure counter
+          curl -X POST "https://api.datadoghq.com/api/v1/series" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${DD_API_KEY}" \
+            -d @- << EOF
+          {
+            "series": [
+              {
+                "metric": "github.actions.failures.count",
+                "type": "count",
+                "points": [[$current_timestamp, 1]],
+                "tags": [
+                  "workflow:${workflow_name}",
+                  "branch:${branch}",
+                  "repository:${{ steps.workflow-info.outputs.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}"
+                ]
+              }
+            ]
+          }
+          EOF
+
+          echo "✅ Failure counter metric sent to Datadog"
+        continue-on-error: true
+
+      - name: Post failure details to Gas Town
+        if: github.event.workflow_run.conclusion == 'failure'
+        run: |
+          set -euo pipefail
+
           if [[ -z "${GASTOWN_WEBHOOK:-}" ]]; then
-            echo "GASTOWN_WEBHOOK secret is not configured; skipping notification."
+            echo "ℹ️  GASTOWN_WEBHOOK secret is not configured; skipping notification."
             exit 0
           fi
 
           if [[ -z "${GITHUB_WEBHOOK_SECRET:-}" ]]; then
-            echo "GITHUB_WEBHOOK_SECRET secret is not configured; skipping notification."
+            echo "ℹ️  GITHUB_WEBHOOK_SECRET secret is not configured; skipping notification."
             exit 0
           fi
 
-          printf '%s' "${WORKFLOW_EVENT_JSON}" > payload.json
-
+          # Generate HMAC signature for webhook security
           signature=$(openssl dgst -sha256 -hmac "${GITHUB_WEBHOOK_SECRET}" payload.json | awk '{print $2}')
 
-          curl --fail --silent --show-error \
+          # Send notification to Gas Town webhook
+          http_code=$(curl --write-out '%{http_code}' --silent --output /dev/null \
             -X POST "${GASTOWN_WEBHOOK}" \
             -H "Content-Type: application/json" \
             -H "X-Hub-Signature-256: sha256=${signature}" \
             -H "X-GitHub-Event: workflow_run" \
             -H "X-GitHub-Delivery: ${{ github.run_id }}-${{ github.run_attempt }}" \
-            --data @payload.json
+            --data @payload.json)
+
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "✅ Gas Town notification sent successfully (HTTP $http_code)"
+          else
+            echo "⚠️  Gas Town notification returned HTTP $http_code"
+            exit 1
+          fi
+        continue-on-error: true
+
+      - name: Log failure summary
+        if: github.event.workflow_run.conclusion == 'failure'
+        run: |
+          echo "❌ Workflow Failure Summary"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📋 Workflow: ${{ steps.workflow-info.outputs.workflow_name }}"
+          echo "🔢 Run Number: #${{ steps.workflow-info.outputs.workflow_run_number }}"
+          echo "🌿 Branch: ${{ steps.workflow-info.outputs.head_branch }}"
+          echo "📝 Commit: ${{ steps.workflow-info.outputs.short_sha }}"
+          echo "👤 Author: ${{ steps.workflow-info.outputs.actor }}"
+          echo "⏱️  Duration: ${{ steps.workflow-info.outputs.duration }}s"
+          echo "💬 Message: ${{ steps.workflow-info.outputs.commit_message }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "❌ Failure Details:"
+          echo "   Failed Jobs: ${{ steps.failure-details.outputs.failed_job_count }}"
+          echo ""
+          echo "${{ steps.failure-details.outputs.error_summary }}"
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔗 View logs: ${{ steps.workflow-info.outputs.html_url }}"
+          if [ -n "${{ steps.failure-details.outputs.first_failed_job_url }}" ]; then
+            echo "🔗 First failed job: ${{ steps.failure-details.outputs.first_failed_job_url }}"
+          fi
+          echo ""
+          echo "📊 Notifications sent:"
+          echo "  ✅ Datadog metrics and events"
+          echo "  ✅ Gas Town webhook (if configured)"
+
+      - name: Log success summary
+        if: github.event.workflow_run.conclusion == 'success'
+        run: |
+          echo "✅ Workflow Success"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📋 Workflow: ${{ steps.workflow-info.outputs.workflow_name }}"
+          echo "🌿 Branch: ${{ steps.workflow-info.outputs.head_branch }}"
+          echo "📝 Commit: ${{ steps.workflow-info.outputs.short_sha }}"
+          echo "⏱️  Duration: ${{ steps.workflow-info.outputs.duration }}s"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📊 Metrics sent to Datadog"

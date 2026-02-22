@@ -1,0 +1,446 @@
+name: Workflow Health Check
+
+on:
+  schedule:
+    # Run every hour to maintain up-to-date health status
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+env:
+  DD_SERVICE: ${{ github.event.repository.name }}
+  DD_ENV: ci
+  DD_VERSION: ${{ github.sha }}
+  DD_TAGS: team:platform,component:ci-health
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch all workflow statuses
+        id: workflow-status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          echo "🔍 Fetching workflow health data..."
+
+          # Fetch all workflows in the repository
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/${{ github.repository }}/actions/workflows?per_page=100" \
+            > all_workflows.json
+
+          total_workflows=$(jq '.workflows | length' all_workflows.json)
+          echo "total_workflows=$total_workflows" >> $GITHUB_OUTPUT
+          echo "📊 Found $total_workflows workflows"
+
+          # Initialize counters
+          active_count=0
+          disabled_count=0
+
+          # Fetch recent runs for each active workflow to determine health
+          jq -c '.workflows[]' all_workflows.json | while read -r workflow; do
+            workflow_id=$(echo "$workflow" | jq -r '.id')
+            workflow_name=$(echo "$workflow" | jq -r '.name')
+            workflow_path=$(echo "$workflow" | jq -r '.path')
+            workflow_state=$(echo "$workflow" | jq -r '.state')
+
+            # Skip disabled workflows
+            if [ "$workflow_state" != "active" ]; then
+              echo "⏸️  Skipping disabled workflow: $workflow_name"
+              continue
+            fi
+
+            echo "📋 Checking workflow: $workflow_name (ID: $workflow_id)"
+
+            # Fetch last 10 runs for this workflow
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/repos/${{ github.repository }}/actions/workflows/${workflow_id}/runs?per_page=10" \
+              > "workflow_${workflow_id}_runs.json" || {
+                echo "⚠️  Failed to fetch runs for $workflow_name"
+                continue
+              }
+
+            # Extract metrics for this workflow
+            total_runs=$(jq '.workflow_runs | length' "workflow_${workflow_id}_runs.json")
+
+            if [ "$total_runs" -eq 0 ]; then
+              echo "ℹ️  No recent runs for $workflow_name"
+              echo "{\"workflow_name\":\"$workflow_name\",\"workflow_id\":$workflow_id,\"workflow_path\":\"$workflow_path\",\"status\":\"no_runs\",\"success_rate\":0,\"total_runs\":0,\"last_run_time\":null,\"last_run_conclusion\":null,\"last_run_status\":null}" >> workflow_health.jsonl
+              continue
+            fi
+
+            successful=$(jq '[.workflow_runs[] | select(.conclusion == "success")] | length' "workflow_${workflow_id}_runs.json")
+            failed=$(jq '[.workflow_runs[] | select(.conclusion == "failure")] | length' "workflow_${workflow_id}_runs.json")
+            cancelled=$(jq '[.workflow_runs[] | select(.conclusion == "cancelled")] | length' "workflow_${workflow_id}_runs.json")
+
+            # Calculate success rate
+            success_rate=0
+            if [ "$total_runs" -gt 0 ]; then
+              success_rate=$(echo "scale=2; ($successful * 100) / $total_runs" | bc)
+            fi
+
+            # Get last run details
+            last_run_time=$(jq -r '.workflow_runs[0].updated_at // "null"' "workflow_${workflow_id}_runs.json")
+            last_run_conclusion=$(jq -r '.workflow_runs[0].conclusion // "null"' "workflow_${workflow_id}_runs.json")
+            last_run_status=$(jq -r '.workflow_runs[0].status // "null"' "workflow_${workflow_id}_runs.json")
+            last_run_duration=0
+
+            # Calculate last run duration
+            if [ "$last_run_time" != "null" ]; then
+              started_at=$(jq -r '.workflow_runs[0].run_started_at // "null"' "workflow_${workflow_id}_runs.json")
+              if [ "$started_at" != "null" ]; then
+                start_epoch=$(date -d "$started_at" +%s 2>/dev/null || echo "0")
+                end_epoch=$(date -d "$last_run_time" +%s 2>/dev/null || echo "0")
+                last_run_duration=$((end_epoch - start_epoch))
+                if [ "$last_run_duration" -lt 0 ]; then
+                  last_run_duration=0
+                fi
+              fi
+            fi
+
+            # Determine health status
+            health_status="healthy"
+            if [ "$failed" -gt 5 ]; then
+              health_status="critical"
+            elif [ "$failed" -gt 2 ]; then
+              health_status="warning"
+            elif [ "$last_run_conclusion" == "failure" ]; then
+              health_status="degraded"
+            fi
+
+            # Output workflow health data to JSONL file
+            echo "{\"workflow_name\":\"$workflow_name\",\"workflow_id\":$workflow_id,\"workflow_path\":\"$workflow_path\",\"status\":\"$health_status\",\"success_rate\":$success_rate,\"total_runs\":$total_runs,\"successful\":$successful,\"failed\":$failed,\"cancelled\":$cancelled,\"last_run_time\":\"$last_run_time\",\"last_run_conclusion\":\"$last_run_conclusion\",\"last_run_status\":\"$last_run_status\",\"last_run_duration\":$last_run_duration}" >> workflow_health.jsonl
+
+            echo "  ✅ Success rate: ${success_rate}% ($successful/$total_runs)"
+            echo "  📊 Status: $health_status"
+            echo "  ⏱️  Last run: $last_run_time ($last_run_conclusion)"
+          done
+
+          # Count health statuses
+          if [ -f workflow_health.jsonl ]; then
+            healthy_count=$(grep -c '"status":"healthy"' workflow_health.jsonl || echo "0")
+            degraded_count=$(grep -c '"status":"degraded"' workflow_health.jsonl || echo "0")
+            warning_count=$(grep -c '"status":"warning"' workflow_health.jsonl || echo "0")
+            critical_count=$(grep -c '"status":"critical"' workflow_health.jsonl || echo "0")
+            no_runs_count=$(grep -c '"status":"no_runs"' workflow_health.jsonl || echo "0")
+
+            echo "healthy_count=$healthy_count" >> $GITHUB_OUTPUT
+            echo "degraded_count=$degraded_count" >> $GITHUB_OUTPUT
+            echo "warning_count=$warning_count" >> $GITHUB_OUTPUT
+            echo "critical_count=$critical_count" >> $GITHUB_OUTPUT
+            echo "no_runs_count=$no_runs_count" >> $GITHUB_OUTPUT
+
+            echo ""
+            echo "📊 Health Summary:"
+            echo "  ✅ Healthy: $healthy_count"
+            echo "  ⚠️  Degraded: $degraded_count"
+            echo "  ⚠️  Warning: $warning_count"
+            echo "  ❌ Critical: $critical_count"
+            echo "  ℹ️  No recent runs: $no_runs_count"
+          else
+            echo "⚠️  No workflow health data collected"
+            echo "healthy_count=0" >> $GITHUB_OUTPUT
+            echo "degraded_count=0" >> $GITHUB_OUTPUT
+            echo "warning_count=0" >> $GITHUB_OUTPUT
+            echo "critical_count=0" >> $GITHUB_OUTPUT
+            echo "no_runs_count=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Calculate overall health score
+        id: health-score
+        run: |
+          set -euo pipefail
+
+          # Calculate overall health score (0-100)
+          # healthy = 100, degraded = 75, warning = 50, critical = 0, no_runs = N/A
+
+          healthy=${{ steps.workflow-status.outputs.healthy_count }}
+          degraded=${{ steps.workflow-status.outputs.degraded_count }}
+          warning=${{ steps.workflow-status.outputs.warning_count }}
+          critical=${{ steps.workflow-status.outputs.critical_count }}
+          no_runs=${{ steps.workflow-status.outputs.no_runs_count }}
+
+          total_active=$((healthy + degraded + warning + critical))
+
+          if [ "$total_active" -eq 0 ]; then
+            overall_score=0
+          else
+            score_sum=$(( (healthy * 100) + (degraded * 75) + (warning * 50) + (critical * 0) ))
+            overall_score=$(( score_sum / total_active ))
+          fi
+
+          echo "overall_score=$overall_score" >> $GITHUB_OUTPUT
+          echo "total_active=$total_active" >> $GITHUB_OUTPUT
+
+          echo "📈 Overall Health Score: ${overall_score}/100"
+
+      - name: Send Datadog Metrics - Health Status
+        if: always() && secrets.DATADOG_API_KEY != ''
+        env:
+          DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          current_timestamp=$(date +%s)
+
+          # Send overall health metrics
+          curl -X POST "https://api.datadoghq.com/api/v1/series" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${DD_API_KEY}" \
+            -d @- << EOF
+          {
+            "series": [
+              {
+                "metric": "github.actions.health.score",
+                "type": "gauge",
+                "points": [[$current_timestamp, ${{ steps.health-score.outputs.overall_score }}]],
+                "tags": [
+                  "repository:${{ github.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}"
+                ]
+              },
+              {
+                "metric": "github.actions.health.workflows.total",
+                "type": "gauge",
+                "points": [[$current_timestamp, ${{ steps.workflow-status.outputs.total_workflows }}]],
+                "tags": [
+                  "repository:${{ github.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}"
+                ]
+              },
+              {
+                "metric": "github.actions.health.workflows.healthy",
+                "type": "gauge",
+                "points": [[$current_timestamp, ${{ steps.workflow-status.outputs.healthy_count }}]],
+                "tags": [
+                  "repository:${{ github.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}"
+                ]
+              },
+              {
+                "metric": "github.actions.health.workflows.degraded",
+                "type": "gauge",
+                "points": [[$current_timestamp, ${{ steps.workflow-status.outputs.degraded_count }}]],
+                "tags": [
+                  "repository:${{ github.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}"
+                ]
+              },
+              {
+                "metric": "github.actions.health.workflows.warning",
+                "type": "gauge",
+                "points": [[$current_timestamp, ${{ steps.workflow-status.outputs.warning_count }}]],
+                "tags": [
+                  "repository:${{ github.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}"
+                ]
+              },
+              {
+                "metric": "github.actions.health.workflows.critical",
+                "type": "gauge",
+                "points": [[$current_timestamp, ${{ steps.workflow-status.outputs.critical_count }}]],
+                "tags": [
+                  "repository:${{ github.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}"
+                ]
+              }
+            ]
+          }
+          EOF
+
+          echo "✅ Health status metrics sent to Datadog"
+        continue-on-error: true
+
+      - name: Send Datadog Metrics - Per Workflow Health
+        if: always() && secrets.DATADOG_API_KEY != ''
+        env:
+          DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          current_timestamp=$(date +%s)
+
+          # Send individual workflow health metrics
+          if [ -f workflow_health.jsonl ]; then
+            while IFS= read -r workflow_data; do
+              workflow_name=$(echo "$workflow_data" | jq -r '.workflow_name')
+              success_rate=$(echo "$workflow_data" | jq -r '.success_rate')
+              total_runs=$(echo "$workflow_data" | jq -r '.total_runs')
+              failed=$(echo "$workflow_data" | jq -r '.failed')
+              last_run_duration=$(echo "$workflow_data" | jq -r '.last_run_duration')
+              health_status=$(echo "$workflow_data" | jq -r '.status')
+
+              # Convert health status to numeric score
+              health_score=0
+              case "$health_status" in
+                "healthy") health_score=100 ;;
+                "degraded") health_score=75 ;;
+                "warning") health_score=50 ;;
+                "critical") health_score=0 ;;
+                "no_runs") health_score=-1 ;;
+              esac
+
+              # Send per-workflow health metrics
+              curl -X POST "https://api.datadoghq.com/api/v1/series" \
+                -H "Content-Type: application/json" \
+                -H "DD-API-KEY: ${DD_API_KEY}" \
+                -d @- << EOF
+              {
+                "series": [
+                  {
+                    "metric": "github.actions.workflow.health.score",
+                    "type": "gauge",
+                    "points": [[$current_timestamp, $health_score]],
+                    "tags": [
+                      "workflow:${workflow_name}",
+                      "status:${health_status}",
+                      "repository:${{ github.repository }}",
+                      "service:${{ env.DD_SERVICE }}",
+                      "env:${{ env.DD_ENV }}"
+                    ]
+                  },
+                  {
+                    "metric": "github.actions.workflow.health.success_rate",
+                    "type": "gauge",
+                    "points": [[$current_timestamp, $success_rate]],
+                    "tags": [
+                      "workflow:${workflow_name}",
+                      "repository:${{ github.repository }}",
+                      "service:${{ env.DD_SERVICE }}",
+                      "env:${{ env.DD_ENV }}"
+                    ]
+                  },
+                  {
+                    "metric": "github.actions.workflow.health.failed_count",
+                    "type": "gauge",
+                    "points": [[$current_timestamp, $failed]],
+                    "tags": [
+                      "workflow:${workflow_name}",
+                      "repository:${{ github.repository }}",
+                      "service:${{ env.DD_SERVICE }}",
+                      "env:${{ env.DD_ENV }}"
+                    ]
+                  },
+                  {
+                    "metric": "github.actions.workflow.health.last_duration",
+                    "type": "gauge",
+                    "points": [[$current_timestamp, $last_run_duration]],
+                    "tags": [
+                      "workflow:${workflow_name}",
+                      "repository:${{ github.repository }}",
+                      "service:${{ env.DD_SERVICE }}",
+                      "env:${{ env.DD_ENV }}"
+                    ]
+                  }
+                ]
+              }
+          EOF
+
+              echo "✅ Health metrics sent for workflow: $workflow_name"
+            done < workflow_health.jsonl
+          fi
+        continue-on-error: true
+
+      - name: Send Datadog Event - Health Report
+        if: always() && secrets.DATADOG_API_KEY != ''
+        env:
+          DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          current_timestamp=$(date +%s)
+          overall_score=${{ steps.health-score.outputs.overall_score }}
+
+          # Determine alert type based on score
+          alert_type="info"
+          if [ "$overall_score" -lt 50 ]; then
+            alert_type="error"
+          elif [ "$overall_score" -lt 75 ]; then
+            alert_type="warning"
+          fi
+
+          # Build workflow status summary
+          workflow_summary=""
+          if [ -f workflow_health.jsonl ]; then
+            # Get critical and warning workflows
+            critical_workflows=$(jq -r 'select(.status == "critical") | "- ❌ \(.workflow_name): \(.success_rate)% success rate"' workflow_health.jsonl | head -5)
+            warning_workflows=$(jq -r 'select(.status == "warning") | "- ⚠️ \(.workflow_name): \(.success_rate)% success rate"' workflow_health.jsonl | head -5)
+
+            if [ -n "$critical_workflows" ]; then
+              workflow_summary="${workflow_summary}\n\n**Critical Workflows**:\n${critical_workflows}"
+            fi
+
+            if [ -n "$warning_workflows" ]; then
+              workflow_summary="${workflow_summary}\n\n**Warning Workflows**:\n${warning_workflows}"
+            fi
+          fi
+
+          # Send health report event
+          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${DD_API_KEY}" \
+            -d @- << EOF
+          {
+            "title": "GitHub Actions Health Check Report",
+            "text": "## Workflow Health Status\n\n**Repository**: ${{ github.repository }}\n**Overall Health Score**: ${overall_score}/100\n\n**Workflow Status**:\n- ✅ Healthy: ${{ steps.workflow-status.outputs.healthy_count }}\n- ⚠️  Degraded: ${{ steps.workflow-status.outputs.degraded_count }}\n- ⚠️  Warning: ${{ steps.workflow-status.outputs.warning_count }}\n- ❌ Critical: ${{ steps.workflow-status.outputs.critical_count }}\n- ℹ️  No recent runs: ${{ steps.workflow-status.outputs.no_runs_count }}\n\n**Total Workflows**: ${{ steps.workflow-status.outputs.total_workflows }}${workflow_summary}\n\n[View All Workflows](https://github.com/${{ github.repository }}/actions)",
+            "tags": [
+              "source:github-actions",
+              "repository:${{ github.repository }}",
+              "service:${{ env.DD_SERVICE }}",
+              "env:${{ env.DD_ENV }}",
+              "event_type:health_check"
+            ],
+            "alert_type": "${alert_type}",
+            "date_happened": $current_timestamp
+          }
+          EOF
+
+          echo "✅ Health report event sent to Datadog"
+        continue-on-error: true
+
+      - name: Display Health Report
+        if: always()
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📊 WORKFLOW HEALTH CHECK REPORT"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "🏥 Overall Health Score: ${{ steps.health-score.outputs.overall_score }}/100"
+          echo ""
+          echo "📈 Status Breakdown:"
+          echo "  ✅ Healthy:        ${{ steps.workflow-status.outputs.healthy_count }}"
+          echo "  ⚠️  Degraded:      ${{ steps.workflow-status.outputs.degraded_count }}"
+          echo "  ⚠️  Warning:       ${{ steps.workflow-status.outputs.warning_count }}"
+          echo "  ❌ Critical:       ${{ steps.workflow-status.outputs.critical_count }}"
+          echo "  ℹ️  No recent runs: ${{ steps.workflow-status.outputs.no_runs_count }}"
+          echo ""
+          echo "📊 Total workflows: ${{ steps.workflow-status.outputs.total_workflows }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+          if [ -f workflow_health.jsonl ]; then
+            echo ""
+            echo "📋 Workflow Details:"
+            echo ""
+            jq -r '"  - \(.workflow_name):\n    Status: \(.status)\n    Success Rate: \(.success_rate)%\n    Total Runs: \(.total_runs)\n    Last Run: \(.last_run_conclusion)"' workflow_health.jsonl
+          fi
+
+          echo ""
+          echo "✅ Health check complete"
