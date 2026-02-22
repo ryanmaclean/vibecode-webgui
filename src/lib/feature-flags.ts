@@ -358,6 +358,13 @@ class FeatureFlagEngine {
     }
   }
 
+  /**
+   * List all feature flags
+   */
+  async listFlags(): Promise<FeatureFlag[]> {
+    return Array.from(this.flags.values())
+  }
+
   private evaluateTargeting(flag: FeatureFlag, context: ExperimentContext): string | null {
     for (const rule of flag.targeting.rules) {
       if (this.evaluateRule(rule, context)) {

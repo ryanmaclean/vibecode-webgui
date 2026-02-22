@@ -24,6 +24,7 @@ let PrometheusExporter: any = null;
 let Resource: any = null;
 let ATTR_SERVICE_NAME: any = null;
 let ATTR_SERVICE_VERSION: any = null;
+let TailBasedSampler: any = null;
 
 if (!isDockerBuild) {
   try {
@@ -34,7 +35,8 @@ if (!isDockerBuild) {
     const prometheusExporter = require('@opentelemetry/exporter-prometheus');
     const resources = require('@opentelemetry/resources');
     const semanticConventions = require('@opentelemetry/semantic-conventions');
-    
+    const tailBasedSampler = require('./tail-based-sampler');
+
     NodeSDK = sdkNode.NodeSDK;
     getNodeAutoInstrumentations = autoInstrumentations.getNodeAutoInstrumentations;
     OTLPTraceExporter = otlpExporter.OTLPTraceExporter;
@@ -42,14 +44,14 @@ if (!isDockerBuild) {
     Resource = resources.Resource;
     ATTR_SERVICE_NAME = semanticConventions.SEMRESATTRS_SERVICE_NAME || semanticConventions.ATTR_SERVICE_NAME;
     ATTR_SERVICE_VERSION = semanticConventions.SEMRESATTRS_SERVICE_VERSION || semanticConventions.ATTR_SERVICE_VERSION;
+    TailBasedSampler = tailBasedSampler.TailBasedSampler;
   } catch (error) {
     // Debug log removed
   }
 }
 
 import { getDatadogApiKey } from './datadog-env'
-import { createPgInstrumentation } from './database-instrumentation'
-
+import { getSamplingConfig } from './sampling-config'
 const isServer = typeof window === 'undefined'
 const serviceName = 'vibecode-webgui'
 const serviceVersion = process.env.npm_package_version || '0.1.0'
@@ -68,7 +70,7 @@ export function initializeOpenTelemetry() {
   }
 
   // Check if all required modules are available
-  if (!NodeSDK || !getNodeAutoInstrumentations || !OTLPTraceExporter || !PrometheusExporter || !Resource || !ATTR_SERVICE_NAME || !ATTR_SERVICE_VERSION) {
+  if (!NodeSDK || !getNodeAutoInstrumentations || !OTLPTraceExporter || !PrometheusExporter || !Resource || !ATTR_SERVICE_NAME || !ATTR_SERVICE_VERSION || !TailBasedSampler) {
     // Debug log removed
     return null;
   }
@@ -104,50 +106,48 @@ export function initializeOpenTelemetry() {
       // Debug log removed
     })
 
-    // Create PostgreSQL instrumentation
-    const pgInstrumentation = createPgInstrumentation()
-
-    // Build instrumentations array
-    const instrumentations = [
-      getNodeAutoInstrumentations({
-        // Disable some instrumentations that might be noisy in development
-        '@opentelemetry/instrumentation-dns': {
-          enabled: process.env.NODE_ENV === 'production'
-        },
-        '@opentelemetry/instrumentation-net': {
-          enabled: process.env.NODE_ENV === 'production'
-        },
-        // Enable key instrumentations
-        '@opentelemetry/instrumentation-http': {
-          enabled: true,
-          requestHook: (span: any, request: any) => {
-            // Add custom attributes to HTTP spans
-            span.setAttributes({
-              'vibecode.request.user_agent': request.headers['user-agent'] || 'unknown',
-              'vibecode.request.method': request.method || 'unknown'
-            })
-          }
-        },
-        '@opentelemetry/instrumentation-express': {
-          enabled: true
-        },
-        '@opentelemetry/instrumentation-fs': {
-          enabled: process.env.NODE_ENV === 'production'
-        }
-      })
-    ]
-
-    // Add PostgreSQL instrumentation if available
-    if (pgInstrumentation) {
-      instrumentations.push(pgInstrumentation)
-    }
+    // Configure tail-based sampler with OTLP exporter
+    const samplingConfig = getSamplingConfig()
+    const tailBasedSampler = new TailBasedSampler(otlpExporter, {
+      errorSampleRate: samplingConfig.errorSampleRate,
+      defaultSampleRate: samplingConfig.defaultSampleRate,
+      bufferTimeout: samplingConfig.bufferTimeout,
+      maxBufferSize: samplingConfig.maxBufferSize
+    })
 
     // Initialize SDK with auto-instrumentation
     otelSDK = new NodeSDK({
       resource,
-      traceExporter: otlpExporter,
+      spanProcessor: tailBasedSampler,
       metricReader: prometheusExporter,
-      instrumentations
+      instrumentations: [
+        getNodeAutoInstrumentations({
+          // Disable some instrumentations that might be noisy in development
+          '@opentelemetry/instrumentation-dns': {
+            enabled: process.env.NODE_ENV === 'production'
+          },
+          '@opentelemetry/instrumentation-net': {
+            enabled: process.env.NODE_ENV === 'production'
+          },
+          // Enable key instrumentations
+          '@opentelemetry/instrumentation-http': {
+            enabled: true,
+            requestHook: (span: any, request: any) => {
+              // Add custom attributes to HTTP spans
+              span.setAttributes({
+                'vibecode.request.user_agent': request.headers['user-agent'] || 'unknown',
+                'vibecode.request.method': request.method || 'unknown'
+              })
+            }
+          },
+          '@opentelemetry/instrumentation-express': {
+            enabled: true
+          },
+          '@opentelemetry/instrumentation-fs': {
+            enabled: process.env.NODE_ENV === 'production'
+          }
+        })
+      ]
     })
 
     // Start the SDK
@@ -181,9 +181,6 @@ export async function shutdownOpenTelemetry() {
  * Get current OpenTelemetry configuration
  */
 export function getOpenTelemetryConfig() {
-  const { getDatabaseInstrumentationConfig } = require('./database-instrumentation')
-  const dbConfig = getDatabaseInstrumentationConfig()
-
   return {
     initialized: !!otelSDK,
     service_name: serviceName,
@@ -191,149 +188,9 @@ export function getOpenTelemetryConfig() {
     environment: process.env.NODE_ENV || 'development',
     otlp_endpoint: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || 'http://localhost:4318/v1/traces',
     prometheus_port: process.env.OTEL_PROMETHEUS_PORT || '9090',
-    datadog_integration: !!getDatadogApiKey(),
-    database_instrumentation: dbConfig
+    datadog_integration: !!getDatadogApiKey()
   }
 }
 
 // Export SDK instance for testing/debugging
 export { otelSDK }
-
-/**
- * Create a custom span for manual instrumentation
- * Use this to instrument code that isn't automatically traced
- */
-export function createCustomSpan<T>(
-  name: string,
-  attributes: Record<string, any>,
-  fn: (span: any) => Promise<T>
-): Promise<T> {
-  if (!isServer || isDockerBuild) {
-    // Execute function without tracing in Docker build or client-side
-    return fn({
-      setAttribute: () => {},
-      setAttributes: () => {},
-      setStatus: () => {},
-      recordException: () => {},
-      end: () => {},
-    });
-  }
-
-  // Dynamic import of OpenTelemetry API
-  let trace: any = null;
-  let SpanStatusCode: any = null;
-
-  try {
-    const otelApi = require('@opentelemetry/api');
-    trace = otelApi.trace;
-    SpanStatusCode = otelApi.SpanStatusCode;
-  } catch (error) {
-    // OpenTelemetry API not available, execute without tracing
-    return fn({
-      setAttribute: () => {},
-      setAttributes: () => {},
-      setStatus: () => {},
-      recordException: () => {},
-      end: () => {},
-    });
-  }
-
-  const tracer = trace.getTracer(serviceName);
-
-  return tracer.startActiveSpan(name, async (span: any) => {
-    try {
-      // Set initial attributes
-      span.setAttributes(attributes);
-
-      // Execute the function
-      const result = await fn(span);
-
-      // Mark span as successful
-      span.setStatus({ code: SpanStatusCode.OK });
-
-      return result;
-    } catch (error) {
-      // Record error in span
-      span.setStatus({
-        code: SpanStatusCode.ERROR,
-        message: error instanceof Error ? error.message : 'Unknown error',
-      });
-
-      span.recordException(error as Error);
-
-      throw error;
-    } finally {
-      span.end();
-    }
-  });
-}
-
-/**
- * Get the active tracer instance
- */
-export function getActiveTracer() {
-  if (!isServer || isDockerBuild) {
-    // Return mock tracer for client-side or Docker build
-    return {
-      startSpan: () => ({
-        setAttribute: () => {},
-        setAttributes: () => {},
-        setStatus: () => {},
-        recordException: () => {},
-        end: () => {},
-      }),
-      startActiveSpan: (name: string, fn: Function) => {
-        return fn({
-          setAttribute: () => {},
-          setAttributes: () => {},
-          setStatus: () => {},
-          recordException: () => {},
-          end: () => {},
-        });
-      },
-    };
-  }
-
-  try {
-    const otelApi = require('@opentelemetry/api');
-    return otelApi.trace.getTracer(serviceName);
-  } catch (error) {
-    // Return mock tracer if OpenTelemetry API is not available
-    return {
-      startSpan: () => ({
-        setAttribute: () => {},
-        setAttributes: () => {},
-        setStatus: () => {},
-        recordException: () => {},
-        end: () => {},
-      }),
-      startActiveSpan: (name: string, fn: Function) => {
-        return fn({
-          setAttribute: () => {},
-          setAttributes: () => {},
-          setStatus: () => {},
-          recordException: () => {},
-          end: () => {},
-        });
-      },
-    };
-  }
-}
-
-// Re-export database instrumentation utilities
-export {
-  getDatabaseTraceContext,
-  traceDatabaseOperation,
-  getDatabaseInstrumentationConfig
-} from './database-instrumentation'
-
-// Re-export trace context utilities for convenience
-export {
-  createAISpan,
-  createDBSpan,
-  getCurrentTraceContext,
-  extractTraceContext,
-  createTraceparentHeader,
-  AISpanAttributes,
-  DBSpanAttributes,
-} from './trace-context'

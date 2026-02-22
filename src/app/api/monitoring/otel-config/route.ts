@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+import { checkOpenTelemetryHealth } from '@/lib/monitoring/opentelemetry-config'
 
 const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - config endpoint
 
@@ -87,34 +88,21 @@ export async function GET(request: NextRequest) {
         })
 
       case 'health':
+        const healthCheckResult = checkOpenTelemetryHealth()
+
         const healthStatus = {
           opentelemetry: {
             initialized: !!otelSDK,
             status: otelSDK ? 'running' : 'not_initialized'
           },
-          exporters: {
-            otlp: {
-              endpoint: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || 'http://localhost:4318/v1/traces',
-              status: 'configured'
-            },
-            prometheus: {
-              port: process.env.OTEL_PROMETHEUS_PORT || '9090',
-              endpoint: process.env.OTEL_PROMETHEUS_ENDPOINT || '/metrics',
-              status: 'configured'
-            }
-          },
-          datadog_integration: {
-            enabled: !!process.env.DD_API_KEY,
-            otlp_compatible: true,
-            status: process.env.DD_API_KEY ? 'enabled' : 'disabled'
-          }
+          ...healthCheckResult.details
         }
 
-        const overallHealthy = healthStatus.opentelemetry.initialized
+        const overallHealthy = healthCheckResult.status === 'healthy'
 
         return NextResponse.json({
           healthy: overallHealthy,
-          status: overallHealthy ? 'healthy' : 'unhealthy',
+          status: healthCheckResult.status,
           details: healthStatus,
           timestamp: new Date().toISOString()
         })
