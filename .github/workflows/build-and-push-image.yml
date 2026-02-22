@@ -32,6 +32,10 @@ on:
         default: false
         type: boolean
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -43,6 +47,7 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
@@ -110,6 +115,7 @@ jobs:
   security-scan:
     needs: build-and-push
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: github.event_name != 'pull_request'
     permissions:
       contents: read
@@ -137,6 +143,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.AKS_CLUSTER_NAME != ''
     needs: [build-and-push, security-scan]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: production
 
     steps:
@@ -175,15 +182,27 @@ jobs:
     - name: Update Helm deployment
       if: steps.check-azure.outputs.skip != 'true'
       run: |
-        # Extract image tag from build output
+        # Extract image digest from build output for immutable deployment
+        IMAGE_DIGEST="${{ needs.build-and-push.outputs.image-digest }}"
         IMAGE_TAG="${{ needs.build-and-push.outputs.image-tag }}"
+
+        # Use digest for deployment (immutable reference)
+        # Fall back to SHA if digest is not available
+        if [ -n "$IMAGE_DIGEST" ]; then
+          IMAGE_REF="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${IMAGE_DIGEST}"
+          echo "Deploying with digest: ${IMAGE_DIGEST}"
+        else
+          IMAGE_REF="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          echo "Deploying with SHA tag: ${{ github.sha }}"
+        fi
 
         # Update Helm deployment with new image
         helm upgrade --install vibecode-app charts/vibecode \
           --namespace vibecode-platform \
           --set image.repository="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" \
-          --set image.tag="${GITHUB_SHA}" \
-          --set datadog.version="${GITHUB_SHA}" \
+          --set image.tag="${{ github.sha }}" \
+          --set image.digest="${IMAGE_DIGEST}" \
+          --set datadog.version="${{ github.sha }}" \
           --wait --timeout=600s
 
     - name: Verify deployment

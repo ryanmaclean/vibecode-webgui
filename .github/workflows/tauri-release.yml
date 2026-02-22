@@ -73,7 +73,83 @@ jobs:
         run: |
           echo "Building Next.js frontend for Tauri static export..."
           echo "Node memory limit: $NODE_OPTIONS"
-          npm run build:tauri
+
+          # Backup original config and use Tauri-specific config
+          if [ -f next.config.js ]; then
+            cp next.config.js next.config.js.backup
+          fi
+          if [ -f next.config.mjs ]; then
+            mv next.config.mjs next.config.mjs.backup
+          fi
+
+          # Use Tauri config for static export
+          cp next.config.tauri.js next.config.js
+
+          # IMPORTANT: Move incompatible routes COMPLETELY OUT of src/app for static export
+          # Next.js App Router compiles ANY directory inside src/app as routes
+          # 1. API routes use force-dynamic which is incompatible with output: export
+          # 2. Dynamic [param] routes need generateStaticParams() for static export
+          # These will be handled by Tauri's Rust backend instead
+          echo "Temporarily moving incompatible routes outside of src/app..."
+          mkdir -p /tmp/routes-backup
+
+          # Move API routes
+          if [ -d "src/app/api" ]; then
+            mv src/app/api /tmp/routes-backup/api
+            echo "API routes moved to /tmp/routes-backup/api"
+          fi
+
+          # Move dynamic page routes that lack generateStaticParams
+          for route in "experiments" "workspace" "workspaces" "wiki" "monitoring"; do
+            if [ -d "src/app/$route" ]; then
+              mv "src/app/$route" "/tmp/routes-backup/$route"
+              echo "Dynamic route $route moved to /tmp/routes-backup/$route"
+            fi
+          done
+
+          # Clean Next.js cache to prevent stale route references
+          echo "Cleaning Next.js cache..."
+          rm -rf .next
+
+          # Build with static export
+          npm run build
+          BUILD_STATUS=$?
+
+          # Restore all routes immediately after build
+          echo "Restoring routes from /tmp/routes-backup..."
+          if [ -d "/tmp/routes-backup" ]; then
+            for route in /tmp/routes-backup/*; do
+              route_name=$(basename "$route")
+              mv "$route" "src/app/$route_name"
+              echo "Restored $route_name to src/app/"
+            done
+            rmdir /tmp/routes-backup
+          fi
+
+          # Check if build succeeded
+          if [ $BUILD_STATUS -ne 0 ]; then
+            echo "Build failed with status $BUILD_STATUS"
+            exit $BUILD_STATUS
+          fi
+
+          # Restore original config
+          if [ -f next.config.js.backup ]; then
+            mv next.config.js.backup next.config.js
+          fi
+          if [ -f next.config.mjs.backup ]; then
+            mv next.config.mjs.backup next.config.mjs
+          fi
+
+          # Verify static export was created
+          if [ ! -d "out" ]; then
+            echo "Error: Static export directory 'out' not created"
+            echo "Build output type may be incorrect - check next.config.tauri.js has output: 'export'"
+            exit 1
+          fi
+
+          echo "Copying static export to platforms/public..."
+          rm -rf platforms/public
+          cp -r out platforms/public
           ls -la platforms/public/
           echo "Frontend build complete - $(find platforms/public -type f | wc -l) files"
 

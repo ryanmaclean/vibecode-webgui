@@ -12,6 +12,7 @@ import { templateSubmissionSchema } from '@/lib/api/validation/schemas'
 import { sanitizeDescription, sanitizeTags } from '@/lib/api/validation/sanitize'
 import { z } from '@/lib/zod-compat'
 import { cacheGetOrSet, CacheKeyGenerators, TTLPresets, CacheInvalidators } from '@/lib/cache/cache-utils'
+import { CACHE_HEADER_PRESETS } from '@/lib/cache/http-cache-headers'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 
 export const dynamic = 'force-dynamic'
@@ -639,7 +640,7 @@ export async function GET(request: NextRequest) {
       { ttl: TTLPresets.TEMPLATES } // 2 hours cache
     );
 
-    return NextResponse.json(response)
+    return NextResponse.json(response, { headers: CACHE_HEADER_PRESETS.TEMPLATES })
   } catch (error) {
     console.error('Templates API error:', error)
     return createErrorResponse('Failed to fetch templates', 500)
