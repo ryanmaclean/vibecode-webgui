@@ -126,6 +126,9 @@ export default function OnboardingPage() {
   const [data, setData] = useState<OnboardingData>({ ...defaultUserPreferences })
   const [localError, setLocalError] = useState<string | null>(null)
   const error = localError ?? preferencesError ?? null
+  const [startTime] = useState<number>(() => Date.now())
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0)
+  const [completionTime, setCompletionTime] = useState<number | null>(null)
 
   const updateData = (updates: Partial<OnboardingData>) => {
     setLocalError(null)
@@ -190,6 +193,9 @@ export default function OnboardingPage() {
 
   const completeOnboarding = async () => {
     try {
+      const finalTime = elapsedSeconds
+      setCompletionTime(finalTime)
+
       await savePreferences({
         theme: data.theme,
         cliEditor: data.cliEditor,
@@ -207,6 +213,12 @@ export default function OnboardingPage() {
 
   const progressPercent = (steps.indexOf(step) / (steps.length - 1)) * 100
 
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
   useEffect(() => {
     const merged = mergeWithDefaultPreferences(storedPreferences)
     setData(merged)
@@ -215,6 +227,15 @@ export default function OnboardingPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000)
+      setElapsedSeconds(elapsed)
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [startTime])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
@@ -239,6 +260,11 @@ export default function OnboardingPage() {
               className="h-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-300"
               style={{ width: `${progressPercent}%` }}
             />
+          </div>
+          <div className="flex justify-center mt-2">
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              Time elapsed: {formatTime(elapsedSeconds)}
+            </span>
           </div>
         </div>
 
@@ -632,6 +658,10 @@ export default function OnboardingPage() {
               <div>
                 <span className="font-semibold text-gray-900 dark:text-white">AI Providers:</span>{' '}
                 {data.aiProviders.join(', ')}
+              </div>
+              <div className="pt-3 border-t border-indigo-200 dark:border-indigo-800">
+                <span className="font-semibold text-gray-900 dark:text-white">Setup Time:</span>{' '}
+                {formatTime(elapsedSeconds)}
               </div>
             </div>
             <div className="flex justify-between">
