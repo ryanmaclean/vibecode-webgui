@@ -16,6 +16,7 @@ export { CreateAgentWizard } from './CreateAgentWizard'
 export { AgentMarketplace } from './AgentMarketplace'
 export { AgentMonitoringDashboard } from './AgentMonitoringDashboard'
 export { AgentBuilderWorkflowEmbed } from './AgentBuilderWorkflowEmbed'
+export { DiffViewer } from './DiffViewer'
 
 // Type exports
 export type {
@@ -64,3 +65,9 @@ export type {
 } from './AgentMonitoringDashboard'
 
 export type { AgentBuilderWorkflowEmbedProps } from './AgentBuilderWorkflowEmbed'
+
+export type {
+  DiffLine,
+  DiffViewerProps,
+  DiffStats
+} from './DiffViewer'
