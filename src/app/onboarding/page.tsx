@@ -793,6 +793,39 @@ export default function OnboardingPage() {
                 }
               </p>
             </div>
+
+            {data.aiProviders.length > 0 && (
+              <div className="bg-gray-900 rounded-lg p-4 text-left overflow-hidden">
+                <div className="flex items-center gap-2 mb-3 text-xs text-gray-400">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  </div>
+                  <span className="ml-2">app.tsx</span>
+                </div>
+                <div className="font-mono text-sm text-gray-300 space-y-1">
+                  <div><span className="text-purple-400">function</span> <span className="text-blue-300">fetchUserData</span>() {'{'}</div>
+                  <div className="ml-4"><span className="text-purple-400">const</span> response = <span className="text-purple-400">await</span> <span className="text-blue-300">fetch</span>(<span className="text-green-300">'/api/user'</span>)</div>
+                  <div className="ml-4 relative">
+                    <span className="text-purple-400">const</span> data = <span className="text-purple-400">await</span> response.
+                    <span className="inline-block animate-pulse bg-indigo-500/20 border border-indigo-400 rounded px-2 py-0.5 text-indigo-300">
+                      json()
+                      <span className="absolute -top-6 left-0 text-xs text-indigo-400 whitespace-nowrap">
+                        ✨ AI suggestion
+                      </span>
+                    </span>
+                  </div>
+                  <div className="ml-4"><span className="text-purple-400">return</span> data</div>
+                  <div>{'}'}</div>
+                </div>
+                <div className="mt-3 text-xs text-gray-400 flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                  {data.aiProviders[0]} is ready to assist
+                </div>
+              </div>
+            )}
+
             <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-6 text-left space-y-3">
               <div>
                 <span className="font-semibold text-gray-900 dark:text-white">Theme:</span> {data.theme}
