@@ -344,6 +344,7 @@ export function CostSettingsPanel({
                   $
                 </span>
                 <Input
+                  data-testid="monthly-budget-input"
                   id="monthly-budget"
                   type="number"
                   min="0"
@@ -369,6 +370,7 @@ export function CostSettingsPanel({
                   $
                 </span>
                 <Input
+                  data-testid="daily-budget-input"
                   id="daily-budget"
                   type="number"
                   min="0"
@@ -394,6 +396,7 @@ export function CostSettingsPanel({
                   $
                 </span>
                 <Input
+                  data-testid="session-budget-input"
                   id="session-budget"
                   type="number"
                   min="0"
@@ -430,6 +433,7 @@ export function CostSettingsPanel({
                 Warning Threshold (%)
               </Label>
               <Input
+                data-testid="warning-threshold-input"
                 id="warning-threshold"
                 type="number"
                 min="0"
@@ -450,6 +454,7 @@ export function CostSettingsPanel({
                 Critical Threshold (%)
               </Label>
               <Input
+                data-testid="critical-threshold-input"
                 id="critical-threshold"
                 type="number"
                 min="0"
@@ -527,6 +532,7 @@ export function CostSettingsPanel({
                 </p>
               </div>
               <Switch
+                data-testid="show-estimates-toggle"
                 id="show-estimates"
                 checked={settings.showEstimatesBeforeSend}
                 onCheckedChange={(checked) =>
@@ -614,7 +620,7 @@ export function CostSettingsPanel({
             >
               {saveState === 'saving' ? (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <RefreshCw data-testid="save-spinner" className="h-4 w-4 mr-2 animate-spin" />
                   Saving...
                 </>
               ) : (

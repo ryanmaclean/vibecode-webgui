@@ -126,6 +126,7 @@ export function CostAlertToast({
 
   return (
     <div
+      data-testid="cost-alert-toast"
       className={`fixed bottom-4 right-4 z-50 w-96 transition-all duration-300 transform ${
         isExiting ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
       }`}
@@ -186,6 +187,7 @@ export function CostAlertToast({
               {/* Acknowledge Button */}
               {onAcknowledge && (
                 <button
+                  data-testid="acknowledge-alert-button"
                   onClick={handleAcknowledge}
                   className={`mt-3 text-xs font-medium ${config.text} hover:underline focus:outline-none`}
                 >

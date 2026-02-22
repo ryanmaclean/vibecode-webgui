@@ -180,9 +180,10 @@ interface StatCardProps {
   trend?: number;
   trendLabel?: string;
   variant?: 'default' | 'success' | 'warning' | 'danger';
+  testId?: string;
 }
 
-function StatCard({ title, value, description, icon, trend, trendLabel, variant = 'default' }: StatCardProps) {
+function StatCard({ title, value, description, icon, trend, trendLabel, variant = 'default', testId }: StatCardProps) {
   const variantStyles = {
     default: 'bg-card',
     success: 'bg-green-50 border-green-200',
@@ -196,7 +197,7 @@ function StatCard({ title, value, description, icon, trend, trendLabel, variant 
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold">{value}</p>
+            <p data-testid={testId} className="text-2xl font-bold">{value}</p>
             {description && (
               <p className="text-xs text-muted-foreground">{description}</p>
             )}
@@ -697,6 +698,7 @@ export default function CostDashboard({
           value={formatCost(session.totalCost)}
           description={`${session.requests} requests`}
           icon={<DollarSign className="h-5 w-5" />}
+          testId="session-cost"
         />
         <StatCard
           title="Today's Cost"
@@ -727,11 +729,11 @@ export default function CostDashboard({
             <BarChart3 className="h-4 w-4 mr-1" />
             Overview
           </TabsTrigger>
-          <TabsTrigger value="models">
+          <TabsTrigger value="models" data-testid="models-tab">
             <PieChart className="h-4 w-4 mr-1" />
             By Model
           </TabsTrigger>
-          <TabsTrigger value="alerts">
+          <TabsTrigger value="alerts" data-testid="alerts-tab">
             <Bell className="h-4 w-4 mr-1" />
             Alerts
             {alerts.filter((a) => a.triggered).length > 0 && (
@@ -741,7 +743,7 @@ export default function CostDashboard({
             )}
           </TabsTrigger>
           {showSettings && (
-            <TabsTrigger value="settings">
+            <TabsTrigger value="settings" data-testid="settings-tab">
               <Settings className="h-4 w-4 mr-1" />
               Settings
             </TabsTrigger>
@@ -813,7 +815,7 @@ export default function CostDashboard({
                   Breakdown of spending across different AI models
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent data-testid="model-breakdown">
                 <ModelBreakdownChart data={session.byModel} />
               </CardContent>
             </Card>
@@ -900,7 +902,7 @@ export default function CostDashboard({
                   <Button onClick={() => setIsCreateAlertOpen(true)}>Create Alert</Button>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div data-testid="alert-list" className="space-y-4">
                   {alerts.map((alert) => (
                     <div
                       key={alert.id}
@@ -982,7 +984,7 @@ export default function CostDashboard({
                 value={newAlertType}
                 onValueChange={(v) => setNewAlertType(v as AlertType)}
               >
-                <SelectTrigger id="alert-type">
+                <SelectTrigger data-testid="alert-type" id="alert-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -998,6 +1000,7 @@ export default function CostDashboard({
             <div className="grid gap-2">
               <Label htmlFor="alert-threshold">Threshold (USD)</Label>
               <Input
+                data-testid="alert-threshold"
                 id="alert-threshold"
                 type="number"
                 step="0.01"
@@ -1014,7 +1017,7 @@ export default function CostDashboard({
                 value={newAlertSeverity}
                 onValueChange={(v) => setNewAlertSeverity(v as AlertSeverity)}
               >
-                <SelectTrigger id="alert-severity">
+                <SelectTrigger data-testid="alert-severity" id="alert-severity">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

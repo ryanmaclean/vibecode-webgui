@@ -378,6 +378,7 @@ export function ChatInterface({
       {/* Model Selector */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <ModelSelector
+          data-testid="model-selector"
           selectedModelId={selectedModel}
           onModelSelect={handleModelSelect}
           models={availableModels}
@@ -414,7 +415,7 @@ export function ChatInterface({
               className={`flex ${
                 message.role === 'user' ? 'justify-end' : 'justify-start'
               }`}
-              data-testid={`message-${message.role}`}
+              data-testid={message.role === 'user' ? 'user-message' : 'assistant-message'}
             >
               <div
                 className={`max-w-[80%] rounded-lg p-3 ${
@@ -468,7 +469,7 @@ export function ChatInterface({
             placeholder="Type your message... (Shift+Enter for new line)"
             disabled={isLoading || isStreaming}
             className="min-h-[60px] max-h-[200px] resize-none"
-            data-testid="message-input"
+            data-testid="chat-input"
           />
           <Button
             onClick={handleSendMessage}
@@ -505,6 +506,7 @@ export function ChatInterface({
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Model:</span>
               <ModelDisplay
+                data-testid="model-display"
                 model={availableModels.find((m) => m.id === selectedModel)}
                 compact
               />

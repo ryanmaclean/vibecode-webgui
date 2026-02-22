@@ -134,7 +134,7 @@ function InlineCostDisplay({ estimate, className = '' }: InlineCostDisplayProps)
   const confidenceInfo = CONFIDENCE_INFO[estimate.confidence];
 
   return (
-    <div className={`flex items-center space-x-2 text-sm ${className}`}>
+    <div data-testid="cost-estimator" className={`flex items-center space-x-2 text-sm ${className}`}>
       <DollarSign className="h-4 w-4 text-muted-foreground" />
       <span className="font-medium">{formatCost(estimate.estimatedCost)}</span>
       <Tooltip content={confidenceInfo.description}>
@@ -444,7 +444,7 @@ export default function CostEstimator({
 
   // Full component
   return (
-    <Card className={className}>
+    <Card data-testid="cost-estimator" className={className}>
       <CardHeader
         className="cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
