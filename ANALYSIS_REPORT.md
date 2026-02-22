@@ -51,7 +51,7 @@ VibeCode WebGUI is a production-grade, AI-powered cloud-native development platf
 ### Critical Findings
 
 ✅ **Strengths:**
-- **Modern Stack:** Next.js 16, React 19, Go 1.22, Python 3.11 - all current major versions
+- **Modern Stack:** Next.js 16, React 19, Go 1.23, Python 3.11 - stable, production-proven versions
 - **Comprehensive Monitoring:** Multi-layer observability with Datadog APM, RUM, DBM, and LLM Observability
 - **Production-Ready Infrastructure:** Advanced database patterns (connection pooling, vector search, predictive scaling)
 - **Security-First:** MFA, SAML SSO, rate limiting, CSRF protection, IP validation, secret scanning
@@ -100,7 +100,7 @@ The repository consists of **48 top-level directories** organized into functiona
 |---------|------|------------|---------|
 | **Main App (rig)** | `./src/` | Next.js 16 + React 19 + TypeScript | Primary web application and API gateway |
 | **Documentation** | `./docs/` | Astro 5 + Starlight | Documentation website with 112+ pages |
-| **TD CLI** | `./td/` | Go 1.22 + Bubble Tea | Tundra Dome workflow CLI tool |
+| **TD CLI** | `./td/` | Go 1.23 + Bubble Tea | Tundra Dome workflow CLI tool |
 | **Airflow** | `./airflow/` | Python + Apache Airflow | Workflow orchestration (18 DAGs) |
 | **dd-skill-test** | `./dd-skill-test/` | Python + Go + Bash | Datadog operations toolkit (70+ scripts) |
 | **Daemon Services** | `./daemon/` | Node.js + Python | Background services, event bridges |
@@ -287,7 +287,7 @@ The repository consists of **48 top-level directories** organized into functiona
 ### 3. TD CLI Tool (td)
 
 **Technology Stack:**
-- Language: Go 1.22
+- Language: Go 1.23
 - CLI Framework: Cobra 1.8.1
 - TUI Framework: Bubble Tea 1.1.0
 - Kafka Client: segmentio/kafka-go 0.4.47
@@ -882,7 +882,7 @@ with self.obs.span("operation_name"):
 - Node.js >=18.18.0 <25.0.0
 - PostgreSQL 14+ with pgvector extension
 - Redis/Valkey 7+
-- Go 1.22+ (for td CLI)
+- Go 1.23+ (for td CLI)
 - Python 3.11+ (for Airflow, dd-skill-test)
 - Docker + Docker Compose (optional)
 - Kubernetes + Helm (optional, for K8s testing)
@@ -1161,23 +1161,30 @@ npm run test:performance:synthetic
    - **Effort:** 2-4 weeks (depends on service complexity)
    - **Owner:** Integrations team
 
+8. **Kafka Producer Reliability Gap (rig)**
+   - **Status:** Producer has no retry/backoff or DLQ fallback on publish failure
+   - **Impact:** Silent event loss under transient broker/network failures
+   - **Need:** Retry with backoff, in-memory buffer or dead-letter queue, dropped-event telemetry
+   - **Effort:** 3-5 days
+   - **Owner:** Platform team
+
 **Low Priority:**
 
-8. **API Documentation Generation**
+9. **API Documentation Generation**
    - **Status:** No OpenAPI/Swagger docs
    - **Impact:** Manual API exploration required
    - **Solution:** Add Swagger UI or TypeDoc
    - **Effort:** 3-5 days
    - **Owner:** API team
 
-9. **Test Coverage Metrics Not Visible**
+10. **Test Coverage Metrics Not Visible**
    - **Status:** Coverage generated, not displayed
    - **Upload:** Codecov configured
    - **Impact:** No visibility into coverage trends
    - **Effort:** 2 hours (configure dashboard)
    - **Owner:** QA team
 
-10. **Error Budget Tracking Missing**
+11. **Error Budget Tracking Missing**
     - **Status:** SLOs defined, no burn rate alerts
     - **Impact:** Reactive incident response
     - **Solution:** Implement error budget dashboards
@@ -1231,16 +1238,23 @@ npm run test:performance:synthetic
    - **Effort:** 1 week (schema + query updates)
    - **ROI:** Revenue enabler
 
+7. **TD CLI Observability Baseline**
+   - **Current:** Minimal visibility into td command outcomes and Kafka publish behavior
+   - **Need:** Structured logs (zerolog), DogStatsD counters/timers, ddtrace spans around publish paths
+   - **Benefit:** Faster CLI incident triage and command-level reliability visibility
+   - **Effort:** 1 week
+   - **ROI:** Reduced MTTR for workflow orchestration issues
+
 **Security:**
 
-7. **Secrets Management Centralization**
+8. **Secrets Management Centralization**
    - **Current:** .env files
    - **Recommendation:** HashiCorp Vault, AWS Secrets Manager, or Azure Key Vault
    - **Benefit:** Rotation, auditing, centralized control
    - **Effort:** 2-3 weeks
    - **ROI:** Compliance requirement
 
-8. **Network Policies (Kubernetes)**
+9. **Network Policies (Kubernetes)**
    - **Current:** No network isolation
    - **Recommendation:** NetworkPolicy resources for pod-to-pod isolation
    - **Benefit:** Defense in depth
@@ -1249,14 +1263,14 @@ npm run test:performance:synthetic
 
 **Developer Experience:**
 
-9. **API Documentation Auto-Generation**
+10. **API Documentation Auto-Generation**
    - **Current:** Manual documentation
    - **Recommendation:** OpenAPI/Swagger from Zod schemas
    - **Tools:** zod-to-openapi
    - **Effort:** 1 week
    - **ROI:** Faster onboarding
 
-10. **Development Environment Standardization**
+11. **Development Environment Standardization**
     - **Current:** Manual setup with 434 env vars
     - **Recommendation:** Dev containers, Tilt, or Skaffold
     - **Benefit:** One-command setup
@@ -1276,6 +1290,7 @@ npm run test:performance:synthetic
 2. 📋 Implement error budget dashboards (MEDIUM - 1 week)
 3. 📋 Add API documentation generation (LOW - 1 week)
 4. 📋 Distributed tracing across Kafka (MEDIUM - 1 week)
+5. 📋 Add retries + dropped-event telemetry for rig Kafka producer (MEDIUM - 3-5 days)
 
 **Long-Term (3-6 months):**
 1. 🔮 Multi-tenancy architecture (4-6 weeks)
@@ -1292,7 +1307,7 @@ High Impact
 │   [Tailwind v4]      [API Docs]         [Secrets Mgmt]
 │
 │   [Test Coverage]    [Python Scripts]   [DB Replicas]
-│   [Docs Cleanup]     [Kafka Tracing]    [Dev Containers]
+│   [Docs Cleanup]     [Kafka Tracing]    [TD Observability]
 │
 └─────────────────────────────────────────────────────────> Low Effort
   Low Effort                                    High Effort
@@ -1307,7 +1322,7 @@ High Impact
 The VibeCode WebGUI monorepo is a **production-ready, enterprise-grade platform** demonstrating:
 
 **✅ Exceptional Strengths:**
-1. **Modern Technology Stack:** Bleeding-edge frameworks (Next.js 16, React 19, Go 1.22) with consistent patterns
+1. **Modern Technology Stack:** Bleeding-edge frameworks (Next.js 16, React 19, Go 1.23) with consistent patterns
 2. **Comprehensive Observability:** Multi-layer monitoring with Datadog (APM, RUM, DBM, LLM Obs) achieving end-to-end visibility
 3. **Robust Testing:** 3,570+ tests (100% pass rate) across 5 tiers (unit, integration, E2E, performance, security)
 4. **Production Infrastructure:** Advanced database patterns (connection pooling, predictive scaling, vector search), Kubernetes-ready
@@ -1398,6 +1413,8 @@ The VibeCode WebGUI monorepo is a **production-ready, enterprise-grade platform*
 | Implement error budget dashboards | 1 week | HIGH | SRE |
 | Add API documentation generation | 1 week | MED | API |
 | Distributed tracing across Kafka | 1 week | MED | Platform |
+| Add retry/backoff + dropped-event telemetry for rig Kafka producer | 3-5 days | MED | Platform |
+| Add td CLI observability (zerolog, DogStatsD, ddtrace) | 1 week | MED | Platform |
 | Debug and enable Geist fonts | 3 days | LOW | Frontend |
 
 **Success Criteria:** Full Python automation suite, error budget visibility
@@ -1459,7 +1476,7 @@ The VibeCode WebGUI platform represents a **mature, production-ready codebase** 
 - **Cost-Conscious:** 70-80% CI savings through tiered testing
 - **Observable:** Multi-layer monitoring with Datadog APM, RUM, DBM, LLM Obs
 - **Secure:** MFA, SAML SSO, comprehensive secret scanning, SBOM generation
-- **Modern:** Latest Next.js 16, React 19, Go 1.22, Python 3.11
+- **Modern:** Latest Next.js 16, React 19, Go 1.23, Python 3.11
 
 **Strategic Positioning:**
 The platform is well-positioned for:

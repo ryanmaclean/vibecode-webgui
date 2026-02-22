@@ -28,7 +28,7 @@ The VibeCode platform consists of 6 primary services organized as a monorepo:
 |---------|------|-------------------|---------|------|
 | **rig** | Frontend/API | Next.js 16 + TypeScript | Main web application and API gateway | 3000 |
 | **docs** | Frontend | Astro + TypeScript | Documentation website | - |
-| **td** | CLI | Go 1.22 | Tundra Dome task/workflow CLI | - |
+| **td** | CLI | Go 1.23 | Tundra Dome task/workflow CLI | - |
 | **airflow** | Backend | Python + Apache Airflow | Workflow orchestration and automation | - |
 | **dd-skill-test** | Utility | Python | Datadog operations testing and CLI | - |
 | **daemon** | Backend | Node.js + Python | Background services for event bridging | - |
@@ -433,10 +433,11 @@ POST /api/security/csp-report    - CSP violation reports
 - **Protocol:** WebSocket with node-pty
 - **Authentication:** JWT token
 
-### IDE Session WebSocket
-- **Endpoint:** `ws://localhost:3000/api/ide/session/[sessionId]`
-- **Purpose:** IDE state synchronization
-- **Protocol:** WebSocket
+### IDE Session API
+- **Endpoint:** `http://localhost:3000/api/ide/session/[sessionId]`
+- **Purpose:** IDE session state retrieval and updates
+- **Methods:** `GET`, `PATCH`, `DELETE`
+- **Protocol:** HTTP/REST
 
 ### Collaboration WebSocket
 - **Endpoint:** `ws://localhost:3000/api/collaboration/socket`
@@ -716,7 +717,7 @@ docker-compose -f config/docker/docker-compose.dev.yml up
 npm run dev
 
 # Option 3: VM Backend
-python3 scripts/launch_ubuntu_vm.py
+python3 release-v5.1.0-beta/launch_ubuntu_vm.py
 npm run tauri:dev
 ```
 
