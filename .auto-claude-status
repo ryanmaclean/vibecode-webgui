@@ -1,15 +1,15 @@
 {
   "active": true,
-  "spec": "023-plugin-architecture",
+  "spec": "021-multi-agent-orchestration-framework",
   "state": "building",
   "subtasks": {
-    "completed": 21,
-    "total": 22,
+    "completed": 12,
+    "total": 15,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Integration & End-to-End Testing",
+    "current": "Audit Trail & Rollback UI",
     "id": null,
     "total": 3
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 3,
-    "started_at": "2026-02-19T10:19:12.376605"
+    "number": 7,
+    "started_at": "2026-02-14T19:55:53.802146"
   },
-  "last_update": "2026-02-19T10:26:11.503670"
+  "last_update": "2026-02-14T20:14:07.356406"
 }

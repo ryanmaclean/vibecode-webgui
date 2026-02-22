@@ -465,12 +465,13 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
       groups['Recent'] = recents;
     }
 
-    // Group rest by provider
+    // Group rest by provider (with special handling for Ollama)
     filteredModels.forEach(model => {
       if (favoriteModelIds.includes(model.id)) return; // Skip favorites
       if (recentModelIds.includes(model.id)) return; // Skip recents
 
-      const providerName = model.provider.name;
+      // Group Ollama models under "Local Models"
+      const providerName = model.provider.id === 'ollama' ? 'Local Models' : model.provider.name;
       if (!groups[providerName]) {
         groups[providerName] = [];
       }

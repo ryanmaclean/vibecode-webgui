@@ -11,6 +11,7 @@
   "files": [
     "main.py",
     "requirements.txt",
-    "README.md"
+    "README.md",
+    "monitoring.yml"
   ]
 }

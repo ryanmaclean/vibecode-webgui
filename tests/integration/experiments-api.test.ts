@@ -27,7 +27,12 @@ jest.mock('@/lib/server-monitoring', () => ({
   appLogger: {
     logBusiness: jest.fn(),
     logSecurity: jest.fn()
-  }
+  },
+  metrics: {
+    increment: jest.fn(),
+    histogram: jest.fn(),
+    gauge: jest.fn(),
+  },
 }))
 
 // Mock the feature flag engine
@@ -49,7 +54,13 @@ jest.mock('@/lib/feature-flags', () => ({
         { name: 'conversion', count: 10, value: 0.85 }
       ],
       statisticalSignificance: 0.95
-    })
+    }),
+    listFlags: jest.fn().mockResolvedValue([
+      {
+        key: 'ai_assistant_v2',
+        name: 'AI Assistant V2',
+      },
+    ]),
   }
 }))
 

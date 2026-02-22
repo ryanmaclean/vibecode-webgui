@@ -200,6 +200,26 @@ export interface AISettings {
 }
 
 // ============================================================================
+// Agent Confirmation Settings
+// ============================================================================
+
+/**
+ * Agent action confirmation and preview settings
+ */
+export interface AgentConfirmationSettings {
+  /** Show diff previews before applying changes */
+  enableActionPreview: boolean;
+  /** Require explicit approval for agent actions */
+  requireConfirmation: boolean;
+  /** Allow approving multiple changes at once */
+  bulkApprovalMode: boolean;
+  /** Show why each change is proposed */
+  showExplanations: boolean;
+  /** Skip confirmation for read-only operations */
+  autoApproveReadOnly: boolean;
+}
+
+// ============================================================================
 // Telemetry & Advanced Settings
 // ============================================================================
 
@@ -257,6 +277,8 @@ export interface AppSettings {
   ai: AISettings;
   /** Advanced settings including telemetry */
   advanced: AdvancedSettings;
+  /** Agent confirmation and preview settings */
+  agentConfirmation: AgentConfirmationSettings;
   /** Last modified timestamp */
   lastModified: string;
 }
@@ -391,6 +413,17 @@ export const DEFAULT_ADVANCED_SETTINGS: AdvancedSettings = {
 };
 
 /**
+ * Default agent confirmation settings
+ */
+export const DEFAULT_AGENT_CONFIRMATION_SETTINGS: AgentConfirmationSettings = {
+  enableActionPreview: true,
+  requireConfirmation: true,
+  bulkApprovalMode: false,
+  showExplanations: true,
+  autoApproveReadOnly: false,
+};
+
+/**
  * Complete default settings
  */
 export const DEFAULT_APP_SETTINGS: AppSettings = {
@@ -399,6 +432,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   services: DEFAULT_SERVICE_SETTINGS,
   ai: DEFAULT_AI_SETTINGS,
   advanced: DEFAULT_ADVANCED_SETTINGS,
+  agentConfirmation: DEFAULT_AGENT_CONFIRMATION_SETTINGS,
   lastModified: new Date().toISOString(),
 };
 
