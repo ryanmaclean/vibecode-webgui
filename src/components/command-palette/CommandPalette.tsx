@@ -61,7 +61,9 @@ export function CommandPalette({
   className,
 }: CommandPaletteProps) {
   const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const selectedItemRef = React.useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [selectedIndex, setSelectedIndex] = React.useState(0);
 
   // Fuzzy search results
   const searchResults = React.useMemo(() => {
@@ -71,19 +73,77 @@ export function CommandPalette({
     });
   }, [searchQuery]);
 
-  // Close on Escape key
+  // Reset selected index when search results change
+  React.useEffect(() => {
+    setSelectedIndex(0);
+  }, [searchResults]);
+
+  // Scroll selected item into view
+  React.useEffect(() => {
+    if (selectedItemRef.current) {
+      selectedItemRef.current.scrollIntoView({
+        block: 'nearest',
+        behavior: 'smooth',
+      });
+    }
+  }, [selectedIndex]);
+
+  // Handle command selection
+  const handleSelectCommand = React.useCallback((commandId: string) => {
+    // TODO: Execute the command based on commandId
+    // For now, just close the palette
+    onClose();
+  }, [onClose]);
+
+  // Handle keyboard navigation
   React.useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Close on Escape
       if (e.key === 'Escape') {
         onClose();
+        return;
+      }
+
+      // Only handle navigation keys if there are results
+      if (searchResults.length === 0) return;
+
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setSelectedIndex((prev) =>
+            prev < searchResults.length - 1 ? prev + 1 : prev
+          );
+          break;
+
+        case 'ArrowUp':
+          e.preventDefault();
+          setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
+          break;
+
+        case 'Home':
+          e.preventDefault();
+          setSelectedIndex(0);
+          break;
+
+        case 'End':
+          e.preventDefault();
+          setSelectedIndex(searchResults.length - 1);
+          break;
+
+        case 'Enter':
+          e.preventDefault();
+          if (selectedIndex >= 0 && selectedIndex < searchResults.length) {
+            handleSelectCommand(searchResults[selectedIndex].item.id);
+          }
+          break;
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, searchResults, selectedIndex]);
 
   // Focus search input when opened
   React.useEffect(() => {
@@ -225,39 +285,57 @@ export function CommandPalette({
               >
                 {searchResults.length > 0 ? (
                   <div className="space-y-1">
-                    {searchResults.map((result, index) => (
-                      <div
-                        key={result.item.id}
-                        role="option"
-                        aria-selected={index === 0}
-                        className={cn(
-                          'px-3 py-2 rounded',
-                          'cursor-pointer',
-                          'hover:bg-neutral-100 dark:hover:bg-neutral-800',
-                          'transition-colors',
-                          'focus:outline-none focus:ring-2 focus:ring-blue-500'
-                        )}
-                        tabIndex={0}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
-                              {result.item.label}
+                    {searchResults.map((result, index) => {
+                      const isSelected = index === selectedIndex;
+                      return (
+                        <div
+                          key={result.item.id}
+                          ref={isSelected ? selectedItemRef : null}
+                          role="option"
+                          aria-selected={isSelected}
+                          onClick={() => handleSelectCommand(result.item.id)}
+                          onMouseEnter={() => setSelectedIndex(index)}
+                          className={cn(
+                            'px-3 py-2 rounded',
+                            'cursor-pointer',
+                            'transition-colors',
+                            'focus:outline-none',
+                            isSelected
+                              ? 'bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-500'
+                              : 'hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                          )}
+                          tabIndex={-1}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className={cn(
+                                'font-medium text-sm',
+                                isSelected
+                                  ? 'text-blue-900 dark:text-blue-100'
+                                  : 'text-neutral-900 dark:text-neutral-100'
+                              )}>
+                                {result.item.label}
+                              </div>
+                              {result.item.description && (
+                                <div className={cn(
+                                  'text-xs mt-0.5',
+                                  isSelected
+                                    ? 'text-blue-700 dark:text-blue-300'
+                                    : 'text-neutral-500 dark:text-neutral-400'
+                                )}>
+                                  {result.item.description}
+                                </div>
+                              )}
                             </div>
-                            {result.item.description && (
-                              <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                                {result.item.description}
+                            {result.score > 0 && (
+                              <div className="flex-shrink-0 text-xs text-neutral-400 dark:text-neutral-500">
+                                {Math.round(result.score)}
                               </div>
                             )}
                           </div>
-                          {result.score > 0 && (
-                            <div className="flex-shrink-0 text-xs text-neutral-400 dark:text-neutral-500">
-                              {Math.round(result.score)}
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : searchQuery ? (
                   <div className="p-8 text-center text-neutral-500 dark:text-neutral-400">
