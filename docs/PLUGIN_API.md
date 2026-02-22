@@ -7,6 +7,7 @@ VibeCode's extensible plugin system allows developers to add custom AI models, i
 - [Overview](#overview)
 - [Plugin Architecture](#plugin-architecture)
 - [Getting Started](#getting-started)
+- [Plugin SDK](#plugin-sdk)
 - [Plugin Manifest](#plugin-manifest)
 - [Plugin API Interface](#plugin-api-interface)
 - [Plugin Types](#plugin-types)
@@ -14,6 +15,7 @@ VibeCode's extensible plugin system allows developers to add custom AI models, i
 - [Plugin Lifecycle](#plugin-lifecycle)
 - [Plugin Context](#plugin-context)
 - [Installation Methods](#installation-methods)
+- [Plugin Marketplace](#plugin-marketplace)
 - [REST API Endpoints](#rest-api-endpoints)
 - [CLI Commands](#cli-commands)
 - [Security & Sandboxing](#security--sandboxing)
@@ -150,6 +152,362 @@ export const plugin: PluginAPI = {
 ```bash
 vibecode plugin install ./my-plugin
 ```
+
+---
+
+## Plugin SDK
+
+The VibeCode Plugin SDK provides development tools, utilities, and helpers to streamline plugin development.
+
+### Installation
+
+Install the SDK as a development dependency:
+
+```bash
+npm install --save-dev @vibecode/plugin-sdk
+```
+
+Or install globally:
+
+```bash
+npm install -g @vibecode/plugin-sdk
+```
+
+### CLI Tools
+
+The SDK includes a command-line interface for common development tasks:
+
+#### Create New Plugin
+
+```bash
+vibecode-sdk create <plugin-name>
+```
+
+**Options**:
+- `--type <type>` - Plugin type (ai-model, integration, workflow, etc.)
+- `--typescript` - Use TypeScript (default)
+- `--javascript` - Use JavaScript
+- `--template <name>` - Use specific template
+
+**Example**:
+```bash
+vibecode-sdk create my-awesome-plugin --type ai-model
+```
+
+This generates a complete plugin structure:
+```
+my-awesome-plugin/
+├── plugin.json
+├── index.ts
+├── README.md
+├── LICENSE
+├── tsconfig.json
+├── package.json
+└── src/
+    ├── types.ts
+    └── utils.ts
+```
+
+#### Validate Plugin
+
+```bash
+vibecode-sdk validate [plugin-path]
+```
+
+Validates:
+- Manifest schema
+- Permission declarations
+- Type definitions
+- File structure
+- Dependencies
+
+**Example**:
+```bash
+vibecode-sdk validate ./my-plugin
+✓ Manifest valid
+✓ Permissions valid
+✓ TypeScript compilation successful
+✗ Missing LICENSE file
+```
+
+#### Build Plugin
+
+```bash
+vibecode-sdk build [plugin-path]
+```
+
+**Options**:
+- `--watch` - Watch mode for development
+- `--minify` - Minify output
+- `--sourcemap` - Generate source maps
+
+**Example**:
+```bash
+vibecode-sdk build ./my-plugin --watch
+```
+
+#### Package Plugin
+
+```bash
+vibecode-sdk package [plugin-path]
+```
+
+Creates a distributable `.zip` archive:
+
+**Example**:
+```bash
+vibecode-sdk package ./my-plugin
+✓ Built plugin successfully
+✓ Created my-plugin-1.0.0.zip
+```
+
+#### Test Plugin
+
+```bash
+vibecode-sdk test [plugin-path]
+```
+
+**Options**:
+- `--watch` - Watch mode
+- `--coverage` - Generate coverage report
+
+**Example**:
+```bash
+vibecode-sdk test ./my-plugin --coverage
+```
+
+### TypeScript Support
+
+The SDK provides comprehensive TypeScript type definitions:
+
+```typescript
+import type {
+  PluginAPI,
+  PluginContext,
+  PluginManifest,
+  PluginCapabilities,
+  PluginPermission,
+  PluginLogger,
+} from '@vibecode/plugin-sdk';
+
+export const plugin: PluginAPI = {
+  manifest: require('./plugin.json'),
+
+  capabilities: {
+    providesCommands: true,
+    providesAIModel: false,
+    providesIntegration: false,
+    providesUIComponents: false,
+    providesCodeActions: false,
+    providesWorkflows: false,
+    providesFormatters: false,
+    providesLinters: false,
+  },
+
+  async initialize(context: PluginContext) {
+    // Type-safe context access
+    context.logger.info('Plugin initialized');
+  },
+
+  async destroy() {
+    // Cleanup
+  },
+};
+```
+
+### Utility Functions
+
+The SDK includes helpful utility functions:
+
+#### Logger Utilities
+
+```typescript
+import { createLogger } from '@vibecode/plugin-sdk/utils';
+
+const logger = createLogger('my-plugin');
+logger.info('Message', { data: 'value' });
+logger.error('Error occurred', { error });
+```
+
+#### Configuration Helpers
+
+```typescript
+import { loadConfig, saveConfig } from '@vibecode/plugin-sdk/utils';
+
+// Load plugin configuration
+const config = await loadConfig(context.dataPath, {
+  apiKey: '',
+  enabled: true,
+});
+
+// Save configuration
+await saveConfig(context.dataPath, config);
+```
+
+#### Validation Helpers
+
+```typescript
+import { validateManifest, validatePermissions } from '@vibecode/plugin-sdk/utils';
+
+// Validate manifest
+const result = validateManifest(manifest);
+if (!result.valid) {
+  console.error('Validation errors:', result.errors);
+}
+
+// Check if permissions are valid
+const permissionsValid = validatePermissions([
+  'filesystem:read',
+  'network:outbound',
+]);
+```
+
+#### File System Helpers
+
+```typescript
+import { ensureDir, readJSON, writeJSON } from '@vibecode/plugin-sdk/utils';
+
+// Ensure directory exists
+await ensureDir(context.dataPath);
+
+// Read JSON file
+const data = await readJSON(path.join(context.dataPath, 'data.json'));
+
+// Write JSON file
+await writeJSON(path.join(context.dataPath, 'data.json'), { foo: 'bar' });
+```
+
+### Testing Utilities
+
+The SDK provides testing helpers:
+
+```typescript
+import { createMockContext, createMockLogger } from '@vibecode/plugin-sdk/testing';
+
+describe('MyPlugin', () => {
+  it('should initialize correctly', async () => {
+    const context = createMockContext({
+      pluginId: 'test-plugin',
+      permissions: ['filesystem:read'],
+    });
+
+    await plugin.initialize(context);
+
+    expect(context.logger.info).toHaveBeenCalledWith('Plugin initialized');
+  });
+});
+```
+
+### Plugin Templates
+
+The SDK includes templates for common plugin types:
+
+#### AI Model Template
+
+```bash
+vibecode-sdk create my-ai-plugin --template ai-model
+```
+
+Includes:
+- AI provider interface
+- Model registration
+- Inference handler
+- Configuration schema
+
+#### Integration Template
+
+```bash
+vibecode-sdk create my-integration --template integration
+```
+
+Includes:
+- OAuth flow setup
+- API client wrapper
+- Webhook handlers
+- Error handling
+
+#### Workflow Template
+
+```bash
+vibecode-sdk create my-workflow --template workflow
+```
+
+Includes:
+- Workflow definitions
+- Task orchestration
+- Scheduling setup
+- State management
+
+### Development Workflow
+
+Recommended development workflow using the SDK:
+
+1. **Create plugin**:
+   ```bash
+   vibecode-sdk create my-plugin --type integration
+   cd my-plugin
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Develop with watch mode**:
+   ```bash
+   vibecode-sdk build --watch
+   ```
+
+4. **Run tests**:
+   ```bash
+   vibecode-sdk test --watch
+   ```
+
+5. **Validate before publishing**:
+   ```bash
+   vibecode-sdk validate
+   ```
+
+6. **Package for distribution**:
+   ```bash
+   vibecode-sdk package
+   ```
+
+### SDK Configuration
+
+Configure SDK behavior with `vibecode-sdk.config.js`:
+
+```javascript
+module.exports = {
+  build: {
+    target: 'es2020',
+    minify: false,
+    sourcemap: true,
+  },
+
+  test: {
+    coverage: true,
+    coverageThreshold: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
+
+  validate: {
+    strict: true,
+    requireLicense: true,
+    requireReadme: true,
+  },
+};
+```
+
+### API Reference
+
+Full SDK API documentation available at:
+- [SDK API Docs](https://vibecode.dev/docs/plugin-sdk)
+- [Type Definitions](https://github.com/vibecode/plugin-sdk/blob/main/types/index.d.ts)
 
 ---
 
@@ -728,6 +1086,509 @@ interface PluginInstallOptions {
   autoEnable?: boolean;     // Enable after installation
 }
 ```
+
+---
+
+## Plugin Marketplace
+
+The VibeCode Plugin Marketplace is a centralized platform for discovering, publishing, and managing plugins.
+
+### Accessing the Marketplace
+
+#### Via Web UI
+
+Navigate to the Marketplace in VibeCode:
+
+1. Open VibeCode at `http://localhost:3000`
+2. Navigate to `/plugins/marketplace`
+3. Browse, search, and install plugins
+
+#### Via CLI
+
+```bash
+vibecode marketplace search <query>
+vibecode marketplace install <plugin-id>
+vibecode marketplace publish <plugin-path>
+```
+
+### Browsing Plugins
+
+The Marketplace provides several ways to discover plugins:
+
+#### Browse by Category
+
+```typescript
+GET /api/marketplace/plugins?category=ai-model
+```
+
+**Categories**:
+- `ai-model` - AI model providers
+- `integration` - Third-party integrations
+- `workflow` - Workflow automation
+- `ui-extension` - UI enhancements
+- `code-generator` - Code generation tools
+- `linter` - Code analysis tools
+- `formatter` - Code formatting tools
+- `other` - General purpose plugins
+
+#### Search Plugins
+
+```bash
+vibecode marketplace search "ai model"
+```
+
+**Search filters**:
+- **Keywords**: Match plugin keywords and description
+- **Author**: Filter by plugin author
+- **Category**: Filter by plugin type
+- **Verified**: Show only verified plugins
+- **Downloads**: Sort by popularity
+
+**Example**:
+```bash
+vibecode marketplace search --category ai-model --verified
+```
+
+#### Featured Plugins
+
+```typescript
+GET /api/marketplace/featured
+```
+
+Returns curated list of featured plugins:
+
+```json
+{
+  "success": true,
+  "featured": [
+    {
+      "id": "ollama-provider",
+      "name": "Ollama AI Provider",
+      "description": "Use local Ollama models in VibeCode",
+      "author": "VibeCode Team",
+      "category": "ai-model",
+      "downloads": 15234,
+      "rating": 4.8,
+      "verified": true,
+      "icon": "https://marketplace.vibecode.dev/icons/ollama.png"
+    }
+  ]
+}
+```
+
+### Plugin Listings
+
+Each plugin listing includes:
+
+```typescript
+interface MarketplaceListing {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  longDescription?: string;
+  author: {
+    name: string;
+    email?: string;
+    url?: string;
+    verified: boolean;
+  };
+  category: PluginType;
+  keywords: string[];
+  license: string;
+  repository?: string;
+  homepage?: string;
+  icon?: string;
+  screenshots?: string[];
+
+  // Marketplace metadata
+  downloads: number;
+  rating: number;
+  reviews: number;
+  verified: boolean;
+  publishedAt: string;
+  updatedAt: string;
+
+  // Version info
+  versions: {
+    version: string;
+    publishedAt: string;
+    changelog?: string;
+  }[];
+}
+```
+
+### Publishing Plugins
+
+#### Prerequisites
+
+1. **Create marketplace account**:
+   ```bash
+   vibecode marketplace login
+   ```
+
+2. **Verify plugin manifest**:
+   ```bash
+   vibecode-sdk validate ./my-plugin
+   ```
+
+3. **Build and test**:
+   ```bash
+   vibecode-sdk build ./my-plugin
+   vibecode-sdk test ./my-plugin
+   ```
+
+#### Publishing Process
+
+**First-time publication**:
+
+```bash
+vibecode marketplace publish ./my-plugin
+```
+
+**Interactive prompts**:
+```
+✓ Validating plugin manifest
+✓ Building plugin
+✓ Running tests
+? Long description (optional): Detailed description of your plugin...
+? Add screenshots? (Y/n): Y
+? Screenshot URLs (comma-separated): https://example.com/screenshot1.png
+? Plugin category: ai-model
+? Keywords (comma-separated): ai, llm, local
+? License: MIT
+✓ Plugin published successfully!
+Plugin ID: my-plugin
+Version: 1.0.0
+Marketplace URL: https://marketplace.vibecode.dev/plugins/my-plugin
+```
+
+#### Publishing Updates
+
+```bash
+vibecode marketplace publish ./my-plugin --version 1.1.0
+```
+
+**With changelog**:
+```bash
+vibecode marketplace publish ./my-plugin --version 1.1.0 --changelog "
+## Changes in 1.1.0
+- Added new feature X
+- Fixed bug Y
+- Improved performance
+"
+```
+
+### Marketplace API
+
+#### Search Plugins
+
+**GET** `/api/marketplace/plugins`
+
+**Query Parameters**:
+- `q` - Search query
+- `category` - Filter by category
+- `author` - Filter by author
+- `verified` - Show only verified plugins (`true`/`false`)
+- `sort` - Sort order (`downloads`, `rating`, `recent`, `name`)
+- `limit` - Results per page (default: 20)
+- `offset` - Pagination offset
+
+**Example**:
+```bash
+curl "http://localhost:3000/api/marketplace/plugins?q=ai&category=ai-model&verified=true&sort=downloads"
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "plugins": [
+    {
+      "id": "ollama-provider",
+      "name": "Ollama AI Provider",
+      "version": "1.0.0",
+      "description": "Use local Ollama models",
+      "author": {
+        "name": "VibeCode Team",
+        "verified": true
+      },
+      "category": "ai-model",
+      "downloads": 15234,
+      "rating": 4.8,
+      "verified": true
+    }
+  ],
+  "total": 1,
+  "limit": 20,
+  "offset": 0
+}
+```
+
+#### Get Plugin Details
+
+**GET** `/api/marketplace/plugins/:id`
+
+**Example**:
+```bash
+curl http://localhost:3000/api/marketplace/plugins/ollama-provider
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "plugin": {
+    "id": "ollama-provider",
+    "name": "Ollama AI Provider",
+    "version": "1.0.0",
+    "description": "Use local Ollama models in VibeCode",
+    "longDescription": "Full markdown description...",
+    "author": {
+      "name": "VibeCode Team",
+      "url": "https://vibecode.dev",
+      "verified": true
+    },
+    "category": "ai-model",
+    "keywords": ["ai", "llm", "local", "ollama"],
+    "license": "MIT",
+    "repository": "https://github.com/vibecode/ollama-provider",
+    "homepage": "https://vibecode.dev/plugins/ollama",
+    "downloads": 15234,
+    "rating": 4.8,
+    "reviews": 124,
+    "verified": true,
+    "publishedAt": "2026-01-15T10:00:00Z",
+    "updatedAt": "2026-02-10T14:30:00Z",
+    "versions": [
+      {
+        "version": "1.0.0",
+        "publishedAt": "2026-01-15T10:00:00Z",
+        "changelog": "Initial release"
+      }
+    ]
+  }
+}
+```
+
+#### Install from Marketplace
+
+**POST** `/api/marketplace/install`
+
+**Body**:
+```json
+{
+  "pluginId": "ollama-provider",
+  "version": "1.0.0",
+  "autoEnable": true
+}
+```
+
+**Example**:
+```bash
+curl -X POST http://localhost:3000/api/marketplace/install \
+  -H "Content-Type: application/json" \
+  -d '{"pluginId": "ollama-provider", "autoEnable": true}'
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "pluginId": "ollama-provider",
+  "version": "1.0.0",
+  "installed": true
+}
+```
+
+### Plugin Ratings & Reviews
+
+#### Submit Review
+
+**POST** `/api/marketplace/plugins/:id/reviews`
+
+**Body**:
+```json
+{
+  "rating": 5,
+  "title": "Excellent plugin!",
+  "comment": "Works perfectly with local Ollama models. Easy to set up.",
+  "version": "1.0.0"
+}
+```
+
+#### Get Reviews
+
+**GET** `/api/marketplace/plugins/:id/reviews`
+
+**Query Parameters**:
+- `limit` - Reviews per page (default: 10)
+- `offset` - Pagination offset
+- `sort` - Sort order (`recent`, `helpful`, `rating`)
+
+**Response**:
+```json
+{
+  "success": true,
+  "reviews": [
+    {
+      "id": "review-123",
+      "rating": 5,
+      "title": "Excellent plugin!",
+      "comment": "Works perfectly...",
+      "author": "user123",
+      "version": "1.0.0",
+      "helpful": 15,
+      "createdAt": "2026-02-10T12:00:00Z"
+    }
+  ],
+  "averageRating": 4.8,
+  "total": 124
+}
+```
+
+### Verified Badges
+
+Plugins can earn verified badges through:
+
+1. **Official Verification**: Published by VibeCode team
+2. **Community Verification**: High ratings and download count
+3. **Security Audit**: Passed security review
+
+**Verification criteria**:
+- ✓ Code review passed
+- ✓ Security audit completed
+- ✓ Test coverage > 80%
+- ✓ Documentation complete
+- ✓ Active maintenance (updated within 90 days)
+
+### Marketplace CLI Commands
+
+#### Login to Marketplace
+
+```bash
+vibecode marketplace login
+```
+
+Prompts for credentials and saves authentication token.
+
+#### Search Marketplace
+
+```bash
+vibecode marketplace search <query>
+```
+
+**Options**:
+- `--category <type>` - Filter by category
+- `--verified` - Show only verified plugins
+- `--limit <n>` - Number of results
+
+**Example**:
+```bash
+vibecode marketplace search "ai" --category ai-model --verified
+```
+
+#### Install from Marketplace
+
+```bash
+vibecode marketplace install <plugin-id>
+```
+
+**Options**:
+- `--version <version>` - Specific version
+- `--auto-enable` - Enable after installation
+
+**Example**:
+```bash
+vibecode marketplace install ollama-provider --auto-enable
+```
+
+#### Publish Plugin
+
+```bash
+vibecode marketplace publish <plugin-path>
+```
+
+**Options**:
+- `--version <version>` - Override version
+- `--changelog <text>` - Version changelog
+- `--dry-run` - Test without publishing
+
+**Example**:
+```bash
+vibecode marketplace publish ./my-plugin --version 1.0.1 --changelog "Bug fixes"
+```
+
+#### Update Plugin Listing
+
+```bash
+vibecode marketplace update <plugin-id>
+```
+
+Update metadata without publishing new version:
+
+**Example**:
+```bash
+vibecode marketplace update my-plugin \
+  --description "Updated description" \
+  --keywords "ai,llm,local" \
+  --homepage "https://example.com"
+```
+
+#### Unpublish Plugin
+
+```bash
+vibecode marketplace unpublish <plugin-id>
+```
+
+**Warning**: This removes the plugin from the marketplace. Users who already installed it can continue using it.
+
+**Example**:
+```bash
+vibecode marketplace unpublish my-plugin --version 1.0.0
+```
+
+### Monetization (Coming Soon)
+
+Future support for paid plugins:
+
+- **One-time purchase**: Pay once, use forever
+- **Subscription**: Monthly/yearly billing
+- **Freemium**: Free tier with paid upgrades
+- **Donations**: Optional support from users
+
+### Marketplace Guidelines
+
+All published plugins must follow these guidelines:
+
+1. **Quality Standards**:
+   - Comprehensive documentation
+   - Test coverage > 70%
+   - No known security vulnerabilities
+   - Active maintenance
+
+2. **Content Policy**:
+   - No malicious code
+   - No copyright violations
+   - No misleading descriptions
+   - No spam or duplicate listings
+
+3. **Naming Conventions**:
+   - Clear, descriptive names
+   - No trademark violations
+   - No impersonation
+
+4. **Versioning**:
+   - Follow semantic versioning
+   - Provide changelogs
+   - Maintain backwards compatibility when possible
+
+5. **Licensing**:
+   - Must include valid license
+   - Open source preferred
+   - License must match repository
+
+**Violations** may result in plugin removal or account suspension.
 
 ---
 
