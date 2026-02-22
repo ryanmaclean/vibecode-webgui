@@ -7,6 +7,8 @@ VibeCode is the AI-native IDE and Agent Orchestrator.
 
 ## 🚀 Quick Start
 
+> **📖 New to VibeCode?** See the [Environment Setup Guide](docs/ENVIRONMENT_SETUP_GUIDE.md) for detailed configuration instructions.
+
 ### 1. Install Dependencies
 ```bash
 brew install vfkit
