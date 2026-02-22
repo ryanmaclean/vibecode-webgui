@@ -41,7 +41,9 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/hooks/useAuth'
 import type { EnvironmentSettings } from '@/types/settings'
 import type { EnvironmentType } from '@/lib/environment/types'
 
@@ -172,6 +174,13 @@ export function EnvironmentPermissionsPanel({
   readOnly = false,
   className
 }: EnvironmentPermissionsPanelProps) {
+  // Check user authorization
+  const { user, isLoading } = useAuth()
+  const isAdmin = user?.role === 'admin'
+
+  // Prevent non-admins from modifying environment permissions
+  const effectiveReadOnly = readOnly || !isAdmin
+
   const [settings, setSettings] = useState<EnvironmentSettings>({
     ...DEFAULT_SETTINGS,
     ...initialSettings,
@@ -195,6 +204,30 @@ export function EnvironmentPermissionsPanel({
   const [isSaving, setIsSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [validationErrors, setValidationErrors] = useState<string[]>([])
+
+  // Show warning if user is not admin
+  if (!isLoading && !isAdmin && !readOnly) {
+    return (
+      <Card className={className}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Environment Permissions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Admin Access Required</AlertTitle>
+            <AlertDescription>
+              You need administrator privileges to view or modify environment permissions.
+              Contact your system administrator for access.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    )
+  }
 
   // Validate settings
   useEffect(() => {
@@ -225,29 +258,29 @@ export function EnvironmentPermissionsPanel({
     key: K,
     value: EnvironmentSettings[K]
   ) => {
-    if (readOnly) return
+    if (effectiveReadOnly) return
     setSettings(prev => ({ ...prev, [key]: value }))
     setSaveStatus('idle')
-  }, [readOnly])
+  }, [effectiveReadOnly])
 
   const updatePermissionsGlobal = useCallback(<K extends keyof EnvironmentSettings['permissions']>(
     key: K,
     value: EnvironmentSettings['permissions'][K]
   ) => {
-    if (readOnly) return
+    if (effectiveReadOnly) return
     setSettings(prev => ({
       ...prev,
       permissions: { ...prev.permissions, [key]: value }
     }))
     setSaveStatus('idle')
-  }, [readOnly])
+  }, [effectiveReadOnly])
 
   const updateEnvironmentPermission = useCallback((
     environment: 'development' | 'staging' | 'production',
     field: keyof EnvironmentPermissionConfig,
     value: boolean | PermissionDecision | string[]
   ) => {
-    if (readOnly) return
+    if (effectiveReadOnly) return
     setSettings(prev => ({
       ...prev,
       permissions: {
@@ -259,10 +292,10 @@ export function EnvironmentPermissionsPanel({
       },
     }))
     setSaveStatus('idle')
-  }, [readOnly])
+  }, [effectiveReadOnly])
 
   const handleSave = useCallback(async () => {
-    if (readOnly || !onSave || validationErrors.length > 0) return
+    if (effectiveReadOnly || !onSave || validationErrors.length > 0) return
 
     setIsSaving(true)
     setSaveStatus('idle')
@@ -276,10 +309,10 @@ export function EnvironmentPermissionsPanel({
     } finally {
       setIsSaving(false)
     }
-  }, [settings, onSave, readOnly, validationErrors])
+  }, [settings, onSave, effectiveReadOnly, validationErrors])
 
   const handleReset = useCallback(() => {
-    if (readOnly) return
+    if (effectiveReadOnly) return
     setSettings({
       ...DEFAULT_SETTINGS,
       ...initialSettings,
@@ -301,7 +334,7 @@ export function EnvironmentPermissionsPanel({
       },
     })
     setSaveStatus('idle')
-  }, [initialSettings, readOnly])
+  }, [initialSettings, effectiveReadOnly])
 
   const getDecisionConfig = (decision: PermissionDecision) => {
     return PERMISSION_DECISIONS.find(d => d.value === decision) || PERMISSION_DECISIONS[0]
@@ -349,7 +382,7 @@ export function EnvironmentPermissionsPanel({
                 id="detection-enabled"
                 checked={settings.detectionEnabled}
                 onCheckedChange={(checked) => updateSetting('detectionEnabled', checked)}
-                disabled={readOnly}
+                disabled={effectiveReadOnly}
                 aria-label="Toggle environment detection"
               />
             </div>
@@ -365,7 +398,7 @@ export function EnvironmentPermissionsPanel({
                 id="permissions-enabled"
                 checked={settings.permissions.enabled}
                 onCheckedChange={(checked) => updatePermissionsGlobal('enabled', checked)}
-                disabled={readOnly}
+                disabled={effectiveReadOnly}
                 aria-label="Toggle permission system"
               />
             </div>
@@ -381,7 +414,7 @@ export function EnvironmentPermissionsPanel({
                 id="show-badge"
                 checked={settings.showEnvironmentBadge}
                 onCheckedChange={(checked) => updateSetting('showEnvironmentBadge', checked)}
-                disabled={readOnly}
+                disabled={effectiveReadOnly}
                 aria-label="Toggle environment badge visibility"
               />
             </div>
@@ -397,7 +430,7 @@ export function EnvironmentPermissionsPanel({
                 id="warn-conflicts"
                 checked={settings.warnOnConflicts}
                 onCheckedChange={(checked) => updateSetting('warnOnConflicts', checked)}
-                disabled={readOnly}
+                disabled={effectiveReadOnly}
                 aria-label="Toggle conflict warnings"
               />
             </div>
@@ -406,8 +439,11 @@ export function EnvironmentPermissionsPanel({
               <Label htmlFor="fallback-env">Fallback Environment</Label>
               <Select
                 value={settings.fallbackEnvironment}
-                onValueChange={(value) => updateSetting('fallbackEnvironment', value as EnvironmentType)}
-                disabled={readOnly}
+                onValueChange={(value) => {
+                  // Type-safe: value is already one of the valid fallback environments
+                  updateSetting('fallbackEnvironment', value as Exclude<EnvironmentType, 'unknown'>);
+                }}
+                disabled={effectiveReadOnly}
               >
                 <SelectTrigger id="fallback-env" aria-label="Select fallback environment">
                   <SelectValue />
@@ -417,6 +453,7 @@ export function EnvironmentPermissionsPanel({
                   <SelectItem value="staging">Staging</SelectItem>
                   <SelectItem value="production">Production</SelectItem>
                   <SelectItem value="test">Test</SelectItem>
+                  {/* "unknown" is intentionally excluded - not a valid fallback */}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
@@ -429,7 +466,7 @@ export function EnvironmentPermissionsPanel({
               <Select
                 value={settings.permissions.unknownEnvironmentDefault}
                 onValueChange={(value) => updatePermissionsGlobal('unknownEnvironmentDefault', value as PermissionDecision)}
-                disabled={readOnly}
+                disabled={effectiveReadOnly}
               >
                 <SelectTrigger id="unknown-default" aria-label="Select default for unknown environments">
                   <SelectValue />
@@ -464,7 +501,7 @@ export function EnvironmentPermissionsPanel({
                 id="log-checks"
                 checked={settings.permissions.logChecks}
                 onCheckedChange={(checked) => updatePermissionsGlobal('logChecks', checked)}
-                disabled={readOnly}
+                disabled={effectiveReadOnly}
                 aria-label="Toggle permission check logging"
               />
             </div>
@@ -520,7 +557,7 @@ export function EnvironmentPermissionsPanel({
                           id={`${env.id}-enabled`}
                           checked={envSettings?.enabled ?? true}
                           onCheckedChange={(checked) => updateEnvironmentPermission(env.id, 'enabled', checked)}
-                          disabled={readOnly}
+                          disabled={effectiveReadOnly}
                           aria-label={`Toggle ${env.name} environment permissions`}
                         />
                       </div>
@@ -530,7 +567,7 @@ export function EnvironmentPermissionsPanel({
                         <Select
                           value={envSettings?.defaultDecision || 'denied'}
                           onValueChange={(value) => updateEnvironmentPermission(env.id, 'defaultDecision', value as PermissionDecision)}
-                          disabled={readOnly || !envSettings?.enabled}
+                          disabled={effectiveReadOnly || !envSettings?.enabled}
                         >
                           <SelectTrigger id={`${env.id}-decision`} aria-label={`Select default decision for ${env.name}`}>
                             <SelectValue>
@@ -608,7 +645,7 @@ export function EnvironmentPermissionsPanel({
         <Button
           variant="outline"
           onClick={handleReset}
-          disabled={readOnly || isSaving}
+          disabled={effectiveReadOnly || isSaving}
           className="gap-2"
         >
           <RotateCcw className="h-4 w-4" />
@@ -632,7 +669,7 @@ export function EnvironmentPermissionsPanel({
           {onSave && (
             <Button
               onClick={handleSave}
-              disabled={readOnly || isSaving || validationErrors.length > 0}
+              disabled={effectiveReadOnly || isSaving || validationErrors.length > 0}
               className="gap-2"
             >
               <Save className="h-4 w-4" />

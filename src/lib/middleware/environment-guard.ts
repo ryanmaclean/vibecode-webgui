@@ -67,7 +67,7 @@ export interface EnvironmentGuardConfig {
 
 const DEFAULT_CONFIG: Required<EnvironmentGuardConfig> = {
   enabled: true,
-  bypassInTest: true,
+  bypassInTest: false, // SECURITY: Disabled by default to prevent bypass attacks
   logChecks: true,
   hitlManager: undefined as unknown as HITLManager, // Will be set via setHITLManager
 };
@@ -176,18 +176,34 @@ export async function checkAgentOperation(
   const envContext = getEnvironmentContext();
   const environment = envContext?.current?.environment || 'unknown';
 
-  // Bypass checks in test environment if configured
+  // Bypass checks in test environment if configured (with multi-signal verification)
   if (globalConfig.bypassInTest && environment === 'test') {
-    if (globalConfig.logChecks) {
-      console.log('[EnvironmentGuard] Bypassing check in test environment:', action);
+    // SECURITY: Verify this is actually a test environment with high confidence
+    const confidence = envContext?.current?.confidence || 'low';
+    const signals = envContext?.detectionResult?.signals || [];
+    const testSignals = signals.filter(s => s.indicates === 'test');
+
+    // Require high confidence from multiple independent sources
+    if (confidence !== 'high' || testSignals.length < 2) {
+      if (globalConfig.logChecks) {
+        console.warn(
+          '[EnvironmentGuard] Test bypass denied - insufficient confidence',
+          { confidence, testSignalCount: testSignals.length }
+        );
+      }
+      // Continue with normal permission checks instead of bypassing
+    } else {
+      if (globalConfig.logChecks) {
+        console.log('[EnvironmentGuard] Test bypass granted (verified):', action);
+      }
+      return {
+        allowed: true,
+        requiresApproval: false,
+        reason: 'Test environment - checks bypassed (verified with high confidence)',
+        environment,
+        checkedAt,
+      };
     }
-    return {
-      allowed: true,
-      requiresApproval: false,
-      reason: 'Test environment - checks bypassed',
-      environment,
-      checkedAt,
-    };
   }
 
   // Initialize permission manager if not already done

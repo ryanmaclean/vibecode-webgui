@@ -6,6 +6,22 @@
 import { EnvironmentDetector, getEnvironmentDetector, detectEnvironment } from '../detector';
 import { EnvironmentType, DetectionConfidence } from '../types';
 
+/**
+ * Helper function to set environment variables
+ * Uses Object.defineProperty to avoid read-only property errors
+ */
+function setEnv(key: string, value: string | undefined) {
+  if (value === undefined) {
+    delete process.env[key];
+  } else {
+    Object.defineProperty(process.env, key, {
+      value,
+      configurable: true,
+      writable: true,
+    });
+  }
+}
+
 describe('Environment Detection Integration Tests', () => {
   let originalEnv: NodeJS.ProcessEnv;
 
@@ -41,7 +57,7 @@ describe('Environment Detection Integration Tests', () => {
 
   describe('NODE_ENV detection', () => {
     it('detects development from NODE_ENV=development', () => {
-      process.env.NODE_ENV = 'development';
+      setEnv('NODE_ENV', 'development');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -54,7 +70,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects development from NODE_ENV=dev', () => {
-      process.env.NODE_ENV = 'dev';
+      setEnv('NODE_ENV', 'dev');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -63,7 +79,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects production from NODE_ENV=production', () => {
-      process.env.NODE_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -74,7 +90,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects production from NODE_ENV=prod', () => {
-      process.env.NODE_ENV = 'prod';
+      setEnv('NODE_ENV', 'prod');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -83,7 +99,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects staging from NODE_ENV=staging', () => {
-      process.env.NODE_ENV = 'staging';
+      setEnv('NODE_ENV', 'staging');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -92,7 +108,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects staging from NODE_ENV=stg', () => {
-      process.env.NODE_ENV = 'stg';
+      setEnv('NODE_ENV', 'stg');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -101,7 +117,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects test from NODE_ENV=test', () => {
-      process.env.NODE_ENV = 'test';
+      setEnv('NODE_ENV', 'test');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -110,7 +126,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('handles case-insensitive NODE_ENV values', () => {
-      process.env.NODE_ENV = 'PRODUCTION';
+      setEnv('NODE_ENV', 'PRODUCTION');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -124,7 +140,7 @@ describe('Environment Detection Integration Tests', () => {
 
   describe('DD_ENV detection', () => {
     it('detects development from DD_ENV=development', () => {
-      process.env.DD_ENV = 'development';
+      setEnv('DD_ENV', 'development');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -133,7 +149,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects production from DD_ENV=production', () => {
-      process.env.DD_ENV = 'production';
+      setEnv('DD_ENV', 'production');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -142,7 +158,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects staging from DD_ENV=staging', () => {
-      process.env.DD_ENV = 'staging';
+      setEnv('DD_ENV', 'staging');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -150,7 +166,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects test from DD_ENV=test', () => {
-      process.env.DD_ENV = 'test';
+      setEnv('DD_ENV', 'test');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -164,8 +180,8 @@ describe('Environment Detection Integration Tests', () => {
 
   describe('multi-signal priority', () => {
     it('NODE_ENV takes priority over DD_ENV (appears first in list)', () => {
-      process.env.NODE_ENV = 'production';
-      process.env.DD_ENV = 'development';
+      setEnv('NODE_ENV', 'production');
+      setEnv('DD_ENV', 'development');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -176,7 +192,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('DD_ENV is used when NODE_ENV is absent', () => {
-      process.env.DD_ENV = 'staging';
+      setEnv('DD_ENV', 'staging');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -185,8 +201,8 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects conflicts between NODE_ENV and DD_ENV', () => {
-      process.env.NODE_ENV = 'development';
-      process.env.DD_ENV = 'production';
+      setEnv('NODE_ENV', 'development');
+      setEnv('DD_ENV', 'production');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -197,8 +213,8 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('higher priority signal wins when multiple agree', () => {
-      process.env.NODE_ENV = 'production';
-      process.env.DD_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
+      setEnv('DD_ENV', 'production');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -215,7 +231,7 @@ describe('Environment Detection Integration Tests', () => {
 
   describe('other environment variable detection', () => {
     it('detects from ENVIRONMENT variable', () => {
-      process.env.ENVIRONMENT = 'production';
+      setEnv('ENVIRONMENT', 'production');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -224,7 +240,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects from APP_ENV variable', () => {
-      process.env.APP_ENV = 'staging';
+      setEnv('APP_ENV', 'staging');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -233,7 +249,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects from VERCEL_ENV variable', () => {
-      process.env.VERCEL_ENV = 'production';
+      setEnv('VERCEL_ENV', 'production');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -242,7 +258,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects from RAILWAY_ENVIRONMENT variable', () => {
-      process.env.RAILWAY_ENVIRONMENT = 'development';
+      setEnv('RAILWAY_ENVIRONMENT', 'development');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -257,7 +273,7 @@ describe('Environment Detection Integration Tests', () => {
 
   describe('hostname detection', () => {
     it('detects development from localhost', () => {
-      process.env.HOSTNAME = 'localhost';
+      setEnv('HOSTNAME', 'localhost');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -267,7 +283,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects development from dev- prefix', () => {
-      process.env.HOSTNAME = 'dev-server-01';
+      setEnv('HOSTNAME', 'dev-server-01');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -275,7 +291,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects staging from staging- prefix', () => {
-      process.env.HOSTNAME = 'staging-web-01';
+      setEnv('HOSTNAME', 'staging-web-01');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -283,7 +299,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects production from prod- prefix', () => {
-      process.env.HOSTNAME = 'prod-api-01';
+      setEnv('HOSTNAME', 'prod-api-01');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -291,7 +307,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects test from test- prefix', () => {
-      process.env.HOSTNAME = 'test-runner-01';
+      setEnv('HOSTNAME', 'test-runner-01');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -305,8 +321,8 @@ describe('Environment Detection Integration Tests', () => {
 
   describe('confidence level determination', () => {
     it('returns high confidence when multiple high-confidence signals agree', () => {
-      process.env.NODE_ENV = 'production';
-      process.env.DD_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
+      setEnv('DD_ENV', 'production');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -315,7 +331,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('returns medium confidence for single high-confidence signal', () => {
-      process.env.NODE_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -323,7 +339,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('returns medium confidence for hostname-only detection', () => {
-      process.env.HOSTNAME = 'staging-server';
+      setEnv('HOSTNAME', 'staging-server');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -361,7 +377,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('ignores unrecognized environment values', () => {
-      process.env.NODE_ENV = 'foobar';
+      setEnv('NODE_ENV', 'foobar');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -376,7 +392,7 @@ describe('Environment Detection Integration Tests', () => {
 
   describe('caching behavior', () => {
     it('caches detection results', () => {
-      process.env.NODE_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
       const detector = new EnvironmentDetector();
 
       const result1 = detector.detect();
@@ -386,11 +402,11 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('refresh bypasses cache', () => {
-      process.env.NODE_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
       const detector = new EnvironmentDetector();
 
       const result1 = detector.detect();
-      process.env.NODE_ENV = 'development';
+      setEnv('NODE_ENV', 'development');
       const result2 = detector.refresh();
 
       expect(result1).not.toBe(result2);
@@ -405,7 +421,7 @@ describe('Environment Detection Integration Tests', () => {
 
   describe('getContext integration', () => {
     it('returns complete environment context for production', () => {
-      process.env.NODE_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
       const detector = new EnvironmentDetector();
       const context = detector.getContext();
 
@@ -418,7 +434,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('returns complete environment context for development', () => {
-      process.env.NODE_ENV = 'development';
+      setEnv('NODE_ENV', 'development');
       const detector = new EnvironmentDetector();
       const context = detector.getContext();
 
@@ -429,7 +445,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('returns complete environment context for staging', () => {
-      process.env.NODE_ENV = 'staging';
+      setEnv('NODE_ENV', 'staging');
       const detector = new EnvironmentDetector();
       const context = detector.getContext();
 
@@ -440,7 +456,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('treats test environment as development', () => {
-      process.env.NODE_ENV = 'test';
+      setEnv('NODE_ENV', 'test');
       const detector = new EnvironmentDetector();
       const context = detector.getContext();
 
@@ -455,7 +471,7 @@ describe('Environment Detection Integration Tests', () => {
 
   describe('convenience function integration', () => {
     it('detectEnvironment works without manual instantiation', () => {
-      process.env.NODE_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
       const result = detectEnvironment();
 
       expect(result.environment).toBe('production');
@@ -482,9 +498,9 @@ describe('Environment Detection Integration Tests', () => {
 
   describe('complex multi-signal scenarios', () => {
     it('correctly handles 3+ agreeing signals with high confidence', () => {
-      process.env.NODE_ENV = 'production';
-      process.env.DD_ENV = 'production';
-      process.env.ENVIRONMENT = 'production';
+      setEnv('NODE_ENV', 'production');
+      setEnv('DD_ENV', 'production');
+      setEnv('ENVIRONMENT', 'production');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -495,9 +511,9 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('detects conflicts with multiple conflicting signals', () => {
-      process.env.NODE_ENV = 'production';
-      process.env.DD_ENV = 'development';
-      process.env.HOSTNAME = 'staging-server';
+      setEnv('NODE_ENV', 'production');
+      setEnv('DD_ENV', 'development');
+      setEnv('HOSTNAME', 'staging-server');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -507,8 +523,8 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('handles mixed confidence levels correctly', () => {
-      process.env.NODE_ENV = 'production'; // high confidence
-      process.env.HOSTNAME = 'dev-machine'; // medium confidence, different environment
+      setEnv('NODE_ENV', 'production'); // high confidence
+      setEnv('HOSTNAME', 'dev-machine'); // medium confidence, different environment
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -523,7 +539,7 @@ describe('Environment Detection Integration Tests', () => {
 
   describe('edge cases', () => {
     it('handles empty string environment variables', () => {
-      process.env.NODE_ENV = '';
+      setEnv('NODE_ENV', '');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -531,7 +547,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('handles whitespace-only environment variables', () => {
-      process.env.NODE_ENV = '  ';
+      setEnv('NODE_ENV', '  ');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -539,7 +555,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('trims whitespace from environment variables', () => {
-      process.env.NODE_ENV = '  production  ';
+      setEnv('NODE_ENV', '  production  ');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 
@@ -547,7 +563,7 @@ describe('Environment Detection Integration Tests', () => {
     });
 
     it('includes timestamp in detection result', () => {
-      process.env.NODE_ENV = 'production';
+      setEnv('NODE_ENV', 'production');
       const detector = new EnvironmentDetector();
       const result = detector.detect();
 

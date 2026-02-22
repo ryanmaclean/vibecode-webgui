@@ -328,16 +328,28 @@ export class SettingsManager {
           ...DEFAULT_ENVIRONMENT_SETTINGS.permissions,
           ...partial.environment?.permissions,
           development: {
-            ...DEFAULT_ENVIRONMENT_SETTINGS.permissions.development,
-            ...partial.environment?.permissions?.development,
+            enabled: partial.environment?.permissions?.development?.enabled ??
+                     DEFAULT_ENVIRONMENT_SETTINGS.permissions.development.enabled,
+            defaultDecision: partial.environment?.permissions?.development?.defaultDecision ??
+                             DEFAULT_ENVIRONMENT_SETTINGS.permissions.development.defaultDecision,
+            approvers: partial.environment?.permissions?.development?.approvers ??
+                       DEFAULT_ENVIRONMENT_SETTINGS.permissions.development.approvers,
           },
           staging: {
-            ...DEFAULT_ENVIRONMENT_SETTINGS.permissions.staging,
-            ...partial.environment?.permissions?.staging,
+            enabled: partial.environment?.permissions?.staging?.enabled ??
+                     DEFAULT_ENVIRONMENT_SETTINGS.permissions.staging.enabled,
+            defaultDecision: partial.environment?.permissions?.staging?.defaultDecision ??
+                             DEFAULT_ENVIRONMENT_SETTINGS.permissions.staging.defaultDecision,
+            approvers: partial.environment?.permissions?.staging?.approvers ??
+                       DEFAULT_ENVIRONMENT_SETTINGS.permissions.staging.approvers,
           },
           production: {
-            ...DEFAULT_ENVIRONMENT_SETTINGS.permissions.production,
-            ...partial.environment?.permissions?.production,
+            enabled: partial.environment?.permissions?.production?.enabled ??
+                     DEFAULT_ENVIRONMENT_SETTINGS.permissions.production.enabled,
+            defaultDecision: partial.environment?.permissions?.production?.defaultDecision ??
+                             DEFAULT_ENVIRONMENT_SETTINGS.permissions.production.defaultDecision,
+            approvers: partial.environment?.permissions?.production?.approvers ??
+                       DEFAULT_ENVIRONMENT_SETTINGS.permissions.production.approvers,
           },
         },
       },
