@@ -85,7 +85,7 @@ jobs:
           echo "p99_duration=$p99_duration" >> $GITHUB_OUTPUT
 
           # Per-workflow breakdown
-          jq -r '.workflow_runs | group_by(.name) |
+          jq -c '.workflow_runs | group_by(.name) |
             map({
               workflow: .[0].name,
               total: length,
@@ -99,11 +99,15 @@ jobs:
           echo "Workflow metrics collected successfully"
 
       - name: Send Datadog Metrics - Overview
-        if: always() && secrets.DATADOG_API_KEY != ''
+        if: always()
         env:
           DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
         run: |
           set -euo pipefail
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "ℹ️ DATADOG_API_KEY is not configured; skipping."
+            exit 0
+          fi
 
           current_timestamp=$(date +%s)
 
@@ -221,11 +225,15 @@ jobs:
         continue-on-error: true
 
       - name: Send Datadog Metrics - Per Workflow
-        if: always() && secrets.DATADOG_API_KEY != ''
+        if: always()
         env:
           DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
         run: |
           set -euo pipefail
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "ℹ️ DATADOG_API_KEY is not configured; skipping."
+            exit 0
+          fi
 
           current_timestamp=$(date +%s)
 
@@ -233,6 +241,7 @@ jobs:
           if [ -f per_workflow_metrics.json ]; then
             while IFS= read -r workflow_data; do
               workflow_name=$(echo "$workflow_data" | jq -r '.workflow')
+              workflow_name_escaped=$(printf '%s' "$workflow_name" | sed 's/\\/\\\\/g; s/"/\\"/g')
               total=$(echo "$workflow_data" | jq -r '.total')
               successful=$(echo "$workflow_data" | jq -r '.successful')
               failed=$(echo "$workflow_data" | jq -r '.failed')
@@ -256,7 +265,7 @@ jobs:
                     "type": "count",
                     "points": [[$current_timestamp, $total]],
                     "tags": [
-                      "workflow:${workflow_name}",
+                      "workflow:${workflow_name_escaped}",
                       "repository:${{ github.repository }}",
                       "service:${{ env.DD_SERVICE }}",
                       "env:${{ env.DD_ENV }}"
@@ -267,7 +276,7 @@ jobs:
                     "type": "count",
                     "points": [[$current_timestamp, $successful]],
                     "tags": [
-                      "workflow:${workflow_name}",
+                      "workflow:${workflow_name_escaped}",
                       "repository:${{ github.repository }}",
                       "service:${{ env.DD_SERVICE }}",
                       "env:${{ env.DD_ENV }}"
@@ -278,7 +287,7 @@ jobs:
                     "type": "count",
                     "points": [[$current_timestamp, $failed]],
                     "tags": [
-                      "workflow:${workflow_name}",
+                      "workflow:${workflow_name_escaped}",
                       "repository:${{ github.repository }}",
                       "service:${{ env.DD_SERVICE }}",
                       "env:${{ env.DD_ENV }}"
@@ -289,7 +298,7 @@ jobs:
                     "type": "gauge",
                     "points": [[$current_timestamp, $success_rate]],
                     "tags": [
-                      "workflow:${workflow_name}",
+                      "workflow:${workflow_name_escaped}",
                       "repository:${{ github.repository }}",
                       "service:${{ env.DD_SERVICE }}",
                       "env:${{ env.DD_ENV }}"
@@ -300,7 +309,7 @@ jobs:
                     "type": "gauge",
                     "points": [[$current_timestamp, $avg_duration]],
                     "tags": [
-                      "workflow:${workflow_name}",
+                      "workflow:${workflow_name_escaped}",
                       "repository:${{ github.repository }}",
                       "service:${{ env.DD_SERVICE }}",
                       "env:${{ env.DD_ENV }}"
@@ -317,11 +326,15 @@ jobs:
         continue-on-error: true
 
       - name: Send Datadog Event - Weekly Summary
-        if: github.event.schedule == '0 9 * * MON' && secrets.DATADOG_API_KEY != ''
+        if: github.event.schedule == '0 9 * * MON'
         env:
           DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
         run: |
           set -euo pipefail
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "ℹ️ DATADOG_API_KEY is not configured; skipping."
+            exit 0
+          fi
 
           current_timestamp=$(date +%s)
 
@@ -349,11 +362,15 @@ jobs:
         continue-on-error: true
 
       - name: Check for Anomalies and Alert
-        if: always() && secrets.DATADOG_API_KEY != ''
+        if: always()
         env:
           DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
         run: |
           set -euo pipefail
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "ℹ️ DATADOG_API_KEY is not configured; skipping."
+            exit 0
+          fi
 
           current_timestamp=$(date +%s)
 

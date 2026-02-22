@@ -25,6 +25,7 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
@@ -32,7 +33,7 @@ jobs:
 
     strategy:
       matrix:
-        profile: ${{ fromJSON(format('["{0}"]', inputs.profiles)) }}
+        profile: ${{ fromJSON(format('["{0}"]', replace(inputs.profiles, ',', '","'))) }}
 
     steps:
       - name: Checkout repository
@@ -178,6 +179,7 @@ jobs:
 
   summary:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: build-and-push
     if: always()
     steps:

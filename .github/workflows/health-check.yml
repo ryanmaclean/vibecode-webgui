@@ -77,7 +77,12 @@ jobs:
 
             if [ "$total_runs" -eq 0 ]; then
               echo "ℹ️  No recent runs for $workflow_name"
-              echo "{\"workflow_name\":\"$workflow_name\",\"workflow_id\":$workflow_id,\"workflow_path\":\"$workflow_path\",\"status\":\"no_runs\",\"success_rate\":0,\"total_runs\":0,\"last_run_time\":null,\"last_run_conclusion\":null,\"last_run_status\":null}" >> workflow_health.jsonl
+              jq -cn \
+                --arg workflow_name "$workflow_name" \
+                --argjson workflow_id "$workflow_id" \
+                --arg workflow_path "$workflow_path" \
+                '{"workflow_name":$workflow_name,"workflow_id":$workflow_id,"workflow_path":$workflow_path,"status":"no_runs","success_rate":0,"total_runs":0,"last_run_time":null,"last_run_conclusion":null,"last_run_status":null}' \
+                >> workflow_health.jsonl
               continue
             fi
 
@@ -121,7 +126,22 @@ jobs:
             fi
 
             # Output workflow health data to JSONL file
-            echo "{\"workflow_name\":\"$workflow_name\",\"workflow_id\":$workflow_id,\"workflow_path\":\"$workflow_path\",\"status\":\"$health_status\",\"success_rate\":$success_rate,\"total_runs\":$total_runs,\"successful\":$successful,\"failed\":$failed,\"cancelled\":$cancelled,\"last_run_time\":\"$last_run_time\",\"last_run_conclusion\":\"$last_run_conclusion\",\"last_run_status\":\"$last_run_status\",\"last_run_duration\":$last_run_duration}" >> workflow_health.jsonl
+            jq -cn \
+              --arg workflow_name "$workflow_name" \
+              --argjson workflow_id "$workflow_id" \
+              --arg workflow_path "$workflow_path" \
+              --arg status "$health_status" \
+              --argjson success_rate "$success_rate" \
+              --argjson total_runs "$total_runs" \
+              --argjson successful "$successful" \
+              --argjson failed "$failed" \
+              --argjson cancelled "$cancelled" \
+              --arg last_run_time "$last_run_time" \
+              --arg last_run_conclusion "$last_run_conclusion" \
+              --arg last_run_status "$last_run_status" \
+              --argjson last_run_duration "$last_run_duration" \
+              '{"workflow_name":$workflow_name,"workflow_id":$workflow_id,"workflow_path":$workflow_path,"status":$status,"success_rate":$success_rate,"total_runs":$total_runs,"successful":$successful,"failed":$failed,"cancelled":$cancelled,"last_run_time":$last_run_time,"last_run_conclusion":$last_run_conclusion,"last_run_status":$last_run_status,"last_run_duration":$last_run_duration}' \
+              >> workflow_health.jsonl
 
             echo "  ✅ Success rate: ${success_rate}% ($successful/$total_runs)"
             echo "  📊 Status: $health_status"
@@ -187,11 +207,15 @@ jobs:
           echo "📈 Overall Health Score: ${overall_score}/100"
 
       - name: Send Datadog Metrics - Health Status
-        if: always() && secrets.DATADOG_API_KEY != ''
+        if: always()
         env:
           DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
         run: |
           set -euo pipefail
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "ℹ️ DATADOG_API_KEY is not configured; skipping."
+            exit 0
+          fi
 
           current_timestamp=$(date +%s)
 
@@ -270,11 +294,15 @@ jobs:
         continue-on-error: true
 
       - name: Send Datadog Metrics - Per Workflow Health
-        if: always() && secrets.DATADOG_API_KEY != ''
+        if: always()
         env:
           DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
         run: |
           set -euo pipefail
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "ℹ️ DATADOG_API_KEY is not configured; skipping."
+            exit 0
+          fi
 
           current_timestamp=$(date +%s)
 
@@ -282,6 +310,7 @@ jobs:
           if [ -f workflow_health.jsonl ]; then
             while IFS= read -r workflow_data; do
               workflow_name=$(echo "$workflow_data" | jq -r '.workflow_name')
+              workflow_name_escaped=$(printf '%s' "$workflow_name" | sed 's/\\/\\\\/g; s/"/\\"/g')
               success_rate=$(echo "$workflow_data" | jq -r '.success_rate')
               total_runs=$(echo "$workflow_data" | jq -r '.total_runs')
               failed=$(echo "$workflow_data" | jq -r '.failed')
@@ -310,7 +339,7 @@ jobs:
                     "type": "gauge",
                     "points": [[$current_timestamp, $health_score]],
                     "tags": [
-                      "workflow:${workflow_name}",
+                      "workflow:${workflow_name_escaped}",
                       "status:${health_status}",
                       "repository:${{ github.repository }}",
                       "service:${{ env.DD_SERVICE }}",
@@ -322,7 +351,7 @@ jobs:
                     "type": "gauge",
                     "points": [[$current_timestamp, $success_rate]],
                     "tags": [
-                      "workflow:${workflow_name}",
+                      "workflow:${workflow_name_escaped}",
                       "repository:${{ github.repository }}",
                       "service:${{ env.DD_SERVICE }}",
                       "env:${{ env.DD_ENV }}"
@@ -333,7 +362,7 @@ jobs:
                     "type": "gauge",
                     "points": [[$current_timestamp, $failed]],
                     "tags": [
-                      "workflow:${workflow_name}",
+                      "workflow:${workflow_name_escaped}",
                       "repository:${{ github.repository }}",
                       "service:${{ env.DD_SERVICE }}",
                       "env:${{ env.DD_ENV }}"
@@ -360,11 +389,15 @@ jobs:
         continue-on-error: true
 
       - name: Send Datadog Event - Health Report
-        if: always() && secrets.DATADOG_API_KEY != ''
+        if: always()
         env:
           DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
         run: |
           set -euo pipefail
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "ℹ️ DATADOG_API_KEY is not configured; skipping."
+            exit 0
+          fi
 
           current_timestamp=$(date +%s)
           overall_score=${{ steps.health-score.outputs.overall_score }}

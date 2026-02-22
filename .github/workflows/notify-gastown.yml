@@ -5,13 +5,13 @@ on:
     workflows:
       - CI
       - Build
-      - main-branch-ci
-      - pr-checks
-      - vibecode-tests
-      - ci-simplified
-      - build-and-push-image
-      - release
-      - codeserver-profiles
+      - Main Branch CI (Lightweight)
+      - PR Checks
+      - VibeCode Tests
+      - VibeCode CI/CD Pipeline - Simplified
+      - Build and Push Container Image
+      - Release
+      - Build Codeserver Profiles
     types:
       - completed
 
@@ -174,11 +174,15 @@ jobs:
           echo "$error_summary"
 
       - name: Send Datadog Metrics - Workflow Completion
-        if: always() && secrets.DATADOG_API_KEY != ''
+        if: always()
         env:
           DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
         run: |
           set -euo pipefail
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "ℹ️ DATADOG_API_KEY is not configured; skipping."
+            exit 0
+          fi
 
           current_timestamp=$(date +%s)
           workflow_name="${{ steps.workflow-info.outputs.workflow_name }}"
@@ -245,11 +249,15 @@ jobs:
         continue-on-error: true
 
       - name: Send Datadog Event - Failure Alert
-        if: github.event.workflow_run.conclusion == 'failure' && secrets.DATADOG_API_KEY != ''
+        if: github.event.workflow_run.conclusion == 'failure'
         env:
           DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
         run: |
           set -euo pipefail
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "ℹ️ DATADOG_API_KEY is not configured; skipping."
+            exit 0
+          fi
 
           current_timestamp=$(date +%s)
           workflow_name="${{ steps.workflow-info.outputs.workflow_name }}"
@@ -258,6 +266,7 @@ jobs:
           branch="${{ steps.workflow-info.outputs.head_branch }}"
           actor="${{ steps.workflow-info.outputs.actor }}"
           commit_message="${{ steps.workflow-info.outputs.commit_message }}"
+          commit_message_escaped=$(printf '%s' "$commit_message" | sed 's/\\/\\\\/g; s/"/\\"/g')
           duration="${{ steps.workflow-info.outputs.duration }}"
           failed_job_count="${{ steps.failure-details.outputs.failed_job_count }}"
           error_summary="${{ steps.failure-details.outputs.error_summary }}"
@@ -276,7 +285,7 @@ jobs:
             -d @- << EOF
           {
             "title": "❌ Workflow Failed: ${workflow_name}",
-            "text": "## Workflow Failure Alert\n\n**Workflow**: ${workflow_name}\n**Repository**: ${{ steps.workflow-info.outputs.repository }}\n**Branch**: ${branch}\n**Commit**: ${short_sha}\n**Author**: ${actor}\n**Duration**: ${duration}s\n\n**Commit Message**:\n\`\`\`\n${commit_message}\n\`\`\`${error_details}\n\n**Actions Required**:\n1. [View Workflow Logs](${workflow_url})\n2. Check for test failures or build errors\n3. Review recent commits for issues\n4. Fix and re-run workflow\n\n---\n*Automated alert from GitHub Actions CI/CD monitoring*",
+            "text": "## Workflow Failure Alert\n\n**Workflow**: ${workflow_name}\n**Repository**: ${{ steps.workflow-info.outputs.repository }}\n**Branch**: ${branch}\n**Commit**: ${short_sha}\n**Author**: ${actor}\n**Duration**: ${duration}s\n\n**Commit Message**:\n\`\`\`\n${commit_message_escaped}\n\`\`\`${error_details}\n\n**Actions Required**:\n1. [View Workflow Logs](${workflow_url})\n2. Check for test failures or build errors\n3. Review recent commits for issues\n4. Fix and re-run workflow\n\n---\n*Automated alert from GitHub Actions CI/CD monitoring*",
             "tags": [
               "source:github-actions",
               "workflow:${workflow_name}",
@@ -298,11 +307,15 @@ jobs:
         continue-on-error: true
 
       - name: Send Datadog Metric - Failure Counter
-        if: github.event.workflow_run.conclusion == 'failure' && secrets.DATADOG_API_KEY != ''
+        if: github.event.workflow_run.conclusion == 'failure'
         env:
           DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
         run: |
           set -euo pipefail
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "ℹ️ DATADOG_API_KEY is not configured; skipping."
+            exit 0
+          fi
 
           current_timestamp=$(date +%s)
           workflow_name="${{ steps.workflow-info.outputs.workflow_name }}"

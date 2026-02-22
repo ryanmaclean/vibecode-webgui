@@ -195,7 +195,6 @@ jobs:
         run: |
           npm test -- --passWithNoTests \
             --testPathIgnorePatterns="tests/e2e|tests/k8s" \
-            --maxWorkers=2 \
             --runInBand
         env:
           NODE_OPTIONS: -r dd-trace/ci/init
