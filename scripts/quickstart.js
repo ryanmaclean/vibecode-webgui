@@ -161,6 +161,66 @@ function runSetup(dryRun) {
 }
 
 /**
+ * Copy sample project to user's home directory
+ */
+function copySampleProject(dryRun) {
+  const os = require('os');
+  const sourceDir = path.join(__dirname, '..', 'templates', 'sample-project');
+  const targetDir = path.join(os.homedir(), 'vibecode-sample');
+
+  if (!fs.existsSync(sourceDir)) {
+    log.warn('Sample project template not found, skipping');
+    return true;
+  }
+
+  if (fs.existsSync(targetDir)) {
+    log.info(`Sample project already exists at ${targetDir}`);
+    return true;
+  }
+
+  if (dryRun) {
+    log.info(`Would copy sample project to ${targetDir}`);
+    log.info('  - Copy TypeScript project structure');
+    log.info('  - Copy sample API endpoint');
+    log.info('  - Copy pre-configured tasks');
+    log.info('  - Ready for AI code completion demo');
+    return true;
+  }
+
+  try {
+    log.step('Creating sample project...');
+
+    // Recursively copy directory
+    const copyDir = (src, dest) => {
+      if (!fs.existsSync(dest)) {
+        fs.mkdirSync(dest, { recursive: true });
+      }
+
+      const entries = fs.readdirSync(src, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const srcPath = path.join(src, entry.name);
+        const destPath = path.join(dest, entry.name);
+
+        if (entry.isDirectory()) {
+          copyDir(srcPath, destPath);
+        } else {
+          fs.copyFileSync(srcPath, destPath);
+        }
+      }
+    };
+
+    copyDir(sourceDir, targetDir);
+    log.success(`Sample project created at ${targetDir}`);
+    log.info('Try it: cd ~/vibecode-sample && npm install && npm run build');
+    return true;
+  } catch (error) {
+    log.error('Failed to create sample project: ' + error.message);
+    return false;
+  }
+}
+
+/**
  * Launch VibeCode services
  */
 function launchServices(dryRun) {
@@ -271,6 +331,13 @@ ${colors.cyan}Steps to execute:${colors.reset}
     console.log(`      - Verify optional dependencies (sharp, lightningcss)`);
     console.log(`      - Validate setup completion`);
     console.log(`      - Display next steps\n`);
+
+    console.log(`  ${stepNum++}. ${colors.yellow}Create sample project${colors.reset}`);
+    console.log(`      Copy to: ~/vibecode-sample`);
+    console.log(`      - Copy TypeScript project structure`);
+    console.log(`      - Copy sample API endpoint`);
+    console.log(`      - Copy pre-configured tasks`);
+    console.log(`      - Ready for AI code completion demo\n`);
   }
 
   console.log(`  ${stepNum++}. ${colors.yellow}Install dependencies${colors.reset}`);
@@ -362,6 +429,13 @@ async function main() {
     }
   } else if (args.skipSetup) {
     log.info('Skipping setup (--skip-setup flag)');
+  }
+
+  // Step 3.5: Create sample project for first-time users
+  if (isFirst) {
+    if (!copySampleProject(args.dryRun)) {
+      log.warn('Failed to create sample project, continuing anyway');
+    }
   }
 
   // Step 4: Install dependencies
