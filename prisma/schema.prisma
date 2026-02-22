@@ -635,6 +635,43 @@ model AgentSessionHandoff {
   @@map("agent_session_handoffs")
 }
 
+// =====================================
+// Compliance Audit Logging (Issue #046)
+// Immutable audit trail for regulatory compliance
+// ============================================
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  timestamp   DateTime @default(now())
+  user_id     Int?     // Nullable for system/anonymous actions
+  action      String   // Action performed (e.g., "user.login", "file.create", "project.delete")
+  resource    String   // Resource type and ID (e.g., "project:123", "file:456")
+  ip_address  String?  // Client IP address
+  user_agent  String?  // Client user agent string
+  metadata    Json?    // Additional context (request params, before/after states, etc.)
+  hash        String   // SHA-256 hash of (previous_hash + record_data) for tamper evidence
+  previous_hash String? @map("previous_hash") // Reference to previous log hash for chain integrity
+
+  // Compliance-specific fields
+  severity    String   @default("info") // info, warning, critical
+  category    String   @default("general") // auth, data_access, admin, system
+  outcome     String   @default("success") // success, failure, error
+  session_id  String?  @map("session_id") // Links to user session for correlation
+
+  @@index([timestamp])
+  @@index([user_id])
+  @@index([action])
+  @@index([resource])
+  @@index([category])
+  @@index([severity])
+  @@index([user_id, timestamp]) // For user activity timeline
+  @@index([action, timestamp]) // For action-based queries
+  @@index([category, severity, timestamp]) // For compliance reporting
+  @@index([session_id]) // For session correlation
+  @@index([hash]) // For integrity verification
+  @@map("audit_logs")
+}
+
 // Plugin System
 model Plugin {
   id           String   @id @default(uuid())

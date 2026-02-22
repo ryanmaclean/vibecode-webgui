@@ -6,6 +6,7 @@
 
 import { NextResponse } from 'next/server'
 import { withAIAuth, AuthenticatedRequest } from '@/lib/auth/middleware'
+import { withAIAuditLogging } from '@/lib/audit/middleware'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
 import { cache, CacheTTL } from '@/lib/cache/unified-cache-client'
@@ -472,9 +473,10 @@ async function handleGET(request: AuthenticatedRequest): Promise<NextResponse> {
   }), rateLimitInfo);
 }
 
-// Export authenticated handlers
-export const POST = withAIAuth(handlePOST);
-export const GET = withAIAuth(handleGET);
+// Export authenticated handlers with audit logging
+// Compliance: SOC2/HIPAA audit trail for AI operations
+export const POST = withAIAuth(withAIAuditLogging(handlePOST));
+export const GET = withAIAuth(withAIAuditLogging(handleGET));
 
 // Helper function to generate consistent cache keys for AI chat requests
 function generateAIChatCacheKey(
