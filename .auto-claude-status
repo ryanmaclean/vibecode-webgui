@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "058-add-resource-monitoring-dashboards-following-conne",
+  "spec": "059-add-vector-embedding-similarity-explorer",
   "state": "building",
   "subtasks": {
-    "completed": 17,
-    "total": 18,
+    "completed": 2,
+    "total": 5,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Integration and Navigation",
+    "current": "Vector Explorer Page",
     "id": null,
-    "total": 3
+    "total": 1
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 19,
-    "started_at": "2026-02-21T20:29:54.119370"
+    "number": 4,
+    "started_at": "2026-02-21T20:22:35.382132"
   },
-  "last_update": "2026-02-21T21:12:18.610289"
+  "last_update": "2026-02-21T20:33:01.080723"
 }
