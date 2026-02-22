@@ -708,6 +708,9 @@ model ConfirmationRequest {
   approved_at DateTime? // Approval timestamp
   approved_by Int? // User ID who approved/rejected the request
 
+  // Relations
+  snapshots OperationSnapshot[]
+
   @@index([status])
   @@index([agent_id])
   @@index([approved_by])
@@ -716,6 +719,33 @@ model ConfirmationRequest {
   @@index([agent_id, status]) // For agent-specific request queries
   @@index([risk_level, status]) // For risk-based filtering
   @@map("confirmation_requests")
+}
+
+// Operation Snapshots for Rollback Capability
+model OperationSnapshot {
+  id                 String              @id @default(uuid()) @db.Uuid
+  confirmation_id    String              @db.Uuid // Reference to confirmation request
+  operation_type     String // Type of operation (e.g., "file.write", "file.delete", "database.update")
+  file_path          String? // File path for file operations
+  original_content   String? // Content before operation (for rollback)
+  modified_content   String? // Content after operation (for verification)
+  rollback_status    String              @default("available") // available, rolled_back, expired
+  rolled_back_at     DateTime? // Timestamp when rollback was performed
+  rolled_back_by     Int? // User ID who triggered rollback
+  metadata           Json? // Additional context (file hash, permissions, etc.)
+  created_at         DateTime            @default(now())
+
+  // Relations
+  confirmation ConfirmationRequest @relation(fields: [confirmation_id], references: [id], onDelete: Cascade)
+
+  @@index([confirmation_id])
+  @@index([operation_type])
+  @@index([file_path])
+  @@index([rollback_status])
+  @@index([created_at])
+  @@index([confirmation_id, created_at]) // For retrieving snapshots chronologically
+  @@index([rollback_status, created_at]) // For finding available snapshots
+  @@map("operation_snapshots")
 }
 
 // Plugin System
