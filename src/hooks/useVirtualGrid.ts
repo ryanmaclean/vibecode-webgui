@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { VirtualItem } from '@tanstack/react-virtual'
 
@@ -22,8 +22,8 @@ export interface UseVirtualGridOptions {
  * Return value from useVirtualGrid
  */
 export interface UseVirtualGridReturn {
-  /** Ref to attach to the scroll container element */
-  parentRef: React.RefObject<HTMLDivElement | null>
+  /** Callback ref to attach to the scroll container element */
+  parentRef: (el: HTMLDivElement | null) => void
   /** Virtual row items to render (only visible rows + overscan) */
   virtualRows: VirtualItem[]
   /** Number of columns in the current responsive grid layout */
@@ -113,17 +113,22 @@ export function useVirtualGrid({
   estimateSize = 300,
   overscan = 3,
 }: UseVirtualGridOptions): UseVirtualGridReturn {
-  const parentRef = useRef<HTMLDivElement>(null)
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null)
   const [containerWidth, setContainerWidth] = useState(0)
+  const parentRef = useCallback((el: HTMLDivElement | null) => {
+    setScrollElement(el)
+  }, [])
 
-  // Track container width with ResizeObserver so column count stays in sync
-  // with the actual rendered width (handles SSR, window resize, sidebar toggles).
+  // Track container width with ResizeObserver so column count stays in sync.
+  // Re-observes when the ref is attached later (e.g. after empty-state render).
   useEffect(() => {
-    const element = parentRef.current
-    if (!element) return
+    if (!scrollElement) {
+      setContainerWidth(0)
+      return
+    }
 
     // Capture initial width immediately after mount
-    setContainerWidth(element.getBoundingClientRect().width)
+    setContainerWidth(scrollElement.getBoundingClientRect().width)
 
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
@@ -132,12 +137,12 @@ export function useVirtualGrid({
       }
     })
 
-    observer.observe(element)
+    observer.observe(scrollElement)
 
     return () => {
       observer.disconnect()
     }
-  }, [])
+  }, [scrollElement])
 
   // Default to 1 column until ResizeObserver reports a real width
   const columnCount = containerWidth > 0 ? getColumnCount(containerWidth) : 1
@@ -145,7 +150,7 @@ export function useVirtualGrid({
 
   const virtualizer = useVirtualizer({
     count: rowCount,
-    getScrollElement: () => parentRef.current,
+    getScrollElement: () => scrollElement,
     estimateSize: () => estimateSize,
     overscan,
   })
