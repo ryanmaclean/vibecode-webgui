@@ -24,7 +24,7 @@ env:
 
 jobs:
   quick-validation:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_USE_SELF_HOSTED == 'true' && (vars.CI_SELF_HOSTED_LABELS_JSON || '["self-hosted","linux","x64"]') || '["ubuntu-latest"]') }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -59,7 +59,7 @@ jobs:
           NODE_OPTIONS: -r dd-trace/ci/init
 
   security-scan:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_USE_SELF_HOSTED == 'true' && (vars.CI_SELF_HOSTED_LABELS_JSON || '["self-hosted","linux","x64"]') || '["ubuntu-latest"]') }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -75,7 +75,7 @@ jobs:
         continue-on-error: true
 
   cost-monitor:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_USE_SELF_HOSTED == 'true' && (vars.CI_SELF_HOSTED_LABELS_JSON || '["self-hosted","linux","x64"]') || '["ubuntu-latest"]') }}
     timeout-minutes: 2
     steps:
       - name: Log cost optimization
