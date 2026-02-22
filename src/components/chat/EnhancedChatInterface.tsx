@@ -5,7 +5,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
 import { ContextViewer } from '@/components/ai/ContextViewer'
@@ -70,21 +69,16 @@ export const EnhancedChatInterface = ({
   const [enableRAG, setEnableRAG] = useState(true)
   const [streamMetadata, setStreamMetadata] = useState<StreamMetadata | null>(null)
 
+  // Model selector state
+  const [availableModels, setAvailableModels] = useState<ModelProfile[]>([])
+  const [favoriteModelIds, setFavoriteModelIds] = useState<string[]>([])
+  const [recentModelIds, setRecentModelIds] = useState<string[]>([])
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const streamTrackerRef = useRef<StreamTracker | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
-
-  // Available AI models from OpenRouter
-  const availableModels = [
-    { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', context: '200K' },
-    { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku', provider: 'Anthropic', context: '200K' },
-    { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI', context: '128K' },
-    { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI', context: '128K' },
-    { id: 'meta-llama/llama-3.1-405b-instruct', name: 'Llama 3.1 405B', provider: 'Meta', context: '128K' },
-    { id: 'google/gemini-pro-1.5', name: 'Gemini Pro 1.5', provider: 'Google', context: '2M' }
-  ]
 
   useEffect(() => {
     scrollToBottom()
@@ -96,9 +90,73 @@ export const EnhancedChatInterface = ({
     }
   }, [conversationId])
 
+  // Load available models from registry
+  useEffect(() => {
+    const models = modelRegistry.getAllModels()
+    setAvailableModels(models)
+  }, [])
+
+  // Load favorites from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const saved = localStorage.getItem('vibecode-favorite-models')
+      if (saved) setFavoriteModelIds(JSON.parse(saved))
+    } catch {
+      // Ignore parse errors
+    }
+  }, [])
+
+  // Load recent models from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const saved = localStorage.getItem('vibecode-recent-models')
+      if (saved) setRecentModelIds(JSON.parse(saved))
+    } catch {
+      // Ignore parse errors
+    }
+  }, [])
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
+
+  // Handle model selection from ModelSelector
+  const handleModelSelect = useCallback((model: ModelProfile) => {
+    setSelectedModel(model.id)
+
+    // Update recent models
+    if (typeof window !== 'undefined') {
+      setRecentModelIds((prev) => {
+        const updated = [model.id, ...prev.filter((id) => id !== model.id)].slice(0, 10)
+        try {
+          localStorage.setItem('vibecode-recent-models', JSON.stringify(updated))
+        } catch {
+          // Ignore storage errors
+        }
+        return updated
+      })
+    }
+  }, [])
+
+  // Handle favorite toggle
+  const handleFavoriteToggle = useCallback((modelId: string) => {
+    setFavoriteModelIds((prev) => {
+      const updated = prev.includes(modelId)
+        ? prev.filter((id) => id !== modelId)
+        : [...prev, modelId]
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('vibecode-favorite-models', JSON.stringify(updated))
+        } catch {
+          // Ignore storage errors
+        }
+      }
+      return updated
+    })
+  }, [])
 
   const loadConversation = async () => {
     setIsLoadingHistory(true)
@@ -393,13 +451,16 @@ export const EnhancedChatInterface = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
+  // Get current model for display
+  const currentModel = availableModels.find((m) => m.id === selectedModel)
+
   return (
     <TooltipProvider>
       <Card className={`flex flex-col h-full ${className}`}>
         {/* Header */}
         <CardContent className="flex-none p-4 border-b">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <MessageSquare className="w-5 h-5 text-blue-500" />
               <span className="font-semibold">Enhanced AI Chat</span>
               {conversationId && (
@@ -407,6 +468,10 @@ export const EnhancedChatInterface = ({
                   {conversationId.slice(-8)}
                 </Badge>
               )}
+              <ModelDisplay
+                model={currentModel}
+                compact
+              />
             </div>
             <div className="flex items-center space-x-2">
               <Select value={selectedModel} onValueChange={setSelectedModel}>

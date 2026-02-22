@@ -85,36 +85,36 @@ fn main() {
             vm::vm_stop,
             vm::vm_status,
             vm::vm_setup_first_run,
-            // Platform detection commands
-            platform::get_platform_info,
+            // Platform detection commands - TODO: Implement platform module
+            // platform::get_platform_info,
             // Linux-specific commands (compile on all platforms but no-op on non-Linux)
-            #[cfg(target_os = "linux")]
-            platform::linux::linux_get_distro_info,
-            #[cfg(target_os = "linux")]
-            platform::linux::linux_check_kvm,
-            #[cfg(target_os = "linux")]
-            platform::linux::linux_get_xdg_dirs,
-            #[cfg(target_os = "linux")]
-            platform::linux::linux_init_directories,
-            #[cfg(target_os = "linux")]
-            platform::linux::linux_send_notification,
-            #[cfg(target_os = "linux")]
-            platform::linux::linux_notification_capabilities,
-            #[cfg(target_os = "linux")]
-            platform::linux::linux_start_qemu_vm,
-            #[cfg(target_os = "linux")]
-            platform::linux::linux_list_qemu_vms,
-            #[cfg(target_os = "linux")]
-            platform::linux::linux_stop_qemu_vm,
-            #[cfg(target_os = "linux")]
-            platform::linux::linux_check_requirements,
-            #[cfg(target_os = "linux")]
-            platform::linux::linux_get_setup_instructions,
+            // #[cfg(target_os = "linux")]
+            // platform::linux::linux_get_distro_info,
+            // #[cfg(target_os = "linux")]
+            // platform::linux::linux_check_kvm,
+            // #[cfg(target_os = "linux")]
+            // platform::linux::linux_get_xdg_dirs,
+            // #[cfg(target_os = "linux")]
+            // platform::linux::linux_init_directories,
+            // #[cfg(target_os = "linux")]
+            // platform::linux::linux_send_notification,
+            // #[cfg(target_os = "linux")]
+            // platform::linux::linux_notification_capabilities,
+            // #[cfg(target_os = "linux")]
+            // platform::linux::linux_start_qemu_vm,
+            // #[cfg(target_os = "linux")]
+            // platform::linux::linux_list_qemu_vms,
+            // #[cfg(target_os = "linux")]
+            // platform::linux::linux_stop_qemu_vm,
+            // #[cfg(target_os = "linux")]
+            // platform::linux::linux_check_requirements,
+            // #[cfg(target_os = "linux")]
+            // platform::linux::linux_get_setup_instructions,
             // macOS-specific commands
-            #[cfg(target_os = "macos")]
-            platform::macos::macos_get_system_info,
-            #[cfg(target_os = "macos")]
-            platform::macos::macos_is_sandboxed,
+            // #[cfg(target_os = "macos")]
+            // platform::macos::macos_get_system_info,
+            // #[cfg(target_os = "macos")]
+            // platform::macos::macos_is_sandboxed,
             // Windows-specific commands
             #[cfg(target_os = "windows")]
             platform::windows::windows_get_system_info,

@@ -41,7 +41,7 @@ const AIChatInterfaceContent = ({
   const [isStreaming, setIsStreaming] = useState(false)
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [historyError, setHistoryError] = useState<string | null>(null)
-  const [selectedModel, setSelectedModel] = useState('anthropic/claude-3-sonnet')
+  const [selectedModel, setSelectedModel] = useState('anthropic/claude-3.5-sonnet')
   const [contextFiles, setContextFiles] = useState<string[]>(initialContext)
   const [pinnedFiles, setPinnedFiles] = useState<string[]>([])
   const [showSettings, setShowSettings] = useState(false)
@@ -49,20 +49,44 @@ const AIChatInterfaceContent = ({
   // const [showPromptTemplates, setShowPromptTemplates] = useState(false)
   // const [showPromptEnhancer, setShowPromptEnhancer] = useState(false)
 
+  // Model selector state
+  const [availableModels, setAvailableModels] = useState<ModelProfile[]>([])
+  const [favoriteModelIds, setFavoriteModelIds] = useState<string[]>([])
+  const [recentModelIds, setRecentModelIds] = useState<string[]>([])
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const streamTrackerRef = useRef<StreamTracker | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Available AI models from OpenRouter
-  const availableModels = [
-    { id: 'anthropic/claude-3-sonnet', name: 'Claude 3 Sonnet', provider: 'Anthropic', icon: '🧠' },
-    { id: 'openai/gpt-4', name: 'GPT-4', provider: 'OpenAI', icon: '⚡' },
-    { id: 'meta-llama/llama-3-70b', name: 'Llama 3 70B', provider: 'Meta', icon: '🦙' },
-    { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku', provider: 'Anthropic', icon: '💨' },
-    { id: 'openai/gpt-3.5-turbo', name: 'GPT-3.5 Turbo', provider: 'OpenAI', icon: '🚀' },
-  ]
+  // Load available models from registry
+  useEffect(() => {
+    const models = modelRegistry.getAllModels()
+    setAvailableModels(models)
+  }, [])
+
+  // Load favorites from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const saved = localStorage.getItem('vibecode-favorite-models')
+      if (saved) setFavoriteModelIds(JSON.parse(saved))
+    } catch {
+      // Ignore parse errors
+    }
+  }, [])
+
+  // Load recent models from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const saved = localStorage.getItem('vibecode-recent-models')
+      if (saved) setRecentModelIds(JSON.parse(saved))
+    } catch {
+      // Ignore parse errors
+    }
+  }, [])
 
   // Auto-resize textarea
   useEffect(() => {
@@ -248,40 +272,41 @@ const AIChatInterfaceContent = ({
     }
   }
 
-  const handleCancel = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-      setIsStreaming(false)
-      setStreamMetadata(null)
+  // Handle model selection from ModelSelector
+  const handleModelSelect = React.useCallback((model: ModelProfile) => {
+    setSelectedModel(model.id)
 
-      // Remove the in-progress assistant message
-      setMessages(prev => prev.filter(msg => msg.content !== ''))
+    // Update recent models
+    if (typeof window !== 'undefined') {
+      setRecentModelIds((prev) => {
+        const updated = [model.id, ...prev.filter((id) => id !== model.id)].slice(0, 10)
+        try {
+          localStorage.setItem('vibecode-recent-models', JSON.stringify(updated))
+        } catch {
+          // Ignore storage errors
+        }
+        return updated
+      })
     }
-  }
+  }, [])
 
-  const handleRegenerate = async () => {
-    if (messages.length < 2) return
+  // Handle favorite toggle
+  const handleFavoriteToggle = React.useCallback((modelId: string) => {
+    setFavoriteModelIds((prev) => {
+      const updated = prev.includes(modelId)
+        ? prev.filter((id) => id !== modelId)
+        : [...prev, modelId]
 
-    // Get the last user message
-    const lastUserMessage = [...messages].reverse().find(msg => msg.type === 'user')
-    if (!lastUserMessage) return
-
-    // Remove the last assistant message
-    setMessages(prev => {
-      const filtered = [...prev]
-      const lastAssistantIndex = filtered.map((m, i) => ({ m, i }))
-        .reverse()
-        .find(({ m }) => m.type === 'assistant')?.i
-      if (lastAssistantIndex !== undefined) {
-        filtered.splice(lastAssistantIndex, 1)
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('vibecode-favorite-models', JSON.stringify(updated))
+        } catch {
+          // Ignore storage errors
+        }
       }
-      return filtered
+      return updated
     })
-
-    // Re-send the last user message
-    setInput(lastUserMessage.content)
-    setTimeout(() => handleSendMessage(), 100)
-  }
+  }, [])
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -341,16 +366,20 @@ const AIChatInterfaceContent = ({
   */
 
   const currentModel = availableModels.find(m => m.id === selectedModel)
+  const currentModelName = currentModel?.name || 'AI Model'
 
   return (
     <div className={`flex flex-col h-full bg-white dark:bg-gray-900 ${className}`} role="region" aria-label="AI Chat Interface">
       {/* Header */}
       <header className="border-b border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <Bot className="w-6 h-6 text-blue-600" aria-hidden="true" />
             <h2 className="font-semibold text-lg" id="chat-heading">AI Assistant</h2>
-            <Badge variant="outline" aria-label={`Current model: ${currentModel?.name}`}>{currentModel?.name}</Badge>
+            <ModelDisplay
+              model={currentModel}
+              compact
+            />
           </div>
           <div className="flex items-center space-x-1" role="toolbar" aria-label="Chat controls">
             <Button
@@ -419,20 +448,16 @@ const AIChatInterfaceContent = ({
           aria-labelledby="settings-heading"
         >
           <h3 id="settings-heading" className="sr-only">Chat Settings</h3>
-          <label htmlFor="model-select" className="block text-sm font-medium mb-2">Select AI Model:</label>
-          <select
-            id="model-select"
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
-            className="w-full p-2 border rounded-md bg-white dark:bg-gray-900"
-            aria-label="AI model selection"
-          >
-            {availableModels.map(model => (
-              <option key={model.id} value={model.id}>
-                {model.icon} {model.name} ({model.provider})
-              </option>
-            ))}
-          </select>
+          <ModelSelector
+            selectedModelId={selectedModel}
+            onModelSelect={handleModelSelect}
+            models={availableModels}
+            recentModelIds={recentModelIds}
+            favoriteModelIds={favoriteModelIds}
+            onFavoriteToggle={handleFavoriteToggle}
+            label="Select AI Model"
+            showDetails={true}
+          />
         </div>
       )}
 
@@ -505,7 +530,7 @@ const AIChatInterfaceContent = ({
                     <div className="flex items-center justify-between mt-2 text-xs opacity-70">
                       <span>{formatTimestamp(message.timestamp)}</span>
                       {message.metadata?.model && (
-                        <span>{currentModel?.icon}</span>
+                        <span>{message.metadata.model}</span>
                       )}
                     </div>
                   </CardContent>
