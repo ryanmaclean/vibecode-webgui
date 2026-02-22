@@ -16,11 +16,10 @@ except ImportError:
 
 
 # Datadog Log Aggregation
-from scripts.lib.log_aggregation import get_log_aggregation
-
 try:
-    import os as _os; _c = __import__('ddtrace').config; _s = _os.path.basename(__file__).replace('.py',''); _c.service = _s; _c.requests.service = _s; __import__('ddtrace').patch_all()
-except: pass
+    from scripts.lib.log_aggregation import get_log_aggregation
+except ImportError:
+    get_log_aggregation = None
 
 
 # -- VibeCode Telemetry --
@@ -28,7 +27,7 @@ import sys
 import os
 
 # Initialize log aggregation
-log_agg = get_log_aggregation()
+log_agg = get_log_aggregation() if get_log_aggregation else None
 
 try:
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))

@@ -22,10 +22,6 @@ try:
 except (ImportError, ValueError):
     log_agg = None
 
-try:
-    import os as _os; _c = __import__('ddtrace').config; _s = _os.path.basename(__file__).replace('.py',''); _c.service = _s; _c.requests.service = _s; __import__('ddtrace').patch_all()
-except: pass
-
 
 # -- VibeCode Telemetry --
 import sys
@@ -36,7 +32,7 @@ try:
     from vibecode.telemetry import init_telemetry
     tracer = init_telemetry(os.path.basename(__file__))
 except (ImportError, ValueError):
-    pass
+    tracer = None
 # ------------------------
 
 """

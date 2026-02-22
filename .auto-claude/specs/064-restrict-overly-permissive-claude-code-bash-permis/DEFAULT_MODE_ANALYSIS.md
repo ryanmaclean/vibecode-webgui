@@ -147,7 +147,7 @@ This document analyzes the three `defaultMode` options for Claude Code permissio
 - Replaces `Bash(*)` with 229 specific commands
 - Prevents execution of unlisted commands
 - **Significantly reduces risk** for both `acceptEdits` and `acceptBash` modes
-- Example: Can't execute `curl` to download malware if not in allowed list
+- Example: Can't execute `nmap` to scan internal networks if not in allowed list
 
 ### Permission Interaction Order
 1. **defaultMode** determines if prompting happens

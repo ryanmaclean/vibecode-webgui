@@ -191,7 +191,7 @@ update_claude_settings(permissions)
 
 ## Command Permission Breakdown
 
-### Base Commands (128 total)
+### Base Commands (122 total)
 | Category | Count | Examples |
 |----------|-------|----------|
 | File Operations | 23 | `ls`, `cat`, `mkdir`, `cp`, `mv`, `rm`, `find` |
@@ -207,15 +207,15 @@ update_claude_settings(permissions)
 ### Stack Commands (101 total)
 | Category | Count | Examples |
 |----------|-------|----------|
-| Python | 16 | `python`, `pip`, `pytest`, `black`, `ruff` |
-| Node.js | 14 | `node`, `npm`, `npx`, `yarn`, `pnpm` |
-| Go | 12 | `go`, `gofmt`, `golint`, `gopls` |
-| Rust | 19 | `cargo`, `rustc`, `rustfmt`, `clippy` |
-| Java/JVM | 8 | `java`, `javac`, `gradle`, `maven` |
-| Container/K8s | 16 | `docker`, `kubectl`, `k9s`, `helm` |
-| Cloud CLI | 6 | `aws`, `gcloud`, `azure`, `terraform` |
-| Build Tools | 7 | `make`, `cmake`, `ninja`, `meson` |
-| Other Dev Tools | 3 | `gh` (GitHub CLI) |
+| Python | 10 | `python`, `python3`, `pip`, `pip3`, `ipython` |
+| Node.js | 4 | `node`, `npm`, `npx`, `yarn` |
+| Go | 7 | `go`, `gofmt`, `golint`, `gopls`, `gotests` |
+| Rust | 23 | `cargo`, `cargo-clippy`, `cargo-nextest`, `rustc`, `rustfmt` |
+| Java/JVM | 11 | `java`, `javac`, `gradle`, `maven`, `scala` |
+| Container/K8s | 10 | `docker`, `docker-compose`, `kubectl`, `helm`, `kustomize` |
+| Cloud CLI | 4 | `terraform`, `terragrunt`, `tflint`, `tfsec` |
+| Build Tools | 16 | `make`, `cmake`, `ninja`, `meson`, `clang` |
+| Other Dev Tools | 16 | `composer`, `gem`, `php`, `ruby`, `swift` |
 
 ---
 
@@ -231,10 +231,10 @@ update_claude_settings(permissions)
 **Validation Checks:**
 1. ✅ JSON syntax validation (both files)
 2. ✅ Permission count verification (manifest vs settings)
-3. ✅ Wildcard `Bash(*)` detection (fails if found)
+3. ✅ Wildcard/interpreter detection (`Bash(*)`, `Bash(bash)`, `Bash(sh)`, `Bash(zsh)`)
 4. ✅ Drift detection (regenerate and compare)
 5. ✅ Test suite execution (all permission tests)
-6. ✅ Total permission count (>= 229 required)
+6. ✅ Total permission count (must equal manifest count)
 
 **Outputs:**
 - GitHub Step Summary with validation results

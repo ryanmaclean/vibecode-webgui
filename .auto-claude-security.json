@@ -6,7 +6,6 @@
     "ag",
     "awk",
     "basename",
-    "bash",
     "bc",
     "bg",
     "break",
@@ -31,8 +30,6 @@
     "echo",
     "egrep",
     "env",
-    "eval",
-    "exec",
     "exit",
     "expand",
     "export",
@@ -94,11 +91,9 @@
     "sed",
     "seq",
     "set",
-    "sh",
     "shuf",
     "sleep",
     "sort",
-    "source",
     "split",
     "stat",
     "tail",
@@ -126,8 +121,7 @@
     "xargs",
     "yes",
     "yq",
-    "zip",
-    "zsh"
+    "zip"
   ],
   "stack_commands": [
     "ant",
@@ -268,8 +262,8 @@
     "cargo_aliases": [],
     "shell_scripts": []
   },
-  "project_dir": "/Users/studio/Documents/harness",
+  "project_dir": ".",
   "created_at": "2026-02-14T16:40:46.822637",
   "project_hash": "e1bd6907055e9666b61d3a0307998ae5",
-  "inherited_from": "/Users/studio/Documents/harness"
+  "inherited_from": "."
 }

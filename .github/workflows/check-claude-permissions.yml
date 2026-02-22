@@ -125,13 +125,13 @@ jobs:
         run: |
           echo "## Wildcard Permission Check" >> $GITHUB_STEP_SUMMARY
 
-          # Check for Bash(*) wildcard
-          if grep -q '"Bash(\*)"' .claude_settings.json; then
-            echo "❌ Dangerous Bash(*) wildcard permission found!" >> $GITHUB_STEP_SUMMARY
+          # Check for Bash(*) wildcard and shell interpreters that bypass granular controls
+          if grep -Eq '"Bash\((\*|bash|sh|zsh)\)"' .claude_settings.json; then
+            echo "❌ Dangerous wildcard/interpreter permission found (Bash(*), Bash(bash), Bash(sh), or Bash(zsh))!" >> $GITHUB_STEP_SUMMARY
             echo "status=failed" >> $GITHUB_OUTPUT
             exit 1
           else
-            echo "✅ No wildcard Bash(*) permissions detected" >> $GITHUB_STEP_SUMMARY
+            echo "✅ No wildcard or interpreter-bypass Bash permissions detected" >> $GITHUB_STEP_SUMMARY
             echo "status=passed" >> $GITHUB_OUTPUT
           fi
 
@@ -163,7 +163,6 @@ jobs:
           # Compare
           if gen_perms == com_perms:
               print('✅ MATCH: Permissions are synchronized')
-              exit(0)
           else:
               print('❌ DRIFT DETECTED: Permissions are out of sync')
 
@@ -187,8 +186,6 @@ jobs:
                       print(f'  - {p}')
                   if len(extra) > 5:
                       print(f'  ... and {len(extra) - 5} more')
-
-              exit(1)
           " > drift_check.txt
 
           cat drift_check.txt >> $GITHUB_STEP_SUMMARY
@@ -229,7 +226,12 @@ jobs:
         run: |
           echo "## Total Permission Verification" >> $GITHUB_STEP_SUMMARY
 
-          EXPECTED_TOTAL=229
+          EXPECTED_TOTAL=$(python -c "
+          import json
+          with open('.auto-claude-security.json') as f:
+              data = json.load(f)
+              print(len(data.get('base_commands', [])) + len(data.get('stack_commands', [])))
+          ")
 
           ACTUAL_TOTAL=$(python -c "
           import json
@@ -244,11 +246,11 @@ jobs:
           echo "- Expected: $EXPECTED_TOTAL" >> $GITHUB_STEP_SUMMARY
           echo "- Actual: $ACTUAL_TOTAL" >> $GITHUB_STEP_SUMMARY
 
-          if [ "$ACTUAL_TOTAL" -ge "$EXPECTED_TOTAL" ]; then
-            echo "✅ Permission count acceptable ($ACTUAL_TOTAL >= $EXPECTED_TOTAL)" >> $GITHUB_STEP_SUMMARY
+          if [ "$ACTUAL_TOTAL" -eq "$EXPECTED_TOTAL" ]; then
+            echo "✅ Permission count matches manifest ($ACTUAL_TOTAL == $EXPECTED_TOTAL)" >> $GITHUB_STEP_SUMMARY
             echo "status=passed" >> $GITHUB_OUTPUT
           else
-            echo "❌ Permission count below expected ($ACTUAL_TOTAL < $EXPECTED_TOTAL)" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Permission count mismatch ($ACTUAL_TOTAL != $EXPECTED_TOTAL)" >> $GITHUB_STEP_SUMMARY
             echo "status=failed" >> $GITHUB_OUTPUT
             exit 1
           fi
@@ -383,10 +385,12 @@ jobs:
       # Fail job if critical issues found
       - name: Fail on critical issues
         if: |
+          always() && (
           steps.json-syntax.outputs.status == 'failed' ||
           steps.wildcard-check.outputs.status == 'failed' ||
           steps.regenerate-compare.outputs.status == 'failed' ||
           steps.test-permissions.outputs.status == 'failed'
+          )
         run: |
           echo "❌ Critical permission security issues detected"
           exit 1
