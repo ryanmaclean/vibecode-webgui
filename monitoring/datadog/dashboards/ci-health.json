@@ -1,0 +1,653 @@
+{
+  "title": "GitHub Actions CI/CD Health Dashboard",
+  "description": "Comprehensive monitoring dashboard for GitHub Actions workflows - tracks health status, success rates, duration metrics, and historical reliability",
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "type": "note",
+        "content": "# GitHub Actions CI/CD Health Dashboard\n\nThis dashboard provides real-time visibility into all GitHub Actions workflows.\n\n**Metrics Updated**: Hourly via health-check.yml workflow\n**Coverage**: All active workflows in the repository\n\n[View GitHub Actions →](https://github.com/ryanmaclean/vibecode-webgui/actions)",
+        "background_color": "blue",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left",
+        "has_padding": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 12,
+        "height": 2
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "avg:github.actions.health.score{$repository}",
+            "aggregator": "avg"
+          }
+        ],
+        "title": "Overall Health Score",
+        "title_size": "16",
+        "title_align": "left",
+        "precision": 0,
+        "custom_unit": "/100",
+        "conditional_formats": [
+          {
+            "comparator": ">=",
+            "value": 90,
+            "palette": "white_on_green"
+          },
+          {
+            "comparator": ">=",
+            "value": 75,
+            "palette": "white_on_yellow"
+          },
+          {
+            "comparator": "<",
+            "value": 75,
+            "palette": "white_on_red"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 2,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "avg:github.actions.health.workflows.healthy{$repository}",
+            "aggregator": "avg"
+          }
+        ],
+        "title": "Healthy Workflows",
+        "title_size": "16",
+        "title_align": "left",
+        "precision": 0,
+        "custom_unit": "workflows",
+        "autoscale": true
+      },
+      "layout": {
+        "x": 3,
+        "y": 2,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "avg:github.actions.health.workflows.critical{$repository}",
+            "aggregator": "avg"
+          }
+        ],
+        "title": "Critical Workflows",
+        "title_size": "16",
+        "title_align": "left",
+        "precision": 0,
+        "custom_unit": "workflows",
+        "conditional_formats": [
+          {
+            "comparator": "<=",
+            "value": 0,
+            "palette": "white_on_green"
+          },
+          {
+            "comparator": ">",
+            "value": 0,
+            "palette": "white_on_red"
+          }
+        ]
+      },
+      "layout": {
+        "x": 6,
+        "y": 2,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "avg:github.actions.success_rate{$repository}",
+            "aggregator": "avg"
+          }
+        ],
+        "title": "Overall Success Rate (7d)",
+        "title_size": "16",
+        "title_align": "left",
+        "precision": 1,
+        "custom_unit": "%",
+        "conditional_formats": [
+          {
+            "comparator": ">=",
+            "value": 90,
+            "palette": "white_on_green"
+          },
+          {
+            "comparator": ">=",
+            "value": 80,
+            "palette": "white_on_yellow"
+          },
+          {
+            "comparator": "<",
+            "value": 80,
+            "palette": "white_on_red"
+          }
+        ]
+      },
+      "layout": {
+        "x": 9,
+        "y": 2,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:github.actions.health.score{$repository}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Health Score Trend (24h)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": false,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value", "sum"],
+        "yaxis": {
+          "label": "",
+          "scale": "linear",
+          "min": "0",
+          "max": "100",
+          "include_zero": true
+        },
+        "markers": [
+          {
+            "value": "y = 90",
+            "display_type": "ok dashed"
+          },
+          {
+            "value": "y = 75",
+            "display_type": "warning dashed"
+          },
+          {
+            "value": "y = 50",
+            "display_type": "error dashed"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 4,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:github.actions.health.workflows.healthy{$repository}",
+            "display_type": "area",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "avg:github.actions.health.workflows.degraded{$repository}",
+            "display_type": "area",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "avg:github.actions.health.workflows.warning{$repository}",
+            "display_type": "area",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "avg:github.actions.health.workflows.critical{$repository}",
+            "display_type": "area",
+            "style": {
+              "palette": "red",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Workflow Status Distribution (24h)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value", "sum"],
+        "yaxis": {
+          "label": "",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 4,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(avg:github.actions.workflow.health.success_rate{$repository} by {workflow}, 28, 'mean', 'desc')",
+            "conditional_formats": [
+              {
+                "comparator": ">=",
+                "value": 90,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": ">=",
+                "value": 75,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<",
+                "value": 75,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ],
+        "title": "Success Rate by Workflow (Last 10 Runs)",
+        "title_size": "16",
+        "title_align": "left"
+      },
+      "layout": {
+        "x": 0,
+        "y": 7,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 9,
+      "definition": {
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(avg:github.actions.workflow.health.failed_count{$repository} by {workflow}, 28, 'mean', 'desc')",
+            "conditional_formats": [
+              {
+                "comparator": "<=",
+                "value": 0,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": "<=",
+                "value": 2,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": ">",
+                "value": 2,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ],
+        "title": "Failed Runs by Workflow (Last 10 Runs)",
+        "title_size": "16",
+        "title_align": "left"
+      },
+      "layout": {
+        "x": 6,
+        "y": 7,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 10,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:github.actions.success_rate{$repository}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Overall Success Rate Trend (7 days)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": false,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value", "sum"],
+        "yaxis": {
+          "label": "",
+          "scale": "linear",
+          "min": "0",
+          "max": "100",
+          "include_zero": true
+        },
+        "markers": [
+          {
+            "value": "y = 90",
+            "display_type": "ok dashed"
+          },
+          {
+            "value": "y = 80",
+            "display_type": "warning dashed"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 11,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 11,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:github.actions.runs.successful{$repository}",
+            "display_type": "bars",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "avg:github.actions.runs.failed{$repository}",
+            "display_type": "bars",
+            "style": {
+              "palette": "red",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "avg:github.actions.runs.cancelled{$repository}",
+            "display_type": "bars",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Workflow Run Results (7 days)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value", "sum"],
+        "yaxis": {
+          "label": "",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 11,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 12,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:github.actions.duration.p50{$repository}",
+            "display_type": "line",
+            "style": {
+              "palette": "cool",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "avg:github.actions.duration.p95{$repository}",
+            "display_type": "line",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "avg:github.actions.duration.p99{$repository}",
+            "display_type": "line",
+            "style": {
+              "palette": "purple",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Workflow Duration Percentiles (7 days)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value", "sum"],
+        "yaxis": {
+          "label": "",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 14,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 13,
+      "definition": {
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(avg:github.actions.workflow.health.last_duration{$repository} by {workflow}, 28, 'mean', 'desc')",
+            "conditional_formats": [
+              {
+                "comparator": "<=",
+                "value": 300,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": "<=",
+                "value": 600,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": ">",
+                "value": 600,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ],
+        "title": "Last Run Duration by Workflow (seconds)",
+        "title_size": "16",
+        "title_align": "left"
+      },
+      "layout": {
+        "x": 6,
+        "y": 14,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 14,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:github.actions.workflow.completed{$repository,conclusion:success}.as_count()",
+            "display_type": "bars",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "sum:github.actions.workflow.completed{$repository,conclusion:failure}.as_count()",
+            "display_type": "bars",
+            "style": {
+              "palette": "red",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Workflow Completions (Real-time)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value", "sum"],
+        "yaxis": {
+          "label": "",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 17,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 15,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:github.actions.workflow.duration{$repository} by {workflow}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Workflow Duration by Workflow (Real-time)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value", "sum"],
+        "yaxis": {
+          "label": "",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 17,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 16,
+      "definition": {
+        "type": "event_stream",
+        "query": "source:github-actions $repository",
+        "event_size": "s",
+        "title": "Recent Workflow Events",
+        "title_size": "16",
+        "title_align": "left"
+      },
+      "layout": {
+        "x": 0,
+        "y": 20,
+        "width": 12,
+        "height": 4
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "repository",
+      "default": "*",
+      "prefix": "repository"
+    }
+  ],
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "notify_list": [],
+  "reflow_type": "fixed"
+}
