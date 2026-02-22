@@ -8,6 +8,8 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
+import { AILoadingState } from '@/components/ai/AILoadingState'
+import { StreamTracker, type StreamMetadata } from '@/lib/ai/stream-utils'
 // import { logger } from '@/lib/logger';
 interface Message {
   id: string
@@ -66,10 +68,13 @@ export const EnhancedChatInterface = ({
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [enableWebSearch, setEnableWebSearch] = useState(false)
   const [enableRAG, setEnableRAG] = useState(true)
+  const [streamMetadata, setStreamMetadata] = useState<StreamMetadata | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const streamTrackerRef = useRef<StreamTracker | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   // Available AI models from OpenRouter
   const availableModels = [
@@ -165,6 +170,13 @@ export const EnhancedChatInterface = ({
     setAttachedFiles([])
     setIsStreaming(true)
 
+    // Initialize stream tracker
+    streamTrackerRef.current = new StreamTracker({ model: selectedModel })
+    setStreamMetadata(streamTrackerRef.current.getMetadata())
+
+    // Create abort controller for cancellation
+    abortControllerRef.current = new AbortController()
+
     try {
       // First, upload any attached files
       if (attachedFiles.length > 0) {
@@ -226,7 +238,8 @@ export const EnhancedChatInterface = ({
           files: attachedFiles.map(file => file.name),
           enableWebSearch,
           enableRAG
-        })
+        }),
+        signal: abortControllerRef.current.signal
       })
 
       if (!response.ok) {
@@ -266,6 +279,12 @@ export const EnhancedChatInterface = ({
                   const parsed = JSON.parse(data)
 
                   if (parsed.type === 'content') {
+                    // Update stream tracker with new chunk
+                    if (streamTrackerRef.current) {
+                      const metadata = streamTrackerRef.current.update(parsed.content)
+                      setStreamMetadata(metadata)
+                    }
+
                     setMessages(prev => prev.map((msg, index) =>
                       index === prev.length - 1
                         ? { ...msg, content: msg.content + parsed.content }
@@ -297,7 +316,18 @@ export const EnhancedChatInterface = ({
           reader.releaseLock()
         }
       }
-    } catch (error) {
+
+      // Mark stream as complete
+      if (streamTrackerRef.current) {
+        const finalMetadata = streamTrackerRef.current.complete()
+        setStreamMetadata(finalMetadata)
+      }
+    } catch (error: any) {
+      // Don't show error if user cancelled
+      if (error.name === 'AbortError') {
+        return
+      }
+
       console.error('Failed to send message:', error)
       // Add error message
       const errorMessage: Message = {
@@ -309,7 +339,43 @@ export const EnhancedChatInterface = ({
       setMessages(prev => [...prev, errorMessage])
     } finally {
       setIsStreaming(false)
+      abortControllerRef.current = null
     }
+  }
+
+  const handleCancel = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      setIsStreaming(false)
+      setStreamMetadata(null)
+
+      // Remove the in-progress assistant message
+      setMessages(prev => prev.filter(msg => msg.content !== ''))
+    }
+  }
+
+  const handleRegenerate = async () => {
+    if (messages.length < 2) return
+
+    // Get the last user message
+    const lastUserMessage = [...messages].reverse().find(msg => msg.from === 'user')
+    if (!lastUserMessage) return
+
+    // Remove the last assistant message
+    setMessages(prev => {
+      const filtered = [...prev]
+      const lastAssistantIndex = filtered.map((m, i) => ({ m, i }))
+        .reverse()
+        .find(({ m }) => m.from === 'assistant')?.i
+      if (lastAssistantIndex !== undefined) {
+        filtered.splice(lastAssistantIndex, 1)
+      }
+      return filtered
+    })
+
+    // Re-send the last user message
+    setInput(lastUserMessage.content)
+    setTimeout(() => sendMessage(), 100)
   }
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -510,25 +576,29 @@ export const EnhancedChatInterface = ({
                   </div>
                 </div>
               ))}
-              
-              {isStreaming && (
+
+              {(isStreaming || streamMetadata?.isComplete) && (
                 <div className="flex justify-start">
                   <div className="flex items-start space-x-3">
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
                       <Bot className="w-4 h-4 text-white" />
                     </div>
-                    <div className="flex-1">
-                      <div className="inline-block p-3 rounded-lg bg-gray-100 text-gray-900">
-                        <div className="flex items-center space-x-2">
-                          <Sparkles className="w-4 h-4 animate-pulse" />
-                          <span>Thinking...</span>
-                        </div>
-                      </div>
+                    <div className="flex-1 max-w-[80%]">
+                      <AILoadingState
+                        metadata={streamMetadata}
+                        onCancel={isStreaming ? handleCancel : undefined}
+                        onRegenerate={streamMetadata?.isComplete ? handleRegenerate : undefined}
+                        showTokens={true}
+                        showProgress={true}
+                        showPreview={isStreaming}
+                        loadingMessage="AI is generating a response..."
+                        completionMessage="Response complete"
+                      />
                     </div>
                   </div>
                 </div>
               )}
-              
+
               <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
