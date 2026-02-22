@@ -125,6 +125,7 @@ model Project {
   files       File[]
   ai_requests AIRequest[]
   rag_chunks  RAGChunk[]
+  ai_suggestions AISuggestion[]
 
   @@index([user_id])
   @@index([workspace_id])
