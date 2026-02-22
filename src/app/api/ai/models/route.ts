@@ -20,11 +20,13 @@ import type {
 } from '@/types/model-comparison';
 import { cacheGetOrSet, CacheKeyGenerators, TTLPresets } from '@/lib/cache/cache-utils';
 import { CACHE_HEADER_PRESETS } from '@/lib/cache/http-cache-headers';
+import { createServiceLogger } from '@/lib/logging';
 
 export const dynamic = 'force-dynamic'
 
 // Rate limiting: 120 requests per minute for read-heavy operations
 const apiRateLimit = createAPIRateLimit(120);
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'ai-models' });
 
 // Validation schemas
 const filterSchema = z.object({
@@ -171,8 +173,8 @@ export async function GET(request: NextRequest) {
       cacheKey,
       async () => {
         // Try to load fresh data from OpenRouter (non-blocking)
-        modelRegistry.loadFromOpenRouter().catch(() => {
-          // Silently fail - use cached data
+        modelRegistry.loadFromOpenRouter().catch((error) => {
+          logger.debug('modelRegistry.loadFromOpenRouter failed', { error });
         });
 
         // Search models

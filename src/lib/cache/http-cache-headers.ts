@@ -11,7 +11,7 @@
  * - No-cache: Prevent caching entirely for dynamic or sensitive responses
  */
 
-import { CacheTTL } from './cache-constants';
+import { CacheTTL } from '@/lib/cache/cache-constants';
 
 /**
  * Options for Cache-Control header generation
@@ -91,9 +91,7 @@ export function getSWRCacheHeaders(
   maxAge: number,
   staleTime: number
 ): Record<string, string> {
-  return {
-    'Cache-Control': `public, s-maxage=${maxAge}, max-age=${maxAge}, stale-while-revalidate=${staleTime}`,
-  };
+  return getPublicCacheHeaders(maxAge, staleTime);
 }
 
 /**
@@ -119,7 +117,7 @@ export function withCacheStatus(
  * Use for: real-time data, streaming responses, sensitive authenticated data,
  * health checks that require fresh results
  */
-export const NO_CACHE_HEADERS: Record<string, string> = {
+export const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, max-age=0',
 } as const;
 

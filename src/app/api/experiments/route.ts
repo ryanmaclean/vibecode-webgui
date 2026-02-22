@@ -11,26 +11,14 @@ import { appLogger } from '@/lib/server-monitoring'
 import type { ExperimentContext } from '@/lib/feature-flags'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { createServiceLogger } from '@/lib/logging'
-import { CACHE_HEADER_PRESETS, withCacheStatus } from '@/lib/cache/http-cache-headers'
+import { cacheGet, cacheGetOrSet, CacheKeyGenerators, TTLPresets } from '@/lib/cache/cache-utils'
+import { NO_CACHE_HEADERS, withCacheStatus } from '@/lib/cache/http-cache-headers'
 
 const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'experiments' });
 
 export const dynamic = 'force-dynamic'
 
 const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
-
-/**
- * Server-side in-memory cache for the experiments list action
- * TTL matches the HTTP Cache-Control max-age (2 minutes)
- */
-const EXPERIMENTS_LIST_CACHE_TTL_MS = 120 * 1000 // 2 minutes
-
-interface ExperimentsListCacheEntry {
-  data: { flags: unknown[] }
-  cachedAt: number
-}
-
-let experimentsListCache: ExperimentsListCacheEntry | null = null
 
 /**
  * POST /api/experiments
@@ -232,24 +220,16 @@ export async function GET(request: NextRequest) {
       }
 
       case 'list': {
-        // Check server-side cache first
-        const now = Date.now()
-        const isCacheValid =
-          experimentsListCache !== null &&
-          now - experimentsListCache.cachedAt < EXPERIMENTS_LIST_CACHE_TTL_MS
-
-        let responseData: { flags: unknown[] }
-        let fromCache: boolean
-
-        if (isCacheValid && experimentsListCache) {
-          responseData = experimentsListCache.data
-          fromCache = true
-        } else {
-          // Fetch fresh data and populate cache
-          responseData = { flags: [] }
-          experimentsListCache = { data: responseData, cachedAt: now }
-          fromCache = false
-        }
+        const cacheKey = CacheKeyGenerators.experimentsConfig()
+        const cached = await cacheGet<{ flags: unknown[] }>(cacheKey)
+        const fromCache = cached !== null
+        const responseData = cached ?? await cacheGetOrSet(
+          cacheKey,
+          async () => ({
+            flags: await featureFlagEngine.listFlags(),
+          }),
+          { ttl: TTLPresets.EXPERIMENTS_CONFIG }
+        )
 
         appLogger.logBusiness('feature_flags_listed', {
           feature: 'experiments',
@@ -259,7 +239,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json(responseData, {
           status: 200,
-          headers: withCacheStatus(CACHE_HEADER_PRESETS.EXPERIMENTS_CONFIG, fromCache ? 'HIT' : 'MISS'),
+          headers: withCacheStatus(NO_CACHE_HEADERS, fromCache ? 'HIT' : 'MISS'),
         })
       }
 

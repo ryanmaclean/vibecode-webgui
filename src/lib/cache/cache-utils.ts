@@ -4,6 +4,7 @@
  * Supports both in-memory caching and Redis/Valkey backends
  */
 
+import { createHash } from 'node:crypto';
 import { cache as redisCache, CacheKeys, CacheTTL as RedisCacheTTL } from './unified-cache-client';
 import { CacheTTL, CACHE_PREFIXES } from './cache-constants';
 import { metrics } from '../server-monitoring';
@@ -200,6 +201,10 @@ const memoryCache = new MemoryCache();
 export function generateCacheKey(parts: string[], prefix?: string): string {
   const key = parts.join(':');
   return prefix ? `${prefix}${key}` : key;
+}
+
+function hashCacheParam(value: string): string {
+  return createHash('sha256').update(value).digest('hex');
 }
 
 /**
@@ -413,7 +418,7 @@ export const CacheKeyGenerators = {
   apiResponse: (endpoint: string, params?: string) => {
     const parts = ['api', endpoint];
     if (params) {
-      parts.push(Buffer.from(params).toString('base64').slice(0, 32));
+      parts.push(hashCacheParam(params));
     }
     return generateCacheKey(parts);
   },
@@ -422,7 +427,7 @@ export const CacheKeyGenerators = {
   dbQuery: (table: string, operation: string, params?: string) => {
     const parts = [CACHE_PREFIXES.QUERY, table, operation];
     if (params) {
-      parts.push(Buffer.from(params).toString('base64').slice(0, 32));
+      parts.push(hashCacheParam(params));
     }
     return generateCacheKey(parts);
   },
@@ -437,7 +442,7 @@ export const CacheKeyGenerators = {
   aiModelsWithParams: (params: string) => {
     const parts = ['ai', 'models'];
     if (params) {
-      parts.push(Buffer.from(params).toString('base64').slice(0, 32));
+      parts.push(hashCacheParam(params));
     }
     return generateCacheKey(parts);
   },
