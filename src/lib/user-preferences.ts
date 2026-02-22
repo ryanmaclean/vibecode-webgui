@@ -33,6 +33,7 @@ export const userPreferencesInputSchema = z.object({
 
 export const storedUserPreferencesSchema = userPreferencesInputSchema.extend({
   onboardingCompleted: z.boolean().default(false),
+  quickStartCompleted: z.boolean().default(false),
 })
 
 export type UserPreferencesInput = z.infer<typeof userPreferencesInputSchema>
@@ -46,6 +47,7 @@ export const defaultUserPreferences: UserPreferences = {
   integrations: {},
   aiProviders: ['openai'],
   onboardingCompleted: false,
+  quickStartCompleted: false,
 }
 
 export function mergeWithDefaultPreferences(overrides: Partial<UserPreferences> | null | undefined): UserPreferences {
@@ -60,5 +62,6 @@ export function mergeWithDefaultPreferences(overrides: Partial<UserPreferences> 
     integrations: overrides.integrations ?? defaultUserPreferences.integrations,
     aiProviders: overrides.aiProviders ?? defaultUserPreferences.aiProviders,
     onboardingCompleted: overrides.onboardingCompleted ?? defaultUserPreferences.onboardingCompleted,
+    quickStartCompleted: overrides.quickStartCompleted ?? defaultUserPreferences.quickStartCompleted,
   }
 }
