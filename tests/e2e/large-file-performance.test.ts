@@ -455,6 +455,249 @@ test.describe('Large File Performance', () => {
     expect(memoryGrowth).toBeLessThan(500);
   });
 
+  test('should not leak memory when switching between files', async ({ page }) => {
+    await page.goto('/editor');
+    await waitForMonacoEditor(page);
+
+    // Generate different test files
+    const files = [
+      generateLargeFile(10000, 'typescript'),
+      generateLargeFile(12000, 'javascript'),
+      generateLargeFile(8000, 'typescript'),
+    ];
+
+    // Measure baseline memory
+    const baselineMemory = await measureMemory(page);
+    console.log(`Baseline memory: ${baselineMemory}MB`);
+
+    const memorySnapshots: number[] = [baselineMemory];
+
+    // Switch between files multiple times to detect memory leaks
+    for (let cycle = 0; cycle < 3; cycle++) {
+      for (const file of files) {
+        await page.evaluate((content) => {
+          const monaco = (window as any).monaco;
+          const editor = monaco.editor.getEditors()[0];
+          if (editor) {
+            // Clear previous content
+            editor.setValue('');
+            // Set new content
+            editor.setValue(content);
+          }
+        }, file);
+
+        await page.waitForTimeout(300);
+
+        // Measure memory after each file switch
+        const currentMemory = await measureMemory(page);
+        memorySnapshots.push(currentMemory);
+        console.log(`Cycle ${cycle + 1}, Memory: ${currentMemory}MB`);
+      }
+
+      // Force garbage collection between cycles
+      await page.evaluate(() => {
+        if ((window as any).gc) {
+          (window as any).gc();
+        }
+      });
+
+      await page.waitForTimeout(1000);
+    }
+
+    // Check memory after all cycles
+    const finalMemory = await measureMemory(page);
+    const totalGrowth = finalMemory - baselineMemory;
+
+    console.log(`Total memory growth after file switching: ${totalGrowth}MB`);
+
+    // Memory should not grow excessively (allow 300MB for caching)
+    expect(totalGrowth).toBeLessThan(300);
+
+    // Check for consistent memory leak pattern
+    // If memory keeps growing linearly, it indicates a leak
+    const lastThreeAvg = memorySnapshots.slice(-3).reduce((a, b) => a + b, 0) / 3;
+    const firstThreeAvg = memorySnapshots.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
+    const avgGrowth = lastThreeAvg - firstThreeAvg;
+
+    console.log(`Average memory growth trend: ${avgGrowth}MB`);
+    expect(avgGrowth).toBeLessThan(250);
+  });
+
+  test('should not leak memory from event listeners', async ({ page }) => {
+    await page.goto('/editor');
+    await waitForMonacoEditor(page);
+
+    const testFile = generateLargeFile(10000, 'typescript');
+
+    // Load initial file
+    await page.evaluate((content) => {
+      const monaco = (window as any).monaco;
+      const editor = monaco.editor.getEditors()[0];
+      if (editor) {
+        editor.setValue(content);
+      }
+    }, testFile);
+
+    // Measure baseline memory
+    const baselineMemory = await measureMemory(page);
+    console.log(`Baseline memory: ${baselineMemory}MB`);
+
+    // Count initial event listeners
+    const initialListenerCount = await page.evaluate(() => {
+      // Try to get event listener count (browser-specific)
+      // This is a simplified check
+      const elements = document.querySelectorAll('*');
+      let listenerCount = 0;
+
+      elements.forEach((element) => {
+        // Count listeners if getEventListeners is available (Chrome DevTools)
+        if ((window as any).getEventListeners) {
+          const listeners = (window as any).getEventListeners(element);
+          if (listeners) {
+            Object.keys(listeners).forEach((eventType) => {
+              listenerCount += listeners[eventType].length;
+            });
+          }
+        }
+      });
+
+      return listenerCount;
+    });
+
+    // Perform operations that might add event listeners
+    for (let i = 0; i < 10; i++) {
+      await page.evaluate(() => {
+        const monaco = (window as any).monaco;
+        const editor = monaco.editor.getEditors()[0];
+        if (editor) {
+          // Trigger operations that might add listeners
+          editor.focus();
+          editor.trigger('test', 'editor.action.triggerSuggest', {});
+          editor.trigger('test', 'closeReferenceSearch', {});
+        }
+      });
+
+      await page.waitForTimeout(200);
+    }
+
+    // Force garbage collection
+    await page.evaluate(() => {
+      if ((window as any).gc) {
+        (window as any).gc();
+      }
+    });
+
+    await page.waitForTimeout(1000);
+
+    // Check memory and listeners after operations
+    const finalMemory = await measureMemory(page);
+    const finalListenerCount = await page.evaluate(() => {
+      const elements = document.querySelectorAll('*');
+      let listenerCount = 0;
+
+      elements.forEach((element) => {
+        if ((window as any).getEventListeners) {
+          const listeners = (window as any).getEventListeners(element);
+          if (listeners) {
+            Object.keys(listeners).forEach((eventType) => {
+              listenerCount += listeners[eventType].length;
+            });
+          }
+        }
+      });
+
+      return listenerCount;
+    });
+
+    const memoryGrowth = finalMemory - baselineMemory;
+    console.log(`Memory growth: ${memoryGrowth}MB`);
+    console.log(`Listener count change: ${initialListenerCount} -> ${finalListenerCount}`);
+
+    // Memory growth should be minimal
+    expect(memoryGrowth).toBeLessThan(100);
+
+    // Event listener count shouldn't grow excessively
+    // Allow some growth for legitimate UI state
+    if (initialListenerCount > 0 && finalListenerCount > 0) {
+      const listenerGrowth = finalListenerCount - initialListenerCount;
+      expect(listenerGrowth).toBeLessThan(50);
+    }
+  });
+
+  test('should maintain stable memory during extended operations', async ({ page }) => {
+    await page.goto('/editor');
+    await waitForMonacoEditor(page);
+
+    const testFile = generateLargeFile(15000, 'typescript');
+
+    await page.evaluate((content) => {
+      const monaco = (window as any).monaco;
+      const editor = monaco.editor.getEditors()[0];
+      if (editor) {
+        editor.setValue(content);
+      }
+    }, testFile);
+
+    // Take memory snapshots over time
+    const memorySnapshots: { time: number; memory: number }[] = [];
+    const testDuration = 20000; // 20 seconds
+    const snapshotInterval = 2000; // Every 2 seconds
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < testDuration) {
+      // Perform various operations
+      await page.evaluate(() => {
+        const monaco = (window as any).monaco;
+        const editor = monaco.editor.getEditors()[0];
+        if (editor) {
+          const position = editor.getPosition();
+          // Type some text
+          editor.executeEdits('test', [{
+            range: new monaco.Range(
+              position.lineNumber,
+              position.column,
+              position.lineNumber,
+              position.column
+            ),
+            text: '// test comment\n',
+          }]);
+          // Move cursor
+          editor.setPosition({ lineNumber: 100, column: 1 });
+        }
+      });
+
+      await page.waitForTimeout(snapshotInterval);
+
+      // Take memory snapshot
+      const currentMemory = await measureMemory(page);
+      const elapsed = Date.now() - startTime;
+
+      memorySnapshots.push({
+        time: elapsed,
+        memory: currentMemory,
+      });
+
+      console.log(`Time: ${elapsed}ms, Memory: ${currentMemory}MB`);
+    }
+
+    // Analyze memory trend
+    // Memory should stabilize, not grow linearly
+    const firstSnapshot = memorySnapshots[0];
+    const lastSnapshot = memorySnapshots[memorySnapshots.length - 1];
+
+    const totalGrowth = lastSnapshot.memory - firstSnapshot.memory;
+    const growthRate = totalGrowth / (lastSnapshot.time / 1000); // MB per second
+
+    console.log(`Total memory growth: ${totalGrowth}MB`);
+    console.log(`Growth rate: ${growthRate.toFixed(2)} MB/s`);
+
+    // Memory should not grow more than 200MB over the test period
+    expect(totalGrowth).toBeLessThan(200);
+
+    // Growth rate should be minimal (less than 5 MB/s)
+    expect(Math.abs(growthRate)).toBeLessThan(5);
+  });
+
   test('should apply progressive optimizations based on file size', async ({ page }) => {
     await page.goto('/editor');
     await waitForMonacoEditor(page);
