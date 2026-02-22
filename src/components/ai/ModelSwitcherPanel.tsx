@@ -72,13 +72,13 @@ const formatPrice = (costTier: string): { label: string; color: string } => {
   return tiers[costTier] || { label: 'N/A', color: 'bg-gray-100 text-gray-700' };
 };
 
-const formatSpeed = (speedTier: string): { label: string; color: string } => {
-  const tiers: Record<string, { label: string; color: string }> = {
-    slow: { label: 'Slow', color: 'bg-red-100 text-red-600' },
-    medium: { label: 'Med', color: 'bg-yellow-100 text-yellow-600' },
-    fast: { label: 'Fast', color: 'bg-green-100 text-green-600' },
+const formatSpeed = (speedTier: string): { label: string; color: string; icon: typeof Clock } => {
+  const tiers: Record<string, { label: string; color: string; icon: typeof Clock }> = {
+    slow: { label: 'Slow', color: 'bg-red-100 text-red-700', icon: Clock },
+    medium: { label: 'Med', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
+    fast: { label: 'Fast', color: 'bg-green-100 text-green-700', icon: Zap },
   };
-  return tiers[speedTier] || { label: 'N/A', color: 'bg-gray-100 text-gray-600' };
+  return tiers[speedTier] || { label: 'N/A', color: 'bg-gray-100 text-gray-700', icon: Clock };
 };
 
 const getQualityBadge = (qualityTier: string): { label: string; color: string } => {
@@ -118,6 +118,7 @@ const ModelItem: React.FC<ModelItemProps> = ({
   const priceInfo = formatPrice(model.costTier);
   const speedInfo = formatSpeed(model.speedTier);
   const qualityInfo = getQualityBadge(model.qualityTier);
+  const SpeedIcon = speedInfo.icon;
 
   return (
     <button
@@ -141,11 +142,17 @@ const ModelItem: React.FC<ModelItemProps> = ({
             <Badge className={`text-xs px-1.5 py-0 ${qualityInfo.color}`}>
               {qualityInfo.label}
             </Badge>
-            <Badge className={`text-xs px-1.5 py-0 ${speedInfo.color}`}>
-              <Zap className="h-3 w-3 mr-0.5" />
+            <Badge
+              className={`text-xs px-1.5 py-0 ${speedInfo.color}`}
+              title={`Latency: ${speedInfo.label}`}
+            >
+              <SpeedIcon className="h-3 w-3 mr-0.5" />
               {speedInfo.label}
             </Badge>
-            <Badge className={`text-xs px-1.5 py-0 ${priceInfo.color}`}>
+            <Badge
+              className={`text-xs px-1.5 py-0 ${priceInfo.color}`}
+              title={`Cost: ${priceInfo.label}`}
+            >
               <DollarSign className="h-3 w-3 mr-0.5" />
               {priceInfo.label}
             </Badge>
