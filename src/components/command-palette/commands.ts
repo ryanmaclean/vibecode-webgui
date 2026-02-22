@@ -20,6 +20,8 @@ import {
   FlaskConical,
   Layers,
   GraduationCap,
+  PlusCircle,
+  RotateCw,
 } from 'lucide-react'
 import type { Command } from './CommandPaletteProvider'
 
@@ -160,12 +162,78 @@ export function createNavigationCommands(navigate: (path: string) => void): Comm
 }
 
 /**
+ * AI Tools commands
+ * Actions for AI chat, model switching, costs, and prompts
+ */
+export function createAIToolsCommands(navigate: (path: string) => void): Command[] {
+  return [
+    // New Chat
+    {
+      id: 'ai-new-chat',
+      label: 'New AI Chat',
+      category: 'AI Tools',
+      keywords: ['new', 'chat', 'conversation', 'ai', 'assistant', 'start', 'begin'],
+      icon: PlusCircle,
+      action: () => {
+        // Navigate to chat and trigger new conversation
+        navigate('/chat')
+        // The chat interface will handle creating a new conversation
+      },
+    },
+
+    // Switch Model
+    {
+      id: 'ai-switch-model',
+      label: 'Switch AI Model',
+      category: 'AI Tools',
+      keywords: ['switch', 'model', 'ai', 'llm', 'change', 'select', 'claude', 'gpt', 'llama'],
+      icon: RotateCw,
+      action: () => {
+        // Navigate to models page to select a different model
+        navigate('/ai/models')
+      },
+    },
+
+    // View Costs
+    {
+      id: 'ai-view-costs',
+      label: 'View AI Costs & Usage',
+      category: 'AI Tools',
+      keywords: ['costs', 'pricing', 'billing', 'usage', 'tokens', 'ai', 'spending', 'money'],
+      icon: DollarSign,
+      action: () => navigate('/ai/costs'),
+    },
+
+    // Browse Prompts
+    {
+      id: 'ai-browse-prompts',
+      label: 'Browse Prompt Library',
+      category: 'AI Tools',
+      keywords: ['prompts', 'library', 'templates', 'ai', 'browse', 'examples', 'saved'],
+      icon: BookOpen,
+      action: () => navigate('/ai/prompts'),
+    },
+
+    // Manage Models
+    {
+      id: 'ai-manage-models',
+      label: 'Manage AI Models',
+      category: 'AI Tools',
+      keywords: ['models', 'manage', 'configure', 'ai', 'llm', 'settings', 'setup'],
+      icon: Cpu,
+      action: () => navigate('/ai/models'),
+    },
+  ]
+}
+
+/**
  * Get all commands
  * This will be expanded in future subtasks to include AI tools, VM management, etc.
  */
 export function getAllCommands(navigate: (path: string) => void): Command[] {
   return [
     ...createNavigationCommands(navigate),
+    ...createAIToolsCommands(navigate),
     // More command categories will be added in subsequent subtasks
   ]
 }
