@@ -190,6 +190,7 @@ COMMANDS:
     ssh           SSH into the VM (interactive)
     logs          Show VM console logs
     docker        Check Docker status and info
+    deploy        Deploy application to Kubernetes
     ip            Show VM IP address
     plugin        Manage plugins (list, install, uninstall)
     version       Show version information
@@ -560,236 +561,387 @@ cmd_ip() {
     fi
 }
 
-cmd_plugin() {
-    local subcommand=${1:-}
+cmd_deploy() {
+    # Default values
+    local namespace="default"
+    local environment=""
+    local config_file=""
+    local dry_run=false
+    local force=false
+    local image=""
+    local replicas=""
+    local show_help=false
+    local cleanup=false
+    local cluster_name="vibecode-local"
+    local one_click_mode=false
 
-    if [ -z "$subcommand" ] || [ "$subcommand" = "--help" ] || [ "$subcommand" = "-h" ] || [ "$subcommand" = "help" ]; then
-        print_header "Plugin Management"
+    # Parse arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --help|-h)
+                show_help=true
+                shift
+                ;;
+            --cleanup)
+                cleanup=true
+                one_click_mode=true
+                shift
+                ;;
+            --cluster-name)
+                cluster_name="$2"
+                one_click_mode=true
+                shift 2
+                ;;
+            --namespace|-n)
+                namespace="$2"
+                shift 2
+                ;;
+            --env|-e)
+                environment="$2"
+                shift 2
+                ;;
+            --config|-c)
+                config_file="$2"
+                shift 2
+                ;;
+            --dry-run)
+                dry_run=true
+                shift
+                ;;
+            --force|-f)
+                force=true
+                shift
+                ;;
+            --image|-i)
+                image="$2"
+                shift 2
+                ;;
+            --replicas|-r)
+                replicas="$2"
+                shift 2
+                ;;
+            *)
+                print_error "Unknown option: $1"
+                echo ""
+                show_help=true
+                break
+                ;;
+        esac
+    done
+
+    # Show help if requested or on error
+    if [ "$show_help" = true ]; then
         cat << 'EOF'
-USAGE:
-    vibecode plugin <subcommand> [options]
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  Deploy to Kubernetes                                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-SUBCOMMANDS:
-    list                      List all installed plugins
-    install <url>             Install a plugin from URL or path
-    uninstall <name>          Uninstall a plugin by name
-    help                      Show this help message
+USAGE:
+    vibecode deploy [OPTIONS]
+
+ONE-CLICK DEPLOYMENT (KIND cluster with all services):
+    vibecode deploy                           # Deploy everything to local KIND cluster
+    vibecode deploy --dry-run                 # Preview what will be deployed
+    vibecode deploy --cluster-name my-cluster # Use custom cluster name
+    vibecode deploy --cleanup                 # Delete KIND cluster and clean up
+
+ADVANCED DEPLOYMENT (kubectl wrapper):
+    -c, --config FILE       Path to Kubernetes config file (YAML/JSON)
+    -i, --image IMAGE       Docker image to deploy
+    -n, --namespace NAME    Kubernetes namespace (default: default)
+    -e, --env ENV           Environment: dev, staging, prod
+    -r, --replicas NUM      Number of replicas (default: 1)
+    --dry-run               Preview deployment without applying
+    -f, --force             Force deployment without confirmation
+
+GENERAL OPTIONS:
+    -h, --help              Show this help message
 
 EXAMPLES:
-    vibecode plugin list
-    vibecode plugin install ./plugins/examples/hello-world
-    vibecode plugin install https://example.com/plugin.zip
-    vibecode plugin uninstall hello-world
+    # One-click deployment (creates KIND cluster + all services)
+    vibecode deploy
+    vibecode deploy --dry-run
+    vibecode deploy --cleanup
+
+    # Advanced deployment (kubectl wrapper)
+    vibecode deploy --config ./k8s/deployment.yaml
+    vibecode deploy --env prod --namespace myapp
+    vibecode deploy --image myapp:v1.0.0 --replicas 3
+    vibecode deploy --config ./k8s/app.yaml --dry-run
+
+PREREQUISITES:
+    One-click mode: Docker, kubectl, KIND
+    Advanced mode:  kubectl, valid kubeconfig
+
+NOTES:
+    When called without --config or --image, runs one-click deployment.
+    This creates a local KIND cluster with all VibeCode services.
+
+    Use --cleanup to delete the KIND cluster when done.
 
 EOF
         return 0
     fi
 
-    shift
+    # Handle cleanup mode
+    if [ "$cleanup" = true ]; then
+        print_header "Clean Up KIND Cluster"
 
-    case "$subcommand" in
-        list)
-            cmd_plugin_list "$@"
-            ;;
-        install)
-            cmd_plugin_install "$@"
-            ;;
-        uninstall)
-            cmd_plugin_uninstall "$@"
-            ;;
-        *)
-            print_error "Unknown plugin subcommand: $subcommand"
-            echo ""
-            cmd_plugin help
+        # Check if KIND is installed
+        if ! command -v kind &> /dev/null; then
+            print_error "KIND not found. Please install KIND."
+            print_info "Install: brew install kind"
             exit 1
-            ;;
-    esac
-}
-
-cmd_plugin_list() {
-    print_header "Installed Plugins"
-
-    # Check if curl is available
-    if ! command -v curl &> /dev/null; then
-        print_error "curl not found. Please install curl."
-        exit 1
-    fi
-
-    # Call the API endpoint
-    local response
-    local status
-
-    print_info "Fetching plugin list from API..."
-    echo ""
-
-    response=$(curl -s -w "\n%{http_code}" "http://localhost:3000/api/plugins" 2>/dev/null)
-    status=$(echo "$response" | tail -n 1)
-    local body=$(echo "$response" | head -n -1)
-
-    if [ "$status" != "200" ]; then
-        print_error "Failed to fetch plugins (HTTP $status)"
-        print_info "Make sure the development server is running: npm run dev"
-        exit 1
-    fi
-
-    # Check if jq is available for pretty printing
-    if command -v jq &> /dev/null; then
-        local plugin_count
-        plugin_count=$(echo "$body" | jq '.plugins | length' 2>/dev/null || echo "0")
-
-        if [ "$plugin_count" = "0" ]; then
-            print_warning "No plugins installed"
-            echo ""
-            print_info "Install a plugin with: vibecode plugin install <url>"
-        else
-            print_success "Found $plugin_count plugin(s):"
-            echo ""
-            echo "$body" | jq -r '.plugins[] | "  \(.name) (\(.version)) - \(.status)\n    \(.description)\n    Author: \(.author // "Unknown")\n    Type: \(.type)\n"'
         fi
-    else
-        # Fallback to plain output if jq not available
-        echo "$body"
-        echo ""
-        print_info "Install jq for prettier output: brew install jq"
-    fi
-}
 
-cmd_plugin_install() {
-    local source=$1
+        # Check if cluster exists
+        if kind get clusters 2>/dev/null | grep -q "^${cluster_name}$"; then
+            print_warning "Deleting KIND cluster: $cluster_name"
+            echo ""
 
-    if [ -z "$source" ]; then
-        print_error "Missing plugin source URL or path"
-        echo ""
-        print_info "Usage: vibecode plugin install <url-or-path>"
-        print_info "Example: vibecode plugin install ./plugins/examples/hello-world"
-        exit 1
-    fi
+            if [ "$force" = false ]; then
+                echo -n "Are you sure? [y/N] "
+                read -r response
+                case "$response" in
+                    [yY][eE][sS]|[yY])
+                        ;;
+                    *)
+                        print_info "Cleanup cancelled"
+                        exit 0
+                        ;;
+                esac
+            fi
 
-    print_header "Installing Plugin"
-
-    # Check if curl is available
-    if ! command -v curl &> /dev/null; then
-        print_error "curl not found. Please install curl."
-        exit 1
-    fi
-
-    print_info "Installing from: $source"
-    echo ""
-
-    # Determine if source is a file or URL
-    if [ -f "$source/plugin.json" ] || [ -d "$source" ]; then
-        # Local directory - create a temporary zip file
-        print_info "Creating plugin package from local directory..."
-
-        local temp_zip="/tmp/vibecode-plugin-$$.zip"
-
-        if command -v zip &> /dev/null; then
-            cd "$source" && zip -r "$temp_zip" . > /dev/null
-            cd - > /dev/null
-
-            print_info "Uploading plugin package..."
-
-            local response
-            local status
-            response=$(curl -s -w "\n%{http_code}" -X POST \
-                -F "file=@$temp_zip" \
-                -F "autoEnable=true" \
-                "http://localhost:3000/api/plugins/install" 2>/dev/null)
-            status=$(echo "$response" | tail -n 1)
-            local body=$(echo "$response" | head -n -1)
-
-            rm -f "$temp_zip"
-
-            if [ "$status" = "200" ]; then
-                print_success "Plugin installed successfully!"
-                if command -v jq &> /dev/null; then
-                    echo ""
-                    echo "$body" | jq -r '"Plugin ID: \(.pluginId)\nName: \(.plugin.name)\nVersion: \(.plugin.version)"'
-                fi
+            echo ""
+            print_info "Deleting cluster..."
+            if kind delete cluster --name "$cluster_name"; then
+                print_success "Cluster deleted successfully"
             else
-                print_error "Failed to install plugin (HTTP $status)"
-                if command -v jq &> /dev/null && echo "$body" | jq -e .error > /dev/null 2>&1; then
-                    echo ""
-                    echo "$body" | jq -r '.error'
-                fi
+                print_error "Failed to delete cluster"
                 exit 1
             fi
         else
-            print_error "zip command not found. Please install zip utility."
-            exit 1
+            print_info "Cluster '$cluster_name' does not exist"
         fi
-    else
-        # URL - send URL to API
-        print_info "Installing from URL..."
-
-        local response
-        local status
-        response=$(curl -s -w "\n%{http_code}" -X POST \
-            -H "Content-Type: application/json" \
-            -d "{\"source\":\"$source\",\"autoEnable\":true}" \
-            "http://localhost:3000/api/plugins/install" 2>/dev/null)
-        status=$(echo "$response" | tail -n 1)
-        local body=$(echo "$response" | head -n -1)
-
-        if [ "$status" = "200" ]; then
-            print_success "Plugin installed successfully!"
-            if command -v jq &> /dev/null; then
-                echo ""
-                echo "$body" | jq -r '"Plugin ID: \(.pluginId)\nName: \(.plugin.name)\nVersion: \(.plugin.version)"'
-            fi
-        else
-            print_error "Failed to install plugin (HTTP $status)"
-            if command -v jq &> /dev/null && echo "$body" | jq -e .error > /dev/null 2>&1; then
-                echo ""
-                echo "$body" | jq -r '.error'
-            fi
-            exit 1
-        fi
+        return 0
     fi
-}
 
-cmd_plugin_uninstall() {
-    local plugin_name=$1
+    # Detect one-click mode: no --config or --image specified
+    if [ -z "$config_file" ] && [ -z "$image" ]; then
+        one_click_mode=true
+    fi
 
-    if [ -z "$plugin_name" ]; then
-        print_error "Missing plugin name"
+    # Handle one-click deployment mode
+    if [ "$one_click_mode" = true ]; then
+        print_header "One-Click Kubernetes Deployment"
+
+        # Find the deployment script
+        local deploy_script="./scripts/vibecode-k8s-deploy.sh"
+        if [ ! -f "$deploy_script" ]; then
+            print_error "Deployment script not found: $deploy_script"
+            print_info "Make sure you're running this from the project root"
+            exit 1
+        fi
+
+        # Build arguments for deployment script
+        local deploy_args=()
+        if [ "$dry_run" = true ]; then
+            deploy_args+=("--dry-run")
+        fi
+        if [ "$cluster_name" != "vibecode-local" ]; then
+            deploy_args+=("--cluster-name" "$cluster_name")
+        fi
+
+        # Run the deployment script
+        print_info "Running one-click deployment..."
         echo ""
-        print_info "Usage: vibecode plugin uninstall <name>"
-        print_info "Example: vibecode plugin uninstall hello-world"
+        exec bash "$deploy_script" "${deploy_args[@]}"
+    fi
+
+    # Advanced mode: kubectl wrapper
+    print_header "Deploy to Kubernetes"
+
+    # Check if VM is running (not needed for kubectl wrapper, but kept for compatibility)
+    if ! is_vm_running; then
+        print_warning "VM is not running (this may be OK if using remote cluster)"
+    fi
+
+    # Check kubectl is available
+    if ! command -v kubectl &> /dev/null; then
+        print_error "kubectl not found. Please install kubectl."
+        print_info "Install: brew install kubectl"
         exit 1
     fi
 
-    print_header "Uninstalling Plugin"
-
-    # Check if curl is available
-    if ! command -v curl &> /dev/null; then
-        print_error "curl not found. Please install curl."
-        exit 1
-    fi
-
-    print_info "Uninstalling: $plugin_name"
+    print_success "kubectl found: $(kubectl version --client --short 2>/dev/null | head -1)"
     echo ""
 
-    local response
-    local status
-    response=$(curl -s -w "\n%{http_code}" -X DELETE \
-        "http://localhost:3000/api/plugins/$plugin_name" 2>/dev/null)
-    status=$(echo "$response" | tail -n 1)
-    local body=$(echo "$response" | head -n -1)
+    # Validate environment if provided
+    if [ -n "$environment" ]; then
+        case "$environment" in
+            dev|development)
+                environment="dev"
+                print_info "Environment: Development"
+                ;;
+            staging|stage)
+                environment="staging"
+                print_info "Environment: Staging"
+                ;;
+            prod|production)
+                environment="prod"
+                print_info "Environment: Production"
+                ;;
+            *)
+                print_error "Invalid environment: $environment"
+                print_info "Valid options: dev, staging, prod"
+                exit 1
+                ;;
+        esac
+    fi
 
-    if [ "$status" = "200" ]; then
-        print_success "Plugin uninstalled successfully!"
-    elif [ "$status" = "404" ]; then
-        print_error "Plugin not found: $plugin_name"
-        print_info "Run 'vibecode plugin list' to see installed plugins"
-        exit 1
-    else
-        print_error "Failed to uninstall plugin (HTTP $status)"
-        if command -v jq &> /dev/null && echo "$body" | jq -e .error > /dev/null 2>&1; then
-            echo ""
-            echo "$body" | jq -r '.error'
+    # Display deployment parameters
+    print_info "Namespace: $namespace"
+    if [ -n "$image" ]; then
+        print_info "Image: $image"
+    fi
+    if [ -n "$replicas" ]; then
+        print_info "Replicas: $replicas"
+    fi
+    if [ -n "$config_file" ]; then
+        print_info "Config file: $config_file"
+    fi
+    if [ "$dry_run" = true ]; then
+        print_warning "Dry-run mode enabled (no changes will be applied)"
+    fi
+    echo ""
+
+    # Validate config file if provided
+    if [ -n "$config_file" ]; then
+        if [ ! -f "$config_file" ]; then
+            print_error "Config file not found: $config_file"
+            exit 1
         fi
+        print_success "Config file found: $config_file"
+    fi
+
+    # Check kubectl cluster connection
+    print_info "Checking cluster connection..."
+    if ! kubectl cluster-info &> /dev/null; then
+        print_error "Cannot connect to Kubernetes cluster"
+        print_info "Check your kubeconfig: kubectl config view"
         exit 1
+    fi
+    print_success "Connected to cluster"
+    echo ""
+
+    # Confirmation prompt (unless --force)
+    if [ "$force" = false ] && [ "$dry_run" = false ]; then
+        print_warning "Ready to deploy to namespace '$namespace'"
+        echo -n "Continue? [y/N] "
+        read -r response
+        case "$response" in
+            [yY][eE][sS]|[yY])
+                print_info "Proceeding with deployment..."
+                ;;
+            *)
+                print_info "Deployment cancelled"
+                exit 0
+                ;;
+        esac
+        echo ""
+    fi
+
+    # Perform deployment
+    local kubectl_args=()
+    if [ "$dry_run" = true ]; then
+        kubectl_args+=("--dry-run=client")
+    fi
+
+    if [ -n "$config_file" ]; then
+        # Deploy from config file
+        print_header "Applying Configuration"
+        print_info "Applying $config_file to namespace $namespace..."
+
+        if kubectl apply -f "$config_file" -n "$namespace" "${kubectl_args[@]}"; then
+            echo ""
+            if [ "$dry_run" = true ]; then
+                print_success "Dry-run successful (no changes applied)"
+            else
+                print_success "Configuration applied successfully"
+            fi
+        else
+            echo ""
+            print_error "Failed to apply configuration"
+            exit 1
+        fi
+    elif [ -n "$image" ]; then
+        # Create/update deployment from image
+        print_header "Deploying Image"
+        local deployment_name="app"
+
+        # Extract deployment name from image if possible
+        if [[ "$image" =~ ([^/:]+)(:[^:]+)?$ ]]; then
+            deployment_name="${BASH_REMATCH[1]}"
+        fi
+
+        print_info "Creating deployment '$deployment_name' with image $image..."
+
+        local deploy_cmd="kubectl create deployment $deployment_name --image=$image -n $namespace"
+        if [ -n "$replicas" ]; then
+            deploy_cmd="$deploy_cmd --replicas=$replicas"
+        fi
+        if [ "$dry_run" = true ]; then
+            deploy_cmd="$deploy_cmd --dry-run=client -o yaml"
+        fi
+
+        if eval "$deploy_cmd"; then
+            echo ""
+            if [ "$dry_run" = true ]; then
+                print_success "Dry-run successful (no changes applied)"
+            else
+                print_success "Deployment created successfully"
+                print_info "Check status: kubectl get deployment $deployment_name -n $namespace"
+            fi
+        else
+            # Try to update if creation failed
+            if [ "$dry_run" = false ]; then
+                print_warning "Deployment may already exist, trying to update..."
+                if kubectl set image "deployment/$deployment_name" "$deployment_name=$image" -n "$namespace"; then
+                    echo ""
+                    print_success "Deployment updated successfully"
+                else
+                    echo ""
+                    print_error "Failed to create or update deployment"
+                    exit 1
+                fi
+            else
+                echo ""
+                print_error "Dry-run failed"
+                exit 1
+            fi
+        fi
+    else
+        # No config file or image specified
+        print_error "No deployment target specified"
+        print_info "Use --config to deploy from a file, or --image to deploy an image"
+        print_info "Run 'vibecode deploy --help' for more information"
+        exit 1
+    fi
+
+    # Show deployment status
+    if [ "$dry_run" = false ]; then
+        echo ""
+        print_header "Deployment Status"
+        print_info "Fetching resources in namespace '$namespace'..."
+        echo ""
+        kubectl get all -n "$namespace" 2>/dev/null || print_warning "No resources found"
+    fi
+
+    echo ""
+    print_success "Deployment complete!"
+    if [ "$dry_run" = false ]; then
+        print_info "Monitor with: kubectl get pods -n $namespace"
+        print_info "View logs: kubectl logs -f <pod-name> -n $namespace"
     fi
 }
 
@@ -836,6 +988,9 @@ main() {
             ;;
         docker)
             cmd_docker "$@"
+            ;;
+        deploy)
+            cmd_deploy "$@"
             ;;
         ip)
             cmd_ip "$@"
