@@ -123,6 +123,10 @@ const ModelItem: React.FC<ModelItemProps> = ({
   return (
     <button
       onClick={onSelect}
+      data-testid="model-item"
+      data-model-id={model.id}
+      data-model-name={model.name}
+      data-selected={isSelected}
       className={`w-full px-3 py-2.5 rounded-lg transition-colors text-left ${
         isSelected
           ? 'bg-primary/10 border border-primary/20'
@@ -143,6 +147,7 @@ const ModelItem: React.FC<ModelItemProps> = ({
               {qualityInfo.label}
             </Badge>
             <Badge
+              data-testid="latency-badge"
               className={`text-xs px-1.5 py-0 ${speedInfo.color}`}
               title={`Latency: ${speedInfo.label}`}
             >
@@ -150,6 +155,7 @@ const ModelItem: React.FC<ModelItemProps> = ({
               {speedInfo.label}
             </Badge>
             <Badge
+              data-testid="cost-badge"
               className={`text-xs px-1.5 py-0 ${priceInfo.color}`}
               title={`Cost: ${priceInfo.label}`}
             >
@@ -175,6 +181,8 @@ const ModelItem: React.FC<ModelItemProps> = ({
               e.stopPropagation();
               onFavoriteToggle();
             }}
+            data-testid="favorite-toggle"
+            data-favorited={isFavorite}
             className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-colors"
             aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           >
@@ -248,6 +256,7 @@ export const ModelSwitcherPanel: React.FC<ModelSwitcherPanelProps> = ({
     <>
       {/* Backdrop */}
       <div
+        data-testid="panel-backdrop"
         className="fixed inset-0 z-40 bg-black/20"
         onClick={onClose}
         aria-hidden="true"
@@ -255,6 +264,7 @@ export const ModelSwitcherPanel: React.FC<ModelSwitcherPanelProps> = ({
 
       {/* Panel */}
       <Card
+        data-testid="model-switcher-panel"
         className={`fixed top-16 right-4 z-50 w-96 max-h-[calc(100vh-5rem)] shadow-xl ${className}`}
       >
         <CardHeader className="pb-3">
@@ -265,6 +275,7 @@ export const ModelSwitcherPanel: React.FC<ModelSwitcherPanelProps> = ({
             </CardTitle>
             <Link
               href="/ai/models"
+              data-testid="view-all-models-link"
               className="text-sm text-primary hover:underline flex items-center gap-1"
             >
               View All
@@ -282,6 +293,7 @@ export const ModelSwitcherPanel: React.FC<ModelSwitcherPanelProps> = ({
               placeholder="Search models..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
+              data-testid="model-search-input"
               className="pl-9 h-9"
             />
           </div>
@@ -311,7 +323,7 @@ export const ModelSwitcherPanel: React.FC<ModelSwitcherPanelProps> = ({
           {/* Favorites */}
           {favoriteModels.length > 0 && (
             <>
-              <div>
+              <div data-testid="favorites-section">
                 <div className="flex items-center gap-2 mb-2 text-xs font-medium text-gray-500 uppercase">
                   <Star className="h-3.5 w-3.5" />
                   Favorites
@@ -341,7 +353,7 @@ export const ModelSwitcherPanel: React.FC<ModelSwitcherPanelProps> = ({
           {/* Recent Models */}
           {recentModels.length > 0 && (
             <>
-              <div>
+              <div data-testid="recent-section">
                 <div className="flex items-center gap-2 mb-2 text-xs font-medium text-gray-500 uppercase">
                   <Clock className="h-3.5 w-3.5" />
                   Recent
@@ -374,7 +386,7 @@ export const ModelSwitcherPanel: React.FC<ModelSwitcherPanelProps> = ({
               All Models ({filteredModels.length})
             </div>
             <ScrollArea className="h-64">
-              <div className="space-y-1 pr-3">
+              <div data-testid="model-list" className="space-y-1 pr-3">
                 {filteredModels.length > 0 ? (
                   filteredModels.map((model) => (
                     <ModelItem
