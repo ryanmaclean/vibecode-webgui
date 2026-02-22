@@ -13,7 +13,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Info, AlertTriangle, AlertCircle, DollarSign, TrendingUp } from 'lucide-react';
 import { CostAlert, AlertSeverity } from '@/types/cost-estimation';
 
@@ -86,7 +86,7 @@ export function CostAlertToast({
 
   // Severity-based configuration
   const severityConfig: Record<AlertSeverity, {
-    icon: JSX.Element;
+    icon: React.ReactElement;
     bg: string;
     border: string;
     text: string;
