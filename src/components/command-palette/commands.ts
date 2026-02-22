@@ -22,6 +22,9 @@ import {
   GraduationCap,
   PlusCircle,
   RotateCw,
+  Play,
+  Square,
+  ImagePlus,
 } from 'lucide-react'
 import type { Command } from './CommandPaletteProvider'
 
@@ -227,6 +230,63 @@ export function createAIToolsCommands(navigate: (path: string) => void): Command
 }
 
 /**
+ * VM Management commands
+ * Actions for starting, stopping VMs and managing snapshots
+ */
+export function createVMManagementCommands(navigate: (path: string) => void): Command[] {
+  return [
+    // Start VM
+    {
+      id: 'vm-start',
+      label: 'Start Virtual Machine',
+      category: 'VM Management',
+      keywords: ['start', 'vm', 'virtual', 'machine', 'boot', 'power', 'on', 'launch', 'run'],
+      icon: Play,
+      action: () => {
+        // Navigate to VM dashboard where start action can be performed
+        navigate('/vm')
+      },
+    },
+
+    // Stop VM
+    {
+      id: 'vm-stop',
+      label: 'Stop Virtual Machine',
+      category: 'VM Management',
+      keywords: ['stop', 'vm', 'virtual', 'machine', 'shutdown', 'power', 'off', 'halt'],
+      icon: Square,
+      action: () => {
+        // Navigate to VM dashboard where stop action can be performed
+        navigate('/vm')
+      },
+    },
+
+    // Create Snapshot
+    {
+      id: 'vm-create-snapshot',
+      label: 'Create VM Snapshot',
+      category: 'VM Management',
+      keywords: ['snapshot', 'create', 'backup', 'save', 'vm', 'virtual', 'machine', 'state'],
+      icon: ImagePlus,
+      action: () => {
+        // Navigate to snapshots page to create a new snapshot
+        navigate('/vm/snapshots')
+      },
+    },
+
+    // Manage Snapshots
+    {
+      id: 'vm-manage-snapshots',
+      label: 'Manage VM Snapshots',
+      category: 'VM Management',
+      keywords: ['snapshots', 'manage', 'backup', 'restore', 'vm', 'virtual', 'machine', 'list'],
+      icon: Camera,
+      action: () => navigate('/vm/snapshots'),
+    },
+  ]
+}
+
+/**
  * Get all commands
  * This will be expanded in future subtasks to include AI tools, VM management, etc.
  */
@@ -234,6 +294,7 @@ export function getAllCommands(navigate: (path: string) => void): Command[] {
   return [
     ...createNavigationCommands(navigate),
     ...createAIToolsCommands(navigate),
+    ...createVMManagementCommands(navigate),
     // More command categories will be added in subsequent subtasks
   ]
 }
