@@ -10,6 +10,10 @@ import { UnifiedAIClient, type UnifiedChatMessage } from '@/lib/unified-ai-clien
 import { logger } from '@/lib/logger'
 import type { AuthenticatedRequest } from '@/lib/auth/middleware'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+import { ContextManager } from '@/lib/ai/context/context-manager'
+import { ContextStrategy, ContextItemType, ContextPriority } from '@/types/context'
+import { buildChatContext, type FileContext, type ChatMessage } from '@/lib/ai/context/context-integration'
+import { trackContextBuild } from '@/lib/ai/context/context-metrics'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -57,6 +61,7 @@ interface UnifiedChatRequest {
   context: {
     workspaceId: string
     files: string[]
+    pinnedFiles?: string[]
     previousMessages: Array<{
       role: 'user' | 'assistant'
       content: string
@@ -110,7 +115,7 @@ async function buildAdvancedRAGContext(workspaceId: string, userQuery: string, u
 
     // Combine and deduplicate contexts
     const combinedContext = contexts.join('\n---\n')
-    const relevanceScore = contexts.length > 1 ? 'high' : contexts.length === 1 ? 'medium' : 'low'
+    const relevanceScore: 'high' | 'medium' | 'low' = contexts.length > 1 ? 'high' : contexts.length === 1 ? 'medium' : 'low'
 
     return {
       context: combinedContext,
@@ -206,13 +211,13 @@ export async function POST(request: NextRequest & AuthenticatedRequest) {
 
     // Build advanced RAG context
     const ragResult = await buildAdvancedRAGContext(
-      context.workspaceId, 
-      message, 
+      context.workspaceId,
+      message,
       session.user.id
     )
 
-    // Prepare system message with enhanced context
-    const systemMessage = `You are an expert AI coding assistant integrated into VibeCode, an open-source development platform.
+    // Base system prompt (CRITICAL priority - always included)
+    const baseSystemPrompt = `You are an expert AI coding assistant integrated into VibeCode, an open-source development platform.
 
 **🎯 Current Session Context:**
 - User: ${session.user.email}
@@ -221,8 +226,6 @@ export async function POST(request: NextRequest & AuthenticatedRequest) {
 - RAG Status: ${ragResult ? `Active (${ragResult.relevanceScore} relevance, ${ragResult.strategiesUsed} strategies)` : 'Disabled'}
 - Providers Available: ${availableProviders.join(', ')}
 
-${ragResult ? `**📋 Relevant Code Context (${ragResult.totalLength} chars):**\n${ragResult.context}\n` : ''}
-
 **🚀 Platform Capabilities:**
 - Multi-provider AI access with automatic fallbacks
 - Advanced RAG with semantic search and context ranking
@@ -230,8 +233,6 @@ ${ragResult ? `**📋 Relevant Code Context (${ragResult.totalLength} chars):**\
 - BYOK (Bring Your Own Keys) support for premium features
 - Real-time workspace integration and file system access
 - Voice input, file uploads, and multimodal processing
-
-${generateToolCapabilities(enableTools, availableProviders)}
 
 **📐 Guidelines:**
 - Provide production-ready, secure code solutions
@@ -247,15 +248,119 @@ ${generateToolCapabilities(enableTools, availableProviders)}
 - Local models available for sensitive code
 - All responses respect workspace boundaries`
 
-    // Prepare messages for unified client
-    const messages: UnifiedChatMessage[] = [
-      { role: 'system', content: systemMessage },
-      ...context.previousMessages.slice(-8).map(msg => ({
-        role: msg.role,
-        content: msg.content
-      })),
-      { role: 'user', content: message }
-    ]
+    // Add tool capabilities
+    const toolCapabilities = generateToolCapabilities(enableTools, availableProviders)
+    const systemPromptWithTools = toolCapabilities ? baseSystemPrompt + toolCapabilities : baseSystemPrompt
+
+    // Build file contexts with pinned status
+    const pinnedFilesSet = new Set(context.pinnedFiles || [])
+    const fileContexts: FileContext[] = context.files.map(filePath => ({
+      path: filePath,
+      content: '', // Content will be loaded if needed
+      isPinned: pinnedFilesSet.has(filePath)
+    }))
+
+    // Convert previous messages to ChatMessage format
+    const previousChatMessages: ChatMessage[] = context.previousMessages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }))
+
+    // Generate request ID for metrics tracking
+    const requestId = `unified-${session.user.id}-${Date.now()}`
+
+    // Use buildChatContext helper for intelligent context management with metrics tracking
+    const contextBuildResult = await trackContextBuild(requestId, async () => {
+      return buildChatContext({
+        model,
+        strategy: ContextStrategy.HYBRID,
+        maxUtilization: 90,
+        previousMessages: previousChatMessages,
+        ragContext: ragResult ? {
+          context: ragResult.context,
+          workspaceId: ragResult.workspaceId,
+          relevanceScore: ragResult.relevanceScore,
+          strategiesUsed: ragResult.strategiesUsed,
+          totalLength: ragResult.totalLength
+        } : undefined,
+        files: fileContexts,
+        userMessage: message,
+        systemPrompt: systemPromptWithTools,
+        boostKeywords: ragResult ? ['code', 'function', 'implementation'] : []
+      })
+    })
+
+    const builtContext = contextBuildResult.result
+
+    // Get optimized context window
+    const optimizedWindow = builtContext.window
+
+    // Build final messages array from optimized context
+    const messages: UnifiedChatMessage[] = []
+
+    if (optimizedWindow) {
+      // Group items by type for proper message structure
+      let systemContent = ''
+      const conversationMessages: Array<{ role: 'user' | 'assistant', content: string }> = []
+
+      for (const item of optimizedWindow.items) {
+        switch (item.type) {
+          case ContextItemType.SYSTEM_PROMPT:
+          case ContextItemType.RAG_RESULT:
+          case ContextItemType.CUSTOM:
+            systemContent += item.content + '\n\n'
+            break
+          case ContextItemType.USER_MESSAGE:
+          case ContextItemType.ASSISTANT_MESSAGE:
+            // These will be added in order later
+            if (item.metadata.custom?.role) {
+              conversationMessages.push({
+                role: item.metadata.custom.role as 'user' | 'assistant',
+                content: item.content
+              })
+            }
+            break
+        }
+      }
+
+      // Add system message if we have content
+      if (systemContent.trim()) {
+        messages.push({ role: 'system', content: systemContent.trim() })
+      }
+
+      // Add conversation history (excluding the current user message)
+      messages.push(...conversationMessages.slice(0, -1))
+
+      // Add current user message last
+      messages.push({ role: 'user', content: message })
+
+      // Log context optimization stats with metrics
+      logger.info('Context window optimized', {
+        requestId,
+        model,
+        totalTokens: builtContext.summary.totalTokens,
+        utilizationPercent: builtContext.summary.utilizationPercent,
+        messageCount: builtContext.summary.messageCount,
+        fileCount: builtContext.summary.fileCount,
+        pinnedFileCount: builtContext.summary.pinnedFileCount,
+        ragIncluded: builtContext.summary.ragIncluded,
+        itemsIncluded: builtContext.includedItems.length,
+        itemsExcluded: builtContext.excludedItems.length,
+        strategy: optimizedWindow.strategy,
+        buildDurationMs: contextBuildResult.durationMs,
+        metricsRecorded: !!contextBuildResult.metrics
+      })
+    } else {
+      // Fallback to simple message structure if context manager fails
+      messages.push(
+        { role: 'system', content: baseSystemPrompt },
+        ...context.previousMessages.slice(-8).map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })),
+        { role: 'user', content: message }
+      )
+    }
 
     // Enhanced streaming response with unified client
     const { ReadableStream, TextEncoder } = globalThis
@@ -291,7 +396,16 @@ ${generateToolCapabilities(enableTools, availableProviders)}
                 toolsEnabled: enableTools,
                 tokenCount,
                 availableProviders,
-                providerHealth: Object.entries(providerHealth).filter(([_, healthy]) => healthy).map(([name]) => name)
+                providerHealth: Object.entries(providerHealth).filter(([_, healthy]) => healthy).map(([name]) => name),
+                contextWindow: optimizedWindow ? {
+                  totalTokens: optimizedWindow.totalTokens,
+                  availableTokens: optimizedWindow.availableTokens,
+                  utilizationPercent: optimizedWindow.utilizationPercent,
+                  itemsIncluded: optimizedWindow.items.length,
+                  itemsExcluded: optimizedWindow.excludedItems.length,
+                  strategy: optimizedWindow.strategy,
+                  pinnedFileCount: builtContext.summary.pinnedFileCount
+                } : null
               })
 
               controller.enqueue(encoder.encode(`data: ${data}\n\n`))
@@ -312,6 +426,17 @@ ${generateToolCapabilities(enableTools, availableProviders)}
               relevanceScore: ragResult.relevanceScore,
               strategiesUsed: ragResult.strategiesUsed,
               contextLength: ragResult.totalLength
+            } : null,
+            contextWindow: optimizedWindow ? {
+              totalTokens: optimizedWindow.totalTokens,
+              availableTokens: optimizedWindow.availableTokens,
+              utilizationPercent: optimizedWindow.utilizationPercent,
+              itemsIncluded: optimizedWindow.items.length,
+              itemsExcluded: optimizedWindow.excludedItems.length,
+              strategy: optimizedWindow.strategy,
+              isAtCapacity: optimizedWindow.isAtCapacity,
+              pinnedFileCount: builtContext.summary.pinnedFileCount,
+              fileCount: builtContext.summary.fileCount
             } : null,
             processingTime: Date.now() - startTime,
             availableProviders: availableProviders.length,
@@ -370,7 +495,14 @@ ${generateToolCapabilities(enableTools, availableProviders)}
       'X-Providers-Available': availableProviders.join(','),
       'X-RAG-Status': ragResult ? 'active' : 'inactive',
       'X-Tools-Enabled': enableTools.toString(),
-      'X-Enhanced-Features': 'unified-ai,multi-provider,advanced-rag,fallback-chains'
+      'X-Enhanced-Features': 'unified-ai,multi-provider,advanced-rag,fallback-chains,context-management',
+      'X-Context-Tokens-Used': optimizedWindow?.totalTokens.toString() ?? '0',
+      'X-Context-Tokens-Available': optimizedWindow?.availableTokens.toString() ?? '0',
+      'X-Context-Utilization': optimizedWindow?.utilizationPercent.toFixed(1) ?? '0',
+      'X-Context-Items-Included': optimizedWindow?.items.length.toString() ?? '0',
+      'X-Context-Items-Excluded': optimizedWindow?.excludedItems.length.toString() ?? '0',
+      'X-Context-Strategy': optimizedWindow?.strategy ?? 'none',
+      'X-Context-Pinned-Files': builtContext.summary.pinnedFileCount.toString()
     }
 
     // Only set Access-Control-Allow-Origin if the origin is validated

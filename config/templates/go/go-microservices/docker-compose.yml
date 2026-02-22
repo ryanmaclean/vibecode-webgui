@@ -1,0 +1,221 @@
+# Docker Compose for Go Microservices Development
+# Complete stack with monitoring and observability
+
+version: '3.8'
+
+services:
+  # Main Go microservice
+  go-service:
+    build:
+      context: .
+      target: development
+      dockerfile: Dockerfile
+    container_name: go-microservice-dev
+    ports:
+      - "8080:8080"    # Application HTTP server
+    volumes:
+      # Mount source code for hot reload
+      - .:/app:cached
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    environment:
+      # Application configuration
+      - PORT=8080
+      - ENVIRONMENT=development
+      - LOG_LEVEL=debug
+      - SERVICE_NAME=go-microservice
+      - SHUTDOWN_TIMEOUT=10
+
+      # Feature flags
+      - ENABLE_METRICS=true
+      - ENABLE_DEBUG_ENDPOINTS=true
+
+      # Database connection (uncomment when using postgres)
+      # - DB_HOST=postgres
+      # - DB_PORT=5432
+      # - DB_NAME=microservice_db
+      # - DB_USER=postgres
+      # - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres123}
+      # - DB_SSL_MODE=disable
+
+      # Redis connection (uncomment when using redis)
+      # - REDIS_HOST=redis
+      # - REDIS_PORT=6379
+      # - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      # - REDIS_DB=0
+    depends_on:
+      - prometheus
+      # - postgres
+      # - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - microservices-network
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: go-microservice-prometheus
+    ports:
+      - "9090:9090"    # Prometheus UI
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=15d'
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - microservices-network
+
+  # Grafana for metrics visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: go-microservice-grafana
+    ports:
+      - "3000:3000"    # Grafana UI
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/go-metrics.json
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - microservices-network
+
+  # PostgreSQL database (optional - uncomment to enable)
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: go-microservice-postgres
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #     - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+  #   environment:
+  #     - POSTGRES_DB=microservice_db
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres123}
+  #     - POSTGRES_INITDB_ARGS=--encoding=UTF-8
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres -d microservice_db"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - microservices-network
+
+  # Redis cache (optional - uncomment to enable)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: go-microservice-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+  #   networks:
+  #     - microservices-network
+
+  # Node Exporter for host metrics (optional)
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: go-microservice-node-exporter
+    ports:
+      - "9100:9100"
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    restart: unless-stopped
+    networks:
+      - microservices-network
+
+volumes:
+  # Go build caches
+  go-mod-cache:
+    driver: local
+  go-build-cache:
+    driver: local
+
+  # Monitoring data
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+  # Database data (uncomment when using)
+  # postgres-data:
+  #   driver: local
+  # redis-data:
+  #   driver: local
+
+networks:
+  microservices-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+# Usage examples:
+#
+# Start development environment:
+#   docker-compose up
+#   # Access application at http://localhost:8080
+#   # Access Prometheus at http://localhost:9090
+#   # Access Grafana at http://localhost:3000 (admin/admin)
+#
+# Start with database and cache:
+#   # Uncomment postgres and redis services above
+#   docker-compose up
+#
+# Build production image:
+#   docker build --target production -t go-microservice:latest .
+#
+# Run tests:
+#   docker-compose exec go-service go test ./...
+#
+# View logs:
+#   docker-compose logs -f go-service
+#
+# Restart service:
+#   docker-compose restart go-service
+#
+# Clean rebuild:
+#   docker-compose down -v && docker-compose build --no-cache && docker-compose up
