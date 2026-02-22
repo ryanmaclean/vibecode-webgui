@@ -5,3 +5,4 @@ export * from './badge';
 export * from './scroll-area';
 export * from './avatar';
 export * from './separator';
+export * from './KeyboardHint';
