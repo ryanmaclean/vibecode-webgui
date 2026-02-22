@@ -4,6 +4,7 @@
  * Supports both in-memory caching and Redis/Valkey backends
  */
 
+import { createHash } from 'node:crypto';
 import { cache as redisCache, CacheKeys, CacheTTL as RedisCacheTTL } from './unified-cache-client';
 import { CacheTTL, CACHE_PREFIXES } from './cache-constants';
 import { metrics } from '../server-monitoring';
@@ -200,6 +201,10 @@ const memoryCache = new MemoryCache();
 export function generateCacheKey(parts: string[], prefix?: string): string {
   const key = parts.join(':');
   return prefix ? `${prefix}${key}` : key;
+}
+
+function hashCacheParam(value: string): string {
+  return createHash('sha256').update(value).digest('hex');
 }
 
 /**
@@ -413,7 +418,7 @@ export const CacheKeyGenerators = {
   apiResponse: (endpoint: string, params?: string) => {
     const parts = ['api', endpoint];
     if (params) {
-      parts.push(Buffer.from(params).toString('base64').slice(0, 32));
+      parts.push(hashCacheParam(params));
     }
     return generateCacheKey(parts);
   },
@@ -422,13 +427,31 @@ export const CacheKeyGenerators = {
   dbQuery: (table: string, operation: string, params?: string) => {
     const parts = [CACHE_PREFIXES.QUERY, table, operation];
     if (params) {
-      parts.push(Buffer.from(params).toString('base64').slice(0, 32));
+      parts.push(hashCacheParam(params));
     }
     return generateCacheKey(parts);
   },
 
   /** Generate key for session data */
   session: (sessionId: string) => generateCacheKey(['session', sessionId], CACHE_PREFIXES.SESSION),
+
+  /** Generate key for AI models list (all models, no filter) */
+  aiModels: () => generateCacheKey(['ai', 'models', 'all']),
+
+  /** Generate key for AI models list with query parameters */
+  aiModelsWithParams: (params: string) => {
+    const parts = ['ai', 'models'];
+    if (params) {
+      parts.push(hashCacheParam(params));
+    }
+    return generateCacheKey(parts);
+  },
+
+  /** Generate key for experiments/feature flags configuration */
+  experimentsConfig: () => generateCacheKey(['experiments', 'config', 'all']),
+
+  /** Generate key for Ollama recommended models */
+  ollamaRecommended: () => generateCacheKey(['ollama', 'recommended', 'all']),
 };
 
 /**
@@ -484,6 +507,10 @@ export const TTLPresets = {
   HEALTH_CHECK: 30,
   /** Session data (1 hour) */
   SESSION: 3600,
+  /** AI models list (10 minutes) */
+  AI_MODELS: 600,
+  /** Experiments/feature flags configuration (2 minutes) */
+  EXPERIMENTS_CONFIG: 120,
 };
 
 /**

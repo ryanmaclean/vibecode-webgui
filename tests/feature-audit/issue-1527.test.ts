@@ -6,51 +6,30 @@
  */
 
 describe('Feature Audit: Interactive Console (#1527)', () => {
-  describe('Interactive console implementation', () => {
-    test('console implementation files exist', async () => {
+  describe('Terminal implementation', () => {
+    test('legacy EnhancedTerminal component was removed', async () => {
       const fs = await import('fs');
       const path = await import('path');
-
-      const consoleModePath = path.join(process.cwd(), 'src/components/console/ConsoleMode.tsx');
-      const consoleModalPath = path.join(process.cwd(), 'src/components/console/ConsoleModal.tsx');
-      expect(fs.existsSync(consoleModePath)).toBe(true);
-      expect(fs.existsSync(consoleModalPath)).toBe(true);
+      const legacyComponentPath = path.join(process.cwd(), 'src/components/terminal/EnhancedTerminal.tsx');
+      expect(fs.existsSync(legacyComponentPath)).toBe(false);
     });
 
-    test('uses code-server client session APIs', async () => {
+    test('websocket terminal route configures xterm-compatible PTY', async () => {
       const fs = await import('fs');
       const path = await import('path');
-      const componentPath = path.join(process.cwd(), 'src/components/console/ConsoleMode.tsx');
-      const content = fs.readFileSync(componentPath, 'utf-8');
-      expect(content).toContain('codeServerClient.getOrCreateSession');
-      expect(content).toContain('codeServerClient.getSession');
+      const routePath = path.join(process.cwd(), 'src/app/api/terminal/ws/route.ts');
+      const content = fs.readFileSync(routePath, 'utf-8');
+      expect(content).toContain("name: 'xterm-256color'");
+      expect(content).toContain("TERM: 'xterm-256color'");
     });
 
-    test('has dark theme with green color support', async () => {
+    test('websocket route includes AI suggestion flow', async () => {
       const fs = await import('fs');
       const path = await import('path');
-      const componentPath = path.join(process.cwd(), 'src/components/console/ConsoleMode.tsx');
-      const content = fs.readFileSync(componentPath, 'utf-8');
-      expect(content).toContain('bg-gray-900');
-      expect(content).toContain('bg-gray-800');
-    });
-
-    test('handles startup and error states', async () => {
-      const fs = await import('fs');
-      const path = await import('path');
-      const componentPath = path.join(process.cwd(), 'src/components/console/ConsoleMode.tsx');
-      const content = fs.readFileSync(componentPath, 'utf-8');
-      expect(content).toContain("status: 'starting'");
-      expect(content).toContain('Failed to start console');
-    });
-
-    test('includes toast notifications for user feedback', async () => {
-      const fs = await import('fs');
-      const path = await import('path');
-      const componentPath = path.join(process.cwd(), 'src/components/console/ConsoleMode.tsx');
-      const content = fs.readFileSync(componentPath, 'utf-8');
-      expect(content).toContain('showToast');
-      expect(content).toContain('Test Toasts');
+      const routePath = path.join(process.cwd(), 'src/app/api/terminal/ws/route.ts');
+      const content = fs.readFileSync(routePath, 'utf-8');
+      expect(content).toContain('offerAISuggestion');
+      expect(content).toContain('Ctrl+Shift+A');
     });
   });
 

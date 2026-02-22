@@ -1,0 +1,502 @@
+# Prometheus Alert Rule Tests for Container Resource Monitoring
+# Tests validate alert thresholds, timing, and label/annotation configuration
+# Run with: promtool test rules tests/infrastructure/prometheus-container-alerts.test.yml
+
+rule_files:
+  - ../../infrastructure/monitoring/alerts/container-resource-alerts.yml
+
+evaluation_interval: 1m
+
+tests:
+  # ============================================================================
+  # Container CPU Alerts Tests
+  # ============================================================================
+
+  - interval: 1m
+    input_series:
+      # High CPU usage test - should trigger warning at 80%
+      - series: 'container_cpu_usage_seconds_total{container="api-server",pod="api-server-123",namespace="production"}'
+        values: '0+0.8x10'  # 80% CPU usage sustained
+
+      # Critical CPU usage test - should trigger critical at 95%
+      - series: 'container_cpu_usage_seconds_total{container="worker",pod="worker-456",namespace="production"}'
+        values: '0+0.95x10'  # 95% CPU usage sustained
+
+      # Normal CPU usage - should not trigger
+      - series: 'container_cpu_usage_seconds_total{container="db",pod="db-789",namespace="production"}'
+        values: '0+0.5x10'  # 50% CPU usage
+
+    alert_rule_test:
+      # Test ContainerHighCPUUsage alert triggers after 5 minutes
+      - eval_time: 5m
+        alertname: ContainerHighCPUUsage
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              priority: P2
+              team: platform
+              component: containers
+              container: api-server
+              pod: api-server-123
+              namespace: production
+            exp_annotations:
+              summary: "Container api-server high CPU usage"
+              description: "Container api-server on api-server-123 is using 80% CPU for more than 5 minutes"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-high-cpu"
+              dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      # Test ContainerCriticalCPUUsage alert triggers after 3 minutes
+      - eval_time: 3m
+        alertname: ContainerCriticalCPUUsage
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              priority: P1
+              team: platform
+              component: containers
+              container: worker
+              pod: worker-456
+              namespace: production
+            exp_annotations:
+              summary: "Container worker critical CPU usage"
+              description: "Container worker on worker-456 is using 95% CPU (critical threshold) for more than 3 minutes"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-critical-cpu"
+              dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+  # ============================================================================
+  # Container Memory Alerts Tests
+  # ============================================================================
+
+  - interval: 1m
+    input_series:
+      # High memory usage test - 85% threshold
+      - series: 'container_memory_working_set_bytes{container="api-server",pod="api-server-123",namespace="production"}'
+        values: '850000000+0x10'  # 850 MB
+      - series: 'container_spec_memory_limit_bytes{container="api-server",pod="api-server-123",namespace="production"}'
+        values: '1000000000+0x10'  # 1 GB limit
+
+      # Critical memory usage test - 95% threshold
+      - series: 'container_memory_working_set_bytes{container="worker",pod="worker-456",namespace="production"}'
+        values: '1900000000+0x10'  # 1.9 GB
+      - series: 'container_spec_memory_limit_bytes{container="worker",pod="worker-456",namespace="production"}'
+        values: '2000000000+0x10'  # 2 GB limit
+
+      # Memory near limit test - 90% threshold
+      - series: 'container_memory_working_set_bytes{container="cache",pod="cache-789",namespace="production"}'
+        values: '900000000+0x10'  # 900 MB
+      - series: 'container_spec_memory_limit_bytes{container="cache",pod="cache-789",namespace="production"}'
+        values: '1000000000+0x10'  # 1 GB limit
+
+    alert_rule_test:
+      # Test ContainerHighMemoryUsage alert triggers after 3 minutes
+      - eval_time: 3m
+        alertname: ContainerHighMemoryUsage
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              priority: P2
+              team: platform
+              component: containers
+              container: api-server
+              pod: api-server-123
+              namespace: production
+            exp_annotations:
+              summary: "Container api-server high memory usage"
+              description: "Container api-server on api-server-123 is using 85% of its memory limit for more than 3 minutes"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-high-memory"
+              dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      # Test ContainerCriticalMemoryUsage alert triggers after 2 minutes
+      - eval_time: 2m
+        alertname: ContainerCriticalMemoryUsage
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              priority: P1
+              team: platform
+              component: containers
+              container: worker
+              pod: worker-456
+              namespace: production
+            exp_annotations:
+              summary: "Container worker critical memory usage"
+              description: "Container worker on worker-456 is using 95% of its memory limit (critical threshold) - OOM risk"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-critical-memory"
+              dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      # Test ContainerMemoryNearLimit alert triggers after 5 minutes
+      - eval_time: 5m
+        alertname: ContainerMemoryNearLimit
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              priority: P2
+              team: platform
+              component: containers
+              container: cache
+              pod: cache-789
+              namespace: production
+            exp_annotations:
+              summary: "Container cache approaching memory limit"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-memory-near-limit"
+
+  # ============================================================================
+  # Container Disk/Storage Alerts Tests
+  # ============================================================================
+
+  - interval: 1m
+    input_series:
+      # High disk usage test - 90% threshold (critical)
+      - series: 'container_fs_usage_bytes{container="db",pod="db-123",namespace="production"}'
+        values: '9000000000+0x15'  # 9 GB
+      - series: 'container_fs_limit_bytes{container="db",pod="db-123",namespace="production"}'
+        values: '10000000000+0x15'  # 10 GB limit
+
+      # Disk usage warning test - 80% threshold
+      - series: 'container_fs_usage_bytes{container="app",pod="app-456",namespace="production"}'
+        values: '8000000000+0x15'  # 8 GB
+      - series: 'container_fs_limit_bytes{container="app",pod="app-456",namespace="production"}'
+        values: '10000000000+0x15'  # 10 GB limit
+
+    alert_rule_test:
+      # Test ContainerDiskUsageHigh alert triggers after 5 minutes
+      - eval_time: 5m
+        alertname: ContainerDiskUsageHigh
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              priority: P1
+              team: platform
+              component: containers
+              container: db
+              pod: db-123
+              namespace: production
+            exp_annotations:
+              summary: "Container db high disk usage"
+              description: "Container db on db-123 is using 90% of its disk space"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-disk-full"
+              dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      # Test ContainerDiskUsageWarning alert triggers after 10 minutes
+      - eval_time: 10m
+        alertname: ContainerDiskUsageWarning
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              priority: P2
+              team: platform
+              component: containers
+              container: app
+              pod: app-456
+              namespace: production
+            exp_annotations:
+              summary: "Container app disk usage warning"
+              description: "Container app on app-456 is using 80% of its disk space"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-disk-usage"
+
+  # ============================================================================
+  # Container Network Alerts Tests
+  # ============================================================================
+
+  - interval: 1m
+    input_series:
+      # Network receive saturation test - >100MB/s
+      - series: 'container_network_receive_bytes_total{container="api",pod="api-123",namespace="production"}'
+        values: '0+500000000x10'  # 500 MB/s receive rate
+
+      # Network transmit saturation test - >100MB/s
+      - series: 'container_network_transmit_bytes_total{container="proxy",pod="proxy-456",namespace="production"}'
+        values: '0+600000000x10'  # 600 MB/s transmit rate
+
+    alert_rule_test:
+      # Test ContainerNetworkSaturation alert triggers after 5 minutes
+      - eval_time: 5m
+        alertname: ContainerNetworkSaturation
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              priority: P2
+              team: platform
+              component: containers
+              container: api
+              pod: api-123
+              namespace: production
+            exp_annotations:
+              summary: "Container api high network receive rate"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-network-saturation"
+              dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      # Test ContainerNetworkTransmitSaturation alert triggers after 5 minutes
+      - eval_time: 5m
+        alertname: ContainerNetworkTransmitSaturation
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              priority: P2
+              team: platform
+              component: containers
+              container: proxy
+              pod: proxy-456
+              namespace: production
+            exp_annotations:
+              summary: "Container proxy high network transmit rate"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-network-saturation"
+              dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+  # ============================================================================
+  # Container Restart and OOM Alerts Tests
+  # ============================================================================
+
+  - interval: 1m
+    input_series:
+      # Container restart test - >3 restarts in 10 minutes
+      - series: 'kube_pod_container_status_restarts_total{container="app",pod="app-123",namespace="production"}'
+        values: '0 0 1 2 3 4 4 4 4 4 4 4'  # 4 restarts in 10 minutes
+
+      # OOM kill test
+      - series: 'container_oom_events_total{container="worker",pod="worker-456",namespace="production"}'
+        values: '0 0 0 0 0 1 1 1 1 1'  # OOM event occurs at 5m
+
+    alert_rule_test:
+      # Test ContainerRestartingFrequently alert triggers after 2 minutes
+      - eval_time: 6m
+        alertname: ContainerRestartingFrequently
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              priority: P2
+              team: platform
+              component: containers
+              container: app
+              pod: app-123
+              namespace: production
+            exp_annotations:
+              summary: "Container app restarting frequently"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-restarts"
+              dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      # Test ContainerOOMKilled alert triggers after 1 minute
+      - eval_time: 6m
+        alertname: ContainerOOMKilled
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              priority: P1
+              team: platform
+              component: containers
+              container: worker
+              pod: worker-456
+              namespace: production
+            exp_annotations:
+              summary: "Container worker killed by OOM"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-oom-killed"
+              dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+  # ============================================================================
+  # Container State Alerts Tests
+  # ============================================================================
+
+  - interval: 1m
+    input_series:
+      # Container not running test
+      - series: 'kube_pod_container_status_running{container="db",pod="db-123",namespace="production"}'
+        values: '1 1 1 0 0 0 0 0 0 0'  # Container stops running at 3m
+
+      # Container waiting test
+      - series: 'kube_pod_container_status_waiting{container="init",pod="init-456",namespace="production"}'
+        values: '1 1 1 1 1 1 1 1 1 1'  # Container waiting entire time
+
+    alert_rule_test:
+      # Test ContainerNotRunning alert triggers after 3 minutes
+      - eval_time: 6m
+        alertname: ContainerNotRunning
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              priority: P2
+              team: platform
+              component: containers
+              container: db
+              pod: db-123
+              namespace: production
+            exp_annotations:
+              summary: "Container db not running"
+              description: "Container db on db-123 is not in running state"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-not-running"
+              dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      # Test ContainerWaitingTooLong alert triggers after 5 minutes
+      - eval_time: 5m
+        alertname: ContainerWaitingTooLong
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              priority: P3
+              team: platform
+              component: containers
+              container: init
+              pod: init-456
+              namespace: production
+            exp_annotations:
+              summary: "Container init waiting too long"
+              description: "Container init on init-456 has been in waiting state for more than 5 minutes"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-waiting"
+
+  # ============================================================================
+  # Container Performance Alerts Tests
+  # ============================================================================
+
+  - interval: 1m
+    input_series:
+      # CPU throttling test - >25% throttle rate
+      - series: 'container_cpu_cfs_throttled_seconds_total{container="api",pod="api-123",namespace="production"}'
+        values: '0+0.3x10'  # 30% throttled
+      - series: 'container_cpu_cfs_periods_total{container="api",pod="api-123",namespace="production"}'
+        values: '0+1x10'  # Total periods
+
+      # High I/O wait test
+      - series: 'container_fs_io_time_seconds_total{container="db",pod="db-456",namespace="production"}'
+        values: '0+0.9x10'  # 0.9 seconds I/O time per interval
+
+      # Network receive errors test - >10 errors/s
+      - series: 'container_network_receive_errors_total{container="web",pod="web-789",namespace="production"}'
+        values: '0+15x10'  # 15 errors per second
+
+      # Network transmit errors test - >10 errors/s
+      - series: 'container_network_transmit_errors_total{container="proxy",pod="proxy-101",namespace="production"}'
+        values: '0+20x10'  # 20 errors per second
+
+    alert_rule_test:
+      # Test ContainerCPUThrottling alert triggers after 5 minutes
+      - eval_time: 5m
+        alertname: ContainerCPUThrottling
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              priority: P2
+              team: platform
+              component: containers
+              container: api
+              pod: api-123
+              namespace: production
+            exp_annotations:
+              summary: "Container api experiencing CPU throttling"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-cpu-throttling"
+              dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      # Test ContainerHighIOWait alert triggers after 5 minutes
+      - eval_time: 5m
+        alertname: ContainerHighIOWait
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              priority: P3
+              team: platform
+              component: containers
+              container: db
+              pod: db-456
+              namespace: production
+            exp_annotations:
+              summary: "Container db high I/O wait"
+              description: "Container db on db-456 is experiencing high I/O wait times"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-high-io"
+
+      # Test ContainerNetworkErrors alert triggers after 3 minutes
+      - eval_time: 3m
+        alertname: ContainerNetworkErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              priority: P2
+              team: platform
+              component: containers
+              container: web
+              pod: web-789
+              namespace: production
+            exp_annotations:
+              summary: "Container web network receive errors"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-network-errors"
+
+      # Test ContainerNetworkTransmitErrors alert triggers after 3 minutes
+      - eval_time: 3m
+        alertname: ContainerNetworkTransmitErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              priority: P2
+              team: platform
+              component: containers
+              container: proxy
+              pod: proxy-101
+              namespace: production
+            exp_annotations:
+              summary: "Container proxy network transmit errors"
+              runbook_url: "https://docs.vibecode.dev/runbooks/container-network-errors"
+
+  # ============================================================================
+  # No Alert Tests - Verify alerts don't fire under normal conditions
+  # ============================================================================
+
+  - interval: 1m
+    input_series:
+      # Normal CPU usage - should NOT trigger any alerts
+      - series: 'container_cpu_usage_seconds_total{container="normal",pod="normal-123",namespace="production"}'
+        values: '0+0.5x10'  # 50% CPU
+
+      # Normal memory usage - should NOT trigger any alerts
+      - series: 'container_memory_working_set_bytes{container="normal",pod="normal-123",namespace="production"}'
+        values: '500000000+0x10'  # 500 MB
+      - series: 'container_spec_memory_limit_bytes{container="normal",pod="normal-123",namespace="production"}'
+        values: '1000000000+0x10'  # 1 GB limit (50% usage)
+
+      # Normal disk usage - should NOT trigger any alerts
+      - series: 'container_fs_usage_bytes{container="normal",pod="normal-123",namespace="production"}'
+        values: '5000000000+0x15'  # 5 GB
+      - series: 'container_fs_limit_bytes{container="normal",pod="normal-123",namespace="production"}'
+        values: '10000000000+0x15'  # 10 GB limit (50% usage)
+
+      # Container running normally
+      - series: 'kube_pod_container_status_running{container="normal",pod="normal-123",namespace="production"}'
+        values: '1+0x10'  # Always running
+
+      # No restarts
+      - series: 'kube_pod_container_status_restarts_total{container="normal",pod="normal-123",namespace="production"}'
+        values: '0+0x10'  # No restarts
+
+    alert_rule_test:
+      # Verify no alerts fire at 10 minutes for normal container
+      - eval_time: 10m
+        alertname: ContainerHighCPUUsage
+        exp_alerts: []
+
+      - eval_time: 10m
+        alertname: ContainerCriticalCPUUsage
+        exp_alerts: []
+
+      - eval_time: 10m
+        alertname: ContainerHighMemoryUsage
+        exp_alerts: []
+
+      - eval_time: 10m
+        alertname: ContainerCriticalMemoryUsage
+        exp_alerts: []
+
+      - eval_time: 10m
+        alertname: ContainerMemoryNearLimit
+        exp_alerts: []
+
+      - eval_time: 10m
+        alertname: ContainerDiskUsageHigh
+        exp_alerts: []
+
+      - eval_time: 10m
+        alertname: ContainerDiskUsageWarning
+        exp_alerts: []
+
+      - eval_time: 10m
+        alertname: ContainerNotRunning
+        exp_alerts: []
+
+      - eval_time: 10m
+        alertname: ContainerRestartingFrequently
+        exp_alerts: []

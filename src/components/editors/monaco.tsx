@@ -3,13 +3,16 @@
 import type { editor } from 'monaco-editor';
 import dynamic from 'next/dynamic';
 import { useTheme } from 'next-themes';
-import { ComponentProps } from 'react';
+import { useMemo } from 'react';
+import { getOptimizedEditorOptions } from '@/lib/editor/large-file-optimizer';
 
 interface MonacoEditorProps {
   language: string;
   value: string;
   onChange: (value: string | undefined) => void;
   options?: editor.IStandaloneEditorConstructionOptions;
+  /** Enable large file optimizations (default: true) */
+  enableOptimizations?: boolean;
 }
 
 // Loading skeleton component
@@ -35,8 +38,43 @@ const EditorComponent = dynamic(() => import('@monaco-editor/react'), {
   loading: () => <MonacoLoadingSkeleton />,
 });
 
-export function Monaco({ language, value, onChange, options }: MonacoEditorProps) {
+export function Monaco({
+  language,
+  value,
+  onChange,
+  options,
+  enableOptimizations = true
+}: MonacoEditorProps) {
   const { theme } = useTheme();
+
+  // Calculate optimized editor options based on file size
+  const editorOptions = useMemo(() => {
+    // Get base options
+    const baseOptions: editor.IStandaloneEditorConstructionOptions = {
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+    };
+
+    // Apply large file optimizations if enabled
+    if (enableOptimizations && value) {
+      const optimizedOptions = getOptimizedEditorOptions(value, {
+        overrides: baseOptions,
+        debug: process.env.NODE_ENV === 'development',
+      });
+
+      // Merge with user-provided options (user options take precedence)
+      return {
+        ...optimizedOptions,
+        ...options,
+      };
+    }
+
+    // No optimizations - just use base + user options
+    return {
+      ...baseOptions,
+      ...options,
+    };
+  }, [value, options, enableOptimizations]);
 
   return (
     <EditorComponent
@@ -45,11 +83,7 @@ export function Monaco({ language, value, onChange, options }: MonacoEditorProps
       theme={theme === 'dark' ? 'vs-dark' : 'light'}
       value={value}
       onChange={onChange}
-      options={{
-        minimap: { enabled: false },
-        scrollBeyondLastLine: false,
-        ...options,
-      }}
+      options={editorOptions}
     />
   );
 }
