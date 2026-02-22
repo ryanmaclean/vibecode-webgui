@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { modelRegistry } from '@/lib/ai/models/model-registry';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
+import { ollamaClient } from '@/lib/ollama-client';
 import { z } from '@/lib/zod-compat';
 import type {
   ModelSearchOptions,
@@ -96,6 +97,13 @@ export async function GET(request: NextRequest) {
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
+
+    // Check if provider is ollama - handle separately
+    const provider = searchParams.get('provider');
+    if (provider === 'ollama') {
+      return handleOllamaModels();
+    }
+
     const options: ModelSearchOptions = {};
 
     // Parse basic options
@@ -209,6 +217,111 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Fetch Ollama models for registry
+ */
+async function handleOllamaModels() {
+  try {
+    const isAvailable = await ollamaClient.isAvailable();
+
+    if (!isAvailable) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          models: [],
+          total: 0,
+          page: 1,
+          pageSize: 20,
+          totalPages: 0,
+        },
+        meta: {
+          provider: 'ollama',
+          available: false,
+          message: 'Ollama is not running',
+        },
+      });
+    }
+
+    const models = await ollamaClient.listModels();
+
+    const formattedModels = models.map(model => ({
+      id: `ollama:${model.name}`,
+      name: model.name,
+      provider: {
+        id: 'ollama',
+        name: 'Ollama',
+        tier: 'local' as const,
+        available: true,
+      },
+      modelId: model.model,
+      size: model.size,
+      sizeFormatted: ollamaClient.formatModelSize(model.size),
+      family: model.details.family,
+      format: model.details.format,
+      parameterSize: model.details.parameter_size,
+      quantization: model.details.quantization_level,
+      modified: model.modified_at,
+      capabilities: {
+        chat: true,
+        completion: true,
+        streaming: true,
+        functionCalling: false,
+        vision: model.details.family?.includes('vision') || false,
+      },
+      performance: {
+        speedTier: 'fast' as const,
+        estimatedSpeed: ollamaClient.estimateInferenceTime(model.size, 100),
+      },
+      pricing: {
+        inputCostPer1M: 0,
+        outputCostPer1M: 0,
+      },
+      limits: {
+        maxContextTokens: 4096,
+        maxOutputTokens: 2048,
+      },
+      qualityTier: 'good' as const,
+      tags: ['local', 'ollama', model.details.family].filter(Boolean),
+    }));
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        models: formattedModels,
+        total: models.length,
+        page: 1,
+        pageSize: models.length,
+        totalPages: 1,
+      },
+      meta: {
+        provider: 'ollama',
+        available: true,
+        totalModels: models.length,
+        totalSize: models.reduce((sum, model) => sum + model.size, 0),
+        totalSizeFormatted: ollamaClient.formatModelSize(
+          models.reduce((sum, model) => sum + model.size, 0)
+        ),
+      },
+    });
+  } catch (error) {
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch Ollama models',
+      data: {
+        models: [],
+        total: 0,
+        page: 1,
+        pageSize: 20,
+        totalPages: 0,
+      },
+      meta: {
+        provider: 'ollama',
+        available: false,
+      },
+    });
   }
 }
 

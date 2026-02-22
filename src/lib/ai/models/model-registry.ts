@@ -28,6 +28,7 @@ import type {
 } from '@/types/model-comparison';
 import { DEFAULT_COMPARISON_CRITERIA } from '@/types/model-comparison';
 import { MODEL_CONFIGS, ModelFamily } from '@/types/context';
+import { ollamaClient, type OllamaModel } from '@/lib/ollama-client';
 
 // ============================================================================
 // Static Model Data
@@ -722,6 +723,8 @@ class ModelRegistryService {
   private cachedModels: ModelProfile[] = [];
   private lastOpenRouterFetch: number = 0;
   private openRouterCacheDuration = 1000 * 60 * 60; // 1 hour
+  private lastOllamaFetch: number = 0;
+  private ollamaCacheDuration = 1000 * 60 * 5; // 5 minutes (shorter cache for local models)
 
   constructor() {
     this.initializeModels();
@@ -1521,6 +1524,282 @@ class ModelRegistryService {
     } catch (error) {
       console.error('Failed to load models from OpenRouter:', error);
     }
+  }
+
+  /**
+   * Load models from Ollama (local models)
+   */
+  async loadFromOllama(): Promise<void> {
+    const now = Date.now();
+    if (now - this.lastOllamaFetch < this.ollamaCacheDuration) {
+      return; // Use cached data
+    }
+
+    try {
+      const isAvailable = await ollamaClient.isAvailable();
+      if (!isAvailable) {
+        console.log('Ollama not available, skipping local model loading');
+        return;
+      }
+
+      const ollamaModels = await ollamaClient.listModels();
+
+      // Add or update Ollama models in registry
+      for (const model of ollamaModels) {
+        const modelId = `ollama/${model.name}`;
+        const existing = this.models.get(modelId);
+
+        const profile = this.buildOllamaModelProfile(model);
+
+        if (existing) {
+          // Update existing model with fresh data
+          Object.assign(existing, profile);
+        } else {
+          // Add new Ollama model
+          this.models.set(modelId, profile);
+        }
+      }
+
+      this.cachedModels = Array.from(this.models.values());
+      this.lastOllamaFetch = now;
+      console.log(`Loaded ${ollamaModels.length} models from Ollama`);
+    } catch (error) {
+      console.error('Failed to load models from Ollama:', error);
+    }
+  }
+
+  /**
+   * Build a ModelProfile from an Ollama model
+   */
+  private buildOllamaModelProfile(model: OllamaModel): ModelProfile {
+    const modelId = `ollama/${model.name}`;
+    const family = model.details?.family || 'unknown';
+
+    // Infer capabilities based on model family and size
+    const capabilities = this.inferOllamaCapabilities(family, model.details?.parameter_size || '');
+
+    // Estimate performance based on model size
+    const performance = this.estimateOllamaPerformance(model.size, model.details?.parameter_size || '');
+
+    // Parse context window from model details (default to reasonable values)
+    const contextWindow = this.estimateContextWindow(family);
+
+    return {
+      id: modelId,
+      name: model.name,
+      description: `${family} model - ${model.details?.parameter_size || 'unknown size'} (${this.formatBytes(model.size)})`,
+      family: this.getModelFamily(family),
+      provider: PROVIDERS['ollama'],
+      capabilities,
+      pricing: {
+        inputPer1K: 0,
+        outputPer1K: 0,
+        isFree: true,
+        billingUnit: 'token',
+        currency: 'USD',
+      },
+      performance,
+      limits: {
+        contextWindow,
+        maxOutputTokens: 4096,
+        maxInputTokens: contextWindow - 4096,
+      },
+      benchmarks: {
+        overall: capabilities.coding, // Use coding score as proxy for overall
+        byCategory: {},
+        benchmarks: [],
+        benchmarkCount: 0,
+      },
+      qualityTier: this.inferQualityTier(model.details?.parameter_size || ''),
+      tags: this.getOllamaTags(family, model.details?.parameter_size || ''),
+      deprecated: false,
+      metadata: {
+        digest: model.digest,
+        modified_at: model.modified_at,
+        size: model.size,
+        quantization: model.details?.quantization_level,
+      },
+    };
+  }
+
+  /**
+   * Infer capabilities based on model family and size
+   */
+  private inferOllamaCapabilities(family: string, parameterSize: string): ModelCapabilities {
+    const familyLower = family.toLowerCase();
+    const isCodeModel = familyLower.includes('code') || familyLower.includes('qwen');
+    const isMathModel = familyLower.includes('math');
+    const isVisionModel = familyLower.includes('vision') || familyLower.includes('llava');
+
+    // Parse parameter size to determine quality
+    const sizeNum = this.parseParameterSize(parameterSize);
+    let qualityMultiplier = 1.0;
+    if (sizeNum >= 70) {
+      qualityMultiplier = 1.2;
+    } else if (sizeNum >= 30) {
+      qualityMultiplier = 1.1;
+    } else if (sizeNum < 3) {
+      qualityMultiplier = 0.8;
+    }
+
+    const baseCoding = isCodeModel ? 85 : 70;
+    const baseReasoning = isMathModel ? 85 : 70;
+    const baseCreative = 65;
+    const baseMath = isMathModel ? 85 : 60;
+    const baseVision = isVisionModel ? 80 : 0;
+
+    return {
+      coding: Math.round(baseCoding * qualityMultiplier),
+      reasoning: Math.round(baseReasoning * qualityMultiplier),
+      creative: Math.round(baseCreative * qualityMultiplier),
+      math: Math.round(baseMath * qualityMultiplier),
+      vision: baseVision,
+      function_calling: false,
+      streaming: true,
+      conversation: Math.round(75 * qualityMultiplier),
+      instruction_following: Math.round(75 * qualityMultiplier),
+      debugging: Math.round((isCodeModel ? 85 : 65) * qualityMultiplier),
+    };
+  }
+
+  /**
+   * Estimate performance based on model size
+   */
+  private estimateOllamaPerformance(sizeBytes: number, parameterSize: string): ModelPerformance {
+    const sizeNum = this.parseParameterSize(parameterSize);
+
+    let speedTier: SpeedTier;
+    let avgLatencyMs: number;
+    let tokensPerSecond: number;
+
+    if (sizeNum < 3) {
+      // Small models (< 3B)
+      speedTier = 'very_fast';
+      avgLatencyMs = 150;
+      tokensPerSecond = 200;
+    } else if (sizeNum < 10) {
+      // Medium models (3B - 10B)
+      speedTier = 'fast';
+      avgLatencyMs = 300;
+      tokensPerSecond = 120;
+    } else if (sizeNum < 30) {
+      // Large models (10B - 30B)
+      speedTier = 'medium';
+      avgLatencyMs = 600;
+      tokensPerSecond = 60;
+    } else {
+      // Very large models (30B+)
+      speedTier = 'slow';
+      avgLatencyMs = 1200;
+      tokensPerSecond = 30;
+    }
+
+    return {
+      avgLatencyMs,
+      tokensPerSecond,
+      speedTier,
+      timeToFirstTokenMs: Math.round(avgLatencyMs * 0.3),
+    };
+  }
+
+  /**
+   * Parse parameter size string to number (e.g., "7B" -> 7, "1.5B" -> 1.5)
+   */
+  private parseParameterSize(parameterSize: string): number {
+    const match = parameterSize.match(/(\d+\.?\d*)\s*[BM]/i);
+    if (!match) return 7; // Default to 7B if can't parse
+
+    const num = parseFloat(match[1]);
+    const unit = parameterSize.toUpperCase();
+
+    if (unit.includes('M')) {
+      return num / 1000; // Convert millions to billions
+    }
+
+    return num;
+  }
+
+  /**
+   * Estimate context window based on model family
+   */
+  private estimateContextWindow(family: string): number {
+    const familyLower = family.toLowerCase();
+
+    if (familyLower.includes('llama-3')) {
+      return 128000;
+    } else if (familyLower.includes('gemma')) {
+      return 8192;
+    } else if (familyLower.includes('qwen')) {
+      return 32000;
+    } else if (familyLower.includes('mistral')) {
+      return 32000;
+    } else if (familyLower.includes('phi')) {
+      return 4096;
+    }
+
+    return 4096; // Default context window
+  }
+
+  /**
+   * Infer quality tier based on parameter size
+   */
+  private inferQualityTier(parameterSize: string): QualityTier {
+    const sizeNum = this.parseParameterSize(parameterSize);
+
+    if (sizeNum >= 70) {
+      return 'state_of_art';
+    } else if (sizeNum >= 30) {
+      return 'excellent';
+    } else if (sizeNum >= 7) {
+      return 'good';
+    } else {
+      return 'basic';
+    }
+  }
+
+  /**
+   * Get relevant tags for Ollama model
+   */
+  private getOllamaTags(family: string, parameterSize: string): string[] {
+    const tags: string[] = ['local', 'ollama', 'open-source'];
+    const familyLower = family.toLowerCase();
+    const sizeNum = this.parseParameterSize(parameterSize);
+
+    if (familyLower.includes('code') || familyLower.includes('qwen')) {
+      tags.push('coding');
+    }
+
+    if (familyLower.includes('math')) {
+      tags.push('math');
+    }
+
+    if (familyLower.includes('vision') || familyLower.includes('llava')) {
+      tags.push('vision', 'multimodal');
+    }
+
+    if (sizeNum < 3) {
+      tags.push('lightweight', 'fast');
+    } else if (sizeNum >= 30) {
+      tags.push('flagship', 'premium');
+    }
+
+    return tags;
+  }
+
+  /**
+   * Format bytes to human-readable string
+   */
+  private formatBytes(bytes: number): string {
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let size = bytes;
+    let unitIndex = 0;
+
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+
+    return `${size.toFixed(1)} ${units[unitIndex]}`;
   }
 
   /**
