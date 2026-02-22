@@ -18,8 +18,6 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  ChevronDown,
-  ExternalLink,
   BarChart3,
 } from 'lucide-react'
 
@@ -383,17 +381,6 @@ const MOCK_SERVICE_EDGES: ServiceEdge[] = [
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function statusColor(status: TraceStatus): string {
-  switch (status) {
-    case 'success':
-      return 'text-green-600 dark:text-green-400'
-    case 'error':
-      return 'text-red-600 dark:text-red-400'
-    case 'warning':
-      return 'text-yellow-600 dark:text-yellow-400'
-  }
-}
-
 function statusBadge(status: TraceStatus): string {
   const base = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium'
   switch (status) {
@@ -496,10 +483,13 @@ export default function TracesPage() {
       const response = await fetch('/api/monitoring/traces?timeframe=1h')
       if (response.ok) {
         const data: TracesAPIResponse = await response.json()
+        if (Array.isArray(data.traces)) {
+          setTraces(data.traces)
+        }
         setLastRefreshed(new Date())
       }
     } catch (error) {
-      // In production, this would fetch real data
+      console.error('Failed to refresh trace data:', error)
     } finally {
       setLoading(false)
     }

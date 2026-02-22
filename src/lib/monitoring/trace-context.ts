@@ -275,11 +275,21 @@ export function extractTraceContext(headers: Headers | Record<string, string>) {
     return null;
   }
 
+  const [version, traceId, spanId, traceFlags] = parts;
+  if (
+    !/^[0-9a-f]{2}$/.test(version) ||
+    !/^[0-9a-f]{32}$/.test(traceId) ||
+    !/^[0-9a-f]{16}$/.test(spanId) ||
+    !/^[0-9a-f]{2}$/.test(traceFlags)
+  ) {
+    return null;
+  }
+
   return {
-    version: parts[0],
-    traceId: parts[1],
-    spanId: parts[2],
-    traceFlags: parts[3],
+    version,
+    traceId,
+    spanId,
+    traceFlags,
   };
 }
 

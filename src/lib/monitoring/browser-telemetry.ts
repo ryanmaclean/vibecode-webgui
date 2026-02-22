@@ -85,7 +85,7 @@ export function initializeBrowserTelemetry() {
 
     // Configure OTLP exporter for browser traces
     const otlpExporter = new OTLPTraceExporter({
-      url: process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || '/api/telemetry/traces',
+      url: process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || '/api/monitoring/traces',
       headers: {
         'Content-Type': 'application/json'
       }
@@ -173,7 +173,7 @@ export function getBrowserTelemetryConfig() {
     service_name: serviceName,
     service_version: serviceVersion,
     environment: process.env.NODE_ENV || 'development',
-    otlp_endpoint: process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || '/api/telemetry/traces',
+    otlp_endpoint: process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || '/api/monitoring/traces',
     user_agent: isBrowser ? navigator.userAgent : 'N/A',
     language: isBrowser ? navigator.language : 'N/A',
     platform: isBrowser ? navigator.platform : 'N/A'

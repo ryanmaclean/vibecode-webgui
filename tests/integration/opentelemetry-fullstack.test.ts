@@ -6,7 +6,7 @@
 import { jest } from '@jest/globals'
 import type { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { trace, context, SpanStatusCode } from '@opentelemetry/api'
+import { trace, SpanStatusCode } from '@opentelemetry/api'
 
 // Strongly-typed mock for getServerSession to avoid 'any' casts in tests
 const mockedGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>

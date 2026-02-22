@@ -4,11 +4,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { monitoring } from '../../../../lib/monitoring'
-import { datadogMonitoring } from '../../../../lib/monitoring/enhanced-datadog-integration'
-import { getServiceEnvVersion } from '../../../../lib/monitoring/datadog-env'
-import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../lib/monitoring/auth'
-import { cache, CacheTTL } from '../../../../lib/cache/unified-cache-client'
+import { monitoring } from '@/lib/monitoring'
+import { datadogMonitoring } from '@/lib/monitoring/enhanced-datadog-integration'
+import { getServiceEnvVersion } from '@/lib/monitoring/datadog-env'
+import { checkMonitoringAuth, getUnauthorizedResponse } from '@/lib/monitoring/auth'
+import { cache, CacheTTL } from '@/lib/cache/unified-cache-client'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -44,9 +44,8 @@ export async function GET(request: NextRequest) {
     // Parallel execution of all health checks for optimal performance
     const startTime = Date.now();
 
-    // Perform cache health check to trigger tracing
-    const cacheHealthy = await cache.healthCheck();
-    const cacheTraceContext = cache.getTraceContext();
+    // Perform cache health check and capture trace context within the traced span
+    const cacheHealth = await cache.healthCheckWithTrace();
 
     const [dbHealth, redisHealth, aiHealth, dashboardDataPromise, systemMetrics] = await Promise.allSettled([
       monitoring.checkDatabase(),
@@ -73,8 +72,8 @@ export async function GET(request: NextRequest) {
         database: dbHealth.status === 'fulfilled' ? dbHealth.value : { status: 'error', error: 'Health check failed', details: dbHealth.reason?.message },
         redis: {
           ...(redisHealth.status === 'fulfilled' ? redisHealth.value : { status: 'error', error: 'Health check failed', details: redisHealth.reason?.message }),
-          cache_healthy: cacheHealthy,
-          ...cacheTraceContext
+          cache_healthy: cacheHealth.healthy,
+          ...cacheHealth.traceContext
         },
         aiService: aiHealth.status === 'fulfilled' ? aiHealth.value : { status: 'error', error: 'Health check failed', details: aiHealth.reason?.message },
         overall: calculateOverallHealth([
@@ -151,11 +150,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response)
 
   } catch (error) {
-    // Server error logged
+    console.error('Failed to fetch monitoring dashboard data', error)
     
     return NextResponse.json({
       error: 'Failed to fetch monitoring data',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: 'Internal server error',
       timestamp: new Date().toISOString()
     }, { status: 500 })
   }

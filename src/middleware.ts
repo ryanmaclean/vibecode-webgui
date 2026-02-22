@@ -22,11 +22,7 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Extract and inject trace context from incoming request for all requests
-  // This enables distributed tracing across services
-  const { traceContext } = extractAndInjectTraceContext(request.headers);
-
-  // Skip middleware for static assets
+  // Skip middleware for static assets before any trace parsing work
   if (
     pathname.startsWith('/_next/static') ||
     pathname.startsWith('/_next/image') ||
@@ -35,6 +31,10 @@ export async function middleware(request: NextRequest) {
   ) {
     return NextResponse.next();
   }
+
+  // Extract and inject trace context from incoming request
+  // This enables distributed tracing across services
+  const { traceContext } = extractAndInjectTraceContext(request.headers);
 
   // In test environment, pass through without additional processing
   if (process.env.NODE_ENV === 'test') {
@@ -45,21 +45,6 @@ export async function middleware(request: NextRequest) {
       response.headers.set('X-Span-Id', traceContext.span_id);
     }
     return response;
-  }
-
-  // For health endpoints, skip auth but still propagate trace context
-  const isHealthEndpoint = pathname.startsWith('/api/health') ||
-                          pathname === '/api/healthz' ||
-                          pathname === '/api/readyz';
-
-  if (isHealthEndpoint) {
-    const response = NextResponse.next();
-    // Add trace context to response headers
-    if (traceContext) {
-      response.headers.set('X-Trace-Id', traceContext.trace_id);
-      response.headers.set('X-Span-Id', traceContext.span_id);
-    }
-    return addSecurityHeaders(response);
   }
 
   // Check authentication for protected routes

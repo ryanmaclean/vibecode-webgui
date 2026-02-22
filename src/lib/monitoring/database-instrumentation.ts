@@ -172,7 +172,8 @@ function estimateQueryComplexity(queryText: string): string {
   const normalizedQuery = queryText.toUpperCase();
 
   // Check for complex operations
-  if (normalizedQuery.includes('JOIN') && normalizedQuery.includes('SUBQUERY')) {
+  const hasSubquery = /\(\s*SELECT\b/.test(normalizedQuery);
+  if (normalizedQuery.includes('JOIN') && hasSubquery) {
     return 'very_high';
   }
 

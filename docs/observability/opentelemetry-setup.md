@@ -428,9 +428,9 @@ processors:
 
 exporters:
   logging:
-    loglevel: info
+    verbosity: normal
   otlp:
-    endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-localhost:4317}
+    endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-vibecode-otel-backend:4317}
     tls:
       insecure: true
 
@@ -490,15 +490,15 @@ OTEL_EXPORTER_OTLP_ENDPOINT=https://trace.agent.datadoghq.com
 
 ```yaml
 exporters:
-  jaeger:
-    endpoint: jaeger-collector:14250
+  otlp/jaeger:
+    endpoint: jaeger-collector:4317
     tls:
       insecure: true
 
 service:
   pipelines:
     traces:
-      exporters: [jaeger]
+      exporters: [otlp/jaeger]
 ```
 
 ### Grafana Tempo

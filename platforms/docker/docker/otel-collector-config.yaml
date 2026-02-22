@@ -20,9 +20,9 @@ processors:
 
 exporters:
   logging:
-    loglevel: info
+    verbosity: normal
   otlp:
-    endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-localhost:4317}
+    endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-vibecode-otel-backend:4317}
     tls:
       insecure: true
 

@@ -4,12 +4,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { monitoring } from '../../../../lib/monitoring'
+import { monitoring } from '@/lib/monitoring'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
-import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../lib/monitoring/auth'
-import { cache, CacheTTL } from '../../../../lib/cache/unified-cache-client'
-import { getCurrentTraceContext, extractTraceContext } from '../../../../lib/monitoring/trace-context'
-import { getOpenTelemetryConfig } from '../../../../lib/monitoring/opentelemetry'
+import { checkMonitoringAuth, getUnauthorizedResponse } from '@/lib/monitoring/auth'
+import { cache, CacheTTL } from '@/lib/cache/unified-cache-client'
+import { getCurrentTraceContext, extractTraceContext } from '@/lib/monitoring/trace-context'
+import { getOpenTelemetryConfig } from '@/lib/monitoring/opentelemetry'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -238,10 +238,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response)
   } catch (error) {
+    console.error('Failed to fetch trace data', error)
+
     return NextResponse.json(
       {
         error: 'Failed to fetch trace data',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: 'Internal server error',
         timestamp: new Date().toISOString(),
       },
       { status: 500 }
@@ -322,13 +324,14 @@ export async function POST(request: NextRequest) {
             for (const span of spans) {
               // Extract span information
               const spanName = span.name || 'unknown_span'
-              const startTime = span.startTimeUnixNano
-                ? Math.floor(parseInt(span.startTimeUnixNano) / 1000000)
-                : Date.now()
-              const endTime = span.endTimeUnixNano
-                ? Math.floor(parseInt(span.endTimeUnixNano) / 1000000)
-                : Date.now()
-              const duration = endTime - startTime
+              const fallbackNowNs = BigInt(Date.now()) * 1000000n
+              const startTimeNs = span.startTimeUnixNano
+                ? BigInt(span.startTimeUnixNano)
+                : fallbackNowNs
+              const endTimeNs = span.endTimeUnixNano
+                ? BigInt(span.endTimeUnixNano)
+                : fallbackNowNs
+              const duration = Number((endTimeNs - startTimeNs) / 1000000n)
 
               // Extract attributes
               const attributes = span.attributes || []
@@ -397,12 +400,12 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    // Server error logged
+    console.error('Failed to process client traces payload', error)
 
     return NextResponse.json(
       {
         error: 'Failed to process traces',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: 'Internal server error',
         timestamp: new Date().toISOString(),
       },
       { status: 500 }

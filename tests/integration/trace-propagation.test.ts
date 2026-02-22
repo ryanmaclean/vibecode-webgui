@@ -63,7 +63,7 @@ jest.mock('@opentelemetry/instrumentation-pg', () => ({
 }))
 
 // Import OpenTelemetry API for real
-import { trace, context, SpanStatusCode } from '@opentelemetry/api'
+import { trace, SpanStatusCode } from '@opentelemetry/api'
 import {
   extractTraceContext,
   createTraceparentHeader,

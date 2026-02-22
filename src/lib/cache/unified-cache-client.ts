@@ -209,16 +209,15 @@ export class CacheManager {
   async get<T = unknown>(key: string): Promise<T | null> {
     if (!this.client) return null;
 
-    return traceRedisOperation(
-      'get',
-      {
-        'db.redis.key': key,
-        'db.redis.client_type': this.clientType
-      },
-      async () => {
-        const startTime = Date.now();
-
-        try {
+    try {
+      return await traceRedisOperation(
+        'get',
+        {
+          'db.redis.key': key,
+          'db.redis.client_type': this.clientType
+        },
+        async () => {
+          const startTime = Date.now();
           const value = await (this.client as EnhancedRedis).get(key);
           const duration = Date.now() - startTime;
 
@@ -227,22 +226,22 @@ export class CacheManager {
           if (value) {
             metrics.increment('cache.hit');
             return JSON.parse(value);
-          } else {
-            metrics.increment('cache.miss');
-            return null;
           }
-        } catch (error) {
-          metrics.increment('cache.error');
-          console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} get error`, {
-            clientType: this.clientType,
-            operation: 'get',
-            key,
-            error: getErrorMessage(error)
-          });
+
+          metrics.increment('cache.miss');
           return null;
         }
-      }
-    );
+      );
+    } catch (error) {
+      metrics.increment('cache.error');
+      console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} get error`, {
+        clientType: this.clientType,
+        operation: 'get',
+        key,
+        error: getErrorMessage(error)
+      });
+      return null;
+    }
   }
 
   /**
@@ -251,17 +250,16 @@ export class CacheManager {
   async set(key: string, value: unknown, ttl: number = CacheTTL.MEDIUM): Promise<boolean> {
     if (!this.client) return false;
 
-    return traceRedisOperation(
-      'set',
-      {
-        'db.redis.key': key,
-        'db.redis.ttl': ttl,
-        'db.redis.client_type': this.clientType
-      },
-      async () => {
-        const startTime = Date.now();
-
-        try {
+    try {
+      return await traceRedisOperation(
+        'set',
+        {
+          'db.redis.key': key,
+          'db.redis.ttl': ttl,
+          'db.redis.client_type': this.clientType
+        },
+        async () => {
+          const startTime = Date.now();
           const serialized = JSON.stringify(value);
           await (this.client as EnhancedRedis).setex(key, ttl, serialized);
 
@@ -270,19 +268,19 @@ export class CacheManager {
           metrics.increment('cache.set.success');
 
           return true;
-        } catch (error) {
-          metrics.increment('cache.set.error');
-          console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} set error`, {
-            clientType: this.clientType,
-            operation: 'set',
-            key,
-            ttl,
-            error: getErrorMessage(error)
-          });
-          return false;
         }
-      }
-    );
+      );
+    } catch (error) {
+      metrics.increment('cache.set.error');
+      console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} set error`, {
+        clientType: this.clientType,
+        operation: 'set',
+        key,
+        ttl,
+        error: getErrorMessage(error)
+      });
+      return false;
+    }
   }
 
   /**
@@ -292,30 +290,29 @@ export class CacheManager {
     if (!this.client) return false;
 
     const keys = Array.isArray(key) ? key : [key];
-    return traceRedisOperation(
-      'del',
-      {
-        'db.redis.key_count': keys.length,
-        'db.redis.client_type': this.clientType
-      },
-      async () => {
-        try {
+    try {
+      return await traceRedisOperation(
+        'del',
+        {
+          'db.redis.key_count': keys.length,
+          'db.redis.client_type': this.clientType
+        },
+        async () => {
           await (this.client as EnhancedRedis).del(...keys);
-
           metrics.increment('cache.delete', { count: keys.length.toString() });
           return true;
-        } catch (error) {
-          metrics.increment('cache.delete.error');
-          console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} delete error`, {
-            clientType: this.clientType,
-            operation: 'delete',
-            keys: Array.isArray(key) ? key : [key],
-            error: getErrorMessage(error)
-          });
-          return false;
         }
-      }
-    );
+      );
+    } catch (error) {
+      metrics.increment('cache.delete.error');
+      console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} delete error`, {
+        clientType: this.clientType,
+        operation: 'delete',
+        keys: Array.isArray(key) ? key : [key],
+        error: getErrorMessage(error)
+      });
+      return false;
+    }
   }
 
   /**
@@ -509,21 +506,46 @@ export class CacheManager {
   async healthCheck(): Promise<boolean> {
     if (!this.client) return false;
 
-    return traceRedisOperation(
-      'ping',
-      {
-        'db.redis.operation': 'health_check',
-        'db.redis.client_type': this.clientType
-      },
-      async () => {
-        try {
+    try {
+      return await traceRedisOperation(
+        'ping',
+        {
+          'db.redis.operation': 'health_check',
+          'db.redis.client_type': this.clientType
+        },
+        async () => {
           await (this.client as EnhancedRedis).ping();
           return true;
-        } catch (error) {
-          return false;
         }
-      }
-    );
+      );
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Health check that also returns trace context captured inside the traced span
+   */
+  async healthCheckWithTrace(): Promise<{ healthy: boolean; traceContext: { trace_id?: string; span_id?: string } }> {
+    if (!this.client) {
+      return { healthy: false, traceContext: {} };
+    }
+
+    try {
+      return await traceRedisOperation(
+        'ping',
+        {
+          'db.redis.operation': 'health_check',
+          'db.redis.client_type': this.clientType
+        },
+        async () => {
+          await (this.client as EnhancedRedis).ping();
+          return { healthy: true, traceContext: getRedisTraceContext() };
+        }
+      );
+    } catch (error) {
+      return { healthy: false, traceContext: {} };
+    }
   }
 
   /**
