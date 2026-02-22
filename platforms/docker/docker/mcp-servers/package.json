@@ -15,7 +15,8 @@
     "node": ">=16.0.0"
   },
   "overrides": {
-    "hono": "^4.11.4"
+    "ajv": "^8.18.0",
+    "hono": "^4.11.8"
   },
   "private": true
 }

@@ -150,6 +150,7 @@
     "mcp": "npm run mcp:start",
     "check": "npm run lint && npm run type-check",
     "quick-test": "npm run test:unit -- --maxWorkers=2",
+    "quickstart": "node scripts/quickstart.js",
     "test:unit:monaco": "jest --runTestsByPath tests/unit/monaco-monacopilot.test.ts",
     "lint:markdown": "markdownlint-cli2"
   },
@@ -263,6 +264,7 @@
     "zustand": "5.0.11"
   },
   "overrides": {
+    "lodash": "^4.17.23",
     "ignore": "^7.0.5",
     "tmp": "^0.2.4",
     "@octokit/openapi-types": "24.0.0",

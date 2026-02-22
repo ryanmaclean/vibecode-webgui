@@ -13,7 +13,7 @@
   "dependencies": {
     "@headlessui/react": "^1.7.17",
     "@tanstack/react-query": "^5.87.4",
-    "axios": "^1.12.2",
+    "axios": "^1.13.5",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
     "lucide-react": "^0.294.0",
@@ -38,6 +38,7 @@
     "vite": "^7.1.11"
   },
   "overrides": {
+    "lodash": "^4.17.23",
     "esbuild": "^0.25.9",
     "brace-expansion": "^2.0.2",
     "nanoid": "^3.3.8"

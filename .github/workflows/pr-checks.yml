@@ -23,7 +23,7 @@ env:
 jobs:
   pr-info:
     name: PR Information
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_USE_SELF_HOSTED == 'true' && (vars.CI_SELF_HOSTED_LABELS_JSON || '["self-hosted","linux","x64"]') || '["ubuntu-latest"]') }}
     if: github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@v4
@@ -76,7 +76,7 @@ jobs:
 
   quick-checks:
     name: Quick Checks
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_USE_SELF_HOSTED == 'true' && (vars.CI_SELF_HOSTED_LABELS_JSON || '["self-hosted","linux","x64"]') || '["ubuntu-latest"]') }}
     if: github.event.pull_request.draft == false
     timeout-minutes: 10
     steps:
@@ -136,7 +136,7 @@ jobs:
 
   test-pr:
     name: Test PR Changes
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_USE_SELF_HOSTED == 'true' && (vars.CI_SELF_HOSTED_LABELS_JSON || '["self-hosted","linux","x64"]') || '["ubuntu-latest"]') }}
     if: github.event.pull_request.draft == false
     timeout-minutes: 30
     services:
@@ -253,7 +253,7 @@ jobs:
 
   build-pr:
     name: Build PR
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_USE_SELF_HOSTED == 'true' && (vars.CI_SELF_HOSTED_LABELS_JSON || '["self-hosted","linux","x64"]') || '["ubuntu-latest"]') }}
     if: github.event.pull_request.draft == false
     timeout-minutes: 15
     steps:
@@ -302,7 +302,7 @@ jobs:
 
   pr-status:
     name: PR Status Check
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_USE_SELF_HOSTED == 'true' && (vars.CI_SELF_HOSTED_LABELS_JSON || '["self-hosted","linux","x64"]') || '["ubuntu-latest"]') }}
     needs: [quick-checks, test-pr, build-pr]
     if: always() && github.event.pull_request.draft == false
     steps:
