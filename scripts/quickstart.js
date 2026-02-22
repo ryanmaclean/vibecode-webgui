@@ -137,6 +137,12 @@ function runSetup(dryRun) {
 
   if (dryRun) {
     log.info('Would run: node scripts/setup-development.js');
+    log.info('  - Check Node.js version compatibility');
+    log.info('  - Setup environment file (.env template)');
+    log.info('  - Fix Tailwind CSS v4 configuration');
+    log.info('  - Check Docker configuration');
+    log.info('  - Verify optional dependencies');
+    log.info('  - Validate setup completion');
     return true;
   }
 
@@ -257,10 +263,14 @@ ${colors.cyan}Steps to execute:${colors.reset}
 
   if (isFirst) {
     console.log(`  ${stepNum++}. ${colors.yellow}Run development setup${colors.reset}`);
-    console.log(`      - Create .env file template`);
-    console.log(`      - Fix Tailwind CSS configuration`);
-    console.log(`      - Check Docker setup`);
-    console.log(`      - Verify optional dependencies\n`);
+    console.log(`      Execute: node scripts/setup-development.js`);
+    console.log(`      - Check Node.js version compatibility`);
+    console.log(`      - Setup environment file (.env template)`);
+    console.log(`      - Fix Tailwind CSS v4 configuration`);
+    console.log(`      - Check Docker configuration`);
+    console.log(`      - Verify optional dependencies (sharp, lightningcss)`);
+    console.log(`      - Validate setup completion`);
+    console.log(`      - Display next steps\n`);
   }
 
   console.log(`  ${stepNum++}. ${colors.yellow}Install dependencies${colors.reset}`);
