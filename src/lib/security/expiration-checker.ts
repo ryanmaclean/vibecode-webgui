@@ -154,6 +154,7 @@ export class ExpirationChecker {
     options: ExpirationCheckOptions = {}
   ): Promise<ExpirationStatus | null> {
     const thresholdDays = options.thresholdDays || 30
+    const expiringSoonThreshold = Math.max(this.thresholds.info, thresholdDays)
 
     try {
       // Fetch secret metadata
@@ -221,7 +222,7 @@ export class ExpirationChecker {
           'Plan rotation within the next week',
           metadata.rotation_policy
         )
-      } else if (daysUntilExpiration <= this.thresholds.info) {
+      } else if (daysUntilExpiration <= expiringSoonThreshold) {
         status = 'expiring_soon'
         severity = 'info'
         message = this.buildAlertMessage(
@@ -373,7 +374,7 @@ export class ExpirationChecker {
     options: ExpirationCheckOptions = {}
   ): Promise<ExpirationSummary> {
     try {
-      const includeNoExpiration = options.includeNoExpiration || false
+      const includeNoExpiration = options.includeNoExpiration ?? true
 
       // Get all active secrets
       const secrets = await this.prisma.secretMetadata.findMany({
@@ -432,6 +433,9 @@ export class ExpirationChecker {
             }
             break
           case 'no_expiration':
+            if (!includeNoExpiration) {
+              continue
+            }
             noExpiration++
             break
         }

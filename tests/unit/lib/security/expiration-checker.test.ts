@@ -477,7 +477,7 @@ describe('ExpirationChecker', () => {
     it('should exclude revoked secrets', async () => {
       mockPrisma.secretMetadata.findMany.mockResolvedValue([])
 
-      const results = await expirationChecker.getExpired()
+      await expirationChecker.getExpired()
 
       expect(mockPrisma.secretMetadata.findMany).toHaveBeenCalledWith({
         where: {

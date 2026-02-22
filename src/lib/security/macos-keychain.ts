@@ -12,7 +12,7 @@
  * - MDM policy integration
  */
 
-import { execSync } from 'child_process'
+import { execFileSync, spawnSync } from 'child_process'
 import { createChildLogger } from '@/lib/logger'
 
 const logger = createChildLogger({ module: 'security', scope: 'keychain' })
@@ -29,10 +29,6 @@ const KEYCHAIN_CONFIG = {
   },
   METADATA_PREFIX: 'vibe-meta:',
 } as const
-
-// Legacy constants for backward compatibility
-const KEYCHAIN_SERVICE = KEYCHAIN_CONFIG.SERVICE
-const KEYCHAIN_ACCESS_GROUP = KEYCHAIN_CONFIG.ACCESS_GROUP
 
 /**
  * Metadata stored alongside secrets in the keychain
@@ -128,41 +124,35 @@ export async function setSecret(
   }
 
   try {
-    // Properly escape value for shell
-    const escapedValue = value.replace(/'/g, "'\\''")
-
     // Serialize metadata for storage in comment field
     const metadataComment = serializeMetadata(opts.metadata)
 
-    // Build command parts as array to avoid shell escaping issues
-    const commandParts = [
-      'security',
+    const commandArgs = [
       'add-generic-password',
       '-s',
       opts.service!,
       '-a',
       opts.account,
       '-w',
-      `'${escapedValue}'`,
+      value,
       '-U', // Update if exists
     ]
 
     // Add metadata as comment if provided
     if (metadataComment) {
-      const escapedComment = metadataComment.replace(/'/g, "'\\''")
-      commandParts.push('-j', `'${escapedComment}'`)
+      commandArgs.push('-j', metadataComment)
     }
 
     // Access control: Allow all applications for development
     // In production, use -T to restrict access to specific applications
-    commandParts.push('-A')
+    commandArgs.push('-A')
 
     if (opts.accessGroup) {
-      commandParts.push('-G')
-      commandParts.push(opts.accessGroup)
+      commandArgs.push('-G')
+      commandArgs.push(opts.accessGroup)
     }
 
-    execSync(commandParts.join(' '), { encoding: 'utf8', shell: '/bin/bash' })
+    execFileSync('security', commandArgs, { encoding: 'utf8' })
 
     logger.info('Secret stored in Keychain', {
       service: opts.service,
@@ -197,7 +187,6 @@ export async function getSecret(
 
   try {
     const command = [
-      'security',
       'find-generic-password',
       '-s',
       opts.service!,
@@ -206,10 +195,9 @@ export async function getSecret(
       '-w', // Output password only
     ]
 
-    const result = execSync(command.join(' '), {
+    const result = execFileSync('security', command, {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'ignore'], // Suppress stderr
-      shell: '/bin/bash',
     })
 
     logger.debug('Secret retrieved from Keychain', {
@@ -256,7 +244,6 @@ export async function getSecretWithMetadata(
   try {
     // Get full item details including comment field
     const command = [
-      'security',
       'find-generic-password',
       '-s',
       opts.service!,
@@ -266,10 +253,9 @@ export async function getSecretWithMetadata(
       '-w', // Output password only to stdout
     ]
 
-    const result = execSync(command.join(' '), {
+    const result = execFileSync('security', command, {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'], // Capture both stdout and stderr
-      shell: '/bin/bash',
     })
 
     const value = result.trim()
@@ -278,29 +264,25 @@ export async function getSecretWithMetadata(
     let metadata: KeychainMetadata | null = null
     try {
       const commentCommand = [
-        'security',
         'find-generic-password',
         '-s',
         opts.service!,
         '-a',
         opts.account,
-        '|',
-        'grep',
-        '"icmt"',
-        '|',
-        'sed',
-        '-E',
-        's/.*"icmt"<blob>="([^"]+)".*/\\1/',
+        '-g',
       ]
 
-      const commentResult = execSync(commentCommand.join(' '), {
+      const commentResult = spawnSync('security', commentCommand, {
         encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'ignore'],
-        shell: '/bin/bash',
+        stdio: ['pipe', 'pipe', 'pipe'],
       })
 
-      const comment = commentResult.trim()
-      metadata = deserializeMetadata(comment)
+      if (commentResult.status === 0) {
+        const detailsOutput = `${commentResult.stdout}${commentResult.stderr}`
+        const commentMatch = detailsOutput.match(/"icmt"<blob>="([^"]*)"/)
+        const comment = commentMatch?.[1]
+        metadata = comment ? deserializeMetadata(comment) : null
+      }
     } catch {
       // Comment field not found or invalid - this is acceptable
       logger.debug('No metadata found for secret', { account: key })
@@ -346,7 +328,6 @@ export async function deleteSecret(
 
   try {
     const command = [
-      'security',
       'delete-generic-password',
       '-s',
       opts.service!,
@@ -354,7 +335,7 @@ export async function deleteSecret(
       opts.account,
     ]
 
-    execSync(command.join(' '), { encoding: 'utf8', shell: '/bin/bash' })
+    execFileSync('security', command, { encoding: 'utf8' })
 
     logger.info('Secret deleted from Keychain', {
       service: opts.service,
@@ -374,7 +355,7 @@ export async function deleteSecret(
  */
 export function isKeychainAvailable(): boolean {
   try {
-    execSync('which security', { encoding: 'utf8', stdio: 'ignore' })
+    execFileSync('which', ['security'], { encoding: 'utf8', stdio: 'ignore' })
     return process.platform === 'darwin'
   } catch {
     return false

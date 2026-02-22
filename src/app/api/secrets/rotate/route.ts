@@ -13,7 +13,7 @@ import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { SecretManager } from '@/lib/security/secret-manager'
 import { executeRotation } from '@/lib/security/rotation-policies'
 import { createServiceLogger } from '@/lib/logging'
@@ -25,8 +25,6 @@ const log = createServiceLogger({
   service: 'vibecode-webgui',
   component: 'secrets-rotate'
 })
-
-const prisma = new PrismaClient()
 
 /**
  * Validation schema for rotation request
@@ -55,7 +53,7 @@ export async function POST(request: NextRequest) {
     clientIp
   }
 
-  console.log('Secret rotation requested', logContext)
+  log.info('Secret rotation requested', logContext)
 
   try {
     // Authentication is required for rotation operations
@@ -63,7 +61,7 @@ export async function POST(request: NextRequest) {
     const isAuthenticated = !!session?.user
 
     if (!isAuthenticated) {
-      console.warn('Unauthorized rotation attempt', logContext)
+      log.warn('Unauthorized rotation attempt', logContext)
       return NextResponse.json({
         error: 'Authentication required',
         message: 'Secret rotation requires authentication'
@@ -78,14 +76,16 @@ export async function POST(request: NextRequest) {
       const body = await request.json()
       requestBody = rotateRequestSchema.parse(body)
     } catch (error) {
-      console.warn('Invalid rotation request body', {
+      log.warn('Invalid rotation request body', {
         ...logContext,
         error: error instanceof Error ? error.message : 'Invalid request'
       })
       return NextResponse.json({
         error: 'Invalid request',
         message: error instanceof z.ZodError
-          ? error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+          ? error.issues
+              .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+              .join(', ')
           : 'Request body validation failed'
       }, { status: 400 })
     }
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     const secretWithMetadata = await secretManager.getSecretWithMetadata(secret_name)
 
     if (!secretWithMetadata) {
-      console.warn('Secret not found for rotation', {
+      log.warn('Secret not found for rotation', {
         ...logContext,
         secretName: secret_name
       })
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     // Check if secret has a rotation policy
     if (!metadata.rotationPolicy) {
-      console.warn('Secret has no rotation policy', {
+      log.warn('Secret has no rotation policy', {
         ...logContext,
         secretName: secret_name
       })
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      console.log('Secret rotation completed successfully', {
+      log.info('Secret rotation completed successfully', {
         ...logContext,
         secretName: secret_name,
         previousExpiresAt: rotationResult.previousExpiresAt?.toISOString(),
@@ -182,7 +182,10 @@ export async function POST(request: NextRequest) {
     }, { status: rotationResult.success ? 200 : 400 })
 
   } catch (error) {
-    console.error('Secret rotation failed with error:', error)
+    log.error('Secret rotation failed with error', {
+      ...logContext,
+      error: error instanceof Error ? error.message : String(error),
+    })
 
     // Check authentication for error response detail level
     const session = await getServerSession(authOptions)
@@ -202,7 +205,5 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
       requestId
     }, { status: 500 })
-  } finally {
-    await prisma.$disconnect()
   }
 }

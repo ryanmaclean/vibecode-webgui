@@ -456,6 +456,11 @@ export function calculateNextExpiration(
 export function inferPolicyFromKeyName(secretKeyName: string): string | null {
   const keyLower = secretKeyName.toLowerCase()
 
+  // Monitoring (check before generic api key patterns)
+  if (keyLower.includes('dd_') || keyLower.includes('datadog')) {
+    return 'monitoring'
+  }
+
   // API Keys
   if (
     keyLower.includes('api_key') ||
@@ -485,11 +490,6 @@ export function inferPolicyFromKeyName(secretKeyName: string): string | null {
     keyLower.includes('connection_string')
   ) {
     return 'db_credentials'
-  }
-
-  // Monitoring
-  if (keyLower.includes('dd_') || keyLower.includes('datadog')) {
-    return 'monitoring'
   }
 
   // Default to custom

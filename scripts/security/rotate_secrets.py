@@ -563,8 +563,8 @@ Examples:
   # Rotate with a specific new value
   python rotate_secrets.py --secret-name DATABASE_URL --new-value "postgres://..."
 
-  # Rotate with a custom reason
-  python rotate_secrets.py --secret-name API_KEY --reason "Security audit rotation"
+  # Rotate with an explicit allowed reason
+  python rotate_secrets.py --secret-name API_KEY --reason emergency
         """,
     )
 
@@ -592,11 +592,21 @@ Examples:
         help="Specific new value to use (otherwise auto-generated)",
     )
 
+    valid_reasons = [
+        "scheduled",
+        "manual",
+        "compromised",
+        "expired",
+        "policy_change",
+        "emergency",
+    ]
+
     parser.add_argument(
         "--reason",
         type=str,
         default="manual",
-        help="Reason for rotation (default: manual)",
+        choices=valid_reasons,
+        help="Reason for rotation (allowed: scheduled, manual, compromised, expired, policy_change, emergency)",
     )
 
     parser.add_argument(

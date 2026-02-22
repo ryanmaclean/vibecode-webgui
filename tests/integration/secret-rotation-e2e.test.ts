@@ -281,7 +281,7 @@ describeIf('Secret Rotation E2E Tests', () => {
       expect(allSecrets.length).toBeGreaterThanOrEqual(testSecrets.length);
 
       const ourSecrets = allSecrets.filter((s) =>
-        testSecrets.includes(s.key_name)
+        testSecrets.includes(s.keyName)
       );
 
       expect(ourSecrets.length).toBe(testSecrets.length);
@@ -379,7 +379,7 @@ describeIf('Secret Rotation E2E Tests', () => {
       const expiredSecrets = await checker.getExpired();
 
       const ourExpiredSecret = expiredSecrets.find(
-        (s) => s.key_name === expiredSecretName
+        (s) => s.keyName === expiredSecretName
       );
 
       expect(ourExpiredSecret).toBeDefined();
@@ -389,10 +389,10 @@ describeIf('Secret Rotation E2E Tests', () => {
       const { ExpirationChecker } = await import('@/lib/security/expiration-checker');
       const checker = new ExpirationChecker(prisma);
 
-      const expiringSoon = await checker.getExpiringSoon(7); // Within 7 days
+      const expiringSoon = await checker.getExpiringSoon({ thresholdDays: 7 }); // Within 7 days
 
       const ourExpiringSoonSecret = expiringSoon.find(
-        (s) => s.key_name === expiringSoonSecretName
+        (s) => s.keyName === expiringSoonSecretName
       );
 
       expect(ourExpiringSoonSecret).toBeDefined();

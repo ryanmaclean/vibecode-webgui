@@ -14,7 +14,7 @@ import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { ExpirationChecker } from '@/lib/security/expiration-checker'
 import { createServiceLogger } from '@/lib/logging'
 
@@ -25,8 +25,6 @@ const log = createServiceLogger({
   component: 'secrets-status'
 })
 
-const prisma = new PrismaClient()
-
 /**
  * Collects secret health status with expiration monitoring
  * Exported for testing purposes
@@ -34,48 +32,44 @@ const prisma = new PrismaClient()
 export async function collectSecretsStatus(startTime: number) {
   const checker = new ExpirationChecker(prisma)
 
-  try {
-    // Get comprehensive expiration summary
-    const summary = await checker.getSummary({
-      includeNoExpiration: true
-    })
+  // Get comprehensive expiration summary
+  const summary = await checker.getSummary({
+    includeNoExpiration: true
+  })
 
-    // Get policy compliance information
-    const policyCompliance = await checkPolicyCompliance()
+  // Get policy compliance information
+  const policyCompliance = await checkPolicyCompliance()
 
-    // Get last rotation information
-    const lastRotations = await getRecentRotations(5)
+  // Get last rotation information
+  const lastRotations = await getRecentRotations(5)
 
-    // Calculate response time
-    const responseTime = Date.now() - startTime
+  // Calculate response time
+  const responseTime = Date.now() - startTime
 
-    const status = {
-      status: summary.expired > 0 ? 'degraded' : 'healthy',
-      timestamp: new Date().toISOString(),
-      secrets: {
-        total: summary.total,
-        active: summary.active,
-        expiringSoon: summary.expiringSoon,
-        expired: summary.expired,
-        noExpiration: summary.noExpiration
-      },
-      alerts: summary.alerts.map(alert => ({
-        keyName: alert.keyName,
-        severity: alert.severity,
-        expiresAt: alert.expiresAt,
-        daysUntilExpiration: alert.daysUntilExpiration,
-        rotationPolicy: alert.rotationPolicy,
-        message: alert.message
-      })),
-      policyCompliance,
-      lastRotations,
-      responseTime: `${responseTime}ms`
-    }
-
-    return { status, responseTime, summary }
-  } finally {
-    await prisma.$disconnect()
+  const status = {
+    status: summary.expired > 0 ? 'degraded' : 'healthy',
+    timestamp: new Date().toISOString(),
+    secrets: {
+      total: summary.total,
+      active: summary.active,
+      expiringSoon: summary.expiringSoon,
+      expired: summary.expired,
+      noExpiration: summary.noExpiration
+    },
+    alerts: summary.alerts.map(alert => ({
+      keyName: alert.keyName,
+      severity: alert.severity,
+      expiresAt: alert.expiresAt,
+      daysUntilExpiration: alert.daysUntilExpiration,
+      rotationPolicy: alert.rotationPolicy,
+      message: alert.message
+    })),
+    policyCompliance,
+    lastRotations,
+    responseTime: `${responseTime}ms`
   }
+
+  return { status, summary }
 }
 
 /**
@@ -166,7 +160,7 @@ export async function GET(request: NextRequest) {
     clientIp
   }
 
-  console.log('Secrets status check requested', logContext)
+  log.info('Secrets status check requested', logContext)
 
   try {
     // Check authentication for detailed status info
@@ -174,7 +168,7 @@ export async function GET(request: NextRequest) {
     const isAuthenticated = !!session?.user
 
     // Collect secrets status
-    const { status, responseTime, summary } = await collectSecretsStatus(startTime)
+    const { status, summary } = await collectSecretsStatus(startTime)
 
     // Determine overall health status
     const hasExpired = summary.expired > 0
@@ -182,7 +176,7 @@ export async function GET(request: NextRequest) {
 
     if (hasExpired || hasCriticalAlerts) {
       status.status = 'degraded'
-      console.warn('Secrets status shows degraded state', {
+      log.warn('Secrets status shows degraded state', {
         ...logContext,
         expired: summary.expired,
         criticalAlerts: summary.alerts.filter(a => a.severity === 'critical').length
@@ -207,7 +201,10 @@ export async function GET(request: NextRequest) {
     }, { status: httpStatus })
 
   } catch (error) {
-    console.error('Secrets status check failed with error:', error)
+    log.error('Secrets status check failed with error', {
+      ...logContext,
+      error: error instanceof Error ? error.message : String(error),
+    })
 
     // Check authentication for error response detail level
     const session = await getServerSession(authOptions)
@@ -227,7 +224,5 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
       requestId
     }, { status: 503 })
-  } finally {
-    await prisma.$disconnect()
   }
 }

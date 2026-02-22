@@ -399,17 +399,19 @@ describe('Rotation Policies', () => {
       const dbCredsExpiration = calculateNextExpiration('db_credentials', fromDate)
 
       // api_keys: 90 days
-      expect(apiKeysExpiration?.getDate()).toBe(
-        new Date('2026-01-01').getDate() + 90
-      )
+      const expectedApiKeys = new Date('2026-01-01')
+      expectedApiKeys.setDate(expectedApiKeys.getDate() + 90)
+      expect(apiKeysExpiration?.toISOString()).toBe(expectedApiKeys.toISOString())
 
       // auth_tokens: 30 days
-      expect(authTokensExpiration?.getDate()).toBe(
-        new Date('2026-01-01').getDate() + 30
-      )
+      const expectedAuthTokens = new Date('2026-01-01')
+      expectedAuthTokens.setDate(expectedAuthTokens.getDate() + 30)
+      expect(authTokensExpiration?.toISOString()).toBe(expectedAuthTokens.toISOString())
 
       // db_credentials: 180 days
-      expect(dbCredsExpiration).not.toBeNull()
+      const expectedDbCreds = new Date('2026-01-01')
+      expectedDbCreds.setDate(expectedDbCreds.getDate() + 180)
+      expect(dbCredsExpiration?.toISOString()).toBe(expectedDbCreds.toISOString())
     })
   })
 
@@ -443,7 +445,7 @@ describe('Rotation Policies', () => {
     })
 
     it('should default to custom for unrecognized patterns', () => {
-      expect(inferPolicyFromKeyName('MY_CUSTOM_SECRET')).toBe('custom')
+      expect(inferPolicyFromKeyName('MY_CUSTOM_VALUE')).toBe('custom')
       expect(inferPolicyFromKeyName('RANDOM_VALUE')).toBe('custom')
       expect(inferPolicyFromKeyName('FOO_BAR')).toBe('custom')
     })

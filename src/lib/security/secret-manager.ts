@@ -17,6 +17,26 @@ import { createChildLogger } from '@/lib/logger'
 import * as keychain from './macos-keychain'
 
 const logger = createChildLogger({ module: 'security', scope: 'secret-manager' })
+const ALLOWED_ROTATION_REASONS = new Set([
+  'scheduled',
+  'manual',
+  'compromised',
+  'expired',
+  'policy_change',
+  'emergency',
+])
+
+function normalizeRotationReason(
+  reason: string | undefined,
+  fallback: 'manual' | 'scheduled'
+): string | null {
+  if (!reason || reason.trim() === '') {
+    return fallback
+  }
+
+  const normalizedReason = reason.trim().toLowerCase()
+  return ALLOWED_ROTATION_REASONS.has(normalizedReason) ? normalizedReason : null
+}
 
 // Secret registration options
 export interface SecretRegistrationOptions {
@@ -284,7 +304,7 @@ export class SecretManager {
           secret_id: metadata.id,
           rotated_by: 'manual',
           previous_expires_at: metadata.expires_at,
-          reason: reason || 'manual rotation requested',
+          reason: normalizeRotationReason(reason, 'manual'),
           metadata: {
             markedForRotation: true,
             requestedAt: new Date().toISOString(),
@@ -360,7 +380,7 @@ export class SecretManager {
           rotated_by: rotatedBy,
           previous_expires_at: metadata.expires_at,
           new_expires_at: newExpiresAt,
-          reason: reason || 'scheduled rotation',
+          reason: normalizeRotationReason(reason, 'scheduled'),
         },
       })
 

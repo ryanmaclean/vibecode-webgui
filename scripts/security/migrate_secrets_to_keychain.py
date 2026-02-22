@@ -298,8 +298,7 @@ def register_secret_in_database(
                     expires_at = %s,
                     status = 'active',
                     last_rotated_at = %s,
-                    metadata = %s,
-                    updated_at = %s
+                    metadata = %s
                 WHERE key_name = %s
             """
             metadata = json.dumps({
@@ -311,7 +310,6 @@ def register_secret_in_database(
                 expires_at,
                 now,
                 metadata,
-                now,
                 key_name,
             ))
         else:
@@ -324,9 +322,8 @@ def register_secret_in_database(
                     status,
                     last_rotated_at,
                     metadata,
-                    created_at,
-                    updated_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
             """
             metadata = json.dumps({
                 "migrated_at": now.isoformat(),
@@ -339,7 +336,6 @@ def register_secret_in_database(
                 "active",
                 now,
                 metadata,
-                now,
                 now,
             ))
 
