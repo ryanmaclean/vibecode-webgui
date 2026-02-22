@@ -262,18 +262,28 @@ export class UnifiedAIClient {
     try {
       this.clients.set('ollama', new OpenAI({
         baseURL: AI_PROVIDERS.ollama.baseURL,
-        apiKey: 'ollama' // Ollama doesn't require real API key
+        apiKey: 'ollama', // Ollama doesn't require real API key
+        timeout: 5000 // 5 second timeout for local requests
       }))
-    } catch {
+      log.debug('Ollama client initialized', { baseURL: AI_PROVIDERS.ollama.baseURL })
+    } catch (error) {
+      log.debug('Ollama client initialization failed', {
+        error: error instanceof Error ? error.message : String(error)
+      })
       // Ollama not available - this is expected if not running locally
     }
 
     try {
       this.clients.set('localai', new OpenAI({
         baseURL: AI_PROVIDERS.localai.baseURL,
-        apiKey: 'localai' // LocalAI doesn't require real API key
+        apiKey: 'localai', // LocalAI doesn't require real API key
+        timeout: 5000 // 5 second timeout for local requests
       }))
-    } catch {
+      log.debug('LocalAI client initialized', { baseURL: AI_PROVIDERS.localai.baseURL })
+    } catch (error) {
+      log.debug('LocalAI client initialization failed', {
+        error: error instanceof Error ? error.message : String(error)
+      })
       // LocalAI not available - this is expected if not running locally
     }
   }
@@ -284,6 +294,21 @@ export class UnifiedAIClient {
   }
 
   public getProviderForModel(model: string): string {
+    // Check for Ollama model format (e.g., llama3.2:1b, qwen2.5-coder:1.5b)
+    // Ollama models typically have colons for tags or use specific naming patterns
+    if (model.includes(':') && !model.includes('/')) {
+      // Check if it's an Ollama model
+      if (AI_PROVIDERS.ollama.models.includes(model)) {
+        return 'ollama'
+      }
+      // Check if base model name (before colon) matches any Ollama model pattern
+      const baseModel = model.split(':')[0]
+      const ollamaModelBases = AI_PROVIDERS.ollama.models.map(m => m.split(':')[0])
+      if (ollamaModelBases.includes(baseModel)) {
+        return 'ollama'
+      }
+    }
+
     // Try to determine provider from model name
     if (model.includes('/')) {
       // OpenRouter format: provider/model
@@ -419,13 +444,28 @@ export class UnifiedAIClient {
     if (!client) return false
 
     try {
+      // For local providers like Ollama, use a shorter timeout
+      const isLocal = providerId === 'ollama' || providerId === 'localai'
+      const timeoutMs = isLocal ? 2000 : 5000
+
       // Simple API test - try to list models or make a minimal request
-      await client.models.list()
+      const testPromise = client.models.list()
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Connection timeout')), timeoutMs)
+      )
+
+      await Promise.race([testPromise, timeoutPromise])
+      log.debug(`Provider ${providerId} connection test succeeded`)
       // Clear offline status on successful connection
       this.clearOfflineStatus(providerId)
       return true
     } catch (error) {
-      log.debug(`Provider ${providerId} connection test failed`, { error: error instanceof Error ? error.message : String(error) })
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      if (providerId === 'ollama' || providerId === 'localai') {
+        log.debug(`Local provider ${providerId} not available`, { error: errorMessage })
+      } else {
+        log.debug(`Provider ${providerId} connection test failed`, { error: errorMessage })
+      }
       // Update offline status if network error
       this.updateOfflineStatus(providerId, error)
       return false
@@ -471,8 +511,22 @@ export class UnifiedAIClient {
     // Test connection first
     const isConnected = await this.testProviderConnection(providerId)
     if (!isConnected) {
-      // Try fallback to OpenRouter if available and online
       const offlineDetector = getDefaultOfflineDetector()
+
+      // For local providers, provide specific error message
+      if (providerId === 'ollama') {
+        const errorMsg = 'Ollama is not running. Please start Ollama with: ollama serve'
+        log.warn(errorMsg, { model })
+
+        // Try fallback to OpenRouter if available and online
+        if (offlineDetector.isOnline() && this.clients.has('openrouter')) {
+          log.info('Falling back to OpenRouter', { originalModel: model, reason: 'ollama_not_available' })
+          return this.chat(messages, `openai/gpt-3.5-turbo`, options)
+        }
+        throw new Error(errorMsg)
+      }
+
+      // Try fallback to OpenRouter if available and online
       if (offlineDetector.isOnline() && providerId !== 'openrouter' && this.clients.has('openrouter')) {
         log.info('Falling back to OpenRouter', { originalModel: model, reason: 'connection_failed' })
         return this.chat(messages, `openai/gpt-3.5-turbo`, options)
@@ -784,6 +838,40 @@ export class UnifiedAIClient {
     } else {
       aiProviderCircuitBreakers.resetAll()
       log.info('All circuit breakers reset')
+    }
+  }
+
+  /**
+   * Check if Ollama is available and running locally
+   */
+  public async isOllamaAvailable(): Promise<boolean> {
+    if (!this.clients.has('ollama')) {
+      return false
+    }
+    return await this.testProviderConnection('ollama')
+  }
+
+  /**
+   * Get available Ollama models from running Ollama instance
+   * Returns empty array if Ollama is not available
+   */
+  public async getOllamaModels(): Promise<string[]> {
+    const client = this.clients.get('ollama')
+    if (!client) {
+      return []
+    }
+
+    try {
+      const response = await client.models.list()
+      // Extract model IDs from the response
+      const models = response.data.map((model: { id: string }) => model.id)
+      log.debug('Retrieved Ollama models', { count: models.length, models })
+      return models
+    } catch (error) {
+      log.debug('Failed to retrieve Ollama models', {
+        error: error instanceof Error ? error.message : String(error)
+      })
+      return []
     }
   }
 }

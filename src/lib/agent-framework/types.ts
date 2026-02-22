@@ -1,6 +1,11 @@
 // Type definitions for the Agent Framework
 
 import type { AgentEvent, AgentMessage, AgentResponse, ToolDefinition, Agent } from './index';
+import type {
+  ConfirmationRequiredEvent,
+  ConfirmationApprovedEvent,
+  ConfirmationRejectedEvent,
+} from '../../types/agent-confirmation';
 
 // DO NOT export * from './index' - it creates a circular dependency that causes OOM during module loading
 // Instead, only re-export the specific types needed
@@ -15,6 +20,9 @@ export interface AgentEventMap {
   [AgentEvent.ToolResult]: (data: { tool: string; result: any }) => void;
   [AgentEvent.Error]: (error: Error) => void;
   [AgentEvent.Complete]: (result: AgentResponse) => void;
+  [AgentEvent.ConfirmationRequired]: (event: ConfirmationRequiredEvent) => void;
+  [AgentEvent.ConfirmationApproved]: (event: ConfirmationApprovedEvent) => void;
+  [AgentEvent.ConfirmationRejected]: (event: ConfirmationRejectedEvent) => void;
 }
 
 /**

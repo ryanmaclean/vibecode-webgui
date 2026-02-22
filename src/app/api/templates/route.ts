@@ -12,6 +12,7 @@ import { templateSubmissionSchema } from '@/lib/api/validation/schemas'
 import { sanitizeDescription, sanitizeTags } from '@/lib/api/validation/sanitize'
 import { z } from '@/lib/zod-compat'
 import { cacheGetOrSet, CacheKeyGenerators, TTLPresets, CacheInvalidators } from '@/lib/cache/cache-utils'
+import { CACHE_HEADER_PRESETS } from '@/lib/cache/http-cache-headers'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { getCachedTemplates, cacheTemplates, OfflineTTL } from '@/lib/cache/offline-cache'
 
@@ -664,12 +665,11 @@ export async function GET(request: NextRequest) {
       { ttl: TTLPresets.TEMPLATES } // 2 hours cache
     );
 
-    // Add offline mode support headers
     return NextResponse.json(response, {
       headers: {
+        ...CACHE_HEADER_PRESETS.TEMPLATES,
         'X-Offline-Capable': 'true',
         'X-Cache-Source': getCachedTemplates() ? 'cache' : 'hardcoded',
-        'Cache-Control': 'public, max-age=3600',
       },
     })
   } catch (error) {
