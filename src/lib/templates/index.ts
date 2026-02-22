@@ -3,6 +3,8 @@
  * Comprehensive collection of scaffolding templates for rapid development
  */
 
+import { TemplateMonitoringConfig } from './monitoring-config'
+
 export interface ProjectTemplate {
   id: string
   name: string
@@ -24,7 +26,13 @@ export interface ProjectTemplate {
   cicdTemplate: boolean
   testingSetup: boolean
   monitoringSetup: boolean
+  monitoringConfig?: TemplateMonitoringConfig
   thumbnail?: string
+  requirements?: {
+    memory: string
+    storage: string
+    network: boolean
+  }
   documentation: {
     setup: string[]
     usage: string[]
@@ -820,7 +828,8 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
     files: [],
     dependencies: {
       'aws-lambda': '^1.0.0',
-      'aws-sdk': '^2.1460.0'
+      '@aws-sdk/client-s3': '^3.0.0',
+      '@aws-sdk/client-dynamodb': '^3.0.0'
     },
     devDependencies: {
       'serverless': '^3.34.0',

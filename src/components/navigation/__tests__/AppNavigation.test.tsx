@@ -60,6 +60,17 @@ jest.mock('@/hooks/useKeyboardShortcuts', () => ({
   shortcutCategories: [],
 }));
 
+// Mock useCommandPalette hook
+jest.mock('@/hooks/useCommandPalette', () => ({
+  useCommandPalette: () => ({
+    isOpen: false,
+    openCommandPalette: jest.fn(),
+    closeCommandPalette: jest.fn(),
+    registerCommand: jest.fn(),
+    registerCommands: jest.fn(),
+  }),
+}));
+
 import { AppNavigation } from '../AppNavigation';
 
 describe('AppNavigation', () => {

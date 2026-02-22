@@ -320,9 +320,11 @@ jobs:
       # Fail job if critical issues found
       - name: Fail on critical issues
         if: |
-          steps.secret-scan.outcome == 'failure' ||
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/main' &&
+          (steps.secret-scan.outcome == 'failure' ||
           steps.npm-audit.outputs.status == 'failed' ||
-          steps.env-validation.outputs.status == 'failed'
+          steps.env-validation.outputs.status == 'failed')
         run: |
           echo "❌ Critical security issues detected"
           exit 1

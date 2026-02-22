@@ -16,6 +16,10 @@ on:
         type: boolean
         default: false
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.inputs.version || github.ref }}
+  cancel-in-progress: false  # Don't cancel releases in progress
+
 env:
   DD_SERVICE: ${{ github.event.repository.name }}
   DD_ENV: ci
@@ -30,6 +34,7 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       release_id: ${{ steps.create_release.outputs.id }}
@@ -94,8 +99,11 @@ jobs:
     name: Build & Upload macOS
     needs: create-release
     runs-on: macos-14
+    timeout-minutes: 60
     strategy:
       matrix:
+        # TODO: Add x86_64-apple-darwin for Intel Mac support
+        # Currently only building for Apple Silicon (ARM64)
         arch: [aarch64-apple-darwin]
     steps:
       - uses: actions/checkout@v4
@@ -110,6 +118,12 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.arch }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: platforms/tauri
+          key: ${{ matrix.arch }}
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
@@ -165,30 +179,41 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Placeholder for future Linux builds
+  # Linux builds placeholder
+  # Disabled: Requires Tauri Linux dependencies and testing
+  # To enable: Install webkit2gtk, libappindicator, and test on Ubuntu/Debian
+  # Reference: https://tauri.app/v1/guides/getting-started/prerequisites#linux
   build-linux:
-    name: Build Linux (Placeholder)
+    name: Build Linux (Disabled - See comments)
     needs: create-release
     runs-on: ubuntu-latest
-    if: false  # Disabled until Linux support is ready
+    if: false  # Disabled until Tauri Linux dependencies are configured and tested
     steps:
       - name: Placeholder
-        run: echo "Linux builds coming soon"
+        run: |
+          echo "::notice::Linux builds disabled - requires Tauri dependencies"
+          echo "To enable: Configure webkit2gtk, libappindicator3, and test build process"
 
-  # Placeholder for future Windows builds
+  # Windows builds placeholder
+  # Disabled: Requires Tauri Windows configuration and signing certificates
+  # To enable: Set up Windows code signing and test Tauri build
+  # Reference: https://tauri.app/v1/guides/building/windows
   build-windows:
-    name: Build Windows (Placeholder)
+    name: Build Windows (Disabled - See comments)
     needs: create-release
     runs-on: windows-latest
-    if: false  # Disabled until Windows support is ready
+    if: false  # Disabled until Windows build process and code signing are configured
     steps:
       - name: Placeholder
-        run: echo "Windows builds coming soon"
+        run: |
+          echo "::notice::Windows builds disabled - requires configuration"
+          echo "To enable: Set up code signing certificates and test Tauri Windows build"
 
   publish-release:
     name: Publish Release
     needs: [create-release, build-macos]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
