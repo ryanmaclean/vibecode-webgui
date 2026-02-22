@@ -72,7 +72,9 @@ jobs:
             arch: x86_64
             os: windows-2022
             target: x86_64-pc-windows-msvc
-            bundle: msi,nsis
+            # MSI packaging rejects non-numeric prerelease identifiers (e.g. 5.1.0-beta).
+            # Build NSIS installer only for prerelease branch CI.
+            bundle: nsis
             bundle_target: x86_64-pc-windows-msvc
 
     steps:
