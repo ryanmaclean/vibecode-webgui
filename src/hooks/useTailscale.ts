@@ -12,8 +12,7 @@ import {
   checkServiceAccessible,
   getNetworkInfo,
   verifyZeroTrust,
-  TailscaleStatus,
-  TailscaleConfig
+  TailscaleStatus
 } from '@/lib/api/tailscale'
 
 interface UseTailscaleOptions {
@@ -224,17 +223,19 @@ export function useZeroTrustVerification() {
   const [isVerifying, setIsVerifying] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const verify = useCallback(async () => {
+  const verify = useCallback(async (): Promise<string[] | null> => {
     setIsVerifying(true)
     setError(null)
 
     try {
       const results = await verifyZeroTrust()
       setVerificationResults(results)
+      return results
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to verify zero-trust configuration'
       setError(errorMessage)
       setVerificationResults(null)
+      return null
     } finally {
       setIsVerifying(false)
     }

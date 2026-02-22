@@ -61,6 +61,9 @@ global.TextEncoder = class TextEncoder {
 
 global.TextDecoder = class TextDecoder {
   decode(buffer) {
+    if (!buffer || buffer.length === 0) {
+      return '';
+    }
     return Buffer.from(buffer).toString('utf8');
   }
 };

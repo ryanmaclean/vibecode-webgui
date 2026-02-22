@@ -34,7 +34,6 @@ import {
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 import { useTailscale, useZeroTrustVerification } from '@/hooks/useTailscale'
@@ -439,20 +438,20 @@ export function TailscaleSetup({
 
   // Handle connection refresh
   const handleConnectionRefresh = useCallback(async () => {
-    await refreshStatus()
+    const refreshedStatus = await refreshStatus()
     await refreshIp()
-    if (connected) {
+    if (refreshedStatus?.connected) {
       setSetupState(prev => ({ ...prev, connectionVerified: true }))
     }
-  }, [refreshStatus, refreshIp, connected])
+  }, [refreshStatus, refreshIp])
 
   // Handle verification
   const handleVerification = useCallback(async () => {
-    await verify()
-    if (verificationResults && verificationResults.length > 0) {
+    const results = await verify()
+    if (results && results.length > 0) {
       setSetupState(prev => ({ ...prev, zeroTrustVerified: true }))
     }
-  }, [verify, verificationResults])
+  }, [verify])
 
   // Navigation handlers
   const handleNext = useCallback(() => {
@@ -488,7 +487,7 @@ export function TailscaleSetup({
   // Initial check on mount
   useEffect(() => {
     handleInstallationCheck()
-  }, [])
+  }, [handleInstallationCheck])
 
   const progress = ((currentStep + 1) / STEPS.length) * 100
 

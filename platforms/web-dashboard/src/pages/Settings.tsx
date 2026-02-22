@@ -17,11 +17,10 @@ import {
   Monitor,
   AlertTriangle,
   CheckCircle,
-  Info
+  Info,
+  ExternalLink
 } from 'lucide-react'
 import { metricsApi } from '../services/api'
-import { TailscaleStatus } from '../../../../src/components/TailscaleStatus'
-import { TailscaleSetup } from '../../../../src/components/TailscaleSetup'
 
 interface SettingsSection {
   id: string
@@ -685,6 +684,7 @@ function AppearanceSettings({ settings }: { settings: any }) {
 
 function TailscaleSettings({ settings }: { settings: any }) {
   const [showSetup, setShowSetup] = useState(false)
+  const tailscaleEnabled = settings?.networking?.tailscale?.enabled ?? false
 
   return (
     <>
@@ -698,37 +698,64 @@ function TailscaleSettings({ settings }: { settings: any }) {
           </div>
         </div>
 
-        {/* Tailscale Status Card */}
-        <TailscaleStatus
-          autoRefresh={true}
-          refreshInterval={30000}
-          showRefreshButton={true}
-        />
+        <div className="card p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-base font-medium text-gray-900">Status</h4>
+              <p className="text-sm text-gray-600 mt-1">
+                The standalone dashboard does not execute Tauri networking commands.
+              </p>
+            </div>
+            <span
+              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
+                tailscaleEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              {tailscaleEnabled ? 'Configured' : 'Not configured'}
+            </span>
+          </div>
+        </div>
 
         {/* Setup Wizard Toggle */}
         <div className="card p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-base font-medium text-gray-900">Setup Wizard</h4>
+              <h4 className="text-base font-medium text-gray-900">Desktop Setup Wizard</h4>
               <p className="text-sm text-gray-600 mt-1">
-                Configure Tailscale for the first time or verify your setup
+                Use the desktop app to run installation checks and live verification.
               </p>
             </div>
             <button
               onClick={() => setShowSetup(!showSetup)}
               className="btn-primary"
             >
-              {showSetup ? 'Hide Setup' : 'Show Setup Wizard'}
+              {showSetup ? 'Hide Instructions' : 'Show Instructions'}
             </button>
           </div>
         </div>
 
-        {/* Setup Wizard */}
+        {/* Setup Instructions */}
         {showSetup && (
-          <TailscaleSetup
-            onComplete={() => setShowSetup(false)}
-            onCancel={() => setShowSetup(false)}
-          />
+          <div className="card p-6 space-y-3">
+            <p className="text-sm text-gray-700">
+              1. Open the Tauri desktop app.
+            </p>
+            <p className="text-sm text-gray-700">
+              2. Go to Settings, then Networking.
+            </p>
+            <p className="text-sm text-gray-700">
+              3. Run the Tailscale setup and verification workflow.
+            </p>
+            <a
+              href="https://tailscale.com/kb"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-primary-600 hover:text-primary-700 text-sm font-medium"
+            >
+              Open Tailscale docs
+              <ExternalLink className="h-4 w-4 ml-1" />
+            </a>
+          </div>
         )}
 
         {/* Information Card */}

@@ -30,7 +30,7 @@ const updateWorkflowSchema = z.object({
   tags: z.array(z.string()).optional(),
   nodes: z.array(z.any()).optional(),
   edges: z.array(z.any()).optional(),
-  config: z.record(z.any()).optional(),
+  config: z.record(z.string(), z.any()).optional(),
 })
 
 const controlExecutionSchema = z.object({

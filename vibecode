@@ -192,6 +192,7 @@ COMMANDS:
     docker        Check Docker status and info
     deploy        Deploy application to Kubernetes
     ip            Show VM IP address
+    plugin        Manage plugins (list, install, uninstall)
     version       Show version information
     help          Show this help message
 
@@ -203,6 +204,8 @@ EXAMPLES:
     vibecode docker             # Check Docker
     vibecode services           # List all services
     vibecode status             # Full status report
+    vibecode plugin list        # List installed plugins
+    vibecode plugin install <url>  # Install a plugin
 
 SERVICES:
     SSH           localhost:2222
@@ -991,6 +994,9 @@ main() {
             ;;
         ip)
             cmd_ip "$@"
+            ;;
+        plugin)
+            cmd_plugin "$@"
             ;;
         version|--version|-v)
             cmd_version "$@"

@@ -13,8 +13,6 @@ import {
   WorkflowEvent,
   WorkflowEventType,
   WorkflowExecution,
-  NodeExecution,
-  WorkflowContext,
 } from './types';
 
 // ============================================================================
@@ -568,7 +566,7 @@ export class AuditTrail {
    * Generate unique entry ID
    */
   private generateEntryId(): string {
-    return `audit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `audit-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
   }
 
   /**

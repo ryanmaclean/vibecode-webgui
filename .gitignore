@@ -509,3 +509,5 @@ PROMISE_VERIFICATION_REPORT.md
 .worktrees/
 .security-key
 logs/security/
+# Generated test data files
+test-data/

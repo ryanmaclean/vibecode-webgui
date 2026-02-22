@@ -24,7 +24,6 @@ import {
   XCircle,
   Clock,
   AlertCircle,
-  AlertTriangle,
   ArrowUpCircle,
   User,
   Users,
@@ -52,7 +51,6 @@ import type {
   ApprovalType,
   Approval
 } from '@/lib/workflow/hitl-manager'
-// import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Type Definitions
@@ -575,7 +573,7 @@ export function ApprovalGate({
 
   // Handle refresh
   const handleRefresh = async () => {
-    if (!onRefresh || isRefreshing) return
+    if (isRefreshing) return
     setIsRefreshing(true)
     try {
       await onRefresh()
@@ -586,7 +584,7 @@ export function ApprovalGate({
 
   // Auto-refresh
   React.useEffect(() => {
-    if (!onRefresh || refreshInterval <= 0) return
+    if (refreshInterval <= 0) return
 
     const interval = setInterval(() => {
       handleRefresh()
@@ -605,21 +603,19 @@ export function ApprovalGate({
             Review and manage agent action requests
           </p>
         </div>
-        {onRefresh && (
-          <Button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            variant="outline"
-            size="sm"
-            aria-label="Refresh requests"
-          >
-            <RefreshCw
-              className={cn('h-4 w-4 mr-2', isRefreshing && 'animate-spin')}
-              aria-hidden="true"
-            />
-            Refresh
-          </Button>
-        )}
+        <Button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          variant="outline"
+          size="sm"
+          aria-label="Refresh requests"
+        >
+          <RefreshCw
+            className={cn('h-4 w-4 mr-2', isRefreshing && 'animate-spin')}
+            aria-hidden="true"
+          />
+          Refresh
+        </Button>
       </div>
 
       {/* Statistics */}

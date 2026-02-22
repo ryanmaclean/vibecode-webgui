@@ -1,0 +1,30 @@
+{
+  "id": "custom-model",
+  "name": "Custom AI Model",
+  "version": "1.0.0",
+  "description": "Example plugin demonstrating how to register custom AI models and providers",
+  "author": {
+    "name": "VibeCode Team",
+    "email": "team@vibecode.dev",
+    "url": "https://vibecode.dev"
+  },
+  "type": "ai-model",
+  "main": "index.ts",
+  "permissions": [
+    "ai-models:access",
+    "network:outbound"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "vibecode": ">=1.0.0"
+  },
+  "license": "MIT",
+  "keywords": [
+    "ai",
+    "model",
+    "provider",
+    "custom",
+    "example"
+  ],
+  "homepage": "https://vibecode.dev/docs/plugins/examples/custom-model"
+}

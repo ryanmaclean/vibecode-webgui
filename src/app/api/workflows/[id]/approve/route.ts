@@ -23,7 +23,6 @@ export const dynamic = 'force-dynamic'
 // Validation schema for approval decision
 const approvalDecisionSchema = z.object({
   decision: z.enum(['approved', 'rejected']),
-  approverId: z.string(),
   comment: z.string().optional(),
 })
 
@@ -76,7 +75,8 @@ export async function POST(
       )
     }
 
-    const { decision, approverId, comment } = validation.data
+    const { decision, comment } = validation.data
+    const approverId = session.user.id
 
     // Submit approval to HITL Manager
     const result = globalHITLManager.submitApproval(
@@ -174,9 +174,9 @@ export async function GET(
     const { id } = resolvedParams
 
     // Get approval request from HITL Manager
-    const request = globalHITLManager.getRequest(id)
+    const approvalRequest = globalHITLManager.getRequest(id)
 
-    if (!request) {
+    if (!approvalRequest) {
       logger.warn('Approval request not found', {
         userId: session.user.id,
         requestId: id,
@@ -190,28 +190,28 @@ export async function GET(
     logger.info('Approval request retrieved', {
       userId: session.user.id,
       requestId: id,
-      status: request.status,
+      status: approvalRequest.status,
     })
 
     return NextResponse.json({
       request: {
-        id: request.id,
-        type: request.type,
-        title: request.title,
-        description: request.description,
-        agentId: request.agentId,
-        taskId: request.taskId,
-        status: request.status,
-        priority: request.priority,
-        requiredApprovers: request.requiredApprovers,
-        approvals: request.approvals.map(a => ({
+        id: approvalRequest.id,
+        type: approvalRequest.type,
+        title: approvalRequest.title,
+        description: approvalRequest.description,
+        agentId: approvalRequest.agentId,
+        taskId: approvalRequest.taskId,
+        status: approvalRequest.status,
+        priority: approvalRequest.priority,
+        requiredApprovers: approvalRequest.requiredApprovers,
+        approvals: approvalRequest.approvals.map(a => ({
           ...a,
           timestamp: a.timestamp.toISOString(),
         })),
-        createdAt: request.createdAt.toISOString(),
-        expiresAt: request.expiresAt.toISOString(),
-        escalationChain: request.escalationChain,
-        currentEscalationLevel: request.currentEscalationLevel,
+        createdAt: approvalRequest.createdAt.toISOString(),
+        expiresAt: approvalRequest.expiresAt.toISOString(),
+        escalationChain: approvalRequest.escalationChain,
+        currentEscalationLevel: approvalRequest.currentEscalationLevel,
       },
     })
   } catch (error) {

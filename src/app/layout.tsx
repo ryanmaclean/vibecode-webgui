@@ -6,6 +6,10 @@ import "./globals.css";
 import Providers from './providers';
 import Script from 'next/script';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
+import BrowserTelemetryInit from '@/components/monitoring/BrowserTelemetryInit';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { GlobalCommandPalette } from '@/components/command-palette/GlobalCommandPalette';
+import { ModelSwitcher } from '@/components/ai/ModelSwitcher';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
 // const geistSans = Geist({
@@ -78,12 +82,22 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
+        {/* Offline indicator - fixed position to avoid layout shift */}
+        <OfflineIndicator className="fixed top-4 right-4 z-50" />
         <Providers>
+          {/* Initialize OpenTelemetry browser instrumentation */}
+          {process.env.NEXT_PUBLIC_OTEL_ENABLED !== 'false' && process.env.NEXT_PUBLIC_SKIP_MONITORING !== 'true' && (
+            <BrowserTelemetryInit />
+          )}
+          {/* Model switcher - fixed position for global access, keyboard shortcut: Cmd+M */}
+          <ModelSwitcher className="fixed top-4 right-56 z-50" />
           <ErrorBoundary>
             <main id="main-content">
               {children}
             </main>
           </ErrorBoundary>
+          {/* Global command palette accessible from any page via Cmd+Shift+P or Cmd+K */}
+          <GlobalCommandPalette />
         </Providers>
       </body>
     </html>

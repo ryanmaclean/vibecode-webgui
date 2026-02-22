@@ -49,6 +49,7 @@ describe('db-pool', () => {
     // Reset pool state for tests
     connectionPool.clients.clear();
     connectionPool.inUse = 0;
+    connectionPool.inUseConnections.clear();
     connectionPool.waitingAcquires = 0;
     connectionPool.lastValidated.clear();
     connectionPool.lastUsed.clear();
@@ -181,8 +182,7 @@ describe('db-pool', () => {
       const mockClient = new PrismaClient();
       connectionPool.clients.set('conn-1', mockClient);
       connectionPool.lastUsed.set('conn-1', Date.now() - 5000);
-      // Mark this specific connection as in use (per-connection tracking)
-      connectionPool.inUseConnections.set('conn-1', 1);
+      connectionPool.inUseConnections.set('conn-1', 1); // Connection is in use (per-connection tracking)
 
       const result = findLeastRecentlyUsedConnection();
       expect(result).toBeNull();

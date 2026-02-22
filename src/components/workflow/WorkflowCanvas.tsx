@@ -39,7 +39,7 @@ export interface WorkflowCanvasProps {
   /** Read-only mode */
   readOnly?: boolean
   /** Canvas container ref */
-  canvasRef?: React.RefObject<HTMLDivElement>
+  canvasRef?: React.RefObject<HTMLDivElement | null>
   /** Drag over handler for node palette */
   onDragOver?: (event: React.DragEvent<HTMLDivElement>) => void
   /** Drop handler for node palette */
@@ -66,6 +66,8 @@ interface Point {
   y: number
 }
 
+const NODE_DIMENSIONS: NodeDimensions = { width: 250, height: 100 }
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -84,32 +86,12 @@ function getNodeCenter(node: WorkflowNode, dimensions: NodeDimensions): Point {
  */
 function getCurvedPath(start: Point, end: Point): string {
   const dx = end.x - start.x
-  const dy = end.y - start.y
 
   // Control point offset for curve
   const controlOffset = Math.min(Math.abs(dx) / 2, 100)
 
   // Bezier curve path
   return `M ${start.x} ${start.y} C ${start.x + controlOffset} ${start.y}, ${end.x - controlOffset} ${end.y}, ${end.x} ${end.y}`
-}
-
-/**
- * Calculate arrow head points
- */
-function getArrowPoints(start: Point, end: Point, size = 8): string {
-  const dx = end.x - start.x
-  const dy = end.y - start.y
-  const angle = Math.atan2(dy, dx)
-
-  const arrowAngle = Math.PI / 6 // 30 degrees
-
-  const x1 = end.x - size * Math.cos(angle - arrowAngle)
-  const y1 = end.y - size * Math.sin(angle - arrowAngle)
-
-  const x2 = end.x - size * Math.cos(angle + arrowAngle)
-  const y2 = end.y - size * Math.sin(angle + arrowAngle)
-
-  return `${end.x},${end.y} ${x1},${y1} ${x2},${y2}`
 }
 
 /**
@@ -152,9 +134,6 @@ export function WorkflowCanvas({
 
   const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
-  // Standard node dimensions (adjust based on actual rendering)
-  const nodeDimensions: NodeDimensions = { width: 250, height: 100 }
-
   const isEmpty = workflow.nodes.length === 0
 
   // Handle node click for connection mode
@@ -179,7 +158,7 @@ export function WorkflowCanvas({
         setConnectingFrom(null)
       } else {
         // Complete connection
-        const edgeId = `edge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        const edgeId = `edge-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
         const newEdge: WorkflowEdge = {
           id: edgeId,
           source: connectingFrom,
@@ -194,20 +173,6 @@ export function WorkflowCanvas({
       }
     },
     [connectingFrom, readOnly, workflow.edges, onEdgesChange, onNodeSelect, onEdgeSelect]
-  )
-
-  // Handle node selection
-  const handleNodeSelect = useCallback(
-    (nodeId: string, event: React.MouseEvent) => {
-      if (readOnly || connectingFrom !== null) return
-
-      event.stopPropagation()
-      setSelectedNode(nodeId)
-      setSelectedEdge(null)
-      onNodeSelect?.(nodeId)
-      onEdgeSelect?.(null)
-    },
-    [readOnly, connectingFrom, onNodeSelect, onEdgeSelect]
   )
 
   // Handle edge selection
@@ -277,8 +242,6 @@ export function WorkflowCanvas({
       const canvas = canvasRef?.current
       if (!canvas) return
 
-      const canvasRect = canvas.getBoundingClientRect()
-
       setDraggingNode(nodeId)
       setDragOffset({
         x: event.clientX - rect.left,
@@ -335,8 +298,8 @@ export function WorkflowCanvas({
     let maxY = 0
 
     workflow.nodes.forEach(node => {
-      const x = (node.position?.x || 0) + nodeDimensions.width
-      const y = (node.position?.y || 0) + nodeDimensions.height
+      const x = (node.position?.x || 0) + NODE_DIMENSIONS.width
+      const y = (node.position?.y || 0) + NODE_DIMENSIONS.height
       maxX = Math.max(maxX, x)
       maxY = Math.max(maxY, y)
     })
@@ -345,7 +308,7 @@ export function WorkflowCanvas({
       width: Math.max(maxX + 200, 2000),
       height: Math.max(maxY + 200, 2000),
     }
-  }, [workflow.nodes, nodeDimensions])
+  }, [workflow.nodes])
 
   // Handle canvas click (deselect)
   const handleCanvasClick = useCallback(() => {
@@ -458,8 +421,8 @@ export function WorkflowCanvas({
 
                 if (!sourceNode || !targetNode) return null
 
-                const start = getNodeCenter(sourceNode, nodeDimensions)
-                const end = getNodeCenter(targetNode, nodeDimensions)
+                const start = getNodeCenter(sourceNode, NODE_DIMENSIONS)
+                const end = getNodeCenter(targetNode, NODE_DIMENSIONS)
                 const path = getCurvedPath(start, end)
                 const midpoint = getEdgeMidpoint(start, end)
 
