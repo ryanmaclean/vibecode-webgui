@@ -22,6 +22,7 @@ import {
 } from '@/lib/session-manager';
 import ModelSelector from '@/components/ai/ModelSelector';
 import ModelDisplay from '@/components/ai/ModelDisplay';
+import CostEstimator from '@/components/ai/CostEstimator';
 import type { ModelProfile } from '@/types/model-comparison';
 import { modelRegistry } from '@/lib/ai/models/model-registry';
 
@@ -415,6 +416,15 @@ export function ChatInterface({
             {isLoading ? 'Sending...' : 'Send'}
           </Button>
         </div>
+        {/* Cost Estimation Preview */}
+        {input.trim() && (
+          <CostEstimator
+            message={input}
+            selectedModel={selectedModel}
+            inline={true}
+            className="mt-2"
+          />
+        )}
       </div>
     </div>
   );
