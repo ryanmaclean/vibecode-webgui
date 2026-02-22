@@ -11,11 +11,22 @@
  * - Maintains essential editing functionality while optimizing performance
  * - Integrates with virtualized editor for viewport-based rendering
  * - Provides virtualization-aware optimizations for extremely large files
+ * - Monitors memory usage during editor lifecycle to detect leaks
  *
  * @module lib/editor/large-file-optimizer
  */
 
 import type * as monaco from 'monaco-editor';
+import {
+  MemoryMonitor,
+  getMemorySnapshot,
+  trackMemoryUsage,
+  withMemoryTracking,
+  type MemorySnapshot,
+  type MemoryTrackingResult,
+  type MemoryMonitorConfig,
+  type MemoryMonitorReport
+} from '@/lib/performance/memory-monitor';
 
 // ============================================================================
 // Constants and Thresholds
@@ -704,6 +715,199 @@ export function estimateVirtualizationMemorySavings(
 }
 
 // ============================================================================
+// Memory Monitoring Integration
+// ============================================================================
+
+/**
+ * Default memory monitoring configuration for editor sessions
+ */
+export const EDITOR_MEMORY_CONFIG: MemoryMonitorConfig = {
+  warnThresholdMB: 512,
+  criticalThresholdMB: 1024,
+  monitoringIntervalMs: 5000,
+  autoLog: true,
+  label: 'editor-session'
+};
+
+/**
+ * Creates a memory monitor configured for editor lifecycle tracking
+ *
+ * @param config - Optional configuration overrides
+ * @returns Configured MemoryMonitor instance
+ *
+ * @example
+ * ```typescript
+ * const monitor = createEditorMemoryMonitor({ label: 'large-file-edit' });
+ * monitor.start();
+ * // ... perform editor operations ...
+ * const report = monitor.stop();
+ * console.log(`Peak memory: ${report.peakMemoryMB}MB`);
+ * ```
+ */
+export function createEditorMemoryMonitor(config?: Partial<MemoryMonitorConfig>): MemoryMonitor {
+  return new MemoryMonitor({
+    ...EDITOR_MEMORY_CONFIG,
+    ...config
+  });
+}
+
+/**
+ * Tracks memory usage during file loading operation
+ *
+ * @param operation - Description of the file operation
+ * @param fn - Async function that loads the file
+ * @param fileSize - Optional file size info for logging
+ * @returns Result with memory tracking data
+ *
+ * @example
+ * ```typescript
+ * const result = await trackFileLoadMemory('load-50k-lines', async () => {
+ *   return await loadLargeFile();
+ * }, { lineCount: 50000 });
+ *
+ * console.log(`File loaded in ${result.durationMs}ms`);
+ * console.log(`Memory delta: ${result.memoryDelta.deltaMB}MB`);
+ * ```
+ */
+export async function trackFileLoadMemory<T>(
+  operation: string,
+  fn: () => Promise<T> | T,
+  fileSize?: { lineCount?: number; byteSize?: number }
+): Promise<MemoryTrackingResult<T>> {
+  const fullOperation = fileSize?.lineCount
+    ? `${operation} (${fileSize.lineCount} lines)`
+    : operation;
+
+  return withMemoryTracking(fullOperation, fn, {
+    warnThresholdMB: 100, // Warn if loading adds >100MB
+    autoLog: true
+  });
+}
+
+/**
+ * Tracks memory usage during editor operations (scroll, search, etc.)
+ *
+ * @param operation - Description of the editor operation
+ * @param fn - Function to execute
+ * @returns Result with memory tracking data
+ *
+ * @example
+ * ```typescript
+ * const result = await trackEditorOperation('search-in-large-file', async () => {
+ *   return await performSearch(query);
+ * });
+ * ```
+ */
+export async function trackEditorOperation<T>(
+  operation: string,
+  fn: () => Promise<T> | T
+): Promise<MemoryTrackingResult<T>> {
+  return withMemoryTracking(`editor-op: ${operation}`, fn, {
+    warnThresholdMB: 50, // Warn if operation adds >50MB
+    autoLog: true
+  });
+}
+
+/**
+ * Gets current memory snapshot with editor-specific context
+ *
+ * @param label - Optional label for the snapshot
+ * @param fileInfo - Optional file information for context
+ * @returns Memory snapshot
+ *
+ * @example
+ * ```typescript
+ * const snapshot = getEditorMemorySnapshot('after-file-load', {
+ *   lineCount: 50000,
+ *   category: 'extreme'
+ * });
+ * ```
+ */
+export function getEditorMemorySnapshot(
+  label?: string,
+  fileInfo?: { lineCount?: number; category?: FileSizeCategory }
+): MemorySnapshot {
+  const snapshot = getMemorySnapshot();
+
+  if (label || fileInfo) {
+    trackMemoryUsage(
+      label ?? (fileInfo?.category ? `editor-${fileInfo.category}` : 'editor'),
+      EDITOR_MEMORY_CONFIG
+    );
+  }
+
+  return snapshot;
+}
+
+/**
+ * Monitors memory during extended editor session and detects potential leaks
+ *
+ * @param sessionLabel - Label for the session
+ * @param config - Optional configuration
+ * @returns Object with start, stop, and getReport methods
+ *
+ * @example
+ * ```typescript
+ * const session = monitorEditorSession('extended-editing');
+ * session.start();
+ *
+ * // ... user edits for 30 minutes ...
+ *
+ * const report = session.stop();
+ * if (report.memoryGrowthMB > 200) {
+ *   console.warn('Significant memory growth detected');
+ * }
+ * ```
+ */
+export function monitorEditorSession(
+  sessionLabel: string,
+  config?: Partial<MemoryMonitorConfig>
+): {
+  monitor: MemoryMonitor;
+  start: () => void;
+  stop: () => MemoryMonitorReport;
+  isRunning: () => boolean;
+  detectLeak: () => ReturnType<MemoryMonitor['detectMemoryLeak']>;
+} {
+  const monitor = createEditorMemoryMonitor({
+    ...config,
+    label: sessionLabel
+  });
+
+  return {
+    monitor,
+    start: () => monitor.start(),
+    stop: () => monitor.stop(),
+    isRunning: () => monitor.isRunning(),
+    detectLeak: () => monitor.detectMemoryLeak()
+  };
+}
+
+/**
+ * Tracks memory for editor initialization with optimization level
+ *
+ * @param optimizationLevel - The optimization level being applied
+ * @param fn - Function that initializes the editor
+ * @returns Result with memory tracking data
+ *
+ * @example
+ * ```typescript
+ * const result = await trackEditorInitialization('aggressive', async () => {
+ *   return await initializeMonacoEditor(options);
+ * });
+ * ```
+ */
+export async function trackEditorInitialization<T>(
+  optimizationLevel: OptimizationLevel,
+  fn: () => Promise<T> | T
+): Promise<MemoryTrackingResult<T>> {
+  return withMemoryTracking(`editor-init: ${optimizationLevel}`, fn, {
+    warnThresholdMB: 150, // Warn if initialization uses >150MB
+    autoLog: true
+  });
+}
+
+// ============================================================================
 // Exports
 // ============================================================================
 
@@ -724,8 +928,17 @@ export default {
   estimateViewportMemoryLines,
   estimateVirtualizationMemorySavings,
 
+  // Memory monitoring integration
+  createEditorMemoryMonitor,
+  trackFileLoadMemory,
+  trackEditorOperation,
+  getEditorMemorySnapshot,
+  monitorEditorSession,
+  trackEditorInitialization,
+
   // Constants
   FILE_SIZE_THRESHOLDS,
   BYTE_SIZE_THRESHOLDS,
   VIRTUALIZATION_THRESHOLDS,
+  EDITOR_MEMORY_CONFIG,
 };
