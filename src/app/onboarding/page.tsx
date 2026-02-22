@@ -125,7 +125,7 @@ const aiProviderOptions: { id: AiProvider; label: string; description: string }[
 export default function OnboardingPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const isQuickMode = searchParams.get('mode') === 'quick'
+  const isQuickMode = searchParams?.get('mode') === 'quick'
   const activeSteps = isQuickMode ? quickSteps : steps
   const [step, setStep] = useState<OnboardingStep>('welcome')
   const {
