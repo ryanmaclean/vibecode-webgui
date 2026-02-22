@@ -57,6 +57,8 @@ const AIChatInterfaceContent = ({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const streamTrackerRef = useRef<StreamTracker | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   // Load available models from registry
   useEffect(() => {
@@ -158,6 +160,13 @@ const AIChatInterfaceContent = ({
     setInput('')
     setIsStreaming(true)
 
+    // Initialize stream tracker
+    streamTrackerRef.current = new StreamTracker({ model: selectedModel })
+    setStreamMetadata(streamTrackerRef.current.getMetadata())
+
+    // Create abort controller for cancellation
+    abortControllerRef.current = new AbortController()
+
     try {
       // Create assistant message placeholder
       const assistantMessage: Message = {
@@ -186,7 +195,8 @@ const AIChatInterfaceContent = ({
             pinnedFiles: pinnedFiles,
             previousMessages: messages
           }
-        })
+        }),
+        signal: abortControllerRef.current.signal
       })
 
       if (!response.body) {
@@ -201,20 +211,40 @@ const AIChatInterfaceContent = ({
       while (!done) {
         const { value, done: readerDone } = await reader.read()
         done = readerDone
-        const chunk = decoder.decode(value, { stream: true })
-        accumulatedContent += chunk
 
-        setMessages(prev => prev.map(msg => 
-          msg.id === assistantMessage.id 
-            ? { ...msg, content: accumulatedContent } 
-            : msg
-        ))
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true })
+          accumulatedContent += chunk
+
+          // Update stream tracker with new chunk
+          if (streamTrackerRef.current) {
+            const metadata = streamTrackerRef.current.update(chunk)
+            setStreamMetadata(metadata)
+          }
+
+          setMessages(prev => prev.map(msg =>
+            msg.id === assistantMessage.id
+              ? { ...msg, content: accumulatedContent }
+              : msg
+          ))
+        }
+      }
+
+      // Mark stream as complete
+      if (streamTrackerRef.current) {
+        const finalMetadata = streamTrackerRef.current.complete()
+        setStreamMetadata(finalMetadata)
       }
 
       const finalMessages = [...messages, userMessage, { ...assistantMessage, content: accumulatedContent }]
       saveConversation(finalMessages)
 
-    } catch (error) {
+    } catch (error: any) {
+      // Don't show error if user cancelled
+      if (error.name === 'AbortError') {
+        return
+      }
+
       console.error('Error streaming AI response:', error)
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
@@ -226,6 +256,7 @@ const AIChatInterfaceContent = ({
       setMessages(prev => [...prev.slice(0, -1), errorMessage])
     } finally {
       setIsStreaming(false)
+      abortControllerRef.current = null
     }
   }
 
@@ -516,12 +547,18 @@ const AIChatInterfaceContent = ({
             </div>
           ))}
 
-          {isStreaming && (
-            <div className="flex items-center space-x-2 text-gray-500">
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-              <span className="text-sm">AI is thinking...</span>
+          {(isStreaming || streamMetadata?.isComplete) && (
+            <div className="max-w-[80%]">
+              <AILoadingState
+                metadata={streamMetadata}
+                onCancel={isStreaming ? handleCancel : undefined}
+                onRegenerate={streamMetadata?.isComplete ? handleRegenerate : undefined}
+                showTokens={true}
+                showProgress={true}
+                showPreview={isStreaming}
+                loadingMessage="AI is generating a response..."
+                completionMessage="Response complete"
+              />
             </div>
           )}
         </div>
