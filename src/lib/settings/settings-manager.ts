@@ -18,6 +18,7 @@ import type {
   ServiceSettings,
   AISettings,
   AdvancedSettings,
+  EnvironmentSettings,
   SettingsChangeEvent,
   SettingsObserver,
   SettingsValidationResult,
@@ -32,6 +33,7 @@ import {
   DEFAULT_SERVICE_SETTINGS,
   DEFAULT_AI_SETTINGS,
   DEFAULT_ADVANCED_SETTINGS,
+  DEFAULT_ENVIRONMENT_SETTINGS,
 } from '@/types/settings';
 
 // ============================================================================
@@ -315,6 +317,30 @@ export class SettingsManager {
           ...partial.advanced?.telemetry,
         },
       },
+      agentConfirmation: {
+        ...DEFAULT_APP_SETTINGS.agentConfirmation,
+        ...partial.agentConfirmation,
+      },
+      environment: {
+        ...DEFAULT_ENVIRONMENT_SETTINGS,
+        ...partial.environment,
+        permissions: {
+          ...DEFAULT_ENVIRONMENT_SETTINGS.permissions,
+          ...partial.environment?.permissions,
+          development: {
+            ...DEFAULT_ENVIRONMENT_SETTINGS.permissions.development,
+            ...partial.environment?.permissions?.development,
+          },
+          staging: {
+            ...DEFAULT_ENVIRONMENT_SETTINGS.permissions.staging,
+            ...partial.environment?.permissions?.staging,
+          },
+          production: {
+            ...DEFAULT_ENVIRONMENT_SETTINGS.permissions.production,
+            ...partial.environment?.permissions?.production,
+          },
+        },
+      },
       lastModified: partial.lastModified ?? new Date().toISOString(),
     };
   }
@@ -366,6 +392,27 @@ export class SettingsManager {
     return {
       ...this.settings.advanced,
       telemetry: { ...this.settings.advanced.telemetry },
+    };
+  }
+
+  /**
+   * Get environment settings
+   */
+  public getEnvironment(): EnvironmentSettings {
+    return {
+      ...this.settings.environment,
+      permissions: {
+        ...this.settings.environment.permissions,
+        development: this.settings.environment.permissions.development
+          ? { ...this.settings.environment.permissions.development }
+          : undefined,
+        staging: this.settings.environment.permissions.staging
+          ? { ...this.settings.environment.permissions.staging }
+          : undefined,
+        production: this.settings.environment.permissions.production
+          ? { ...this.settings.environment.permissions.production }
+          : undefined,
+      },
     };
   }
 
@@ -443,13 +490,42 @@ export class SettingsManager {
   }
 
   /**
+   * Update environment settings
+   */
+  public setEnvironment(settings: Partial<EnvironmentSettings>): void {
+    const previous = { ...this.settings.environment };
+    this.settings.environment = {
+      ...this.settings.environment,
+      ...settings,
+      permissions: settings.permissions
+        ? {
+            ...this.settings.environment.permissions,
+            ...settings.permissions,
+            development: settings.permissions.development
+              ? { ...this.settings.environment.permissions.development, ...settings.permissions.development }
+              : this.settings.environment.permissions.development,
+            staging: settings.permissions.staging
+              ? { ...this.settings.environment.permissions.staging, ...settings.permissions.staging }
+              : this.settings.environment.permissions.staging,
+            production: settings.permissions.production
+              ? { ...this.settings.environment.permissions.production, ...settings.permissions.production }
+              : this.settings.environment.permissions.production,
+          }
+        : this.settings.environment.permissions,
+    };
+    this.isDirty = true;
+    this.notifyObservers('environment', previous, this.settings.environment);
+  }
+
+  /**
    * Update all settings at once
    */
-  public setAll(settings: { general?: Partial<GeneralSettings>; services?: Partial<ServiceSettings>; ai?: Partial<AISettings>; advanced?: Partial<AdvancedSettings> }): void {
+  public setAll(settings: { general?: Partial<GeneralSettings>; services?: Partial<ServiceSettings>; ai?: Partial<AISettings>; advanced?: Partial<AdvancedSettings>; environment?: Partial<EnvironmentSettings> }): void {
     if (settings.general) this.setGeneral(settings.general);
     if (settings.services) this.setServices(settings.services);
     if (settings.ai) this.setAI(settings.ai);
     if (settings.advanced) this.setAdvanced(settings.advanced);
+    if (settings.environment) this.setEnvironment(settings.environment);
   }
 
   /**
@@ -468,12 +544,13 @@ export class SettingsManager {
     this.notifyObservers('services', previous.services, this.settings.services);
     this.notifyObservers('ai', previous.ai, this.settings.ai);
     this.notifyObservers('advanced', previous.advanced, this.settings.advanced);
+    this.notifyObservers('environment', previous.environment, this.settings.environment);
   }
 
   /**
    * Reset a specific category to defaults
    */
-  public resetCategory<K extends 'general' | 'services' | 'ai' | 'advanced'>(
+  public resetCategory<K extends 'general' | 'services' | 'ai' | 'advanced' | 'environment'>(
     category: K
   ): void {
     const previous = this.settings[category];
@@ -482,6 +559,7 @@ export class SettingsManager {
       services: DEFAULT_SERVICE_SETTINGS,
       ai: DEFAULT_AI_SETTINGS,
       advanced: DEFAULT_ADVANCED_SETTINGS,
+      environment: DEFAULT_ENVIRONMENT_SETTINGS,
     };
 
     // Type-safe assignment
@@ -546,6 +624,28 @@ export class SettingsManager {
       errors['advanced.logLevel'] = 'Invalid log level';
     }
 
+    // Validate environment settings
+    const { environment } = this.settings;
+    if (environment.permissions.enabled) {
+      const unknownDefault = environment.permissions.unknownEnvironmentDefault;
+      if (!['allowed', 'denied', 'requires_approval'].includes(unknownDefault)) {
+        errors['environment.permissions.unknownEnvironmentDefault'] = 'Invalid unknown environment default';
+      }
+
+      // Validate each environment permission configuration
+      ['development', 'staging', 'production'].forEach((env) => {
+        const envPerms = environment.permissions[env as 'development' | 'staging' | 'production'];
+        if (envPerms) {
+          if (!['allowed', 'denied', 'requires_approval'].includes(envPerms.defaultDecision)) {
+            errors[`environment.permissions.${env}.defaultDecision`] = 'Invalid default decision';
+          }
+          if (!Array.isArray(envPerms.approvers)) {
+            errors[`environment.permissions.${env}.approvers`] = 'Approvers must be an array';
+          }
+        }
+      });
+    }
+
     // Warnings
     if (this.settings.advanced.debugMode) {
       warnings['advanced.debugMode'] = 'Debug mode is enabled - may impact performance';
@@ -556,6 +656,18 @@ export class SettingsManager {
     if (!this.settings.advanced.telemetry.crashReporting) {
       warnings['advanced.telemetry.crashReporting'] =
         'Crash reporting is disabled - issues may not be reported';
+    }
+    if (!environment.detectionEnabled) {
+      warnings['environment.detectionEnabled'] =
+        'Environment detection is disabled - safety checks may not work correctly';
+    }
+    if (!environment.permissions.enabled) {
+      warnings['environment.permissions.enabled'] =
+        'Environment permissions are disabled - operations will not be restricted by environment';
+    }
+    if (environment.permissions.production?.defaultDecision === 'allowed') {
+      warnings['environment.permissions.production.defaultDecision'] =
+        'Production environment allows operations by default - this may be unsafe';
     }
 
     return {
@@ -655,6 +767,7 @@ export class SettingsManager {
         this.notifyObservers('services', previous.services, this.settings.services);
         this.notifyObservers('ai', previous.ai, this.settings.ai);
         this.notifyObservers('advanced', previous.advanced, this.settings.advanced);
+        this.notifyObservers('environment', previous.environment, this.settings.environment);
       }
 
       return validation;

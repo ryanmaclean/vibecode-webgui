@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "059-add-vector-embedding-similarity-explorer",
+  "spec": "040-environment-isolation-safety",
   "state": "building",
   "subtasks": {
-    "completed": 2,
-    "total": 5,
+    "completed": 6,
+    "total": 15,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Vector Explorer Page",
+    "current": "Environment-Aware Permission System",
     "id": null,
-    "total": 1
+    "total": 4
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 4,
-    "started_at": "2026-02-21T20:22:35.382132"
+    "number": 8,
+    "started_at": "2026-02-21T23:30:45.438908"
   },
-  "last_update": "2026-02-21T20:33:01.080723"
+  "last_update": "2026-02-21T23:51:52.273231"
 }
