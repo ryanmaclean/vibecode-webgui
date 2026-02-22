@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 
-# -- VibeCode Telemetry --
-import sys
-import os
+# -- OpenTelemetry --
 try:
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
-    from vibecode.telemetry import init_telemetry
-    tracer = init_telemetry(os.path.basename(__file__))
+    from telemetry import init_telemetry, get_trace_context
+    tracer = init_telemetry('agentapi')
 except ImportError:
-    pass
-# ------------------------
+    # Fallback if telemetry is not available
+    def get_trace_context():
+        return {}
+# ------------------
 
 """
 AgentAPI HTTP Server - MVP Implementation
@@ -147,6 +146,11 @@ class AgentAPIServer:
             'terminal_dir_accessible': self.terminal_dir.exists(),
             'uptime_seconds': time.time() - self.app.get('start_time', time.time())
         }
+
+        # Add trace context if available
+        trace_context = get_trace_context()
+        if trace_context:
+            health_status['trace_context'] = trace_context
 
         return web.json_response(health_status)
 
