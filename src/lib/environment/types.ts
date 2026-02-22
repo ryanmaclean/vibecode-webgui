@@ -240,6 +240,126 @@ export interface EnvironmentGuardResult {
 }
 
 // ============================================================================
+// Environment Permission System
+// ============================================================================
+
+/**
+ * Permission decision for an operation
+ */
+export type PermissionDecision =
+  | 'allowed'             // Operation permitted
+  | 'denied'              // Operation blocked
+  | 'requires_approval';  // Requires human approval via HITL
+
+/**
+ * Permission action categories
+ */
+export type PermissionAction =
+  | 'read_file'
+  | 'write_file'
+  | 'delete_file'
+  | 'execute_command'
+  | 'deploy'
+  | 'database_read'
+  | 'database_write'
+  | 'network_request'
+  | 'system_config';
+
+/**
+ * Permission rule for a specific action in an environment
+ */
+export interface PermissionRule {
+  /** Action this rule applies to */
+  action: PermissionAction;
+
+  /** Decision for this action */
+  decision: PermissionDecision;
+
+  /** Optional risk level threshold */
+  riskThreshold?: OperationRiskLevel;
+
+  /** Optional reason/description */
+  reason?: string;
+
+  /** Whether to require specific approvers */
+  requiredApprovers?: string[];
+}
+
+/**
+ * Environment-specific permission configuration
+ */
+export interface EnvironmentPermissions {
+  /** Environment this applies to */
+  environment: EnvironmentType;
+
+  /** Permission rules for this environment */
+  rules: PermissionRule[];
+
+  /** Default decision when no rule matches */
+  defaultDecision: PermissionDecision;
+
+  /** Whether to enforce permissions (can be disabled for testing) */
+  enabled: boolean;
+
+  /** Approvers for operations requiring approval */
+  approvers?: string[];
+}
+
+/**
+ * Complete permission configuration for all environments
+ */
+export interface PermissionConfig {
+  /** Permissions per environment */
+  environments: {
+    development?: EnvironmentPermissions;
+    staging?: EnvironmentPermissions;
+    production?: EnvironmentPermissions;
+    test?: EnvironmentPermissions;
+  };
+
+  /** Global settings */
+  global: {
+    /** Whether permission system is enabled globally */
+    enabled: boolean;
+
+    /** Fallback decision when environment is unknown */
+    unknownEnvironmentDefault: PermissionDecision;
+
+    /** Whether to log permission checks */
+    logChecks: boolean;
+  };
+}
+
+/**
+ * Result of a permission check
+ */
+export interface PermissionCheckResult {
+  /** Whether operation is allowed */
+  allowed: boolean;
+
+  /** The decision made */
+  decision: PermissionDecision;
+
+  /** Reason for the decision */
+  reason: string;
+
+  /** Rule that was applied (if any) */
+  appliedRule?: PermissionRule;
+
+  /** Environment context */
+  environment: EnvironmentType;
+
+  /** Operation that was checked */
+  operation: OperationMetadata;
+
+  /** Required approvers if approval needed */
+  requiredApprovers?: string[];
+
+  /** Timestamp of check */
+  checkedAt: Date;
+}
+
+// ============================================================================
 // Utility Types
 // ============================================================================
 
