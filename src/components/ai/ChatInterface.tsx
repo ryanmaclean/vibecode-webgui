@@ -255,6 +255,24 @@ export function ChatInterface({
         throw streamError;
       }
 
+      // Record usage after successful response
+      try {
+        const costTracker = getCostTracker();
+
+        // Estimate prompt tokens (all messages sent to API)
+        const promptText = apiMessages.map(m => m.content).join('\n');
+        const promptTokens = estimateTokens(promptText, selectedModel);
+
+        // Estimate completion tokens (assistant's response)
+        const completionTokens = estimateTokens(accumulatedContent, selectedModel);
+
+        // Record usage
+        costTracker.recordUsage(selectedModel, promptTokens, completionTokens);
+      } catch (trackingError) {
+        // Don't fail the request if tracking fails
+        console.error('Failed to record usage:', trackingError);
+      }
+
       setIsStreaming(false);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error');
