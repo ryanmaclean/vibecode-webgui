@@ -2,7 +2,8 @@ name: Validate Issue #790 Fix
 
 on:
   push:
-    branches: [main, develop]
+    # TEMP queue-pressure reduction: skip main push runs for this non-critical validation.
+    branches: [develop]
     paths:
       - 'platforms/azure/**'
       - 'azure/**'

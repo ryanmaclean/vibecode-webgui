@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20.11.0'  # Match package.json engines requirement
+  NODE_VERSION: '20.19.0'  # Match current package engine requirements
   DD_SERVICE: ${{ github.event.repository.name }}
   DD_ENV: ci
   DD_VERSION: ${{ github.sha }}
@@ -23,7 +23,7 @@ env:
 jobs:
   # Code Quality & Security
   code-quality:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_USE_SELF_HOSTED == 'true' && (vars.CI_SELF_HOSTED_LABELS_JSON || '["self-hosted","linux","x64"]') || '["ubuntu-latest"]') }}
     name: Code Quality & Security
     timeout-minutes: 20
     steps:
@@ -83,7 +83,7 @@ jobs:
 
   # Integration Tests with Services
   integration-tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_USE_SELF_HOSTED == 'true' && (vars.CI_SELF_HOSTED_LABELS_JSON || '["self-hosted","linux","x64"]') || '["ubuntu-latest"]') }}
     name: Integration Tests
     needs: code-quality
     timeout-minutes: 25
@@ -222,7 +222,7 @@ jobs:
 
   # Build Test
   build-test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_USE_SELF_HOSTED == 'true' && (vars.CI_SELF_HOSTED_LABELS_JSON || '["self-hosted","linux","x64"]') || '["ubuntu-latest"]') }}
     name: Build Test
     needs: code-quality
     timeout-minutes: 20
@@ -260,7 +260,7 @@ jobs:
 
   # Final Validation
   validation-complete:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_USE_SELF_HOSTED == 'true' && (vars.CI_SELF_HOSTED_LABELS_JSON || '["self-hosted","linux","x64"]') || '["ubuntu-latest"]') }}
     name: CI/CD Validation Complete
     needs: [integration-tests, build-test]
     if: always()
@@ -286,7 +286,7 @@ jobs:
 
   # AI Gateway Service Tests (optional, only if dependencies exist)
   ai-gateway-tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_USE_SELF_HOSTED == 'true' && (vars.CI_SELF_HOSTED_LABELS_JSON || '["self-hosted","linux","x64"]') || '["ubuntu-latest"]') }}
     name: AI Gateway Tests (conditional)
     needs: code-quality
     timeout-minutes: 15

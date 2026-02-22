@@ -7,9 +7,14 @@ on:
       - '.auto-claude-security.json'
       - 'scripts/security/generate_claude_permissions.py'
   push:
+    # TEMP queue-pressure reduction: avoid running on every main/develop push.
     branches:
       - main
       - develop
+    paths:
+      - '.claude_settings.json'
+      - '.auto-claude-security.json'
+      - 'scripts/security/generate_claude_permissions.py'
 
 env:
   DD_SERVICE: ${{ github.event.repository.name }}
