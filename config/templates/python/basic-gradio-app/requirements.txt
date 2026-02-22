@@ -1,2 +1,2 @@
 gradio
-python-multipart>=0.0.22
+python-multipart==0.0.22

@@ -261,7 +261,7 @@
     "axios": "^1.13.4",
     "diff": "8.0.3",
     "hono": "^4.11.4",
-    "fast-xml-parser": "^5.3.4"
+    "fast-xml-parser": "^5.3.6"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.11.1",
