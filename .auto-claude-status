@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "021-multi-agent-orchestration-framework",
+  "spec": "059-add-vector-embedding-similarity-explorer",
   "state": "building",
   "subtasks": {
-    "completed": 12,
-    "total": 15,
+    "completed": 2,
+    "total": 5,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Audit Trail & Rollback UI",
+    "current": "Vector Explorer Page",
     "id": null,
-    "total": 3
+    "total": 1
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 7,
-    "started_at": "2026-02-14T19:55:53.802146"
+    "number": 4,
+    "started_at": "2026-02-21T20:22:35.382132"
   },
-  "last_update": "2026-02-14T20:14:07.356406"
+  "last_update": "2026-02-21T20:33:01.080723"
 }
