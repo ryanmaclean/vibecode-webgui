@@ -1,0 +1,30 @@
+{
+  "name": "React + TypeScript + Vite",
+  "description": "A modern React starter template with TypeScript, Vite, and integrated monitoring support. Includes hot module replacement, optimized builds, and Datadog/Prometheus monitoring configuration.",
+  "author": "VibeCode",
+  "tags": ["react", "typescript", "vite", "frontend", "monitoring", "spa"],
+  "icon": "react",
+  "version": "1.0.0",
+  "type": "application",
+  "language": "typescript",
+  "framework": "react",
+  "files": [
+    "src/App.tsx",
+    "src/main.tsx",
+    "package.json",
+    "tsconfig.json",
+    "vite.config.ts",
+    "README.md",
+    ".env.example"
+  ],
+  "requirements": {
+    "memory": "2GB",
+    "storage": "1GB",
+    "network": true
+  },
+  "monitoringConfig": {
+    "enabled": true,
+    "provider": "datadog",
+    "configFile": "../_shared/monitoring.datadog.yml"
+  }
+}

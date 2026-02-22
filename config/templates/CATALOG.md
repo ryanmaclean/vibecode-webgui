@@ -107,7 +107,7 @@ Microsoft Semantic Kernel for AI orchestration.
 
 ### 🦅 NestJS + EmbedJS
 
-**Category**: Backend / TypeScript  
+**Category**: Backend / TypeScript
 **Path**: `templates/nestjs-embedjs-template/`
 
 NestJS framework with EmbedJS for embeddings and vector search.
@@ -122,28 +122,96 @@ NestJS framework with EmbedJS for embeddings and vector search.
 
 ---
 
+### ⚛️ React + TypeScript + Vite (NEW!)
+
+**Category**: Frontend / React
+**Difficulty**: Beginner
+**Setup Time**: < 5 seconds
+**Path**: `templates/react/react-typescript-vite/`
+
+Modern React development environment with TypeScript, Vite, and integrated monitoring.
+
+**Features**:
+- React 18 with TypeScript 5
+- Vite 5 for ultra-fast builds
+- ESLint and TypeScript strict mode
+- Optional Datadog RUM integration
+- Code splitting and optimized vendor chunks
+- Hot Module Replacement (HMR)
+
+**Use Cases**:
+- Single-page applications
+- Component libraries
+- Dashboard applications
+- Fast prototyping
+
+**Requirements**:
+- Memory: 1 GB
+- Storage: 500 MB
+- Network: Optional (required for monitoring)
+
+[View Template →](react/react-typescript-vite/README.md)
+
+---
+
+### 🐹 Go Microservices (NEW!)
+
+**Category**: Backend / Go
+**Difficulty**: Intermediate
+**Setup Time**: < 5 seconds
+**Path**: `templates/go/go-microservices/`
+
+Production-ready Go microservices template with monitoring stack and Docker support.
+
+**Features**:
+- Go 1.21+ with modern project structure
+- Prometheus metrics endpoint
+- Health check endpoints
+- Docker multi-stage builds
+- Complete monitoring stack (Prometheus, Grafana, Node Exporter)
+- Hot reload for development
+- Environment-based configuration
+
+**Use Cases**:
+- RESTful APIs
+- Microservices architecture
+- High-performance backends
+- Cloud-native applications
+
+**Requirements**:
+- Memory: 512 MB (2 GB with monitoring stack)
+- Storage: 200 MB
+- Network: Required
+
+[View Template →](go/go-microservices/README.md)
+
+---
+
 ## Template Categories
 
 ### By Use Case
 
 - **AI Development**: Neovim + Avante, Semantic Kernel
 - **Machine Learning**: Rust + Burn ML, Python
-- **Backend Development**: Node.js, NestJS, Python
-- **Fast Prototyping**: Neovim + Avante, Node.js
+- **Backend Development**: Node.js, NestJS, Go Microservices, Python
+- **Frontend Development**: React + TypeScript + Vite
+- **Fast Prototyping**: Neovim + Avante, React + Vite, Node.js
 
 ### By Performance
 
 | Template | Boot Time | Memory | Storage |
 |----------|-----------|--------|---------|
 | Neovim + Avante | < 3s | 512 MB | 50 MB |
+| React + TypeScript + Vite | < 5s | 1 GB | 500 MB |
+| Go Microservices | < 5s | 512 MB | 200 MB |
 | Node.js | ~5s | 1 GB | 500 MB |
 | Python | ~5s | 1 GB | 500 MB |
 | Rust + Burn | ~10s | 2 GB | 1 GB |
 
 ### By Difficulty
 
-- **Beginner**: Node.js, Python
-- **Intermediate**: Neovim + Avante, NestJS
+- **Beginner**: Node.js, Python, React + TypeScript + Vite
+- **Intermediate**: Neovim + Avante, NestJS, Go Microservices
 - **Advanced**: Rust + Burn ML, Semantic Kernel
 
 ## Creating Custom Templates
@@ -178,17 +246,40 @@ templates/
     "memory": "1GB",
     "storage": "500MB",
     "network": false
-  }
+  },
+  "monitoring": {
+    "enabled": true,
+    "provider": "datadog|prometheus",
+    "configFile": "monitoring.yml"
+  },
+  "files": [
+    "README.md",
+    "template.json",
+    "monitoring.yml"
+  ]
 }
 ```
+
+**New Features**:
+- **Monitoring Configuration**: Templates can include pre-configured monitoring for Datadog or Prometheus
+- **Resource Customization**: Define memory, storage, and network requirements
+- **File Manifest**: List all files included in the template
 
 ### Submission Process
 
 1. Create template directory in `templates/`
 2. Add `template.json` and `README.md`
-3. Test template locally
-4. Submit PR with template
-5. Update this catalog
+3. Run validation script: `node scripts/validate-template.js templates/your-template/`
+4. Test template locally
+5. Submit PR using template contribution workflow: `node scripts/submit-template.js templates/your-template/`
+6. Update this catalog
+
+**Automated Validation**: All templates must pass validation before submission. The validation script checks:
+- Required files (`template.json`, `README.md`)
+- Template metadata schema
+- Monitoring configuration (if enabled)
+- Resource requirements format
+- File manifest accuracy
 
 ## Template Guidelines
 
@@ -264,19 +355,19 @@ We welcome template contributions! See [CONTRIBUTING.md](../CONTRIBUTING.md) for
 
 Looking for inspiration? Here are some template ideas:
 
-- Go + Gin web framework
 - Ruby on Rails
 - Django + PostgreSQL
-- React + TypeScript
 - Vue.js + Vite
 - Flutter development
 - Kotlin + Spring Boot
 - Elixir + Phoenix
 - Svelte + SvelteKit
 - Deno + Fresh
+- .NET Core + C#
+- Swift + Vapor
 
 ---
 
-**Last Updated**: October 2, 2025  
-**Total Templates**: 6  
-**Latest Addition**: Neovim + Avante.nvim
+**Last Updated**: February 14, 2026
+**Total Templates**: 8
+**Latest Additions**: React + TypeScript + Vite, Go Microservices

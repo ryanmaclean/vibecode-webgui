@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare, Wand2, FileText, Image, Paperclip, Search, Zap, Globe } from 'lucide-react'
+import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare, Wand2, FileText, Image, Paperclip, Search, Zap, Globe, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
@@ -8,8 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
-import { AILoadingState } from '@/components/ai/AILoadingState'
-import { StreamTracker, type StreamMetadata } from '@/lib/ai/stream-utils'
+import { ContextViewer } from '@/components/ai/ContextViewer'
 // import { logger } from '@/lib/logger';
 interface Message {
   id: string
@@ -65,6 +64,7 @@ export const EnhancedChatInterface = ({
   const [selectedModel, setSelectedModel] = useState('anthropic/claude-3.5-sonnet')
   const [contextFiles, setContextFiles] = useState<string[]>(initialContext)
   const [showSettings, setShowSettings] = useState(false)
+  const [showContextViewer, setShowContextViewer] = useState(false)
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [enableWebSearch, setEnableWebSearch] = useState(false)
   const [enableRAG, setEnableRAG] = useState(true)
@@ -426,15 +426,47 @@ export const EnhancedChatInterface = ({
                   ))}
                 </SelectContent>
               </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSettings(!showSettings)}
-              >
-                <Settings className="w-4 h-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowContextViewer(!showContextViewer)}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Context Viewer</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSettings(!showSettings)}
+                  >
+                    <Settings className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Settings</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
+
+          {/* Context Viewer Panel */}
+          {showContextViewer && (
+            <div className="mt-4">
+              <ContextViewer
+                sessionId={workspaceId}
+                compact={false}
+                showExcluded={true}
+              />
+            </div>
+          )}
 
           {/* Settings Panel */}
           {showSettings && (
