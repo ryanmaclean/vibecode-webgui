@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Upload, Code, Settings } from 'lucide-react'
-import { Button, Textarea, Card, CardContent, Badge, ScrollArea } from '@/components/ui';
+import { Button, Textarea, Card, CardContent, Badge, ScrollArea, KeyboardHint } from '@/components/ui';
 import { AIErrorBoundary } from '@/components/error/ErrorBoundary'
 // import { logger } from '@/lib/logger';
 // import PromptTemplates from './PromptTemplates'
@@ -281,7 +281,10 @@ const AIChatInterfaceContent = ({
           aria-labelledby="settings-heading"
         >
           <h3 id="settings-heading" className="sr-only">Chat Settings</h3>
-          <label htmlFor="model-select" className="block text-sm font-medium mb-2">Select AI Model:</label>
+          <div className="flex items-center justify-between mb-2">
+            <label htmlFor="model-select" className="block text-sm font-medium">Select AI Model:</label>
+            <KeyboardHint keys={['⌘', 'M']} size="sm" variant="muted" />
+          </div>
           <select
             id="model-select"
             value={selectedModel}
@@ -439,9 +442,13 @@ const AIChatInterfaceContent = ({
               onClick={handleSendMessage}
               disabled={!input.trim() || isStreaming}
               size="sm"
-              aria-label="Send"
+              aria-label="Send message"
+              className="group relative"
             >
               <Send className="w-4 h-4" />
+              <span className="ml-2 hidden sm:inline-flex items-center">
+                <KeyboardHint keys={['⌘', 'Enter']} size="sm" variant="muted" />
+              </span>
             </Button>
           </div>
         </div>
