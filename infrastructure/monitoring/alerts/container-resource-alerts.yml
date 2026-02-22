@@ -1,0 +1,249 @@
+# Container Resource Alerting Rules for VibeCode Platform
+# Production-ready alerts for container resource monitoring
+
+groups:
+  - name: vibecode.container.resources
+    rules:
+      # Container CPU Alerts
+      - alert: ContainerHighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{container!="",container!="POD"}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} high CPU usage"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} is using {{ $value }}% CPU for more than 5 minutes"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-high-cpu"
+          dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      - alert: ContainerCriticalCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{container!="",container!="POD"}[5m]) * 100 > 95
+        for: 3m
+        labels:
+          severity: critical
+          priority: P1
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} critical CPU usage"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} is using {{ $value }}% CPU (critical threshold) for more than 3 minutes"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-critical-cpu"
+          dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      # Container Memory Alerts
+      - alert: ContainerHighMemoryUsage
+        expr: (container_memory_working_set_bytes{container!="",container!="POD"} / container_spec_memory_limit_bytes{container!="",container!="POD"}) * 100 > 85
+        for: 3m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} high memory usage"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} is using {{ $value }}% of its memory limit for more than 3 minutes"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-high-memory"
+          dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      - alert: ContainerCriticalMemoryUsage
+        expr: (container_memory_working_set_bytes{container!="",container!="POD"} / container_spec_memory_limit_bytes{container!="",container!="POD"}) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          priority: P1
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} critical memory usage"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} is using {{ $value }}% of its memory limit (critical threshold) - OOM risk"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-critical-memory"
+          dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      - alert: ContainerMemoryNearLimit
+        expr: container_memory_working_set_bytes{container!="",container!="POD"} / container_spec_memory_limit_bytes{container!="",container!="POD"} > 0.90
+        for: 5m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} approaching memory limit"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} is using {{ $value | humanizePercentage }} of its memory limit"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-memory-near-limit"
+
+      # Container Storage/Disk Alerts
+      - alert: ContainerDiskUsageHigh
+        expr: (container_fs_usage_bytes{container!="",container!="POD"} / container_fs_limit_bytes{container!="",container!="POD"}) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          priority: P1
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} high disk usage"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} is using {{ $value }}% of its disk space"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-disk-full"
+          dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      - alert: ContainerDiskUsageWarning
+        expr: (container_fs_usage_bytes{container!="",container!="POD"} / container_fs_limit_bytes{container!="",container!="POD"}) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} disk usage warning"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} is using {{ $value }}% of its disk space"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-disk-usage"
+
+      # Container Network Alerts
+      - alert: ContainerNetworkSaturation
+        expr: rate(container_network_receive_bytes_total{container!="",container!="POD"}[5m]) > 100000000
+        for: 5m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} high network receive rate"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} is receiving {{ $value | humanize }}B/s for more than 5 minutes"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-network-saturation"
+          dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      - alert: ContainerNetworkTransmitSaturation
+        expr: rate(container_network_transmit_bytes_total{container!="",container!="POD"}[5m]) > 100000000
+        for: 5m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} high network transmit rate"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} is transmitting {{ $value | humanize }}B/s for more than 5 minutes"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-network-saturation"
+          dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      # Container Restart Alerts
+      - alert: ContainerRestartingFrequently
+        expr: increase(kube_pod_container_status_restarts_total{container!="",container!="POD"}[10m]) > 3
+        for: 2m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} restarting frequently"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} has restarted {{ $value }} times in the last 10 minutes"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-restarts"
+          dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      # OOM Kill Alerts
+      - alert: ContainerOOMKilled
+        expr: increase(container_oom_events_total{container!="",container!="POD"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          priority: P1
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} killed by OOM"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} was killed by Out of Memory (OOM) {{ $value }} times in the last 5 minutes"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-oom-killed"
+          dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      # Container State Alerts
+      - alert: ContainerNotRunning
+        expr: kube_pod_container_status_running{container!="",container!="POD"} == 0
+        for: 3m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} not running"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} is not in running state"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-not-running"
+          dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      - alert: ContainerWaitingTooLong
+        expr: kube_pod_container_status_waiting{container!="",container!="POD"} == 1
+        for: 5m
+        labels:
+          severity: warning
+          priority: P3
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} waiting too long"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} has been in waiting state for more than 5 minutes"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-waiting"
+
+  - name: vibecode.container.performance
+    rules:
+      # Container Throttling Alerts
+      - alert: ContainerCPUThrottling
+        expr: rate(container_cpu_cfs_throttled_seconds_total{container!="",container!="POD"}[5m]) / rate(container_cpu_cfs_periods_total{container!="",container!="POD"}[5m]) > 0.25
+        for: 5m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} experiencing CPU throttling"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} is being CPU throttled {{ $value | humanizePercentage }} of the time"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-cpu-throttling"
+          dashboard: "https://grafana.vibecode.dev/d/container-metrics"
+
+      # Container I/O Performance
+      - alert: ContainerHighIOWait
+        expr: rate(container_fs_io_time_seconds_total{container!="",container!="POD"}[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          priority: P3
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} high I/O wait"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} is experiencing high I/O wait times"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-high-io"
+
+      # Container Network Errors
+      - alert: ContainerNetworkErrors
+        expr: rate(container_network_receive_errors_total{container!="",container!="POD"}[5m]) > 10
+        for: 3m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} network receive errors"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} is experiencing {{ $value }} network receive errors per second"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-network-errors"
+
+      - alert: ContainerNetworkTransmitErrors
+        expr: rate(container_network_transmit_errors_total{container!="",container!="POD"}[5m]) > 10
+        for: 3m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container }} network transmit errors"
+          description: "Container {{ $labels.container }} on {{ $labels.pod }} is experiencing {{ $value }} network transmit errors per second"
+          runbook_url: "https://docs.vibecode.dev/runbooks/container-network-errors"
