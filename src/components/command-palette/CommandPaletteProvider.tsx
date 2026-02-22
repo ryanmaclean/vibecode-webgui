@@ -6,14 +6,14 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback } from 'react'
-import type { ReactNode } from 'react'
+import type { ReactNode, ElementType } from 'react'
 
 export interface Command {
   id: string
   label: string
   category: string
   keywords?: string[]
-  icon?: ReactNode
+  icon?: ElementType
   shortcut?: string
   action: () => void | Promise<void>
 }
