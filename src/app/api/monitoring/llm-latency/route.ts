@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../lib/monitoring/auth'
-import { cache, CacheTTL } from '../../../../lib/cache/unified-cache-client'
+import { checkMonitoringAuth, getUnauthorizedResponse } from '@/lib/monitoring/auth'
+import { cache, CacheTTL } from '@/lib/cache/unified-cache-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url)
-    const timeframe = searchParams.get('timeframe') || '1h'
-    const model = searchParams.get('model') // optional filter
+    const timeframe = searchParams.get('range') || searchParams.get('timeframe') || '1h'
+    const model = searchParams.get('modelId') || searchParams.get('model') // optional filter
     const skipCache = searchParams.get('skip_cache') === 'true'
 
     const cacheKey = `monitoring:llm-latency:${timeframe}:${model || 'all'}`
@@ -58,12 +58,14 @@ async function getLLMLatencyData(timeframe: string, model?: string | null) {
     timestamp: new Date().toISOString(),
     timeRange: timeframe,
     model: model || undefined,
-    avgLatency: 0,
-    p50Latency: 0,
-    p95Latency: 0,
-    p99Latency: 0,
-    minLatency: 0,
-    maxLatency: 0,
-    timeSeries: []
+    metrics: {
+      avgLatency: 0,
+      p50Latency: 0,
+      p95Latency: 0,
+      p99Latency: 0,
+      minLatency: 0,
+      maxLatency: 0,
+    },
+    dataPoints: []
   }
 }

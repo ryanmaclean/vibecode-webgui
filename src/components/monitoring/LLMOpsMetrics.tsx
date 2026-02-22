@@ -7,7 +7,7 @@
 
 'use client'
 
-import { useEffect, useState, useCallback, useMemo, memo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useId, memo } from 'react'
 import {
   LineChart,
   Line,
@@ -143,6 +143,7 @@ function LLMOpsMetricsInner({
   refreshInterval = 60000,
   className = ''
 }: LLMOpsMetricsProps) {
+  const latencyGradientId = `${useId().replace(/:/g, '-')}-colorLatency`
   const [data, setData] = useState<LLMOpsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -158,7 +159,60 @@ function LLMOpsMetricsInner({
       }
 
       const json = await res.json()
-      setData(json)
+      const errorRate = Number(json.requests?.total || 0) > 0
+        ? (Number(json.errors?.total || 0) / Number(json.requests?.total || 1)) * 100
+        : 0
+      const models = Array.isArray(json.models) ? json.models : []
+      const timeSeries = Array.isArray(json.timeSeries) ? json.timeSeries : []
+      const providerEntries = json.providers && typeof json.providers === 'object'
+        ? Object.values(json.providers)
+        : []
+      const alertsActive = providerEntries.filter((provider: unknown) =>
+        provider &&
+        typeof provider === 'object' &&
+        'status' in provider &&
+        (provider as { status?: string }).status !== 'operational'
+      ).length
+
+      setData({
+        timestamp: String(json.timestamp || new Date().toISOString()),
+        timeRange: String(json.timeframe || '1h'),
+        totalRequests: Number(json.requests?.total || 0),
+        totalErrors: Number(json.errors?.total || 0),
+        successRate: Number(json.requests?.success_rate || 0),
+        errorRate,
+        overallLatency: {
+          p50: Number(json.performance?.p50_latency_ms || 0),
+          p95: Number(json.performance?.p95_latency_ms || 0),
+          p99: Number(json.performance?.p99_latency_ms || 0),
+          avg: Number(json.performance?.average_latency_ms || 0),
+          max: Number(json.performance?.slowest_request_ms || 0),
+        },
+        models: models.map((model: Record<string, unknown>) => ({
+          name: String(model.model || model.name || 'Unknown'),
+          requests: Number(model.count || model.requests || 0),
+          successRate: 100,
+          errorRate: 0,
+          latency: {
+            p50: 0,
+            p95: 0,
+            p99: 0,
+            avg: 0,
+            max: 0,
+          },
+          tokensPerSecond: 0,
+          cost: 0,
+        })),
+        timeSeries: timeSeries.map((point: Record<string, unknown>) => ({
+          timestamp: String(point.timestamp || new Date().toISOString()),
+          requests: Number(point.requests || 0),
+          errors: Number(point.errors || 0),
+          avgLatency: Number(point.avgLatency || 0),
+          tokens: Number(point.tokens || 0),
+        })),
+        alertsActive,
+        healthStatus: errorRate >= 5 ? 'critical' : errorRate >= 2 ? 'degraded' : 'healthy',
+      })
       setLastUpdate(new Date())
       setError(null)
     } catch (err) {
@@ -291,7 +345,7 @@ function LLMOpsMetricsInner({
         )}
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <MetricCard
             label="Total Requests"
             value={data.totalRequests.toLocaleString()}
@@ -350,7 +404,7 @@ function LLMOpsMetricsInner({
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={latencyChartData}>
                 <defs>
-                  <linearGradient id="colorLatency" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id={latencyGradientId} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
                   </linearGradient>
@@ -373,7 +427,7 @@ function LLMOpsMetricsInner({
                   dataKey="latency"
                   stroke="#3b82f6"
                   fillOpacity={1}
-                  fill="url(#colorLatency)"
+                  fill={`url(#${latencyGradientId})`}
                   name="Avg Latency (ms)"
                 />
               </AreaChart>

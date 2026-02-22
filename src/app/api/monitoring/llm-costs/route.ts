@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../lib/monitoring/auth'
-import { cache, CacheTTL } from '../../../../lib/cache/unified-cache-client'
+import { checkMonitoringAuth, getUnauthorizedResponse } from '@/lib/monitoring/auth'
+import { cache, CacheTTL } from '@/lib/cache/unified-cache-client'
 
 export const dynamic = 'force-dynamic'
 

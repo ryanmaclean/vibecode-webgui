@@ -124,9 +124,13 @@ export default function LLMOpsPage() {
 
   // Fetch data on mount
   useEffect(() => {
+    let isInitialLoad = true
+
     async function fetchData() {
       try {
-        setLoading(true)
+        if (isInitialLoad) {
+          setLoading(true)
+        }
 
         // Fetch from actual API endpoints
         const [opsRes, costsRes, tokensRes] = await Promise.all([
@@ -134,6 +138,10 @@ export default function LLMOpsPage() {
           fetch('/api/monitoring/llm-costs'),
           fetch('/api/monitoring/llm-tokens')
         ])
+
+        if (!opsRes.ok || !costsRes.ok || !tokensRes.ok) {
+          throw new Error('Failed to fetch one or more LLM monitoring endpoints')
+        }
 
         const opsData = await opsRes.json()
         const costsData = await costsRes.json()
@@ -149,14 +157,51 @@ export default function LLMOpsPage() {
           errorRate: ((opsData.errors?.total || 0) / (opsData.requests?.total || 1)) * 100
         })
 
-        setProviders(costsData.providers || [])
-        setModels(tokensData.models || [])
+        setProviders(
+          (costsData.providers || []).map((provider: Record<string, unknown>) => {
+            const providerStatus = String(provider.status || 'healthy')
+            return {
+              name: String(provider.name || provider.provider || 'Unknown'),
+              requests: Number(provider.requestCount || provider.requests || 0),
+              tokens: Number(provider.tokenCount || provider.tokens || 0),
+              cost: Number(provider.totalCost || provider.cost || 0),
+              avgLatency: Number(provider.avgLatency || provider.average_latency_ms || 0),
+              errorRate: Number(provider.errorRate || provider.error_rate || 0),
+              status: (providerStatus === 'degraded' || providerStatus === 'down' ? providerStatus : 'healthy') as ProviderStats['status'],
+            }
+          })
+        )
+
+        setModels(
+          (tokensData.models || []).map((model: Record<string, unknown>) => ({
+            model: String(model.name || model.model || 'Unknown'),
+            provider: String(model.provider || 'Unknown'),
+            requests: Number(model.requestCount || model.requests || 0),
+            tokens: Number(model.totalTokens || model.tokens || 0),
+            cost: Number(model.totalCost || model.cost || 0),
+            avgLatency: Number(model.avgLatency || model.average_latency_ms || 0)
+          }))
+        )
+
+        setRecentRequests(
+          (opsData.recentRequests || []).map((request: Record<string, unknown>, idx: number) => ({
+            id: String(request.id || `req-${idx + 1}`),
+            timestamp: String(request.timestamp || new Date().toISOString()),
+            model: String(request.model || 'Unknown'),
+            provider: String(request.provider || 'Unknown'),
+            tokens: Number(request.tokens || 0),
+            latency: Number(request.latency || request.latency_ms || 0),
+            cost: Number(request.cost || 0),
+            status: request.status === 'error' ? 'error' : 'success'
+          }))
+        )
 
         setError(null)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch data')
       } finally {
         setLoading(false)
+        isInitialLoad = false
       }
     }
 
@@ -413,6 +458,8 @@ export default function LLMOpsPage() {
             <div className="flex gap-2">
               <select
                 data-testid="request-status-filter"
+                disabled
+                title="Request filters will be enabled when backend request history is available"
                 className="px-3 py-1 border border-gray-300 dark:border-gray-700 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               >
                 <option value="">All Status</option>
@@ -421,6 +468,8 @@ export default function LLMOpsPage() {
               </select>
               <select
                 data-testid="request-provider-filter"
+                disabled
+                title="Request filters will be enabled when backend request history is available"
                 className="px-3 py-1 border border-gray-300 dark:border-gray-700 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               >
                 <option value="">All Providers</option>
@@ -538,7 +587,8 @@ export default function LLMOpsPage() {
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Cost Breakdown by Provider</h3>
         <div className="space-y-3">
           {providers.map((provider) => {
-            const percentage = ((provider.cost / metrics.totalCost) * 100).toFixed(1)
+            const percentageValue = metrics.totalCost > 0 ? (provider.cost / metrics.totalCost) * 100 : 0
+            const percentage = percentageValue.toFixed(1)
             return (
               <div key={provider.name}>
                 <div className="flex justify-between text-sm mb-1">
@@ -550,7 +600,7 @@ export default function LLMOpsPage() {
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div
                     className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full"
-                    style={{ width: `${percentage}%` }}
+                    style={{ width: `${percentageValue}%` }}
                   />
                 </div>
               </div>

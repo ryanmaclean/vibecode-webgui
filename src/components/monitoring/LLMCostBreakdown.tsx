@@ -11,8 +11,6 @@ import { useEffect, useState, useCallback, useMemo, memo } from 'react'
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -374,7 +372,7 @@ function LLMCostBreakdownInner({
         )}
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <CostSummaryCard
             label="Total Cost"
             value={`$${data.totalCost.toFixed(2)}`}
@@ -420,14 +418,14 @@ function LLMCostBreakdownInner({
               <div className="text-xs text-gray-500 mb-1">Input Tokens</div>
               <div className="text-lg font-semibold text-gray-900">${data.totalInputCost.toFixed(2)}</div>
               <div className="text-xs text-gray-600 mt-1">
-                {((data.totalInputCost / data.totalCost) * 100).toFixed(1)}% of total
+                {data.totalCost > 0 ? ((data.totalInputCost / data.totalCost) * 100).toFixed(1) : '0.0'}% of total
               </div>
             </div>
             <div>
               <div className="text-xs text-gray-500 mb-1">Output Tokens</div>
               <div className="text-lg font-semibold text-gray-900">${data.totalOutputCost.toFixed(2)}</div>
               <div className="text-xs text-gray-600 mt-1">
-                {((data.totalOutputCost / data.totalCost) * 100).toFixed(1)}% of total
+                {data.totalCost > 0 ? ((data.totalOutputCost / data.totalCost) * 100).toFixed(1) : '0.0'}% of total
               </div>
             </div>
             <div>
@@ -545,7 +543,7 @@ function LLMCostBreakdownInner({
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
-                    label={(entry) => `${entry.percentage.toFixed(0)}%`}
+                    label={(entry) => `${((entry.percent ?? 0) * 100).toFixed(0)}%`}
                   >
                     {providerPieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

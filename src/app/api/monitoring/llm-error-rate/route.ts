@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../lib/monitoring/auth'
-import { cache, CacheTTL } from '../../../../lib/cache/unified-cache-client'
+import { checkMonitoringAuth, getUnauthorizedResponse } from '@/lib/monitoring/auth'
+import { cache, CacheTTL } from '@/lib/cache/unified-cache-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url)
-    const timeframe = searchParams.get('timeframe') || '24h'
+    const timeframe = searchParams.get('range') || searchParams.get('timeframe') || '24h'
     const skipCache = searchParams.get('skip_cache') === 'true'
 
     const cacheKey = `monitoring:llm-error-rate:${timeframe}`
@@ -56,12 +56,24 @@ async function getLLMErrorRateData(timeframe: string) {
   return {
     timestamp: new Date().toISOString(),
     timeRange: timeframe,
-    errorRate: 0,
-    totalErrors: 0,
-    totalRequests: 0,
-    errorRatePrevious: 0,
-    errorsByType: [],
+    currentErrorRate: 0,
+    errorMetrics: {
+      total: 0,
+      rate: 0,
+      change24h: 0,
+    },
+    errorsByType: {
+      timeout: 0,
+      rateLimit: 0,
+      apiError: 0,
+      validation: 0,
+      other: 0,
+    },
     timeSeries: [],
-    healthStatus: 'healthy' as const
+    healthStatus: 'healthy' as const,
+    threshold: {
+      warning: 2,
+      critical: 5,
+    },
   }
 }

@@ -62,9 +62,9 @@ function LLMLatencyChartInner({
   // Memoized fetch function
   const fetchData = useCallback(async () => {
     try {
-      const params = new URLSearchParams({ range: timeRange })
+      const params = new URLSearchParams({ timeframe: timeRange })
       if (modelId) {
-        params.append('modelId', modelId)
+        params.append('model', modelId)
       }
 
       const res = await fetch(`/api/monitoring/llm-latency?${params.toString()}`)

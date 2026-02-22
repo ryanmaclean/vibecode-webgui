@@ -106,7 +106,7 @@ const MiniChart = memo(function MiniChart({ data }: MiniChartProps) {
     const height = 40
 
     return data.map((point, idx) => {
-      const x = (idx / (data.length - 1)) * width
+      const x = data.length === 1 ? width / 2 : (idx / (data.length - 1)) * width
       const y = height - (point.errorRate / maxRate) * height
       return `${x},${y}`
     }).join(' ')
@@ -138,6 +138,23 @@ function LLMErrorRateWidgetInner({
   const [error, setError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
 
+  const isValidErrorRateData = useCallback((value: unknown): value is ErrorRateData => {
+    if (!value || typeof value !== 'object') return false
+
+    const candidate = value as Partial<ErrorRateData>
+    return (
+      typeof candidate.currentErrorRate === 'number' &&
+      !!candidate.errorMetrics &&
+      typeof candidate.errorMetrics.total === 'number' &&
+      typeof candidate.errorMetrics.rate === 'number' &&
+      typeof candidate.errorMetrics.change24h === 'number' &&
+      !!candidate.threshold &&
+      typeof candidate.threshold.warning === 'number' &&
+      typeof candidate.threshold.critical === 'number' &&
+      Array.isArray(candidate.timeSeries)
+    )
+  }, [])
+
   // Memoized fetch function to prevent recreation on every render
   const fetchErrorRate = useCallback(async () => {
     try {
@@ -147,7 +164,12 @@ function LLMErrorRateWidgetInner({
         throw new Error(`API returned ${res.status}: ${res.statusText}`)
       }
 
-      const responseData = await res.json()
+      const responseData: unknown = await res.json()
+      if (!isValidErrorRateData(responseData)) {
+        setError('Invalid error rate response payload from API')
+        return
+      }
+
       setData(responseData)
       setLastUpdate(new Date())
       setError(null)
@@ -156,7 +178,7 @@ function LLMErrorRateWidgetInner({
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [isValidErrorRateData])
 
   useEffect(() => {
     // Initial fetch

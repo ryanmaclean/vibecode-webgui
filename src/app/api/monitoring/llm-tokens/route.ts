@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../lib/monitoring/auth'
-import { cache, CacheTTL } from '../../../../lib/cache/unified-cache-client'
+import { checkMonitoringAuth, getUnauthorizedResponse } from '@/lib/monitoring/auth'
+import { cache, CacheTTL } from '@/lib/cache/unified-cache-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url)
-    const timeframe = searchParams.get('timeframe') || '30d'
+    const timeframe = searchParams.get('range') || searchParams.get('timeframe') || '30d'
     const skipCache = searchParams.get('skip_cache') === 'true'
 
     const cacheKey = `monitoring:llm-tokens:${timeframe}`
@@ -53,13 +53,17 @@ export async function GET(request: NextRequest) {
 async function getLLMTokenData(timeframe: string) {
   // TODO: Implement real data fetching from Datadog or metrics database
   // For now, return structure that matches component expectations
+  const totalPromptTokens = 0
+  const totalCompletionTokens = 0
   return {
     timestamp: new Date().toISOString(),
     timeRange: timeframe,
     totalTokens: 0,
-    promptTokens: 0,
-    completionTokens: 0,
+    totalPromptTokens,
+    totalCompletionTokens,
+    totalRequests: 0,
     avgTokensPerRequest: 0,
+    promptToCompletionRatio: totalPromptTokens / Math.max(1, totalCompletionTokens),
     models: [],
     timeSeries: []
   }

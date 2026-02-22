@@ -8,7 +8,7 @@
 
 'use client'
 
-import { useEffect, useState, useCallback, useMemo, memo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useId, memo } from 'react'
 import {
   AreaChart,
   Area,
@@ -128,6 +128,9 @@ function LLMTokenUsageChartInner({
   refreshInterval = 60000,
   className = ''
 }: LLMTokenUsageChartProps) {
+  const gradientIdPrefix = useId().replace(/:/g, '-')
+  const promptGradientId = `${gradientIdPrefix}-colorPrompt`
+  const completionGradientId = `${gradientIdPrefix}-colorCompletion`
   const [data, setData] = useState<TokenUsageData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -136,7 +139,7 @@ function LLMTokenUsageChartInner({
   // Memoized fetch function to prevent recreation on every render
   const fetchTokenData = useCallback(async () => {
     try {
-      const params = new URLSearchParams({ range: timeRange })
+      const params = new URLSearchParams({ timeframe: timeRange })
       const res = await fetch(`/api/monitoring/llm-tokens?${params.toString()}`)
 
       if (!res.ok) {
@@ -253,13 +256,13 @@ function LLMTokenUsageChartInner({
           <TokenSummaryCard
             label="Prompt Tokens"
             value={`${(data.totalPromptTokens / 1000).toFixed(1)}K`}
-            subtext={`${((data.totalPromptTokens / data.totalTokens) * 100).toFixed(0)}% of total`}
+            subtext={data.totalTokens > 0 ? `${((data.totalPromptTokens / data.totalTokens) * 100).toFixed(0)}% of total` : '0% of total'}
             colorClass="bg-gradient-to-br from-blue-50 to-blue-100 text-blue-900"
           />
           <TokenSummaryCard
             label="Completion Tokens"
             value={`${(data.totalCompletionTokens / 1000).toFixed(1)}K`}
-            subtext={`${((data.totalCompletionTokens / data.totalTokens) * 100).toFixed(0)}% of total`}
+            subtext={data.totalTokens > 0 ? `${((data.totalCompletionTokens / data.totalTokens) * 100).toFixed(0)}% of total` : '0% of total'}
             colorClass="bg-gradient-to-br from-green-50 to-green-100 text-green-900"
           />
           <TokenSummaryCard
@@ -280,7 +283,7 @@ function LLMTokenUsageChartInner({
                 {(data.totalPromptTokens / 1000).toFixed(1)}K
               </div>
               <div className="text-xs text-gray-600 mt-1">
-                {((data.totalPromptTokens / data.totalTokens) * 100).toFixed(1)}% of total
+                {data.totalTokens > 0 ? ((data.totalPromptTokens / data.totalTokens) * 100).toFixed(1) : '0.0'}% of total
               </div>
             </div>
             <div>
@@ -289,7 +292,7 @@ function LLMTokenUsageChartInner({
                 {(data.totalCompletionTokens / 1000).toFixed(1)}K
               </div>
               <div className="text-xs text-gray-600 mt-1">
-                {((data.totalCompletionTokens / data.totalTokens) * 100).toFixed(1)}% of total
+                {data.totalTokens > 0 ? ((data.totalCompletionTokens / data.totalTokens) * 100).toFixed(1) : '0.0'}% of total
               </div>
             </div>
             <div>
@@ -311,11 +314,11 @@ function LLMTokenUsageChartInner({
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={timeSeriesChartData}>
                 <defs>
-                  <linearGradient id="colorPrompt" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id={promptGradientId} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
                   </linearGradient>
-                  <linearGradient id="colorCompletion" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id={completionGradientId} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
                   </linearGradient>
@@ -343,7 +346,7 @@ function LLMTokenUsageChartInner({
                   dataKey="prompt"
                   stackId="1"
                   stroke="#3b82f6"
-                  fill="url(#colorPrompt)"
+                  fill={`url(#${promptGradientId})`}
                   name="Prompt Tokens"
                 />
                 <Area
@@ -351,7 +354,7 @@ function LLMTokenUsageChartInner({
                   dataKey="completion"
                   stackId="1"
                   stroke="#10b981"
-                  fill="url(#colorCompletion)"
+                  fill={`url(#${completionGradientId})`}
                   name="Completion Tokens"
                 />
               </AreaChart>

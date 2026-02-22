@@ -4,8 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../lib/monitoring/auth'
-import { cache, CacheTTL } from '../../../../lib/cache/unified-cache-client'
+import { checkMonitoringAuth, getUnauthorizedResponse } from '@/lib/monitoring/auth'
+import { cache, CacheTTL } from '@/lib/cache/unified-cache-client'
+import { logger } from '@/lib/logger'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -129,6 +130,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response)
 
   } catch (error) {
+    logger.error('Failed to fetch LLM operations data', error)
     return NextResponse.json({
       error: 'Failed to fetch LLM operations data',
       message: error instanceof Error ? error.message : 'Unknown error',
