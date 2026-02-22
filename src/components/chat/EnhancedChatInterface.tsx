@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare, Wand2, FileText, Image, Paperclip, Search, Zap, Globe } from 'lucide-react'
+import React, { useState, useRef, useEffect } from 'react'
+import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare, Wand2, FileText, Image, Paperclip, Search, Zap, Globe, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
@@ -7,10 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
-import ModelSelector from '@/components/ai/ModelSelector'
-import ModelDisplay from '@/components/ai/ModelDisplay'
-import type { ModelProfile } from '@/types/model-comparison'
-import { modelRegistry } from '@/lib/ai/models/model-registry'
+import { ContextViewer } from '@/components/ai/ContextViewer'
 // import { logger } from '@/lib/logger';
 interface Message {
   id: string
@@ -66,6 +63,7 @@ export const EnhancedChatInterface = ({
   const [selectedModel, setSelectedModel] = useState('anthropic/claude-3.5-sonnet')
   const [contextFiles, setContextFiles] = useState<string[]>(initialContext)
   const [showSettings, setShowSettings] = useState(false)
+  const [showContextViewer, setShowContextViewer] = useState(false)
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [enableWebSearch, setEnableWebSearch] = useState(false)
   const [enableRAG, setEnableRAG] = useState(true)
@@ -412,23 +410,64 @@ export const EnhancedChatInterface = ({
               />
             </div>
             <div className="flex items-center space-x-2">
-              <ModelSelector
-                models={availableModels}
-                selectedModelId={selectedModel}
-                onModelSelect={handleModelSelect}
-                onFavoriteToggle={handleFavoriteToggle}
-                favoriteModelIds={favoriteModelIds}
-                recentModelIds={recentModelIds}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSettings(!showSettings)}
-              >
-                <Settings className="w-4 h-4" />
-              </Button>
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableModels.map(model => (
+                    <SelectItem key={model.id} value={model.id}>
+                      <div className="flex flex-col">
+                        <span>{model.name}</span>
+                        <span className="text-xs text-gray-500">
+                          {model.provider} • {model.context}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowContextViewer(!showContextViewer)}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Context Viewer</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSettings(!showSettings)}
+                  >
+                    <Settings className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Settings</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
+
+          {/* Context Viewer Panel */}
+          {showContextViewer && (
+            <div className="mt-4">
+              <ContextViewer
+                sessionId={workspaceId}
+                compact={false}
+                showExcluded={true}
+              />
+            </div>
+          )}
 
           {/* Settings Panel */}
           {showSettings && (

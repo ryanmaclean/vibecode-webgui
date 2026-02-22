@@ -5,6 +5,7 @@ import {
   type ProjectTemplate,
   getTemplateById
 } from './index'
+import type { TemplateMonitoringConfig } from './monitoring-config'
 
 export interface GenerateFromTemplateOptions {
   projectName: string
@@ -38,6 +39,12 @@ export interface GeneratedTemplateProject {
   envVars: Array<EnvVariable & { value?: string }>
   setupInstructions: string[]
   documentation: ProjectTemplate['documentation']
+  monitoringConfig?: TemplateMonitoringConfig
+  requirements?: {
+    memory: string
+    storage: string
+    network: boolean
+  }
   metadata: {
     features: string[]
     frameworks: string[]
@@ -117,6 +124,8 @@ function buildGeneratedProject(
     envVars: toGeneratedEnvVars(template, envOverrides),
     setupInstructions: [...template.documentation.setup],
     documentation: template.documentation,
+    monitoringConfig: template.monitoringConfig ? { ...template.monitoringConfig } : undefined,
+    requirements: template.requirements ? { ...template.requirements } : undefined,
     metadata: {
       features: projectFeatures,
       frameworks: [...template.frameworks],

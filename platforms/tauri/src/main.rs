@@ -8,10 +8,12 @@ mod docker;
 mod mdns;
 mod menu;
 mod ml;
+mod network;
 mod platform;
 mod service;
 mod tailscale;
 mod vm;
+mod wireguard;
 
 // use tauri::Manager; // Removed unused import
 
@@ -120,9 +122,24 @@ fn main() {
             platform::windows::windows_check_requirements,
             #[cfg(target_os = "windows")]
             platform::windows::windows_get_setup_instructions,
-            // Tailscale commands (not yet implemented)
-            // tailscale::commands::tailscale_status,
-            // tailscale::commands::tailscale_get_ip,
+            // Tailscale commands
+            tailscale::commands::tailscale_is_installed,
+            tailscale::commands::tailscale_status,
+            tailscale::commands::tailscale_get_ip,
+            tailscale::commands::tailscale_get_secure_bind_addr,
+            tailscale::commands::tailscale_start_code_server_secure,
+            tailscale::commands::tailscale_check_service_accessible,
+            tailscale::commands::tailscale_get_network_info,
+            tailscale::commands::tailscale_verify_zero_trust,
+            // WireGuard commands
+            wireguard::commands::wireguard_is_installed,
+            wireguard::commands::wireguard_get_version,
+            wireguard::commands::wireguard_list_interfaces,
+            wireguard::commands::wireguard_get_interface_status,
+            wireguard::commands::wireguard_status,
+            wireguard::commands::wireguard_get_ip,
+            wireguard::commands::wireguard_get_secure_bind_addr,
+            wireguard::commands::wireguard_verify_configuration,
         ])
         .setup(|app| {
             // Check if running in service mode (for Electron)
