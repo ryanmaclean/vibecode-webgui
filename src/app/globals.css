@@ -110,6 +110,58 @@
     color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  /* Enhanced Focus Management - WCAG 2.1 AA Compliant */
+  /* Only show focus rings on keyboard navigation, not mouse clicks */
+  *:focus {
+    outline: none;
+  }
+
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    transition: outline-offset 0.2s ease;
+  }
+
+  /* Enhanced focus for interactive elements */
+  button:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible,
+  [role="link"]:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px hsl(var(--ring) / 0.1);
+  }
+
+  /* Input and textarea focus with ring effect */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 0px;
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.1);
+  }
+
+  /* Focus for custom components with ring utilities */
+  [data-focus-visible]:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Skip link focus (for accessibility) */
+  .skip-link:focus-visible {
+    outline: 3px solid hsl(var(--ring));
+    outline-offset: 0px;
+    box-shadow: 0 0 0 6px hsl(var(--ring) / 0.15);
+  }
+
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    *:focus-visible {
+      transition: none;
+    }
+  }
 }
 
 @layer utilities {
