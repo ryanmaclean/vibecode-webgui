@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "021-multi-agent-orchestration-framework",
+  "spec": "049-plugin-extension-ecosystem",
   "state": "building",
   "subtasks": {
-    "completed": 12,
-    "total": 15,
+    "completed": 2,
+    "total": 22,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Audit Trail & Rollback UI",
+    "current": "Plugin Repository Backend",
     "id": null,
-    "total": 3
+    "total": 5
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 7,
-    "started_at": "2026-02-14T19:55:53.802146"
+    "number": 4,
+    "started_at": "2026-02-21T22:08:15.694140"
   },
-  "last_update": "2026-02-14T20:14:07.356406"
+  "last_update": "2026-02-21T22:26:12.546240"
 }
