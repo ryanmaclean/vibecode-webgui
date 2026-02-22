@@ -123,8 +123,14 @@ fn main() {
             #[cfg(target_os = "windows")]
             platform::windows::windows_get_setup_instructions,
             // Tailscale commands
+            tailscale::commands::tailscale_is_installed,
             tailscale::commands::tailscale_status,
             tailscale::commands::tailscale_get_ip,
+            tailscale::commands::tailscale_get_secure_bind_addr,
+            tailscale::commands::tailscale_start_code_server_secure,
+            tailscale::commands::tailscale_check_service_accessible,
+            tailscale::commands::tailscale_get_network_info,
+            tailscale::commands::tailscale_verify_zero_trust,
             // WireGuard commands
             wireguard::commands::wireguard_is_installed,
             wireguard::commands::wireguard_get_version,

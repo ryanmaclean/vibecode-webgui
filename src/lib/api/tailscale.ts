@@ -1,5 +1,27 @@
-// @ts-expect-error - Tauri API only available in Tauri environment
-import { invoke } from '@tauri-apps/api/core';
+type TauriInvoke = <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>;
+
+let tauriInvoke: TauriInvoke | null = null;
+
+async function invokeCommand<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  if (typeof window === 'undefined') {
+    throw new Error('Tailscale API is only available in the Tauri desktop app');
+  }
+
+  if (!tauriInvoke) {
+    const tauriWindow = window as unknown as {
+      __TAURI__?: { core?: { invoke?: TauriInvoke } };
+      __TAURI_INTERNALS__?: { invoke?: TauriInvoke };
+    };
+
+    tauriInvoke = tauriWindow.__TAURI__?.core?.invoke ?? tauriWindow.__TAURI_INTERNALS__?.invoke ?? null;
+  }
+
+  if (!tauriInvoke) {
+    throw new Error('Tauri API is not available in this environment');
+  }
+
+  return tauriInvoke<T>(cmd, args);
+}
 
 /**
  * Tailscale connection status
@@ -26,7 +48,7 @@ export interface TailscaleConfig {
  * @returns True if Tailscale is installed, false otherwise
  */
 export async function isInstalled(): Promise<boolean> {
-  return await invoke<boolean>('tailscale_is_installed');
+  return await invokeCommand<boolean>('tailscale_is_installed');
 }
 
 /**
@@ -34,7 +56,7 @@ export async function isInstalled(): Promise<boolean> {
  * @returns Current Tailscale status
  */
 export async function getStatus(): Promise<TailscaleStatus> {
-  return await invoke<TailscaleStatus>('tailscale_status');
+  return await invokeCommand<TailscaleStatus>('tailscale_status');
 }
 
 /**
@@ -42,7 +64,7 @@ export async function getStatus(): Promise<TailscaleStatus> {
  * @returns Tailscale IP address
  */
 export async function getIp(): Promise<string> {
-  return await invoke<string>('tailscale_get_ip');
+  return await invokeCommand<string>('tailscale_get_ip');
 }
 
 /**
@@ -51,7 +73,7 @@ export async function getIp(): Promise<string> {
  * @returns Secure bind address (Tailscale IP:port)
  */
 export async function getSecureBindAddr(port: number): Promise<string> {
-  return await invoke<string>('tailscale_get_secure_bind_addr', { port });
+  return await invokeCommand<string>('tailscale_get_secure_bind_addr', { port });
 }
 
 /**
@@ -60,7 +82,7 @@ export async function getSecureBindAddr(port: number): Promise<string> {
  * @returns URL to access code-server
  */
 export async function startCodeServerSecure(port: number): Promise<string> {
-  return await invoke<string>('tailscale_start_code_server_secure', { port });
+  return await invokeCommand<string>('tailscale_start_code_server_secure', { port });
 }
 
 /**
@@ -69,7 +91,7 @@ export async function startCodeServerSecure(port: number): Promise<string> {
  * @returns True if service is accessible, false otherwise
  */
 export async function checkServiceAccessible(port: number): Promise<boolean> {
-  return await invoke<boolean>('tailscale_check_service_accessible', { port });
+  return await invokeCommand<boolean>('tailscale_check_service_accessible', { port });
 }
 
 /**
@@ -77,7 +99,7 @@ export async function checkServiceAccessible(port: number): Promise<boolean> {
  * @returns Network information as JSON
  */
 export async function getNetworkInfo(): Promise<Record<string, unknown>> {
-  return await invoke<Record<string, unknown>>('tailscale_get_network_info');
+  return await invokeCommand<Record<string, unknown>>('tailscale_get_network_info');
 }
 
 /**
@@ -85,5 +107,5 @@ export async function getNetworkInfo(): Promise<Record<string, unknown>> {
  * @returns Array of verification messages or throws error with warnings
  */
 export async function verifyZeroTrust(): Promise<string[]> {
-  return await invoke<string[]>('tailscale_verify_zero_trust');
+  return await invokeCommand<string[]>('tailscale_verify_zero_trust');
 }
