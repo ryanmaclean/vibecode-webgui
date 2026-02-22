@@ -9,7 +9,7 @@ on:
         description: 'Node.js version to use'
         required: false
         type: string
-        default: '20.11.0'
+        default: '20.19.0'
       cache-dependency-path:
         description: 'Path to package-lock.json for cache key'
         required: false
