@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkAIKeys } from '@/lib/setup/checks'
 import { createServiceLogger } from '@/lib/logging'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,7 @@ const log = createServiceLogger({
   service: 'vibecode-webgui',
   component: 'setup-ai-keys-check'
 })
+const apiRateLimit = createAPIRateLimit(60)
 
 /**
  * Check AI API keys configuration
@@ -41,28 +43,51 @@ export async function checkAIKeysConfiguration() {
 }
 
 export async function GET(request: NextRequest) {
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   const startTime = Date.now()
   const requestId = randomUUID()
-  const clientIp = request.headers.get('x-forwarded-for') ||
-                   request.headers.get('x-real-ip') ||
-                   'unknown'
 
   const logContext = {
     service: 'vibecode-webgui',
     component: 'setup-ai-keys-check',
     requestId,
-    clientIp
   }
 
-  console.log('AI API keys check requested', logContext)
+  log.info('AI API keys check requested', logContext)
 
   try {
     // Check AI API keys configuration
     const result = await checkAIKeysConfiguration()
     const responseTime = Date.now() - startTime
 
+    const status =
+      result.status === 'warning'
+        ? 'warning'
+        : result.status === 'completed'
+          ? 'completed'
+          : 'error'
+
     const response = {
-      ...result,
+      success: true,
+      data: {
+        ...result,
+        status,
+      },
       timestamp: new Date().toISOString(),
       responseTime: `${responseTime}ms`,
       requestId
@@ -70,14 +95,14 @@ export async function GET(request: NextRequest) {
 
     // Log the result
     if (!result.configured) {
-      console.warn('AI API keys not fully configured', {
+      log.warn('AI API keys not fully configured', {
         ...logContext,
         configured: false,
         validKeys: result.validKeys.length,
         missingKeys: result.missingKeys.length
       })
     } else {
-      console.log('AI API keys check completed', {
+      log.info('AI API keys check completed', {
         ...logContext,
         configured: true,
         validKeys: result.validKeys.length,
@@ -85,21 +110,25 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Return 200 status regardless of configuration state
-    // The response body indicates the actual state
     return NextResponse.json(response, { status: 200 })
 
   } catch (error) {
-    console.error('AI API keys check failed with error:', error)
+    log.error('AI API keys check failed', {
+      ...logContext,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
 
     const responseTime = Date.now() - startTime
 
     return NextResponse.json({
-      configured: false,
-      status: 'error',
-      message: 'AI keys check failed',
-      validKeys: [],
-      missingKeys: [],
+      success: false,
+      data: {
+        configured: false,
+        status: 'error',
+        message: 'AI keys check failed',
+        validKeys: [],
+        missingKeys: [],
+      },
       error: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString(),
       responseTime: `${responseTime}ms`,

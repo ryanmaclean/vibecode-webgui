@@ -21,9 +21,12 @@ import type {
   SetupStatus,
   SetupStepStatus,
 } from '@/types/setup';
+import { calculateOverallStatus } from '@/types/setup';
 import { detectDockerRuntime, DockerType } from '@/lib/docker/detection';
+import { prisma } from '@/lib/prisma';
 
 const execAsync = promisify(exec);
+const KUBECTL_TIMEOUT_MS = 10000;
 
 /**
  * Checks Docker installation and runtime status
@@ -32,18 +35,18 @@ export async function checkDocker(): Promise<DockerCheckResult> {
   try {
     const dockerStatus = await detectDockerRuntime();
 
-    if (!dockerStatus.running) {
-      return {
-        status: 'error',
-        message: 'Docker is not running. Please start Docker Desktop or Colima.',
-        running: false,
-      };
-    }
-
     if (dockerStatus.dockerType === DockerType.NotInstalled) {
       return {
         status: 'error',
         message: 'Docker is not installed. Please install Docker Desktop or Colima.',
+        running: false,
+      };
+    }
+
+    if (!dockerStatus.running) {
+      return {
+        status: 'error',
+        message: 'Docker is not running. Please start Docker Desktop or Colima.',
         running: false,
       };
     }
@@ -88,7 +91,7 @@ export async function checkKubernetes(): Promise<KubernetesCheckResult> {
   try {
     // Check if kubectl is installed
     try {
-      await execAsync('kubectl version --client --output=json');
+      await execAsync('kubectl version --client --output=json', { timeout: KUBECTL_TIMEOUT_MS });
     } catch {
       return {
         status: 'error',
@@ -99,12 +102,12 @@ export async function checkKubernetes(): Promise<KubernetesCheckResult> {
 
     // Check cluster connection
     try {
-      const { stdout } = await execAsync('kubectl cluster-info');
+      await execAsync('kubectl cluster-info', { timeout: KUBECTL_TIMEOUT_MS });
 
       // Extract cluster name from current context
       let clusterName = 'unknown';
       try {
-        const contextResult = await execAsync('kubectl config current-context');
+        const contextResult = await execAsync('kubectl config current-context', { timeout: KUBECTL_TIMEOUT_MS });
         clusterName = contextResult.stdout.trim();
       } catch {
         // Ignore error, use default name
@@ -113,7 +116,7 @@ export async function checkKubernetes(): Promise<KubernetesCheckResult> {
       // Get server version
       let version: string | undefined;
       try {
-        const versionResult = await execAsync('kubectl version --output=json');
+        const versionResult = await execAsync('kubectl version --output=json', { timeout: KUBECTL_TIMEOUT_MS });
         const versionData = JSON.parse(versionResult.stdout);
         version = versionData.serverVersion?.gitVersion;
       } catch {
@@ -159,24 +162,24 @@ export async function checkDatabase(): Promise<DatabaseCheckResult> {
       };
     }
 
-    // For now, we'll do a basic check
-    // In a real implementation, this would connect to the database
-    // and check the migrations table
     try {
-      // Check if we can parse the database URL
       const url = new URL(databaseUrl);
       const protocol = url.protocol.replace(':', '');
 
+      await prisma.$queryRaw`SELECT 1`;
+
       return {
         status: 'completed',
-        message: `Database configured (${protocol})`,
+        message: `Database is reachable (${protocol})`,
         initialized: true,
         migrationsComplete: true,
       };
-    } catch {
+    } catch (error) {
       return {
         status: 'error',
-        message: 'DATABASE_URL is malformed. Please check your configuration.',
+        message: error instanceof Error
+          ? `Database check failed: ${error.message}`
+          : 'Database check failed due to an unknown error.',
         initialized: false,
         migrationsComplete: false,
       };
@@ -265,19 +268,14 @@ export async function checkAllSystems(): Promise<SetupStatus> {
     checkAIKeys(),
   ]);
 
-  // Calculate overall status
-  const statuses = [docker.status, kubernetes.status, database.status, aiKeys.status];
-  let overallStatus: SetupStepStatus = 'completed';
-
-  if (statuses.some((s) => s === 'error')) {
-    overallStatus = 'error';
-  } else if (statuses.some((s) => s === 'warning')) {
-    overallStatus = 'warning';
-  } else if (statuses.some((s) => s === 'in_progress')) {
-    overallStatus = 'in_progress';
-  } else if (statuses.some((s) => s === 'pending')) {
-    overallStatus = 'pending';
-  }
+  const overallStatus = calculateOverallStatus({
+    docker,
+    kubernetes,
+    database,
+    aiKeys,
+    overallStatus: 'pending',
+    completedSteps: [],
+  });
 
   // Determine completed steps
   const completedSteps: Array<'docker' | 'kubernetes' | 'database' | 'ai-keys'> = [];

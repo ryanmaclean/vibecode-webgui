@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { DatabaseCheckResult, SetupStepStatus } from '@/types/setup'
-import { defaultDatabaseCheckResult } from '@/types/setup'
+import { databaseCheckResultSchema, defaultDatabaseCheckResult, type DatabaseCheckResult, type SetupStepStatus } from '@/types/setup'
 
-type DatabaseCheckProps = {
+interface DatabaseCheckProps {
   onCheckComplete?: (result: DatabaseCheckResult) => void
   autoCheck?: boolean
 }
@@ -16,8 +15,9 @@ export function DatabaseCheck({ onCheckComplete, autoCheck = false }: DatabaseCh
   const [checking, setChecking] = useState(false)
   const [result, setResult] = useState<DatabaseCheckResult>(defaultDatabaseCheckResult)
   const [error, setError] = useState<string | null>(null)
+  const hasAutoCheckedRef = useRef(false)
 
-  const checkDatabase = async () => {
+  const checkDatabase = useCallback(async () => {
     try {
       setChecking(true)
       setError(null)
@@ -30,11 +30,17 @@ export function DatabaseCheck({ onCheckComplete, autoCheck = false }: DatabaseCh
         throw new Error(data.error || 'Failed to check database')
       }
 
-      if (!data.success) {
+      if (data.success === false) {
         throw new Error(data.error || 'Database check failed')
       }
 
-      const checkResult = data.data as DatabaseCheckResult
+      const payload = data.data ?? data
+      const parseResult = databaseCheckResultSchema.safeParse(payload)
+      if (!parseResult.success) {
+        throw new Error('Invalid database check response')
+      }
+
+      const checkResult = parseResult.data
       setResult(checkResult)
 
       if (onCheckComplete) {
@@ -52,15 +58,15 @@ export function DatabaseCheck({ onCheckComplete, autoCheck = false }: DatabaseCh
     } finally {
       setChecking(false)
     }
-  }
+  }, [onCheckComplete])
 
   // Auto-check on mount if enabled
   useEffect(() => {
-    if (autoCheck) {
+    if (!hasAutoCheckedRef.current && autoCheck) {
+      hasAutoCheckedRef.current = true
       checkDatabase()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoCheck])
+  }, [autoCheck, checkDatabase])
 
   const getStatusBadge = (status: SetupStepStatus) => {
     switch (status) {

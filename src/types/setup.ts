@@ -115,8 +115,8 @@ export function mergeWithDefaultSetupStatus(overrides: Partial<SetupStatus> | nu
   }
 
   return {
-    ...defaultSetupStatus,
-    ...overrides,
+    overallStatus: overrides.overallStatus ?? defaultSetupStatus.overallStatus,
+    currentStep: overrides.currentStep ?? defaultSetupStatus.currentStep,
     docker: overrides.docker ?? defaultSetupStatus.docker,
     kubernetes: overrides.kubernetes ?? defaultSetupStatus.kubernetes,
     database: overrides.database ?? defaultSetupStatus.database,

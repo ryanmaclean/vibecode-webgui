@@ -15,15 +15,19 @@ export function StepIndicator<T extends string>({
   stepLabels,
   className,
 }: StepIndicatorProps<T>) {
-  const currentIndex = steps.indexOf(currentStep)
-  const progressPercent = (currentIndex / (steps.length - 1)) * 100
+  const safeIndex = Math.max(0, steps.indexOf(currentStep))
+  const denominator = steps.length - 1
+  const progressPercent =
+    denominator > 0
+      ? Math.max(0, Math.min(100, (safeIndex / denominator) * 100))
+      : 0
 
   return (
     <div className={cn('space-y-3', className)}>
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 mb-3 text-center">
         {steps.map((step) => {
           const stepIndex = steps.indexOf(step)
-          const isActive = stepIndex <= currentIndex
+          const isActive = stepIndex <= safeIndex
 
           return (
             <span

@@ -4,11 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { StepIndicator } from './StepIndicator'
-import { DockerCheck } from './DockerCheck'
-import { KubernetesCheck } from './KubernetesCheck'
-import { DatabaseCheck } from './DatabaseCheck'
-import { AIKeysCheck } from './AIKeysCheck'
+import { AIKeysCheck } from '@/components/setup/AIKeysCheck'
+import { DatabaseCheck } from '@/components/setup/DatabaseCheck'
+import { DockerCheck } from '@/components/setup/DockerCheck'
+import { KubernetesCheck } from '@/components/setup/KubernetesCheck'
+import { StepIndicator } from '@/components/setup/StepIndicator'
 import type {
   SetupStepId,
   DockerCheckResult,
@@ -55,68 +55,57 @@ export function SetupWizard() {
   const router = useRouter()
   const [step, setStep] = useState<SetupStep>('welcome')
   const [setupStatus, setSetupStatus] = useState<SetupStatus>(defaultSetupStatus)
-  const [error, setError] = useState<string | null>(null)
 
-  const updateStatus = (updates: Partial<SetupStatus>) => {
-    setError(null)
-    setSetupStatus((prev) =>
-      mergeWithDefaultSetupStatus({
+  type SetupStatusUpdates = Partial<SetupStatus> | ((prev: SetupStatus) => Partial<SetupStatus>)
+
+  const updateStatus = (updates: SetupStatusUpdates) => {
+    setSetupStatus((prev) => {
+      const partialUpdates = typeof updates === 'function' ? updates(prev) : updates
+      return mergeWithDefaultSetupStatus({
         ...prev,
-        ...updates,
-      }),
-    )
+        ...partialUpdates,
+      })
+    })
   }
 
   const handleDockerCheckComplete = (result: DockerCheckResult) => {
-    updateStatus({
+    updateStatus((prev) => ({
       docker: result,
-    })
-
-    // Add to completed steps if successful
-    if (result.status === 'completed' || result.status === 'warning') {
-      updateStatus({
-        completedSteps: [...new Set([...setupStatus.completedSteps, 'docker' as SetupStepId])],
-      })
-    }
+      completedSteps:
+        result.status === 'completed' || result.status === 'warning'
+          ? [...new Set([...prev.completedSteps, 'docker' as SetupStepId])]
+          : prev.completedSteps,
+    }))
   }
 
   const handleKubernetesCheckComplete = (result: KubernetesCheckResult) => {
-    updateStatus({
+    updateStatus((prev) => ({
       kubernetes: result,
-    })
-
-    // Add to completed steps if successful
-    if (result.status === 'completed' || result.status === 'warning') {
-      updateStatus({
-        completedSteps: [...new Set([...setupStatus.completedSteps, 'kubernetes' as SetupStepId])],
-      })
-    }
+      completedSteps:
+        result.status === 'completed' || result.status === 'warning'
+          ? [...new Set([...prev.completedSteps, 'kubernetes' as SetupStepId])]
+          : prev.completedSteps,
+    }))
   }
 
   const handleDatabaseCheckComplete = (result: DatabaseCheckResult) => {
-    updateStatus({
+    updateStatus((prev) => ({
       database: result,
-    })
-
-    // Add to completed steps if successful
-    if (result.status === 'completed' || result.status === 'warning') {
-      updateStatus({
-        completedSteps: [...new Set([...setupStatus.completedSteps, 'database' as SetupStepId])],
-      })
-    }
+      completedSteps:
+        result.status === 'completed' || result.status === 'warning'
+          ? [...new Set([...prev.completedSteps, 'database' as SetupStepId])]
+          : prev.completedSteps,
+    }))
   }
 
   const handleAIKeysCheckComplete = (result: AIKeysCheckResult) => {
-    updateStatus({
+    updateStatus((prev) => ({
       aiKeys: result,
-    })
-
-    // Add to completed steps if successful
-    if (result.status === 'completed' || result.status === 'warning') {
-      updateStatus({
-        completedSteps: [...new Set([...setupStatus.completedSteps, 'ai-keys' as SetupStepId])],
-      })
-    }
+      completedSteps:
+        result.status === 'completed' || result.status === 'warning'
+          ? [...new Set([...prev.completedSteps, 'ai-keys' as SetupStepId])]
+          : prev.completedSteps,
+    }))
   }
 
   const nextStep = () => {
@@ -206,7 +195,7 @@ export function SetupWizard() {
       case 'ai-keys':
         return <AIKeysCheck onCheckComplete={handleAIKeysCheckComplete} autoCheck />
 
-      case 'complete':
+      case 'complete': {
         const overallStatus = calculateOverallStatus(setupStatus)
         const allChecksCompleted = setupStatus.completedSteps.length === 4
         const hasErrors = overallStatus === 'error'
@@ -288,6 +277,7 @@ export function SetupWizard() {
             </CardContent>
           </Card>
         )
+      }
 
       default:
         return null
@@ -318,12 +308,6 @@ export function SetupWizard() {
         )}
 
         <div className="mb-6">{renderStepContent()}</div>
-
-        {error && (
-          <div className="rounded-md border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950 p-4 mb-6">
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-          </div>
-        )}
 
         <div className="flex items-center justify-between">
           <Button

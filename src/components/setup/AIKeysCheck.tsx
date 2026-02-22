@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { AIKeysCheckResult, SetupStepStatus } from '@/types/setup'
-import { defaultAIKeysCheckResult } from '@/types/setup'
+import { aiKeysCheckResultSchema, defaultAIKeysCheckResult, type AIKeysCheckResult, type SetupStepStatus } from '@/types/setup'
 
-type AIKeysCheckProps = {
+interface AIKeysCheckProps {
   onCheckComplete?: (result: AIKeysCheckResult) => void
   autoCheck?: boolean
 }
@@ -16,8 +15,9 @@ export function AIKeysCheck({ onCheckComplete, autoCheck = false }: AIKeysCheckP
   const [checking, setChecking] = useState(false)
   const [result, setResult] = useState<AIKeysCheckResult>(defaultAIKeysCheckResult)
   const [error, setError] = useState<string | null>(null)
+  const hasAutoCheckedRef = useRef(false)
 
-  const checkAIKeys = async () => {
+  const checkAIKeys = useCallback(async () => {
     try {
       setChecking(true)
       setError(null)
@@ -30,11 +30,17 @@ export function AIKeysCheck({ onCheckComplete, autoCheck = false }: AIKeysCheckP
         throw new Error(data.error || 'Failed to check AI keys')
       }
 
-      if (!data.success) {
+      if (data.success === false) {
         throw new Error(data.error || 'AI keys check failed')
       }
 
-      const checkResult = data.data as AIKeysCheckResult
+      const payload = data.data ?? data
+      const parseResult = aiKeysCheckResultSchema.safeParse(payload)
+      if (!parseResult.success) {
+        throw new Error('Invalid AI keys check response')
+      }
+
+      const checkResult = parseResult.data
       setResult(checkResult)
 
       if (onCheckComplete) {
@@ -46,19 +52,21 @@ export function AIKeysCheck({ onCheckComplete, autoCheck = false }: AIKeysCheckP
       setResult({
         status: 'error',
         message: errorMessage,
+        validKeys: [],
+        missingKeys: [],
       })
     } finally {
       setChecking(false)
     }
-  }
+  }, [onCheckComplete])
 
   // Auto-check on mount if enabled
   useEffect(() => {
-    if (autoCheck) {
+    if (!hasAutoCheckedRef.current && autoCheck) {
+      hasAutoCheckedRef.current = true
       checkAIKeys()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoCheck])
+  }, [autoCheck, checkAIKeys])
 
   const getStatusBadge = (status: SetupStepStatus) => {
     switch (status) {

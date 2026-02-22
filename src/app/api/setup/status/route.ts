@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkAllSystems } from '@/lib/setup/checks'
 import { createServiceLogger } from '@/lib/logging'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,7 @@ const log = createServiceLogger({
   service: 'vibecode-webgui',
   component: 'setup-status-check'
 })
+const apiRateLimit = createAPIRateLimit(60)
 
 /**
  * Get overall setup status
@@ -57,28 +59,38 @@ export async function getSetupStatus() {
       aiKeys: {
         status: result.aiKeys.status,
         message: result.aiKeys.message,
-        validKeys: result.aiKeys.validKeys,
-        missingKeys: result.aiKeys.missingKeys
       }
     }
   }
 }
 
 export async function GET(request: NextRequest) {
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   const startTime = Date.now()
   const requestId = randomUUID()
-  const clientIp = request.headers.get('x-forwarded-for') ||
-                   request.headers.get('x-real-ip') ||
-                   'unknown'
 
   const logContext = {
     service: 'vibecode-webgui',
     component: 'setup-status-check',
     requestId,
-    clientIp
   }
 
-  console.log('Setup status check requested', logContext)
+  log.info('Setup status check requested', logContext)
 
   try {
     // Get overall setup status
@@ -93,7 +105,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Log the result
-    console.log('Setup status check completed', {
+    log.info('Setup status check completed', {
       ...logContext,
       overallStatus: result.overallStatus,
       completionPercentage: result.completionPercentage,
@@ -106,7 +118,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response, { status: 200 })
 
   } catch (error) {
-    console.error('Setup status check failed with error:', error)
+    log.error('Setup status check failed', {
+      ...logContext,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
 
     const responseTime = Date.now() - startTime
 

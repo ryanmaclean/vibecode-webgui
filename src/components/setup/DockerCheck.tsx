@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { DockerCheckResult, SetupStepStatus } from '@/types/setup'
-import { defaultDockerCheckResult } from '@/types/setup'
+import { defaultDockerCheckResult, dockerCheckResultSchema, type DockerCheckResult, type SetupStepStatus } from '@/types/setup'
 
-type DockerCheckProps = {
+interface DockerCheckProps {
   onCheckComplete?: (result: DockerCheckResult) => void
   autoCheck?: boolean
 }
@@ -16,8 +15,9 @@ export function DockerCheck({ onCheckComplete, autoCheck = false }: DockerCheckP
   const [checking, setChecking] = useState(false)
   const [result, setResult] = useState<DockerCheckResult>(defaultDockerCheckResult)
   const [error, setError] = useState<string | null>(null)
+  const hasAutoCheckedRef = useRef(false)
 
-  const checkDocker = async () => {
+  const checkDocker = useCallback(async () => {
     try {
       setChecking(true)
       setError(null)
@@ -34,7 +34,12 @@ export function DockerCheck({ onCheckComplete, autoCheck = false }: DockerCheckP
         throw new Error(data.error || 'Docker check failed')
       }
 
-      const checkResult = data.data as DockerCheckResult
+      const parseResult = dockerCheckResultSchema.safeParse(data.data)
+      if (!parseResult.success) {
+        throw new Error('Invalid Docker check response')
+      }
+
+      const checkResult = parseResult.data
       setResult(checkResult)
 
       if (onCheckComplete) {
@@ -51,15 +56,15 @@ export function DockerCheck({ onCheckComplete, autoCheck = false }: DockerCheckP
     } finally {
       setChecking(false)
     }
-  }
+  }, [onCheckComplete])
 
   // Auto-check on mount if enabled
   useEffect(() => {
-    if (autoCheck) {
+    if (!hasAutoCheckedRef.current && autoCheck) {
+      hasAutoCheckedRef.current = true
       checkDocker()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoCheck])
+  }, [autoCheck, checkDocker])
 
   const getStatusBadge = (status: SetupStepStatus) => {
     switch (status) {

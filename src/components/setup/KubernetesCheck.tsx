@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { KubernetesCheckResult, SetupStepStatus } from '@/types/setup'
 import { defaultKubernetesCheckResult } from '@/types/setup'
 
-type KubernetesCheckProps = {
+interface KubernetesCheckProps {
   onCheckComplete?: (result: KubernetesCheckResult) => void
   autoCheck?: boolean
 }
@@ -16,8 +16,9 @@ export function KubernetesCheck({ onCheckComplete, autoCheck = false }: Kubernet
   const [checking, setChecking] = useState(false)
   const [result, setResult] = useState<KubernetesCheckResult>(defaultKubernetesCheckResult)
   const [error, setError] = useState<string | null>(null)
+  const hasAutoCheckedRef = useRef(false)
 
-  const checkKubernetes = async () => {
+  const checkKubernetes = useCallback(async () => {
     try {
       setChecking(true)
       setError(null)
@@ -43,23 +44,27 @@ export function KubernetesCheck({ onCheckComplete, autoCheck = false }: Kubernet
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
       setError(errorMessage)
-      setResult({
+      const errorResult: KubernetesCheckResult = {
         status: 'error',
         message: errorMessage,
         connected: false,
-      })
+      }
+      setResult(errorResult)
+      if (onCheckComplete) {
+        onCheckComplete(errorResult)
+      }
     } finally {
       setChecking(false)
     }
-  }
+  }, [onCheckComplete])
 
   // Auto-check on mount if enabled
   useEffect(() => {
-    if (autoCheck) {
+    if (!hasAutoCheckedRef.current && autoCheck) {
+      hasAutoCheckedRef.current = true
       checkKubernetes()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoCheck])
+  }, [autoCheck, checkKubernetes])
 
   const getStatusBadge = (status: SetupStepStatus) => {
     switch (status) {

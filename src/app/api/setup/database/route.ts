@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { monitoring } from '@/lib/monitoring'
 import { createServiceLogger } from '@/lib/logging'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,7 @@ const log = createServiceLogger({
   service: 'vibecode-webgui',
   component: 'setup-database-check'
 })
+const apiRateLimit = createAPIRateLimit(60)
 
 /**
  * Check database initialization status
@@ -71,28 +73,49 @@ export async function checkDatabaseInitialization() {
 }
 
 export async function GET(request: NextRequest) {
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   const startTime = Date.now()
   const requestId = randomUUID()
-  const clientIp = request.headers.get('x-forwarded-for') ||
-                   request.headers.get('x-real-ip') ||
-                   'unknown'
 
   const logContext = {
     service: 'vibecode-webgui',
     component: 'setup-database-check',
     requestId,
-    clientIp
   }
 
-  console.log('Database initialization check requested', logContext)
+  log.info('Database initialization check requested', logContext)
 
   try {
     // Check database initialization
     const result = await checkDatabaseInitialization()
     const responseTime = Date.now() - startTime
 
+    const status =
+      result.initialized
+        ? result.warning ? 'warning' : 'completed'
+        : 'error'
+
     const response = {
-      ...result,
+      success: true,
+      data: {
+        ...result,
+        status,
+      },
       timestamp: new Date().toISOString(),
       responseTime: `${responseTime}ms`,
       requestId
@@ -100,32 +123,38 @@ export async function GET(request: NextRequest) {
 
     // Log the result
     if (!result.initialized) {
-      console.warn('Database not initialized', {
+      log.warn('Database not initialized', {
         ...logContext,
         initialized: false,
         configured: result.configured
       })
     } else {
-      console.log('Database initialization check completed', {
+      log.info('Database initialization check completed', {
         ...logContext,
         initialized: true,
         responseTime
       })
     }
 
-    // Return 200 status regardless of initialization state
-    // The response body indicates the actual state
     return NextResponse.json(response, { status: 200 })
 
   } catch (error) {
-    console.error('Database initialization check failed with error:', error)
+    log.error('Database initialization check failed', {
+      ...logContext,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
 
     const responseTime = Date.now() - startTime
 
     return NextResponse.json({
-      initialized: false,
-      configured: false,
-      message: 'Database check failed',
+      success: false,
+      data: {
+        initialized: false,
+        configured: false,
+        status: 'error',
+        message: 'Database check failed',
+        migrationsComplete: false,
+      },
       error: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString(),
       responseTime: `${responseTime}ms`,
