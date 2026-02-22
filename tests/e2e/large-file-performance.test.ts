@@ -139,7 +139,7 @@ test.describe('Large File Performance', () => {
     await page.setViewportSize({ width: 1920, height: 1080 });
   });
 
-  test('should open a 50K+ line file within 2 seconds', async ({ page }) => {
+  test('should open a file with 50,000+ lines without lag (within 2 seconds)', async ({ page }) => {
     // Generate test file
     const testFile = generateLargeFile(50000, 'typescript');
     const testFilePath = path.join(__dirname, '..', '..', 'fixtures', 'large-test-file.ts');
@@ -202,6 +202,118 @@ test.describe('Large File Performance', () => {
 
     // Cleanup
     fs.unlinkSync(testFilePath);
+  });
+
+  test('should keep scrolling smooth in large files', async ({ page }) => {
+    // Generate test file with 50,000 lines
+    const testFile = generateLargeFile(50000, 'typescript');
+
+    await page.goto('/editor');
+    await waitForMonacoEditor(page);
+
+    // Load the large file
+    await page.evaluate((content) => {
+      const monaco = (window as any).monaco;
+      const editor = monaco.editor.getEditors()[0];
+      if (editor) {
+        editor.setValue(content);
+      }
+    }, testFile);
+
+    // Wait for initial render
+    await page.waitForTimeout(1000);
+
+    // Measure scroll performance
+    const scrollMetrics: number[] = [];
+
+    for (let i = 0; i < 10; i++) {
+      const startTime = Date.now();
+
+      // Scroll to different positions
+      await page.evaluate((targetLine) => {
+        const monaco = (window as any).monaco;
+        const editor = monaco.editor.getEditors()[0];
+        if (editor) {
+          editor.revealLineInCenter(targetLine);
+        }
+      }, (i + 1) * 5000);
+
+      await page.waitForTimeout(100);
+
+      const scrollTime = Date.now() - startTime;
+      scrollMetrics.push(scrollTime);
+
+      // Check UI remains responsive during scroll
+      const responsive = await checkUIResponsiveness(page);
+      expect(responsive).toBe(true);
+    }
+
+    const avgScrollTime = scrollMetrics.reduce((a, b) => a + b, 0) / scrollMetrics.length;
+    console.log(`Average scroll time: ${avgScrollTime}ms`);
+
+    // Scrolling should be smooth - under 200ms per scroll
+    expect(avgScrollTime).toBeLessThan(200);
+
+    // No scroll should take more than 500ms
+    const maxScrollTime = Math.max(...scrollMetrics);
+    expect(maxScrollTime).toBeLessThan(500);
+  });
+
+  test('should complete search in large files in under 2 seconds', async ({ page }) => {
+    // Generate test file with 50,000 lines
+    const testFile = generateLargeFile(50000, 'typescript');
+
+    await page.goto('/editor');
+    await waitForMonacoEditor(page);
+
+    // Load the large file
+    await page.evaluate((content) => {
+      const monaco = (window as any).monaco;
+      const editor = monaco.editor.getEditors()[0];
+      if (editor) {
+        editor.setValue(content);
+      }
+    }, testFile);
+
+    // Wait for initial render
+    await page.waitForTimeout(1000);
+
+    // Test search performance
+    const searchTerms = ['function', 'variable', 'return', 'console'];
+
+    for (const searchTerm of searchTerms) {
+      const startTime = Date.now();
+
+      // Trigger search using Monaco's find command
+      await page.evaluate((term) => {
+        const monaco = (window as any).monaco;
+        const editor = monaco.editor.getEditors()[0];
+        if (editor) {
+          // Open find widget and search
+          editor.trigger('test', 'actions.find', {});
+
+          // Set search value
+          const findController = (editor as any)._standaloneKeybindingService;
+          if (findController) {
+            // Directly call the find method
+            editor.getModel()?.findMatches(term, true, false, false, null, true);
+          }
+        }
+      }, searchTerm);
+
+      // Wait for search to complete
+      await page.waitForTimeout(100);
+
+      const searchTime = Date.now() - startTime;
+      console.log(`Search for "${searchTerm}" completed in ${searchTime}ms`);
+
+      // Search must complete in under 2 seconds
+      expect(searchTime).toBeLessThan(2000);
+
+      // UI should remain responsive during search
+      const responsive = await checkUIResponsiveness(page);
+      expect(responsive).toBe(true);
+    }
   });
 
   test('should maintain UI responsiveness during AI operations', async ({ page }) => {
@@ -624,7 +736,7 @@ test.describe('Large File Performance', () => {
     }
   });
 
-  test('should maintain stable memory during extended operations', async ({ page }) => {
+  test('should keep memory stable during extended sessions', async ({ page }) => {
     await page.goto('/editor');
     await waitForMonacoEditor(page);
 
