@@ -5,6 +5,8 @@
 
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+import { logAuditAsync } from '@/lib/audit/service'
+import { AuditAction, AuditOutcome, formatResourceId } from '@/lib/audit/types'
 
 // User validation schemas
 export const userSchema = z.object({
@@ -249,18 +251,54 @@ export function getAllUsers(): User[] {
 }
 
 /**
- * Security audit logging
+ * Map security events to audit actions
+ */
+const SECURITY_EVENT_MAP: Record<string, AuditAction> = {
+  login_success: AuditAction.USER_LOGIN,
+  login_failure: AuditAction.USER_LOGIN_FAILED,
+  password_change: AuditAction.USER_PASSWORD_CHANGE,
+  user_created: AuditAction.USER_CREATED,
+  user_deactivated: AuditAction.USER_DEACTIVATED,
+}
+
+/**
+ * Security audit logging using compliance audit service
+ *
+ * Logs security events to the tamper-evident audit log for SOC2/HIPAA compliance.
+ * Uses async logging to avoid blocking security-sensitive operations.
+ *
+ * @param event - The security event type
+ * @param userId - Optional user ID associated with the event
+ * @param metadata - Optional additional metadata for the event
  */
 export function logSecurityEvent(
   event: 'login_success' | 'login_failure' | 'password_change' | 'user_created' | 'user_deactivated',
   userId?: string,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): void {
-  // Security event logged
-  const logData = {
-    timestamp: new Date().toISOString(),
-    event,
-    userId,
-    metadata
-  }
+  // Map event to audit action
+  const action = SECURITY_EVENT_MAP[event] ?? event
+
+  // Determine outcome based on event type
+  const outcome = event === 'login_failure' ? AuditOutcome.FAILURE : AuditOutcome.SUCCESS
+
+  // Format resource identifier
+  const resource = userId ? formatResourceId('user', userId) : 'user:anonymous'
+
+  // Parse userId to number if provided (audit service expects number or null)
+  const numericUserId = userId ? parseInt(userId.replace('user_', ''), 10) : null
+
+  // Log to audit service asynchronously (fire-and-forget)
+  logAuditAsync(
+    action,
+    resource,
+    {
+      userId: Number.isNaN(numericUserId) ? null : numericUserId,
+    },
+    {
+      event,
+      ...metadata,
+    },
+    { outcome }
+  )
 }
