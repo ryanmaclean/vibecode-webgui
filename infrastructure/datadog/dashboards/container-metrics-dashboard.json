@@ -1,0 +1,496 @@
+{
+  "title": "Container Resource Monitoring",
+  "description": "Real-time monitoring of Docker/Kubernetes container CPU, memory, network, and storage usage with alerts for resource constraints",
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "notify_list": [],
+  "template_variables": [
+    { "name": "env", "prefix": "env", "default": "*" },
+    { "name": "service", "prefix": "service", "default": "*" },
+    { "name": "container_name", "prefix": "container_name", "default": "*" },
+    { "name": "image_name", "prefix": "image_name", "default": "*" }
+  ],
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "type": "query_value",
+        "title": "Running Containers",
+        "requests": [
+          {
+            "q": "sum:docker.containers.running{$env,$service,$container_name}",
+            "aggregator": "last",
+            "conditional_formats": [
+              {
+                "comparator": "<=",
+                "value": 0,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">",
+                "value": 0,
+                "palette": "white_on_green"
+              }
+            ]
+          }
+        ],
+        "custom_unit": "containers",
+        "precision": 0
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 2,
+        "height": 1
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "type": "query_value",
+        "title": "Average CPU Usage",
+        "requests": [
+          {
+            "q": "avg:docker.cpu.usage{$env,$service,$container_name}",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": ">=",
+                "value": 90,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">=",
+                "value": 75,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<",
+                "value": 75,
+                "palette": "white_on_green"
+              }
+            ]
+          }
+        ],
+        "custom_unit": "%",
+        "precision": 1
+      },
+      "layout": {
+        "x": 2,
+        "y": 0,
+        "width": 2,
+        "height": 1
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "type": "query_value",
+        "title": "Average Memory Usage",
+        "requests": [
+          {
+            "q": "avg:docker.mem.in_use{$env,$service,$container_name}",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": ">=",
+                "value": 90,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">=",
+                "value": 75,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<",
+                "value": 75,
+                "palette": "white_on_green"
+              }
+            ]
+          }
+        ],
+        "custom_unit": "%",
+        "precision": 1
+      },
+      "layout": {
+        "x": 4,
+        "y": 0,
+        "width": 2,
+        "height": 1
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "type": "timeseries",
+        "title": "CPU Usage by Container",
+        "requests": [
+          {
+            "q": "avg:docker.cpu.usage{$env,$service,$container_name,$image_name} by {container_name}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "CPU %",
+          "scale": "linear",
+          "min": 0,
+          "max": 100,
+          "include_zero": true
+        },
+        "markers": [
+          {
+            "value": "y = 90",
+            "display_type": "error dashed",
+            "label": "Critical CPU"
+          },
+          {
+            "value": "y = 75",
+            "display_type": "warning dashed",
+            "label": "High CPU"
+          }
+        ],
+        "show_legend": true,
+        "legend_layout": "auto"
+      },
+      "layout": {
+        "x": 0,
+        "y": 1,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "type": "timeseries",
+        "title": "Memory Usage by Container",
+        "requests": [
+          {
+            "q": "avg:docker.mem.in_use{$env,$service,$container_name,$image_name} by {container_name}",
+            "display_type": "line",
+            "style": {
+              "palette": "purple",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Memory %",
+          "scale": "linear",
+          "min": 0,
+          "max": 100,
+          "include_zero": true
+        },
+        "markers": [
+          {
+            "value": "y = 90",
+            "display_type": "error dashed",
+            "label": "Critical Memory"
+          },
+          {
+            "value": "y = 75",
+            "display_type": "warning dashed",
+            "label": "High Memory"
+          }
+        ],
+        "show_legend": true,
+        "legend_layout": "auto"
+      },
+      "layout": {
+        "x": 6,
+        "y": 1,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "type": "timeseries",
+        "title": "Memory Usage (Bytes)",
+        "requests": [
+          {
+            "q": "avg:docker.mem.rss{$env,$service,$container_name,$image_name} by {container_name}",
+            "display_type": "area",
+            "style": {
+              "palette": "cool",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Bytes",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "show_legend": true,
+        "legend_layout": "auto"
+      },
+      "layout": {
+        "x": 0,
+        "y": 4,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "type": "timeseries",
+        "title": "Network I/O Rate",
+        "requests": [
+          {
+            "q": "avg:docker.net.bytes_rcvd{$env,$service,$container_name} by {container_name}.as_rate()",
+            "display_type": "line",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "avg:docker.net.bytes_rcvd{$env,$service,$container_name} by {container_name}.as_rate()",
+                "alias_name": "Received"
+              }
+            ]
+          },
+          {
+            "q": "avg:docker.net.bytes_sent{$env,$service,$container_name} by {container_name}.as_rate()",
+            "display_type": "line",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "avg:docker.net.bytes_sent{$env,$service,$container_name} by {container_name}.as_rate()",
+                "alias_name": "Sent"
+              }
+            ]
+          }
+        ],
+        "yaxis": {
+          "label": "Bytes/sec",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "show_legend": true,
+        "legend_layout": "auto"
+      },
+      "layout": {
+        "x": 6,
+        "y": 4,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "type": "timeseries",
+        "title": "Disk I/O Operations",
+        "requests": [
+          {
+            "q": "avg:docker.io.read_operations{$env,$service,$container_name} by {container_name}.as_rate()",
+            "display_type": "line",
+            "style": {
+              "palette": "blue",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "avg:docker.io.read_operations{$env,$service,$container_name} by {container_name}.as_rate()",
+                "alias_name": "Read Ops"
+              }
+            ]
+          },
+          {
+            "q": "avg:docker.io.write_operations{$env,$service,$container_name} by {container_name}.as_rate()",
+            "display_type": "line",
+            "style": {
+              "palette": "red",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "avg:docker.io.write_operations{$env,$service,$container_name} by {container_name}.as_rate()",
+                "alias_name": "Write Ops"
+              }
+            ]
+          }
+        ],
+        "yaxis": {
+          "label": "Operations/sec",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "show_legend": true,
+        "legend_layout": "auto"
+      },
+      "layout": {
+        "x": 0,
+        "y": 7,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 9,
+      "definition": {
+        "type": "timeseries",
+        "title": "Disk I/O Bytes",
+        "requests": [
+          {
+            "q": "avg:docker.io.read_bytes{$env,$service,$container_name} by {container_name}.as_rate()",
+            "display_type": "area",
+            "style": {
+              "palette": "cool",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "avg:docker.io.read_bytes{$env,$service,$container_name} by {container_name}.as_rate()",
+                "alias_name": "Read Bytes"
+              }
+            ]
+          },
+          {
+            "q": "avg:docker.io.write_bytes{$env,$service,$container_name} by {container_name}.as_rate()",
+            "display_type": "area",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "avg:docker.io.write_bytes{$env,$service,$container_name} by {container_name}.as_rate()",
+                "alias_name": "Write Bytes"
+              }
+            ]
+          }
+        ],
+        "yaxis": {
+          "label": "Bytes/sec",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "show_legend": true,
+        "legend_layout": "auto"
+      },
+      "layout": {
+        "x": 6,
+        "y": 7,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 10,
+      "definition": {
+        "type": "timeseries",
+        "title": "Container State Changes",
+        "requests": [
+          {
+            "q": "sum:docker.containers.running{$env,$service} by {service}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:docker.containers.running{$env,$service} by {service}",
+                "alias_name": "Running"
+              }
+            ]
+          },
+          {
+            "q": "sum:docker.containers.stopped{$env,$service} by {service}",
+            "display_type": "line",
+            "style": {
+              "palette": "grey",
+              "line_type": "dashed",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:docker.containers.stopped{$env,$service} by {service}",
+                "alias_name": "Stopped"
+              }
+            ]
+          }
+        ],
+        "yaxis": {
+          "label": "Count",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "show_legend": true,
+        "legend_layout": "auto"
+      },
+      "layout": {
+        "x": 0,
+        "y": 10,
+        "width": 6,
+        "height": 2
+      }
+    },
+    {
+      "id": 11,
+      "definition": {
+        "type": "timeseries",
+        "title": "CPU Throttling",
+        "requests": [
+          {
+            "q": "avg:docker.cpu.throttled{$env,$service,$container_name} by {container_name}.as_rate()",
+            "display_type": "bars",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Throttle Events/sec",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "show_legend": true,
+        "legend_layout": "auto"
+      },
+      "layout": {
+        "x": 6,
+        "y": 10,
+        "width": 6,
+        "height": 2
+      }
+    }
+  ]
+}

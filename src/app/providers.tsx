@@ -11,6 +11,7 @@ import type { ReactNode } from 'react'
 import { datadogLogs } from '@datadog/browser-logs'
 import { ConsoleProvider } from '@/providers/ConsoleProvider'
 import { UserPreferencesProvider } from '@/providers/UserPreferencesProvider'
+import { CommandPaletteProvider } from '@/components/command-palette/CommandPaletteProvider'
 import RUMMonitoring from '@/lib/monitoring/rum-client'
 import { getRUMPublicConfig } from '@/lib/monitoring/datadog-env'
 
@@ -90,7 +91,9 @@ export default function Providers({ children }: ProvidersProps) {
     <SessionProvider>
       <UserPreferencesProvider>
         <ConsoleProvider>
-          {children}
+          <CommandPaletteProvider>
+            {children}
+          </CommandPaletteProvider>
         </ConsoleProvider>
       </UserPreferencesProvider>
     </SessionProvider>

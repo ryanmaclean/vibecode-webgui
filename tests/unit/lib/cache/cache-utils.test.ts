@@ -106,6 +106,16 @@ describe('Cache Utilities', () => {
       expect(key).toContain('api');
     });
 
+    it('should generate different keys for similar long params', () => {
+      const key1 = CacheKeyGenerators.aiModelsWithParams(
+        'query=claude&sortBy=name&page=1&pageSize=20&providers=openai,anthropic'
+      );
+      const key2 = CacheKeyGenerators.aiModelsWithParams(
+        'query=claude&sortBy=name&page=2&pageSize=20&providers=openai,anthropic'
+      );
+      expect(key1).not.toBe(key2);
+    });
+
     it('should generate dbQuery key', () => {
       const key = CacheKeyGenerators.dbQuery('users', 'findMany');
       expect(key).toContain('users');

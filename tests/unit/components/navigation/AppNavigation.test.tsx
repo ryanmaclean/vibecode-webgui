@@ -45,6 +45,17 @@ jest.mock('@/hooks/useKeyboardShortcuts', () => ({
   shortcutCategories: [],
 }));
 
+// Mock useCommandPalette hook
+jest.mock('@/hooks/useCommandPalette', () => ({
+  useCommandPalette: () => ({
+    isOpen: false,
+    openCommandPalette: jest.fn(),
+    closeCommandPalette: jest.fn(),
+    registerCommand: jest.fn(),
+    registerCommands: jest.fn(),
+  }),
+}));
+
 // Mock KeyboardShortcuts component
 jest.mock('@/design-system/components/KeyboardShortcuts', () => ({
   KeyboardShortcuts: () => null,

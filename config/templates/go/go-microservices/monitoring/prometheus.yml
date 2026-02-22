@@ -1,0 +1,45 @@
+# Prometheus Configuration for Go Microservice
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'go-microservice-dev'
+    environment: 'development'
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# Rule files (optional)
+# rule_files:
+#   - "alerts/*.yml"
+
+scrape_configs:
+  # Scrape the Go microservice
+  - job_name: 'go-microservice'
+    static_configs:
+      - targets: ['go-service:8080']
+        labels:
+          service: 'go-microservice'
+          env: 'development'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Scrape Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # Scrape Node Exporter for host metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'node-exporter'
+    scrape_interval: 30s
