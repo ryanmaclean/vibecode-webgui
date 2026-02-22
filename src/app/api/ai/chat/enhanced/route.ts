@@ -12,6 +12,10 @@ import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { logger } from '@/lib/logger'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 import type { AuthenticatedRequest } from '@/lib/auth/middleware'
+import { ContextManager } from '@/lib/ai/context/context-manager'
+import { ContextStrategy, ContextItemType, ContextPriority } from '@/types/context'
+import { buildChatContext, type FileContext, type ChatMessage } from '@/lib/ai/context/context-integration'
+import { trackContextBuild } from '@/lib/ai/context/context-metrics'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -45,6 +49,7 @@ interface _EnhancedChatRequest {
   context: {
     workspaceId: string
     files: string[]
+    pinnedFiles?: string[]
     previousMessages: Array<{
       role: 'user' | 'assistant'
       content: string
@@ -67,6 +72,7 @@ const enhancedChatRequestSchema = z.object({
   context: z.object({
     workspaceId: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/, 'Invalid workspace ID format'),
     files: z.array(z.string().max(500)).max(20),
+    pinnedFiles: z.array(z.string().max(500)).max(20).optional(),
     previousMessages: z.array(z.object({
       role: z.enum(['user', 'assistant']),
       content: z.string().max(4000)
@@ -101,7 +107,7 @@ async function buildEnhancedRAGContext(workspaceId: string, userQuery: string, u
       return {
         context: relevantContext,
         workspaceId: workspace.workspace_id,
-        relevanceScore: contexts[0] ? 'high' : 'medium'
+        relevanceScore: (contexts[0] ? 'high' : 'medium') as 'high' | 'medium'
       }
     }
 
@@ -203,8 +209,8 @@ export async function POST(request: AuthenticatedRequest) {
 
     // Build enhanced context with RAG
     const ragResult = await buildEnhancedRAGContext(
-      context.workspaceId, 
-      message, 
+      context.workspaceId,
+      message,
       session.user.id
     )
 
@@ -212,6 +218,147 @@ export async function POST(request: AuthenticatedRequest) {
       logger.info('Enhanced chat proceeding without RAG context', {
         workspaceId: context.workspaceId,
       })
+    }
+
+    // Base system prompt (CRITICAL priority - always included)
+    const baseSystemPrompt = `You are an expert AI coding assistant integrated into VibeCode platform with enhanced multi-provider capabilities.
+
+**🎯 Current Session Context:**
+- User: ${session.user.email}
+- Workspace: ${context.workspaceId}
+- Model: ${selectedModel} (${SUPPORTED_MODELS[selectedModel]})
+- RAG Status: ${ragResult ? `Active (${ragResult.relevanceScore} relevance)` : 'Disabled'}
+- Provider: Enhanced OpenRouter Multi-Model Support
+
+**🚀 Platform Capabilities:**
+- Multi-provider model access (OpenAI, Anthropic, Google, Meta, Mistral)
+- Advanced code generation, debugging, and optimization
+- Architecture and design guidance with pattern recognition
+- Best practices for modern development across frameworks
+- Real-time workspace context and vector search integration
+- Framework-specific assistance (React, Next.js, Node.js, Python, etc.)
+
+**📐 Guidelines:**
+- Provide production-ready, secure code solutions
+- Reference specific code from context when available
+- Explain reasoning, trade-offs, and alternatives
+- Use modern patterns consistent with the existing codebase
+- Leverage the selected model's strengths (${selectedModel})
+- Ask clarifying questions when requirements are unclear`
+
+    // Add tool capabilities
+    const toolCapabilities = getToolCapabilities(enableTools)
+    const systemPromptWithTools = toolCapabilities ? baseSystemPrompt + toolCapabilities : baseSystemPrompt
+
+    // Build file contexts with pinned status
+    const pinnedFilesSet = new Set(context.pinnedFiles || [])
+    const fileContexts: FileContext[] = context.files.map(filePath => ({
+      path: filePath,
+      content: '', // Content will be loaded if needed
+      isPinned: pinnedFilesSet.has(filePath)
+    }))
+
+    // Convert previous messages to ChatMessage format
+    const previousChatMessages: ChatMessage[] = context.previousMessages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }))
+
+    // Generate request ID for metrics tracking
+    const requestId = `enhanced-${session.user.id}-${Date.now()}`
+
+    // Use buildChatContext helper for intelligent context management with metrics tracking
+    const contextBuildResult = await trackContextBuild(requestId, async () => {
+      return buildChatContext({
+        model: selectedModel,
+        strategy: ContextStrategy.HYBRID,
+        maxUtilization: 90,
+        previousMessages: previousChatMessages,
+        ragContext: ragResult ? {
+          context: ragResult.context,
+          workspaceId: ragResult.workspaceId,
+          relevanceScore: ragResult.relevanceScore,
+          strategiesUsed: 1,
+          totalLength: ragResult.context.length
+        } : undefined,
+        files: fileContexts,
+        userMessage: message,
+        systemPrompt: systemPromptWithTools,
+        boostKeywords: ragResult ? ['code', 'function', 'implementation'] : []
+      })
+    })
+
+    const builtContext = contextBuildResult.result
+
+    // Get optimized context window
+    const optimizedWindow = builtContext.window
+
+    // Build final messages array from optimized context
+    const messages: Array<{ role: 'system' | 'user' | 'assistant', content: string }> = []
+
+    if (optimizedWindow) {
+      // Group items by type for proper message structure
+      let systemContent = ''
+      const conversationMessages: Array<{ role: 'user' | 'assistant', content: string }> = []
+
+      for (const item of optimizedWindow.items) {
+        switch (item.type) {
+          case ContextItemType.SYSTEM_PROMPT:
+          case ContextItemType.RAG_RESULT:
+          case ContextItemType.CUSTOM:
+            systemContent += item.content + '\n\n'
+            break
+          case ContextItemType.USER_MESSAGE:
+          case ContextItemType.ASSISTANT_MESSAGE:
+            // These will be added in order later
+            if (item.metadata.custom?.role) {
+              conversationMessages.push({
+                role: item.metadata.custom.role as 'user' | 'assistant',
+                content: item.content
+              })
+            }
+            break
+        }
+      }
+
+      // Add system message if we have content
+      if (systemContent.trim()) {
+        messages.push({ role: 'system', content: systemContent.trim() })
+      }
+
+      // Add conversation history (excluding the current user message)
+      messages.push(...conversationMessages.slice(0, -1))
+
+      // Add current user message last
+      messages.push({ role: 'user', content: message })
+
+      // Log context optimization stats with metrics
+      logger.info('Context window optimized', {
+        requestId,
+        model: selectedModel,
+        totalTokens: builtContext.summary.totalTokens,
+        utilizationPercent: builtContext.summary.utilizationPercent,
+        messageCount: builtContext.summary.messageCount,
+        fileCount: builtContext.summary.fileCount,
+        pinnedFileCount: builtContext.summary.pinnedFileCount,
+        ragIncluded: builtContext.summary.ragIncluded,
+        itemsIncluded: builtContext.includedItems.length,
+        itemsExcluded: builtContext.excludedItems.length,
+        strategy: optimizedWindow.strategy,
+        buildDurationMs: contextBuildResult.durationMs,
+        metricsRecorded: !!contextBuildResult.metrics
+      })
+    } else {
+      // Fallback to simple message structure if context manager fails
+      const systemMessage = baseSystemPrompt + (ragResult ? `\n\n**📋 Relevant Code Context:**\n${ragResult.context}` : '') + toolCapabilities
+      messages.push(
+        { role: 'system', content: systemMessage },
+        ...context.previousMessages.slice(-8).map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })),
+        { role: 'user', content: message }
+      )
     }
 
     // Enhanced OpenRouter setup with model selection
@@ -223,42 +370,6 @@ export async function POST(request: AuthenticatedRequest) {
         "X-Title": "VibeCode Enhanced Platform",
       }
     })
-
-    // Prepare system message with enhanced context
-    const systemMessage = `You are an expert AI coding assistant integrated into VibeCode platform with enhanced multi-provider capabilities.
-
-**Current Context:**
-- Workspace: ${context.workspaceId}
-- Model: ${selectedModel} (${SUPPORTED_MODELS[selectedModel]})
-- RAG Status: ${ragResult ? `Active (${ragResult.relevanceScore} relevance)` : 'Disabled'}
-- Provider: Enhanced OpenRouter Multi-Model Support
-
-${ragResult ? `**Relevant Code Context:**\n${ragResult.context}\n` : ''}
-
-**Enhanced Capabilities:**
-- Multi-provider model access (OpenAI, Anthropic, Google, Meta, Mistral)
-- Advanced code generation, debugging, and optimization
-- Architecture and design guidance with pattern recognition
-- Best practices for modern development across frameworks
-- Real-time workspace context and vector search integration
-- Framework-specific assistance (React, Next.js, Node.js, Python, etc.)
-
-${getToolCapabilities(enableTools)}
-
-**Guidelines:**
-- Reference specific code when available in context
-- Provide production-ready, secure code solutions
-- Explain reasoning, trade-offs, and alternative approaches
-- Use modern patterns consistent with the existing codebase
-- Leverage the selected model's strengths (${selectedModel})
-- Ask clarifying questions when requirements are unclear`
-
-    // Prepare messages for AI SDK
-    const messages = [
-      { role: 'system' as const, content: systemMessage },
-      ...context.previousMessages.slice(-8), // Last 8 messages for context
-      { role: 'user' as const, content: message }
-    ]
 
     // Create enhanced streaming response
     const stream = await openrouter.chat.completions.create({
@@ -293,7 +404,13 @@ ${getToolCapabilities(enableTools)}
                 timestamp: new Date().toISOString(),
                 ragActive: !!ragResult,
                 toolsEnabled: enableTools,
-                tokenCount
+                tokenCount,
+                contextWindow: {
+                  totalTokens: optimizedWindow?.totalTokens ?? 0,
+                  availableTokens: optimizedWindow?.availableTokens ?? 0,
+                  utilizationPercent: optimizedWindow?.utilizationPercent ?? 0,
+                  pinnedFileCount: builtContext.summary.pinnedFileCount
+                }
               })
 
               controller.enqueue(encoder.encode(`data: ${data}\n\n`))
@@ -301,14 +418,23 @@ ${getToolCapabilities(enableTools)}
           }
 
           // Send enhanced completion signal
-          controller.enqueue(encoder.encode(`data: {
-            "done": true, 
-            "finalTokenCount": ${tokenCount},
-            "model": "${model}",
-            "provider": "${SUPPORTED_MODELS[model]}",
-            "ragContext": ${ragResult ? `"${ragResult.relevanceScore}"` : "null"},
-            "timestamp": "${new Date().toISOString()}"
-          }\n\n`))
+          const completionData = JSON.stringify({
+            done: true,
+            finalTokenCount: tokenCount,
+            model,
+            provider: SUPPORTED_MODELS[model],
+            ragContext: ragResult ? ragResult.relevanceScore : null,
+            contextWindow: optimizedWindow ? {
+              totalTokens: optimizedWindow.totalTokens,
+              availableTokens: optimizedWindow.availableTokens,
+              utilizationPercent: optimizedWindow.utilizationPercent,
+              pinnedFileCount: builtContext.summary.pinnedFileCount,
+              fileCount: builtContext.summary.fileCount,
+              isAtCapacity: optimizedWindow.isAtCapacity
+            } : null,
+            timestamp: new Date().toISOString()
+          })
+          controller.enqueue(encoder.encode(`data: ${completionData}\n\n`))
           
           controller.close()
           
@@ -339,7 +465,11 @@ ${getToolCapabilities(enableTools)}
       'X-Provider': SUPPORTED_MODELS[selectedModel],
       'X-RAG-Status': ragResult ? 'active' : 'inactive',
       'X-Tools-Enabled': enableTools.toString(),
-      'X-Enhanced-Features': 'multi-provider,rag,context-aware'
+      'X-Enhanced-Features': 'multi-provider,rag,context-aware',
+      'X-Context-Tokens-Used': optimizedWindow?.totalTokens.toString() ?? '0',
+      'X-Context-Tokens-Available': optimizedWindow?.availableTokens.toString() ?? '0',
+      'X-Context-Utilization': optimizedWindow?.utilizationPercent.toFixed(1) ?? '0',
+      'X-Context-Pinned-Files': builtContext.summary.pinnedFileCount.toString()
     }
 
     if (validatedOrigin) {

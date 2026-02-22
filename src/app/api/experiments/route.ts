@@ -11,6 +11,8 @@ import { appLogger } from '@/lib/server-monitoring'
 import type { ExperimentContext } from '@/lib/feature-flags'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { createServiceLogger } from '@/lib/logging'
+import { cacheGet, cacheGetOrSet, CacheKeyGenerators, TTLPresets } from '@/lib/cache/cache-utils'
+import { NO_CACHE_HEADERS, withCacheStatus } from '@/lib/cache/http-cache-headers'
 
 const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'experiments' });
 
@@ -218,13 +220,27 @@ export async function GET(request: NextRequest) {
       }
 
       case 'list': {
-        // Return list of all flags (simplified for now)
+        const cacheKey = CacheKeyGenerators.experimentsConfig()
+        const cached = await cacheGet<{ flags: unknown[] }>(cacheKey)
+        const fromCache = cached !== null
+        const responseData = cached ?? await cacheGetOrSet(
+          cacheKey,
+          async () => ({
+            flags: await featureFlagEngine.listFlags(),
+          }),
+          { ttl: TTLPresets.EXPERIMENTS_CONFIG }
+        )
+
         appLogger.logBusiness('feature_flags_listed', {
           feature: 'experiments',
-          userId: session.user.id || session.user.email || 'unknown'
+          userId: session.user.id || session.user.email || 'unknown',
+          metadata: { fromCache }
         })
 
-        return NextResponse.json({ flags: [] }, { status: 200 })
+        return NextResponse.json(responseData, {
+          status: 200,
+          headers: withCacheStatus(NO_CACHE_HEADERS, fromCache ? 'HIT' : 'MISS'),
+        })
       }
 
       default:

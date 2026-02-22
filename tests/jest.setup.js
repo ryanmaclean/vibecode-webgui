@@ -155,14 +155,22 @@ afterEach(() => {
 });
 
 // Mock Next.js modules
+// Create mock functions outside the factory to avoid scope issues
+const mockPush = () => {};
+const mockReplace = () => {};
+const mockBack = () => {};
+const mockForward = () => {};
+const mockRefresh = () => {};
+const mockPrefetch = () => {};
+
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    back: jest.fn(),
-    forward: jest.fn(),
-    refresh: jest.fn(),
-    prefetch: jest.fn(),
+    push: mockPush,
+    replace: mockReplace,
+    back: mockBack,
+    forward: mockForward,
+    refresh: mockRefresh,
+    prefetch: mockPrefetch,
   }),
   usePathname: () => '/',
   useSearchParams: () => new URLSearchParams(),
@@ -174,32 +182,37 @@ jest.mock('next/server', () => {
   return mockModule;
 });
 
+// Create mock function outside the factory
+const mockGetServerSession = () => Promise.resolve({
+  user: {
+    id: 'test-user',
+    email: 'test@example.com',
+    role: 'admin',
+  },
+});
+
 jest.mock('next-auth', () => ({
   __esModule: true,
-  getServerSession: jest.fn().mockResolvedValue({
-    user: {
-      id: 'test-user',
-      email: 'test@example.com',
-      role: 'admin',
-    },
-  }),
+  getServerSession: mockGetServerSession,
 }));
 
 // Mock logger to prevent auth module loading issues (Issue #792)
 // Added createChildLogger for Node 20 compatibility (Issue mm-tdy3)
-const mockLoggerFns = () => ({
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-  log: jest.fn(),
-  child: jest.fn(() => mockLoggerFns()),
-});
+// Create mock logger outside the factory to avoid scope issues
+const mockLogFn = () => {};
+const mockLoggerObj = {
+  info: mockLogFn,
+  warn: mockLogFn,
+  error: mockLogFn,
+  debug: mockLogFn,
+  log: mockLogFn,
+  child: () => mockLoggerObj,
+};
 
 jest.mock('@/lib/logger', () => ({
-  logger: mockLoggerFns(),
-  createChildLogger: jest.fn(() => mockLoggerFns()),
-  createLogger: jest.fn(() => mockLoggerFns()),
+  logger: mockLoggerObj,
+  createChildLogger: () => mockLoggerObj,
+  createLogger: () => mockLoggerObj,
 }));
 
 // Mock environment variables
@@ -214,7 +227,7 @@ process.env.GOOGLE_CLIENT_SECRET = 'test-google-secret';
 
 // Mock DOM methods not available in JSDOM
 if (typeof Element !== 'undefined') {
-  Element.prototype.scrollIntoView = jest.fn();
+  Element.prototype.scrollIntoView = () => {};
 }
 
 // Mock ResizeObserver
@@ -239,15 +252,15 @@ global.IntersectionObserver = class IntersectionObserver {
 if (typeof window !== 'undefined') {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: jest.fn().mockImplementation(query => ({
+    value: (query) => ({
       matches: false,
       media: query,
       onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
-    })),
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => {},
+    }),
   });
 }
