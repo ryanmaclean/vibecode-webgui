@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // Users and Authentication
@@ -32,6 +31,7 @@ model User {
   rag_chunks       RAGChunk[]
   conversations    Conversation[]
   session_contexts SessionContext[]
+  codebaseIndexes  CodebaseIndex[]
 
   @@map("users")
 }
@@ -53,15 +53,15 @@ model Session {
 
 // Session Context for persistent conversation state
 model SessionContext {
-  id           Int      @id @default(autoincrement())
-  content      String   // Conversation context text
-  metadata     Json?    // Additional metadata (e.g., message count, token count, conversation summary)
-  session_id   String?  // Session identifier
+  id           Int                          @id @default(autoincrement())
+  content      String // Conversation context text
+  metadata     Json? // Additional metadata (e.g., message count, token count, conversation summary)
+  session_id   String? // Session identifier
   user_id      Int
   workspace_id Int?
   embedding    Unsupported("vector(1536)")? // Vector embedding for semantic search
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  created_at   DateTime                     @default(now())
+  updated_at   DateTime                     @updatedAt
 
   // Relations
   user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -96,6 +96,7 @@ model Workspace {
   rag_chunks       RAGChunk[]
   conversations    Conversation[]
   session_contexts SessionContext[]
+  codebaseIndexes  CodebaseIndex[]
 
   @@index([user_id])
   @@index([workspace_id])
@@ -120,12 +121,13 @@ model Project {
   updated_at   DateTime @updatedAt
 
   // Relations
-  user        User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  workspace   Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
-  files       File[]
-  ai_requests AIRequest[]
-  rag_chunks  RAGChunk[]
-  ai_suggestions AISuggestion[]
+  user            User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace       Workspace?      @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  files           File[]
+  ai_requests     AIRequest[]
+  rag_chunks      RAGChunk[]
+  ai_suggestions  AISuggestion[]
+  codebaseIndexes CodebaseIndex[]
 
   @@index([user_id])
   @@index([workspace_id])
@@ -326,6 +328,25 @@ model AIRequest {
   @@index([project_id, status, created_at]) // For project-specific request tracking
   @@index([duration_ms, created_at]) // For performance analysis queries
   @@map("ai_requests")
+}
+
+// AI Suggestions
+model AISuggestion {
+  id         Int      @id @default(autoincrement())
+  project_id Int
+  content    String // Suggestion content
+  type       String // Type of suggestion (e.g., "code", "refactor", "feature")
+  status     String   @default("pending") // pending, accepted, rejected
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@index([project_id])
+  @@index([status])
+  @@index([created_at])
+  @@map("ai_suggestions")
 }
 
 // Monitoring and Analytics
@@ -641,22 +662,22 @@ model AgentSessionHandoff {
 // ============================================
 
 model AuditLog {
-  id          String   @id @default(uuid()) @db.Uuid
-  timestamp   DateTime @default(now())
-  user_id     Int?     // Nullable for system/anonymous actions
-  action      String   // Action performed (e.g., "user.login", "file.create", "project.delete")
-  resource    String   // Resource type and ID (e.g., "project:123", "file:456")
-  ip_address  String?  // Client IP address
-  user_agent  String?  // Client user agent string
-  metadata    Json?    // Additional context (request params, before/after states, etc.)
-  hash        String   // SHA-256 hash of (previous_hash + record_data) for tamper evidence
-  previous_hash String? @map("previous_hash") // Reference to previous log hash for chain integrity
+  id            String   @id @default(uuid()) @db.Uuid
+  timestamp     DateTime @default(now())
+  user_id       Int? // Nullable for system/anonymous actions
+  action        String // Action performed (e.g., "user.login", "file.create", "project.delete")
+  resource      String // Resource type and ID (e.g., "project:123", "file:456")
+  ip_address    String? // Client IP address
+  user_agent    String? // Client user agent string
+  metadata      Json? // Additional context (request params, before/after states, etc.)
+  hash          String // SHA-256 hash of (previous_hash + record_data) for tamper evidence
+  previous_hash String?  @map("previous_hash") // Reference to previous log hash for chain integrity
 
   // Compliance-specific fields
-  severity    String   @default("info") // info, warning, critical
-  category    String   @default("general") // auth, data_access, admin, system
-  outcome     String   @default("success") // success, failure, error
-  session_id  String?  @map("session_id") // Links to user session for correlation
+  severity   String  @default("info") // info, warning, critical
+  category   String  @default("general") // auth, data_access, admin, system
+  outcome    String  @default("success") // success, failure, error
+  session_id String? @map("session_id") // Links to user session for correlation
 
   @@index([timestamp])
   @@index([user_id])
@@ -672,14 +693,39 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+// Confirmation Requests for Human-in-the-Loop Agent Approval
+model ConfirmationRequest {
+  id          String    @id @default(uuid()) @db.Uuid
+  request_id  String    @unique // External request identifier
+  agent_id    String // Agent that created the request
+  action_type String // Type of destructive operation (e.g., "file.delete", "database.drop", "deploy.production")
+  file_path   String? // File path for file operations
+  status      String    @default("pending") // pending, approved, rejected, expired
+  risk_level  String    @default("medium") // low, medium, high, critical
+  metadata    Json? // Additional context (diff preview, operation details, etc.)
+  created_at  DateTime  @default(now())
+  expires_at  DateTime // Request expiration timestamp
+  approved_at DateTime? // Approval timestamp
+  approved_by Int? // User ID who approved/rejected the request
+
+  @@index([status])
+  @@index([agent_id])
+  @@index([approved_by])
+  @@index([created_at])
+  @@index([status, created_at]) // For querying pending requests by age
+  @@index([agent_id, status]) // For agent-specific request queries
+  @@index([risk_level, status]) // For risk-based filtering
+  @@map("confirmation_requests")
+}
+
 // Plugin System
 model Plugin {
   id           String   @id @default(uuid())
   name         String
   version      String
-  author       String?  // Plugin author/creator
+  author       String? // Plugin author/creator
   status       String   @default("installed") // installed, enabled, disabled
-  manifest     Json     // Plugin manifest with capabilities, permissions, config
+  manifest     Json // Plugin manifest with capabilities, permissions, config
   installed_at DateTime @default(now()) @map("installed_at")
   updated_at   DateTime @updatedAt @map("updated_at")
 
@@ -697,14 +743,14 @@ model Plugin {
 // ============================================
 
 model SecretMetadata {
-  id               Int      @id @default(autoincrement())
-  key_name         String   @unique // Unique identifier for the secret (e.g., "GITHUB_TOKEN", "OPENAI_API_KEY")
-  created_at       DateTime @default(now())
-  expires_at       DateTime? // When the secret expires
-  last_rotated_at  DateTime? // Last successful rotation timestamp
-  rotation_policy  String?  // Policy identifier (e.g., "api_keys_90d", "auth_tokens_30d")
-  status           String   @default("active") // active, expired, rotating, revoked
-  metadata         Json?    // Additional metadata (secret type, owner, tags, etc.)
+  id              Int       @id @default(autoincrement())
+  key_name        String    @unique // Unique identifier for the secret (e.g., "GITHUB_TOKEN", "OPENAI_API_KEY")
+  created_at      DateTime  @default(now())
+  expires_at      DateTime? // When the secret expires
+  last_rotated_at DateTime? // Last successful rotation timestamp
+  rotation_policy String? // Policy identifier (e.g., "api_keys_90d", "auth_tokens_30d")
+  status          String    @default("active") // active, expired, rotating, revoked
+  metadata        Json? // Additional metadata (secret type, owner, tags, etc.)
 
   // Relations
   rotation_history SecretRotationHistory[]
@@ -719,14 +765,14 @@ model SecretMetadata {
 }
 
 model SecretRotationHistory {
-  id                  Int      @id @default(autoincrement())
+  id                  Int       @id @default(autoincrement())
   secret_id           Int
-  rotated_at          DateTime @default(now())
-  rotated_by          String?  // User identifier or "system" for automated rotations
+  rotated_at          DateTime  @default(now())
+  rotated_by          String? // User identifier or "system" for automated rotations
   previous_expires_at DateTime? // Expiration date before rotation
   new_expires_at      DateTime? // New expiration date after rotation
-  reason              String?  // Reason for rotation (scheduled, manual, compromised, etc.)
-  metadata            Json?    // Additional rotation context
+  reason              String? // Reason for rotation (scheduled, manual, compromised, etc.)
+  metadata            Json? // Additional rotation context
 
   // Relations
   secret SecretMetadata @relation(fields: [secret_id], references: [id], onDelete: Cascade)
