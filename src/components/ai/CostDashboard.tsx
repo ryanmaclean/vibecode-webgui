@@ -62,6 +62,7 @@ import {
   ModelPricing,
 } from '@/types/cost-estimation';
 import { getCostTracker, CostTracker, MODEL_PRICING } from '@/lib/ai/cost/cost-tracker';
+import { CostSettingsPanel } from '@/components/ai/CostSettingsPanel';
 
 // ============================================================================
 // Types
@@ -893,94 +894,10 @@ export default function CostDashboard({
         {/* Settings Tab */}
         {showSettings && (
           <TabsContent value="settings" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Budget Settings</CardTitle>
-                  <CardDescription>
-                    Configure spending limits and budgets
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Monthly Budget</label>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-muted-foreground">$</span>
-                      <input
-                        type="number"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        value={settings.monthlyBudget}
-                        placeholder="0 (unlimited)"
-                        readOnly
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Set to 0 for unlimited spending
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Daily Budget</label>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-muted-foreground">$</span>
-                      <input
-                        type="number"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        value={settings.dailyBudget}
-                        placeholder="0 (unlimited)"
-                        readOnly
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Display Preferences</CardTitle>
-                  <CardDescription>
-                    Customize how costs are displayed
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Show estimates before send</p>
-                      <p className="text-sm text-muted-foreground">
-                        Display cost estimates before sending messages
-                      </p>
-                    </div>
-                    <Badge variant={settings.showEstimatesBeforeSend ? 'default' : 'secondary'}>
-                      {settings.showEstimatesBeforeSend ? 'Enabled' : 'Disabled'}
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Real-time cost tracking</p>
-                      <p className="text-sm text-muted-foreground">
-                        Show running cost total during sessions
-                      </p>
-                    </div>
-                    <Badge variant={settings.showRealtimeCosts ? 'default' : 'secondary'}>
-                      {settings.showRealtimeCosts ? 'Enabled' : 'Disabled'}
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Optimization suggestions</p>
-                      <p className="text-sm text-muted-foreground">
-                        Suggest cost-effective model alternatives
-                      </p>
-                    </div>
-                    <Badge variant={settings.enableOptimizationSuggestions ? 'default' : 'secondary'}>
-                      {settings.enableOptimizationSuggestions ? 'Enabled' : 'Disabled'}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <CostSettingsPanel
+              costTracker={tracker}
+              onSettingsSaved={loadData}
+            />
           </TabsContent>
         )}
       </Tabs>
