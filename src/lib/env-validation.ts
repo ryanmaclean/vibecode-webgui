@@ -4,6 +4,13 @@
  */
 
 import { z } from 'zod'
+import {
+  detectEnvironment,
+  getEnvironmentContext as getEnvContext,
+  isProduction,
+  isDevelopment
+} from './environment/detector'
+import type { EnvironmentContext } from './environment/types'
 
 // Helper for numeric string fields with defaults
 const numericStringWithDefault = (defaultValue: string) =>
@@ -112,6 +119,7 @@ export type Env = z.infer<typeof envSchema>
 
 // Validate environment variables
 let validatedEnv: Env | null = null
+let environmentContext: EnvironmentContext | null = null
 
 export function validateEnv(): Env {
   if (validatedEnv) {
@@ -121,6 +129,48 @@ export function validateEnv(): Env {
   try {
     validatedEnv = envSchema.parse(process.env)
     // Debug log removed
+
+    // Detect environment using multi-signal detection
+    try {
+      environmentContext = getEnvContext()
+      const detection = environmentContext.current
+
+      // Log environment detection results
+      if (detection.confidence === 'high') {
+        console.info(`✓ Environment detected: ${detection.environment} (confidence: ${detection.confidence})`)
+      } else if (detection.confidence === 'medium') {
+        console.warn(`⚠️  Environment detected: ${detection.environment} (confidence: ${detection.confidence})`)
+      } else {
+        console.warn(`⚠️  Environment detection uncertain: ${detection.environment} (confidence: ${detection.confidence})`)
+      }
+
+      // Check for conflicts between NODE_ENV and detected environment
+      if (validatedEnv.NODE_ENV !== detection.environment) {
+        // Allow some flexibility for test/development
+        const isCompatible =
+          (validatedEnv.NODE_ENV === 'test' && detection.environment === 'development') ||
+          (validatedEnv.NODE_ENV === 'development' && detection.environment === 'test')
+
+        if (!isCompatible) {
+          console.warn(
+            `⚠️  NODE_ENV (${validatedEnv.NODE_ENV}) does not match detected environment (${detection.environment})`
+          )
+          if (detection.primarySignal) {
+            console.warn(
+              `   Primary signal: ${detection.primarySignal.source} = ${detection.primarySignal.value}`
+            )
+          }
+        }
+      }
+
+      // Log any detection warnings
+      if (detection.warnings && detection.warnings.length > 0) {
+        console.warn('⚠️  Environment detection warnings:')
+        detection.warnings.forEach(warning => console.warn(`  - ${warning}`))
+      }
+    } catch (detectionError) {
+      console.warn('⚠️  Environment detection failed:', detectionError)
+    }
 
     // Log warnings for missing optional but recommended variables
     const warnings: string[] = []
@@ -199,6 +249,24 @@ export function getEnv(): Env {
   }
   return validatedEnv
 }
+
+/**
+ * Get environment detection context
+ * Returns the multi-signal environment detection result
+ */
+export function getEnvironmentContext(): EnvironmentContext {
+  if (!environmentContext) {
+    // Trigger validation which will populate environmentContext
+    validateEnv()
+  }
+  return environmentContext || getEnvContext()
+}
+
+/**
+ * Check if currently in production environment
+ * Uses multi-signal detection for accurate environment identification
+ */
+export { isProduction, isDevelopment }
 
 /**
  * Check if a feature is enabled
