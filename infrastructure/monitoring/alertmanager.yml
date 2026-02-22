@@ -49,6 +49,12 @@ route:
           receiver: 'database-alerts'
           group_wait: 30s
 
+        # Container resource issues - Critical
+        - match:
+            component: container
+          receiver: 'container-alerts'
+          group_wait: 30s
+
     # Warning alerts - Slack notifications during business hours
     - match:
         severity: warning
@@ -81,6 +87,14 @@ route:
       receiver: 'infrastructure-alerts'
       group_wait: 2m
       repeat_interval: 4h
+
+    # Container resource alerts - Warning level
+    - match:
+        component: container
+      receiver: 'container-alerts'
+      group_wait: 2m
+      group_interval: 10m
+      repeat_interval: 2h
 
 # Time intervals for alert scheduling
 time_intervals:
@@ -115,6 +129,22 @@ inhibit_rules:
     target_match:
       alertname: HighMemoryUsage
     equal: ['instance']
+
+  # Container OOM events inhibit container memory alerts
+  - source_match:
+      alertname: ContainerOOMKilled
+    target_match:
+      alertname: ContainerMemoryHigh
+    equal: ['container', 'pod']
+
+  # Container critical alerts inhibit container warnings
+  - source_match:
+      component: container
+      severity: critical
+    target_match:
+      component: container
+      severity: warning
+    equal: ['container', 'pod']
 
 # Alert receivers configuration
 receivers:
@@ -283,3 +313,28 @@ receivers:
           *Description:* {{ .Annotations.description }}
           *Instance:* {{ .Labels.instance }}
           {{ end }}
+
+  # Container resource alerts
+  - name: 'container-alerts'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#infrastructure'
+        color: '{{ if eq .CommonLabels.severity "critical" }}danger{{ else }}warning{{ end }}'
+        title: '📦 Container Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Container:* {{ .Labels.container }}
+          *Pod:* {{ .Labels.pod }}
+          *Namespace:* {{ .Labels.namespace }}
+          *Node:* {{ .Labels.node }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        actions:
+          - type: button
+            text: 'View Dashboard'
+            url: '{{ .CommonAnnotations.dashboard }}'
+          - type: button
+            text: 'View Logs'
+            url: 'https://grafana.vibecode.dev/explore?container={{ .CommonLabels.container }}&pod={{ .CommonLabels.pod }}'

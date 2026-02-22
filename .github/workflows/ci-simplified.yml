@@ -49,15 +49,18 @@ jobs:
           fi
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        uses: nick-fields/retry-action@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: npm install --legacy-peer-deps
 
       - name: Run security audit
         run: npm audit --audit-level=moderate
-        continue-on-error: true
 
       - name: Lint code
         run: npm run lint
-        continue-on-error: true
 
       - name: Check for hardcoded secrets
         run: |
@@ -85,9 +88,12 @@ jobs:
     needs: code-quality
     timeout-minutes: 25
     env:
-      DATABASE_URL: postgresql://test:test@localhost:5432/testdb
+      # NOTE: These are ephemeral CI test credentials only
+      # Database and Redis services are destroyed after each run
+      # Credentials match the service containers defined below
+      DATABASE_URL: postgresql://${{ vars.CI_TEST_DB_USER || 'test' }}:${{ vars.CI_TEST_DB_PASSWORD || 'test' }}@localhost:5432/${{ vars.CI_TEST_DB_NAME || 'testdb' }}
       REDIS_URL: redis://localhost:6379
-      NEXTAUTH_SECRET: test-secret-key-for-ci
+      NEXTAUTH_SECRET: ${{ secrets.CI_NEXTAUTH_SECRET || 'test-secret-key-for-ci' }}
       NODE_ENV: test
       DD_CI_VISIBILITY_ENABLED: ${{ secrets.DD_API_KEY != '' }}
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
@@ -102,9 +108,9 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_PASSWORD: test
-          POSTGRES_USER: test
-          POSTGRES_DB: testdb
+          POSTGRES_PASSWORD: ${{ vars.CI_TEST_DB_PASSWORD || 'test' }}
+          POSTGRES_USER: ${{ vars.CI_TEST_DB_USER || 'test' }}
+          POSTGRES_DB: ${{ vars.CI_TEST_DB_NAME || 'testdb' }}
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -134,7 +140,12 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        uses: nick-fields/retry-action@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: npm ci --legacy-peer-deps
 
       - name: Setup test environment
         run: |
@@ -143,34 +154,61 @@ jobs:
           elif [ -f .env.example ]; then
             cp .env.example .env
           fi
+          # Use environment variables already set in job env
           {
-            echo "DATABASE_URL=postgresql://test:test@localhost:5432/testdb"
-            echo "REDIS_URL=redis://localhost:6379"
-            echo "NEXTAUTH_SECRET=test-secret-key-for-ci"
+            echo "DATABASE_URL=${DATABASE_URL}"
+            echo "REDIS_URL=${REDIS_URL}"
+            echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}"
             echo "NODE_ENV=test"
           } >> .env
 
       - name: Wait for services
         run: |
           echo "Waiting for PostgreSQL..."
-          timeout 30 bash -c 'until pg_isready -h localhost -p 5432 -U test; do sleep 1; done' || true
+          max_attempts=30
+          attempt=1
+          until pg_isready -h localhost -p 5432 -U test || [ $attempt -eq $max_attempts ]; do
+            echo "PostgreSQL not ready, attempt $attempt/$max_attempts"
+            sleep 2
+            attempt=$((attempt + 1))
+          done
+          if ! pg_isready -h localhost -p 5432 -U test; then
+            echo "❌ PostgreSQL failed to become ready after $max_attempts attempts"
+            exit 1
+          fi
+          echo "✅ PostgreSQL is ready"
+
           echo "Waiting for Redis..."
-          timeout 30 bash -c 'until redis-cli -h localhost -p 6379 ping; do sleep 1; done' || true
+          attempt=1
+          until redis-cli -h localhost -p 6379 ping > /dev/null 2>&1 || [ $attempt -eq $max_attempts ]; do
+            echo "Redis not ready, attempt $attempt/$max_attempts"
+            sleep 2
+            attempt=$((attempt + 1))
+          done
+          if ! redis-cli -h localhost -p 6379 ping > /dev/null 2>&1; then
+            echo "❌ Redis failed to become ready after $max_attempts attempts"
+            exit 1
+          fi
+          echo "✅ Redis is ready"
 
       - name: Run unit tests
         run: |
           npm test -- --passWithNoTests \
             --testPathIgnorePatterns="tests/e2e|tests/k8s" \
-            --maxWorkers=2
+            --runInBand
         env:
           NODE_OPTIONS: -r dd-trace/ci/init
-        continue-on-error: true
 
       - name: Run integration tests
-        run: npm run test:integration || echo "Integration tests completed with warnings"
+        run: |
+          if npm run test:integration --if-present; then
+            echo "✅ Integration tests passed"
+          else
+            echo "❌ Integration tests failed"
+            exit 1
+          fi
         env:
           NODE_OPTIONS: -r dd-trace/ci/init
-        continue-on-error: true
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -199,7 +237,12 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        uses: nick-fields/retry-action@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: npm ci --legacy-peer-deps
 
       - name: Build project
         run: npm run build
@@ -269,16 +312,13 @@ jobs:
       - name: Install AI Gateway dependencies
         if: steps.check.outputs.exists == 'true'
         run: npm --prefix services/ai-gateway ci
-        continue-on-error: true
 
       - name: Build AI Gateway
         if: steps.check.outputs.exists == 'true'
         run: npm --prefix services/ai-gateway run build
-        continue-on-error: true
 
       - name: Run AI Gateway tests
         if: steps.check.outputs.exists == 'true'
         run: npm --prefix services/ai-gateway test -- --passWithNoTests
         env:
           NODE_ENV: test
-        continue-on-error: true

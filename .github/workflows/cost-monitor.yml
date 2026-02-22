@@ -1,30 +1,449 @@
-name: GitHub Actions Cost Monitor
+name: GitHub Actions Cost & Health Monitor
 
 on:
   schedule:
-    - cron: '0 9 * * MON'  # Weekly on Monday
+    - cron: '0 9 * * MON'  # Weekly on Monday at 9 AM UTC
+    - cron: '0 0 * * *'    # Daily at midnight UTC for health metrics
   workflow_dispatch:
 
 env:
   DD_SERVICE: ${{ github.event.repository.name }}
   DD_ENV: ci
   DD_VERSION: ${{ github.sha }}
-  DD_TAGS: team:platform,component:ci
+  DD_TAGS: team:platform,component:ci-monitoring
 
 jobs:
-  cost-report:
+  cost-and-health-report:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
     steps:
-      - name: Weekly cost reminder
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch workflow run data
+        id: workflow-data
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          echo "GitHub Actions Cost Optimization Active"
+          set -euo pipefail
+
+          # Get workflow runs for the past 7 days
+          end_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          start_date=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-7d +%Y-%m-%dT%H:%M:%SZ)
+
+          echo "Fetching workflow runs from $start_date to $end_date"
+
+          # Fetch workflow runs using GitHub CLI
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/${{ github.repository }}/actions/runs?created=>=$start_date&per_page=100" \
+            > workflow_runs.json
+
+          # Parse workflow data
+          total_runs=$(jq '.workflow_runs | length' workflow_runs.json)
+          successful_runs=$(jq '[.workflow_runs[] | select(.conclusion == "success")] | length' workflow_runs.json)
+          failed_runs=$(jq '[.workflow_runs[] | select(.conclusion == "failure")] | length' workflow_runs.json)
+          cancelled_runs=$(jq '[.workflow_runs[] | select(.conclusion == "cancelled")] | length' workflow_runs.json)
+
+          # Calculate success rate
+          success_rate=0
+          if [ "$total_runs" -gt 0 ]; then
+            success_rate=$(echo "scale=2; ($successful_runs * 100) / $total_runs" | bc)
+          fi
+
+          # Calculate average duration (in seconds)
+          avg_duration=$(jq '[.workflow_runs[] | select(.run_started_at != null and .updated_at != null) |
+            (((.updated_at | fromdateiso8601) - (.run_started_at | fromdateiso8601)))] |
+            add / length' workflow_runs.json 2>/dev/null || echo "0")
+
+          # Get duration percentiles
+          p50_duration=$(jq -r '[.workflow_runs[] | select(.run_started_at != null and .updated_at != null) |
+            (((.updated_at | fromdateiso8601) - (.run_started_at | fromdateiso8601)))] |
+            sort | if length > 0 then .[length/2 | floor] else 0 end' workflow_runs.json)
+
+          p95_duration=$(jq -r '[.workflow_runs[] | select(.run_started_at != null and .updated_at != null) |
+            (((.updated_at | fromdateiso8601) - (.run_started_at | fromdateiso8601)))] |
+            sort | if length > 0 then .[length*0.95 | floor] else 0 end' workflow_runs.json)
+
+          p99_duration=$(jq -r '[.workflow_runs[] | select(.run_started_at != null and .updated_at != null) |
+            (((.updated_at | fromdateiso8601) - (.run_started_at | fromdateiso8601)))] |
+            sort | if length > 0 then .[length*0.99 | floor] else 0 end' workflow_runs.json)
+
+          # Store metrics for later steps
+          echo "total_runs=$total_runs" >> $GITHUB_OUTPUT
+          echo "successful_runs=$successful_runs" >> $GITHUB_OUTPUT
+          echo "failed_runs=$failed_runs" >> $GITHUB_OUTPUT
+          echo "cancelled_runs=$cancelled_runs" >> $GITHUB_OUTPUT
+          echo "success_rate=$success_rate" >> $GITHUB_OUTPUT
+          echo "avg_duration=$avg_duration" >> $GITHUB_OUTPUT
+          echo "p50_duration=$p50_duration" >> $GITHUB_OUTPUT
+          echo "p95_duration=$p95_duration" >> $GITHUB_OUTPUT
+          echo "p99_duration=$p99_duration" >> $GITHUB_OUTPUT
+
+          # Per-workflow breakdown
+          jq -c '.workflow_runs | group_by(.name) |
+            map({
+              workflow: .[0].name,
+              total: length,
+              successful: (map(select(.conclusion == "success")) | length),
+              failed: (map(select(.conclusion == "failure")) | length),
+              avg_duration: (map(select(.run_started_at != null and .updated_at != null) |
+                (((.updated_at | fromdateiso8601) - (.run_started_at | fromdateiso8601)))) |
+                if length > 0 then (add / length) else 0 end)
+            }) | .[]' workflow_runs.json > per_workflow_metrics.json
+
+          echo "Workflow metrics collected successfully"
+
+      - name: Send Datadog Metrics - Overview
+        if: always()
+        env:
+          DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "ℹ️ DATADOG_API_KEY is not configured; skipping."
+            exit 0
+          fi
+
+          current_timestamp=$(date +%s)
+
+          # Send overview metrics to Datadog
+          curl -X POST "https://api.datadoghq.com/api/v1/series" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${DD_API_KEY}" \
+            -d @- << EOF
+          {
+            "series": [
+              {
+                "metric": "github.actions.runs.total",
+                "type": "count",
+                "points": [[$current_timestamp, ${{ steps.workflow-data.outputs.total_runs }}]],
+                "tags": [
+                  "repository:${{ github.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}",
+                  "period:7d"
+                ]
+              },
+              {
+                "metric": "github.actions.runs.successful",
+                "type": "count",
+                "points": [[$current_timestamp, ${{ steps.workflow-data.outputs.successful_runs }}]],
+                "tags": [
+                  "repository:${{ github.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}",
+                  "period:7d"
+                ]
+              },
+              {
+                "metric": "github.actions.runs.failed",
+                "type": "count",
+                "points": [[$current_timestamp, ${{ steps.workflow-data.outputs.failed_runs }}]],
+                "tags": [
+                  "repository:${{ github.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}",
+                  "period:7d"
+                ]
+              },
+              {
+                "metric": "github.actions.runs.cancelled",
+                "type": "count",
+                "points": [[$current_timestamp, ${{ steps.workflow-data.outputs.cancelled_runs }}]],
+                "tags": [
+                  "repository:${{ github.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}",
+                  "period:7d"
+                ]
+              },
+              {
+                "metric": "github.actions.success_rate",
+                "type": "gauge",
+                "points": [[$current_timestamp, ${{ steps.workflow-data.outputs.success_rate }}]],
+                "tags": [
+                  "repository:${{ github.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}",
+                  "period:7d"
+                ]
+              },
+              {
+                "metric": "github.actions.duration.avg",
+                "type": "gauge",
+                "points": [[$current_timestamp, ${{ steps.workflow-data.outputs.avg_duration }}]],
+                "tags": [
+                  "repository:${{ github.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}",
+                  "period:7d"
+                ]
+              },
+              {
+                "metric": "github.actions.duration.p50",
+                "type": "gauge",
+                "points": [[$current_timestamp, ${{ steps.workflow-data.outputs.p50_duration }}]],
+                "tags": [
+                  "repository:${{ github.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}",
+                  "period:7d"
+                ]
+              },
+              {
+                "metric": "github.actions.duration.p95",
+                "type": "gauge",
+                "points": [[$current_timestamp, ${{ steps.workflow-data.outputs.p95_duration }}]],
+                "tags": [
+                  "repository:${{ github.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}",
+                  "period:7d"
+                ]
+              },
+              {
+                "metric": "github.actions.duration.p99",
+                "type": "gauge",
+                "points": [[$current_timestamp, ${{ steps.workflow-data.outputs.p99_duration }}]],
+                "tags": [
+                  "repository:${{ github.repository }}",
+                  "service:${{ env.DD_SERVICE }}",
+                  "env:${{ env.DD_ENV }}",
+                  "period:7d"
+                ]
+              }
+            ]
+          }
+          EOF
+
+          echo "✅ Overview metrics sent to Datadog successfully"
+        continue-on-error: true
+
+      - name: Send Datadog Metrics - Per Workflow
+        if: always()
+        env:
+          DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "ℹ️ DATADOG_API_KEY is not configured; skipping."
+            exit 0
+          fi
+
+          current_timestamp=$(date +%s)
+
+          # Read per-workflow metrics and send to Datadog
+          if [ -f per_workflow_metrics.json ]; then
+            while IFS= read -r workflow_data; do
+              workflow_name=$(echo "$workflow_data" | jq -r '.workflow')
+              workflow_name_escaped=$(printf '%s' "$workflow_name" | sed 's/\\/\\\\/g; s/"/\\"/g')
+              total=$(echo "$workflow_data" | jq -r '.total')
+              successful=$(echo "$workflow_data" | jq -r '.successful')
+              failed=$(echo "$workflow_data" | jq -r '.failed')
+              avg_duration=$(echo "$workflow_data" | jq -r '.avg_duration')
+
+              # Calculate workflow-specific success rate
+              success_rate=0
+              if [ "$total" -gt 0 ]; then
+                success_rate=$(echo "scale=2; ($successful * 100) / $total" | bc)
+              fi
+
+              # Send per-workflow metrics
+              curl -X POST "https://api.datadoghq.com/api/v1/series" \
+                -H "Content-Type: application/json" \
+                -H "DD-API-KEY: ${DD_API_KEY}" \
+                -d @- << EOF
+              {
+                "series": [
+                  {
+                    "metric": "github.actions.workflow.runs.total",
+                    "type": "count",
+                    "points": [[$current_timestamp, $total]],
+                    "tags": [
+                      "workflow:${workflow_name_escaped}",
+                      "repository:${{ github.repository }}",
+                      "service:${{ env.DD_SERVICE }}",
+                      "env:${{ env.DD_ENV }}"
+                    ]
+                  },
+                  {
+                    "metric": "github.actions.workflow.runs.successful",
+                    "type": "count",
+                    "points": [[$current_timestamp, $successful]],
+                    "tags": [
+                      "workflow:${workflow_name_escaped}",
+                      "repository:${{ github.repository }}",
+                      "service:${{ env.DD_SERVICE }}",
+                      "env:${{ env.DD_ENV }}"
+                    ]
+                  },
+                  {
+                    "metric": "github.actions.workflow.runs.failed",
+                    "type": "count",
+                    "points": [[$current_timestamp, $failed]],
+                    "tags": [
+                      "workflow:${workflow_name_escaped}",
+                      "repository:${{ github.repository }}",
+                      "service:${{ env.DD_SERVICE }}",
+                      "env:${{ env.DD_ENV }}"
+                    ]
+                  },
+                  {
+                    "metric": "github.actions.workflow.success_rate",
+                    "type": "gauge",
+                    "points": [[$current_timestamp, $success_rate]],
+                    "tags": [
+                      "workflow:${workflow_name_escaped}",
+                      "repository:${{ github.repository }}",
+                      "service:${{ env.DD_SERVICE }}",
+                      "env:${{ env.DD_ENV }}"
+                    ]
+                  },
+                  {
+                    "metric": "github.actions.workflow.duration.avg",
+                    "type": "gauge",
+                    "points": [[$current_timestamp, $avg_duration]],
+                    "tags": [
+                      "workflow:${workflow_name_escaped}",
+                      "repository:${{ github.repository }}",
+                      "service:${{ env.DD_SERVICE }}",
+                      "env:${{ env.DD_ENV }}"
+                    ]
+                  }
+                ]
+              }
+          EOF
+
+              echo "✅ Metrics for workflow '$workflow_name' sent to Datadog"
+
+            done < per_workflow_metrics.json
+          fi
+        continue-on-error: true
+
+      - name: Send Datadog Event - Weekly Summary
+        if: github.event.schedule == '0 9 * * MON'
+        env:
+          DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "ℹ️ DATADOG_API_KEY is not configured; skipping."
+            exit 0
+          fi
+
+          current_timestamp=$(date +%s)
+
+          # Create weekly summary event
+          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${DD_API_KEY}" \
+            -d @- << EOF
+          {
+            "title": "GitHub Actions Weekly Health Report",
+            "text": "## Weekly CI/CD Health Summary\n\n**Repository**: ${{ github.repository }}\n\n**Metrics (Last 7 Days)**:\n- Total Runs: ${{ steps.workflow-data.outputs.total_runs }}\n- Successful: ${{ steps.workflow-data.outputs.successful_runs }}\n- Failed: ${{ steps.workflow-data.outputs.failed_runs }}\n- Cancelled: ${{ steps.workflow-data.outputs.cancelled_runs }}\n- Success Rate: ${{ steps.workflow-data.outputs.success_rate }}%\n\n**Performance**:\n- Avg Duration: ${{ steps.workflow-data.outputs.avg_duration }}s\n- P50 Duration: ${{ steps.workflow-data.outputs.p50_duration }}s\n- P95 Duration: ${{ steps.workflow-data.outputs.p95_duration }}s\n- P99 Duration: ${{ steps.workflow-data.outputs.p99_duration }}s\n\n**Cost Optimization Active**:\n- Main branch: Lightweight CI only (~\\$0.05 per run)\n- Release branches: Full CI/CD (~\\$2-4 per run)\n- Expected monthly savings: ~70-80%",
+            "tags": [
+              "source:github-actions",
+              "repository:${{ github.repository }}",
+              "service:${{ env.DD_SERVICE }}",
+              "env:${{ env.DD_ENV }}",
+              "event_type:weekly_summary"
+            ],
+            "alert_type": "info",
+            "date_happened": $current_timestamp
+          }
+          EOF
+
+          echo "✅ Weekly summary event sent to Datadog"
+        continue-on-error: true
+
+      - name: Check for Anomalies and Alert
+        if: always()
+        env:
+          DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "ℹ️ DATADOG_API_KEY is not configured; skipping."
+            exit 0
+          fi
+
+          current_timestamp=$(date +%s)
+
+          # Check for anomalies
+          success_rate="${{ steps.workflow-data.outputs.success_rate }}"
+          failed_runs=${{ steps.workflow-data.outputs.failed_runs }}
+
+          alert_type="info"
+          alert_title="CI/CD Health Check"
+          alert_message="All systems nominal"
+
+          # Check success rate threshold
+          if (( $(echo "$success_rate < 80" | bc -l) )); then
+            alert_type="error"
+            alert_title="⚠️ CI/CD Success Rate Below Threshold"
+            alert_message="Success rate is ${success_rate}% (threshold: 80%). Please investigate failing workflows."
+          elif (( $(echo "$success_rate < 90" | bc -l) )); then
+            alert_type="warning"
+            alert_title="⚠️ CI/CD Success Rate Warning"
+            alert_message="Success rate is ${success_rate}% (target: 90%). Some workflows may need attention."
+          fi
+
+          # Check high failure count
+          if [ "$failed_runs" -gt 20 ]; then
+            alert_type="error"
+            alert_title="⚠️ High Failure Count Detected"
+            alert_message="Detected ${failed_runs} failed workflow runs in the past 7 days. Immediate investigation required."
+          fi
+
+          # Send alert event to Datadog if anomaly detected
+          if [ "$alert_type" != "info" ]; then
+            curl -X POST "https://api.datadoghq.com/api/v1/events" \
+              -H "Content-Type: application/json" \
+              -H "DD-API-KEY: ${DD_API_KEY}" \
+              -d @- << EOF
+            {
+              "title": "${alert_title}",
+              "text": "## CI/CD Health Alert\n\n${alert_message}\n\n**Repository**: ${{ github.repository }}\n**Success Rate**: ${success_rate}%\n**Failed Runs**: ${failed_runs}\n**Total Runs**: ${{ steps.workflow-data.outputs.total_runs }}\n\n[View Workflows](https://github.com/${{ github.repository }}/actions)",
+              "tags": [
+                "source:github-actions",
+                "repository:${{ github.repository }}",
+                "service:${{ env.DD_SERVICE }}",
+                "env:${{ env.DD_ENV }}",
+                "event_type:anomaly_alert"
+              ],
+              "alert_type": "${alert_type}",
+              "date_happened": $current_timestamp,
+              "priority": "normal"
+            }
+          EOF
+
+            echo "⚠️ Anomaly alert sent to Datadog: ${alert_title}"
+          else
+            echo "✅ No anomalies detected"
+          fi
+        continue-on-error: true
+
+      - name: Cost optimization reminder
+        run: |
+          echo "📊 GitHub Actions Cost Optimization Active"
+          echo ""
           echo "Current strategy:"
-          echo "  Main branch: Lightweight CI only (~$0.05 per run)"
-          echo "  Release branches: Full CI/CD (~$2-4 per run)"
+          echo "  ✅ Main branch: Lightweight CI only (~\$0.05 per run)"
+          echo "  ✅ Release branches: Full CI/CD (~\$2-4 per run)"
           echo ""
           echo "To run full tests:"
           echo "  1. Create branch: git checkout -b release/v1.x.x"
           echo "  2. Push: git push origin release/v1.x.x"
           echo "  3. Full CI/CD will run automatically"
           echo ""
-          echo "Expected monthly savings: ~70-80% ($100 -> $20-30)"
+          echo "Expected monthly savings: ~70-80% (\$100 -> \$20-30)"
+          echo ""
+          echo "📈 Metrics Summary (Last 7 Days):"
+          echo "  Total Runs: ${{ steps.workflow-data.outputs.total_runs }}"
+          echo "  Success Rate: ${{ steps.workflow-data.outputs.success_rate }}%"
+          echo "  Avg Duration: ${{ steps.workflow-data.outputs.avg_duration }}s"
