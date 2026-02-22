@@ -34,6 +34,7 @@ import {
   Monitor,
   Moon,
   Sun,
+  Shield,
 } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,12 +49,15 @@ import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 
 import { SettingsManager, getSettingsManager } from '@/lib/settings/settings-manager';
+import { TailscaleStatus } from '@/components/TailscaleStatus';
+import { TailscaleSetup } from '@/components/TailscaleSetup';
 import type {
   AppSettings,
   GeneralSettings,
   ServiceSettings,
   AISettings,
   AdvancedSettings,
+  AgentConfirmationSettings,
   ThemeMode,
   LogLevel,
   SettingsValidationResult,
@@ -62,6 +66,7 @@ import {
   DEFAULT_APP_SETTINGS,
   DEFAULT_AI_MODELS,
 } from '@/types/settings';
+import { isVimModeEnabled, setVimModeEnabled } from '@/lib/keyboard/vim-bindings';
 
 // ============================================================================
 // Types
@@ -69,7 +74,7 @@ import {
 
 export interface SettingsPanelProps {
   /** Initial tab to display */
-  initialTab?: 'general' | 'services' | 'ai' | 'advanced';
+  initialTab?: 'general' | 'services' | 'networking' | 'ai' | 'advanced';
   /** Callback when settings are saved */
   onSave?: (settings: AppSettings) => void;
   /** Callback when panel is closed */
@@ -260,6 +265,9 @@ export function SettingsPanel({
     anthropic: '',
   });
 
+  // Vim mode state (stored in localStorage separately)
+  const [vimModeEnabled, setVimModeEnabledState] = useState(false);
+
   const settingsManager = useMemo(() => getSettingsManager(), []);
 
   // Load settings on mount
@@ -270,6 +278,8 @@ export function SettingsPanel({
         const loaded = await settingsManager.load();
         setSettings(loaded);
         setOriginalSettings(loaded);
+        // Load vim mode setting from localStorage
+        setVimModeEnabledState(isVimModeEnabled());
       } catch (error) {
         console.error('Failed to load settings:', error);
       } finally {
@@ -343,6 +353,14 @@ export function SettingsPanel({
     setSaveStatus('idle');
   }, []);
 
+  const updateAgentConfirmation = useCallback((updates: Partial<AgentConfirmationSettings>) => {
+    setSettings((prev) => ({
+      ...prev,
+      agentConfirmation: { ...prev.agentConfirmation, ...updates },
+    }));
+    setSaveStatus('idle');
+  }, []);
+
   const handleSave = useCallback(async () => {
     if (!validation.isValid) return;
 
@@ -394,9 +412,20 @@ export function SettingsPanel({
         [category]: defaults[category],
       }));
       setSaveStatus('idle');
+
+      // Reset vim mode if resetting general settings
+      if (category === 'general') {
+        setVimModeEnabledState(false);
+        setVimModeEnabled(false);
+      }
     },
     []
   );
+
+  const handleVimModeToggle = useCallback((checked: boolean) => {
+    setVimModeEnabledState(checked);
+    setVimModeEnabled(checked);
+  }, []);
 
   // ==========================================================================
   // Render
@@ -460,7 +489,7 @@ export function SettingsPanel({
 
       <CardContent>
         <Tabs defaultValue={initialTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="general" className="flex items-center gap-2">
               <Settings className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">General</span>
@@ -468,6 +497,10 @@ export function SettingsPanel({
             <TabsTrigger value="services" className="flex items-center gap-2">
               <Server className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">Services</span>
+            </TabsTrigger>
+            <TabsTrigger value="networking" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Network</span>
             </TabsTrigger>
             <TabsTrigger value="ai" className="flex items-center gap-2">
               <Brain className="h-4 w-4" aria-hidden="true" />
@@ -573,6 +606,19 @@ export function SettingsPanel({
                   updateGeneral({ autoSaveInterval: parseInt(e.target.value, 10) || 0 })
                 }
                 className="w-24"
+              />
+            </SettingRow>
+
+            <SettingRow
+              id="vim-mode"
+              label="Vim Mode"
+              description="Enable vim-style keyboard navigation (j/k for scrolling, etc.)"
+            >
+              <Switch
+                id="vim-mode"
+                checked={vimModeEnabled}
+                onCheckedChange={handleVimModeToggle}
+                aria-label="Enable vim mode"
               />
             </SettingRow>
           </TabsContent>
@@ -738,6 +784,53 @@ export function SettingsPanel({
                 className="w-20"
               />
             </SettingRow>
+          </TabsContent>
+
+          {/* Networking Settings Tab */}
+          <TabsContent value="networking" className="space-y-4 mt-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Networking & Security</h3>
+              <p className="text-sm text-muted-foreground">
+                Zero-trust networking with Tailscale
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              {/* Tailscale Status */}
+              <div>
+                <h4 className="text-sm font-medium mb-3">Connection Status</h4>
+                <TailscaleStatus
+                  autoRefresh={true}
+                  refreshInterval={30000}
+                  showRefreshButton={true}
+                />
+              </div>
+
+              {/* Tailscale Setup */}
+              <div>
+                <h4 className="text-sm font-medium mb-3">Setup & Configuration</h4>
+                <TailscaleSetup />
+              </div>
+
+              {/* Information */}
+              <div className="border rounded-lg p-4">
+                <h4 className="text-sm font-medium mb-2">About Tailscale</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Tailscale creates a secure network overlay that allows your devices to communicate
+                  safely over the internet without exposing services to the public.
+                </p>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p className="font-medium">Key Features:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>End-to-end encryption for all traffic</li>
+                    <li>Zero-trust security model</li>
+                    <li>No open ports to the public internet</li>
+                    <li>Automatic key rotation and management</li>
+                    <li>Cross-platform support</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </TabsContent>
 
           {/* AI Settings Tab */}
@@ -939,6 +1032,89 @@ export function SettingsPanel({
                 <RotateCcw className="h-4 w-4 mr-2" aria-hidden="true" />
                 Reset
               </Button>
+            </div>
+
+            {/* Agent Safety Section */}
+            <div className="border rounded-lg p-4 space-y-4">
+              <h4 className="font-medium">Agent Safety & Confirmation</h4>
+              <p className="text-sm text-muted-foreground">
+                Configure how agent actions are previewed and approved before execution
+              </p>
+
+              <SettingRow
+                id="enable-action-preview"
+                label="Enable Action Preview"
+                description="Show diff previews before applying changes"
+              >
+                <Switch
+                  id="enable-action-preview"
+                  checked={settings.agentConfirmation.enableActionPreview}
+                  onCheckedChange={(checked) =>
+                    updateAgentConfirmation({ enableActionPreview: checked })
+                  }
+                  aria-label="Enable action preview"
+                />
+              </SettingRow>
+
+              <SettingRow
+                id="require-confirmation"
+                label="Require Confirmation"
+                description="Require explicit approval for agent actions"
+              >
+                <Switch
+                  id="require-confirmation"
+                  checked={settings.agentConfirmation.requireConfirmation}
+                  onCheckedChange={(checked) =>
+                    updateAgentConfirmation({ requireConfirmation: checked })
+                  }
+                  aria-label="Require confirmation"
+                />
+              </SettingRow>
+
+              <SettingRow
+                id="bulk-approval-mode"
+                label="Bulk Approval Mode"
+                description="Allow approving multiple changes at once"
+              >
+                <Switch
+                  id="bulk-approval-mode"
+                  checked={settings.agentConfirmation.bulkApprovalMode}
+                  onCheckedChange={(checked) =>
+                    updateAgentConfirmation({ bulkApprovalMode: checked })
+                  }
+                  aria-label="Enable bulk approval mode"
+                />
+              </SettingRow>
+
+              <SettingRow
+                id="show-explanations"
+                label="Show Explanations"
+                description="Show why each change is proposed"
+              >
+                <Switch
+                  id="show-explanations"
+                  checked={settings.agentConfirmation.showExplanations}
+                  onCheckedChange={(checked) =>
+                    updateAgentConfirmation({ showExplanations: checked })
+                  }
+                  aria-label="Show explanations"
+                />
+              </SettingRow>
+
+              <SettingRow
+                id="auto-approve-read-only"
+                label="Auto-approve Read-only"
+                description="Skip confirmation for read-only operations"
+              >
+                <Switch
+                  id="auto-approve-read-only"
+                  checked={settings.agentConfirmation.autoApproveReadOnly}
+                  onCheckedChange={(checked) =>
+                    updateAgentConfirmation({ autoApproveReadOnly: checked })
+                  }
+                  aria-label="Auto-approve read-only operations"
+                />
+              </SettingRow>
             </div>
 
             {/* Telemetry Section */}

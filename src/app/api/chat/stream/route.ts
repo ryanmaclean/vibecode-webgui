@@ -102,6 +102,10 @@ export async function POST(request: NextRequest) {
       async start(controller) {
         try {
           let buffer = ''
+          let tokenCount = 0
+          let chunkCount = 0
+          const startTime = Date.now()
+
           while (true) {
             const { done, value } = await reader.read()
             if (done) break
@@ -114,18 +118,66 @@ export async function POST(request: NextRequest) {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6).trim()
                 if (data === '[DONE]') {
-                  controller.enqueue(encoder.encode(`data: {"done": true}\n\n`))
+                  const elapsedMs = Date.now() - startTime
+
+                  // Emit final metadata before done event
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify({
+                        type: 'metadata',
+                        tokenCount,
+                        chunkCount,
+                        elapsedMs,
+                        tokensPerSecond: elapsedMs > 0 ? (tokenCount / (elapsedMs / 1000)).toFixed(2) : 0,
+                        timestamp: new Date().toISOString(),
+                      })}\n\n`
+                    )
+                  )
+
+                  controller.enqueue(encoder.encode(`data: {"type": "done", "done": true}\n\n`))
                   continue
                 }
                 try {
                   const parsed = JSON.parse(data)
                   const content = parsed.choices?.[0]?.delta?.content || ''
+                  const usage = parsed.usage
+
                   if (content) {
+                    // Approximate token count (rough estimate: ~4 chars per token)
+                    tokenCount += Math.ceil(content.length / 4)
+                    chunkCount++
+
                     controller.enqueue(
                       encoder.encode(
-                        `data: ${JSON.stringify({ content, timestamp: new Date().toISOString() })}\n\n`
+                        `data: ${JSON.stringify({
+                          type: 'content',
+                          content,
+                          timestamp: new Date().toISOString(),
+                        })}\n\n`
                       )
                     )
+
+                    // Emit metadata every 10 chunks
+                    if (chunkCount % 10 === 0) {
+                      const elapsedMs = Date.now() - startTime
+                      controller.enqueue(
+                        encoder.encode(
+                          `data: ${JSON.stringify({
+                            type: 'metadata',
+                            tokenCount,
+                            chunkCount,
+                            elapsedMs,
+                            tokensPerSecond: elapsedMs > 0 ? (tokenCount / (elapsedMs / 1000)).toFixed(2) : 0,
+                            timestamp: new Date().toISOString(),
+                          })}\n\n`
+                        )
+                      )
+                    }
+                  }
+
+                  // If OpenRouter provides usage stats, use them
+                  if (usage?.total_tokens) {
+                    tokenCount = usage.total_tokens
                   }
                 } catch {
                   // Skip malformed SSE chunks
