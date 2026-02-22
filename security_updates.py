@@ -15,12 +15,13 @@ except ImportError:
 Security Updates Script - vibecode-webgui
 
 Purpose: Automate the application of critical security patches.
-Version: 1.0
+Version: 1.1
 
 This script applies patches for:
-1. preact JSON VNode Injection (GHSA-36hm-qxxp-pg3m)
-2. @modelcontextprotocol/sdk ReDoS (GHSA-8r9q-7v3j-jr4g)
-3. langchain Serialization Injection (GHSA-r399-636x-v7f6)
+1. @modelcontextprotocol/sdk ReDoS (GHSA-8r9q-7v3j-jr4g)
+2. langchain Serialization Injection (GHSA-r399-636x-v7f6)
+
+Note: preact patch removed as package is not used in this project
 """
 
 import argparse
@@ -56,7 +57,6 @@ class Config:
     force_update: bool = False
     dry_run: bool = False
     verbose: bool = False
-    update_preact_only: bool = False
     update_mcp_only: bool = False
     update_langchain_only: bool = False
 
@@ -149,7 +149,7 @@ def command_exists(cmd: str) -> bool:
 
 def initialize(config: Config) -> None:
     """Initialize script - create directories and log file."""
-    print_info("Security Updates Script v1.0")
+    print_info("Security Updates Script v1.1")
     print_info("Starting security patch process...")
 
     config.log_dir.mkdir(parents=True, exist_ok=True)
@@ -253,11 +253,28 @@ def run_pretests(config: Config) -> bool:
 
 
 def update_preact(config: Config) -> bool:
-    """Update preact to fix JSON VNode injection."""
+    """Update preact to fix JSON VNode injection (DEPRECATED - package not used)."""
     print_info("=" * 42, config.log_file)
+    print_info("Checking for preact package...", config.log_file)
+    print_info("=" * 42, config.log_file)
+
+    # Check if preact is in package.json
+    try:
+        with open("package.json", 'r') as f:
+            package_data = json.load(f)
+            deps = package_data.get("dependencies", {})
+            dev_deps = package_data.get("devDependencies", {})
+            if "preact" not in deps and "preact" not in dev_deps:
+                print_warning("preact not found in package.json - skipping", config.log_file)
+                print_info("This package is not used in the current project", config.log_file)
+                return True  # Not an error condition
+    except Exception as e:
+        print_error(f"Failed to read package.json: {e}", config.log_file)
+        return False
+
+    # If preact exists, update it
     print_info("Updating preact to fix JSON VNode injection", config.log_file)
     print_info("Vulnerability: GHSA-36hm-qxxp-pg3m", config.log_file)
-    print_info("=" * 42, config.log_file)
 
     if not run_cmd("npm install preact@10.28.2 --save", "Installing preact@10.28.2", config):
         return False
@@ -281,8 +298,8 @@ def update_mcp(config: Config) -> bool:
     print_info("=" * 42, config.log_file)
 
     if not run_cmd(
-        "npm install @modelcontextprotocol/sdk@1.25.2 --save",
-        "Installing @modelcontextprotocol/sdk@1.25.2",
+        "npm install @modelcontextprotocol/sdk@1.26.0 --save",
+        "Installing @modelcontextprotocol/sdk@1.26.0",
         config
     ):
         return False
@@ -292,9 +309,9 @@ def update_mcp(config: Config) -> bool:
         capture_output=True,
         text=True
     )
-    if "1.25.2" in result.stdout:
-        print_success("@modelcontextprotocol/sdk updated to 1.25.2", config.log_file)
-        log("@modelcontextprotocol/sdk: 1.25.1 → 1.25.2 ✓", config.log_file)
+    if "1.26.0" in result.stdout:
+        print_success("@modelcontextprotocol/sdk updated to 1.26.0", config.log_file)
+        log("@modelcontextprotocol/sdk: 1.25.1 → 1.26.0 ✓", config.log_file)
         return True
     else:
         print_error("@modelcontextprotocol/sdk update verification failed", config.log_file)
@@ -309,13 +326,13 @@ def update_langchain(config: Config) -> bool:
     print_warning("This is a minor version update", config.log_file)
     print_info("=" * 42, config.log_file)
 
-    if not run_cmd("npm install langchain@1.2.8 --save", "Installing langchain@1.2.8", config):
+    if not run_cmd("npm install langchain@1.2.24 --save", "Installing langchain@1.2.24", config):
         return False
 
     result = subprocess.run(["npm", "list", "langchain"], capture_output=True, text=True)
-    if "1.2.8" in result.stdout:
-        print_success("langchain updated to 1.2.8", config.log_file)
-        log("langchain: 1.0.2 → 1.2.8 ✓", config.log_file)
+    if "1.2.24" in result.stdout:
+        print_success("langchain updated to 1.2.24", config.log_file)
+        log("langchain: 1.0.2 → 1.2.24 ✓", config.log_file)
         return True
     else:
         print_error("langchain update verification failed", config.log_file)
@@ -384,17 +401,15 @@ SECURITY PATCH SUMMARY
 ================================================================================
 
 Applied Patches:
-1. preact 10.27.2 → 10.28.2
-   - Vulnerability: GHSA-36hm-qxxp-pg3m (JSON VNode Injection)
-   - Type: Patch update (safe)
-
-2. @modelcontextprotocol/sdk 1.25.1 → 1.25.2
+1. @modelcontextprotocol/sdk 1.25.1 → 1.26.0
    - Vulnerability: GHSA-8r9q-7v3j-jr4g (ReDoS)
-   - Type: Patch update (safe)
+   - Type: Minor version update (safe)
 
-3. langchain 1.0.2 → 1.2.8
+2. langchain 1.0.2 → 1.2.24
    - Vulnerability: GHSA-r399-636x-v7f6 (Serialization Injection)
    - Type: Minor version update (requires testing)
+
+Note: preact patch skipped (package not used in this project)
 
 Installation Time: {datetime.now()}
 Backup Location: {config.backup_dir}
@@ -433,10 +448,7 @@ def main_update(config: Config) -> int:
     do_mcp = True
     do_langchain = True
 
-    if config.update_preact_only:
-        do_mcp = False
-        do_langchain = False
-    elif config.update_mcp_only:
+    if config.update_mcp_only:
         do_preact = False
         do_langchain = False
     elif config.update_langchain_only:
@@ -466,7 +478,6 @@ def run_security_updates(
     force_update: bool = False,
     dry_run: bool = False,
     verbose: bool = False,
-    preact_only: bool = False,
     mcp_only: bool = False,
     langchain_only: bool = False
 ) -> int:
@@ -478,7 +489,6 @@ def run_security_updates(
         force_update: Force updates even if tests fail
         dry_run: Show what would be done without making changes
         verbose: Enable verbose output
-        preact_only: Update only preact
         mcp_only: Update only MCP SDK
         langchain_only: Update only langchain
 
@@ -498,7 +508,6 @@ def run_security_updates(
         force_update=force_update,
         dry_run=dry_run,
         verbose=verbose,
-        update_preact_only=preact_only,
         update_mcp_only=mcp_only,
         update_langchain_only=langchain_only
     )
@@ -576,8 +585,11 @@ EXAMPLES:
     # Update without running tests
     python security_updates.py --skip-tests
 
-    # Update only preact
-    python security_updates.py --preact-only
+    # Update only MCP SDK
+    python security_updates.py --mcp-only
+
+    # Update only langchain
+    python security_updates.py --langchain-only
 """
     )
 
@@ -602,11 +614,6 @@ EXAMPLES:
         help="Enable verbose output"
     )
     parser.add_argument(
-        "-p", "--preact-only",
-        action="store_true",
-        help="Update only preact patch"
-    )
-    parser.add_argument(
         "-m", "--mcp-only",
         action="store_true",
         help="Update only MCP SDK patch"
@@ -624,7 +631,6 @@ EXAMPLES:
         force_update=args.force,
         dry_run=args.dry_run,
         verbose=args.verbose,
-        preact_only=args.preact_only,
         mcp_only=args.mcp_only,
         langchain_only=args.langchain_only
     )

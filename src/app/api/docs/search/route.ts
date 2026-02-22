@@ -1,14 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server';
-const docsIndex = { documents: [] as any[], metadata: { categories: [] as string[], totalDocuments: 0 } };
 import { validateQueryParams, validateRequestBody } from '@/lib/api/validation/middleware';
 import { docsSearchQuerySchema, docsSearchBodySchema } from '@/lib/api/validation/schemas';
 import { sanitizeSearchQuery } from '@/lib/api/validation/sanitize';
 import { createErrorResponse } from '@/lib/utils/api-response';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
+import { getCachedDocsIndex, cacheDocsIndex, OfflineTTL } from '@/lib/cache/offline-cache';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 export const dynamic = 'force-dynamic'
 
 const apiRateLimit = createAPIRateLimit(30); // 30 requests per minute
+
+// Documentation index type
+interface DocsIndex {
+  documents: any[];
+  metadata: {
+    categories: string[];
+    totalDocuments: number;
+    generated?: string;
+    totalWords?: number;
+  };
+}
+
+/**
+ * Load documentation index from file system or cache
+ * Uses offline cache for performance and offline mode support
+ */
+async function loadDocsIndex(): Promise<DocsIndex> {
+  // Try to get from cache first
+  const cached = getCachedDocsIndex<DocsIndex>();
+  if (cached) {
+    return cached;
+  }
+
+  // Load from file system
+  try {
+    const docsIndexPath = path.join(process.cwd(), 'public', 'docs-index.json');
+    const fileContent = await fs.readFile(docsIndexPath, 'utf-8');
+    const index = JSON.parse(fileContent) as DocsIndex;
+
+    // Cache for offline use
+    await cacheDocsIndex(index, {
+      ttl: OfflineTTL.DOCS,
+      source: '/docs-index.json',
+    });
+
+    return index;
+  } catch (error) {
+    // Failed to load docs-index.json, return empty index as fallback
+    return {
+      documents: [],
+      metadata: {
+        categories: [],
+        totalDocuments: 0,
+      },
+    };
+  }
+}
 
 // Response type definitions
 interface SearchResult {
@@ -71,6 +120,17 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('Query parameter "q" is required', 400, {
         code: 'INVALID_QUERY',
         detail: 'Search query cannot be empty after sanitization'
+      });
+    }
+
+    // Load documentation index (from cache or file system)
+    const docsIndex = await loadDocsIndex();
+
+    // Check if docs index is available
+    if (!docsIndex.documents || docsIndex.documents.length === 0) {
+      return createErrorResponse('Documentation index not available', 503, {
+        code: 'DOCS_UNAVAILABLE',
+        detail: 'Documentation index could not be loaded. Please try again later.'
       });
     }
 
@@ -150,10 +210,17 @@ export async function GET(request: NextRequest) {
       }
     };
 
-    return NextResponse.json(response);
+    // Add offline mode support headers
+    return NextResponse.json(response, {
+      headers: {
+        'X-Offline-Capable': 'true',
+        'X-Cache-Source': getCachedDocsIndex() ? 'cache' : 'filesystem',
+        'Cache-Control': 'public, max-age=3600',
+      },
+    });
 
   } catch (error) {
-    console.error('Documentation search error:', error);
+    // Error occurred during search operation
     return createErrorResponse('Failed to perform search', 500, {
       code: 'SEARCH_ERROR',
       detail: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -210,7 +277,7 @@ export async function POST(request: NextRequest) {
     return GET(new NextRequest(url));
 
   } catch (error) {
-    console.error('Documentation search POST error:', error);
+    // Error occurred during POST request processing
     return createErrorResponse('Failed to process search request', 400, {
       code: 'INVALID_REQUEST',
       detail: error instanceof Error ? error.message : 'Invalid request body'

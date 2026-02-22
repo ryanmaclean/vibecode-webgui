@@ -1,0 +1,319 @@
+vibecode-webgui@5.1.0-beta /Users/studio/Documents/harness/.auto-claude/worktrees/tasks/003-resolve-dependabot-security-updates
+├── UNMET DEPENDENCY @ai-sdk/openai@3.0.29
+├── UNMET DEPENDENCY @ai-sdk/react@3.0.88
+├── UNMET DEPENDENCY @axe-core/playwright@4.11.1
+├── UNMET DEPENDENCY @azure/cosmos@4.9.1
+├── UNMET DEPENDENCY @azure/identity@4.13.0
+├── UNMET DEPENDENCY @azure/storage-blob@12.31.0
+├── UNMET DEPENDENCY @azure/storage-queue@12.29.0
+├── UNMET DEPENDENCY @babel/preset-env@7.29.0
+├── UNMET DEPENDENCY @babel/preset-react@7.28.5
+├── UNMET DEPENDENCY @babel/preset-typescript@7.28.5
+├── UNMET DEPENDENCY @codemirror/lang-javascript@6.2.4
+├── UNMET DEPENDENCY @datadog/browser-logs@6.27.1
+├── UNMET DEPENDENCY @datadog/browser-rum@6.27.1
+├── UNMET DEPENDENCY @datadog/datadog-ci@5.7.0
+├── UNMET DEPENDENCY @emotion/react@11.14.0
+├── UNMET DEPENDENCY @emotion/styled@11.14.1
+├── UNMET DEPENDENCY @eslint/eslintrc@3.3.3
+├── UNMET DEPENDENCY @heroicons/react@2.2.0
+├── UNMET DEPENDENCY @huggingface/inference@4.13.12
+├── UNMET DEPENDENCY @kubernetes/client-node@1.4.0
+├── UNMET DEPENDENCY @langchain/core@1.1.24
+├── UNMET DEPENDENCY @langchain/openai@1.2.7
+├── UNMET DEPENDENCY @modelcontextprotocol/sdk@1.26.0
+├── UNMET DEPENDENCY @monaco-editor/react@4.7.0
+├── UNMET DEPENDENCY @mui/material@7.3.8
+├── UNMET DEPENDENCY @octokit/rest@22.0.1
+├── UNMET DEPENDENCY @openai/chatkit-react@1.5.0
+├── UNMET DEPENDENCY @openai/chatkit@1.6.0
+├── UNMET DEPENDENCY @opentelemetry/api@1.9.0
+├── UNMET DEPENDENCY @opentelemetry/auto-instrumentations-node@0.69.0
+├── UNMET DEPENDENCY @opentelemetry/core@2.5.1
+├── UNMET DEPENDENCY @opentelemetry/exporter-jaeger@2.5.1
+├── UNMET DEPENDENCY @opentelemetry/exporter-otlp-http@0.26.0
+├── UNMET DEPENDENCY @opentelemetry/exporter-prometheus@0.212.0
+├── UNMET DEPENDENCY @opentelemetry/instrumentation-express@0.59.0
+├── UNMET DEPENDENCY @opentelemetry/instrumentation-fs@0.30.0
+├── UNMET DEPENDENCY @opentelemetry/instrumentation-http@0.212.0
+├── UNMET DEPENDENCY @opentelemetry/instrumentation@0.212.0
+├── UNMET DEPENDENCY @opentelemetry/sdk-node@0.212.0
+├── UNMET DEPENDENCY @opentelemetry/sdk-trace-base@2.5.1
+├── UNMET DEPENDENCY @opentelemetry/semantic-conventions@1.39.0
+├── UNMET DEPENDENCY @playwright/test@1.58.2
+├── UNMET DEPENDENCY @prisma/client@6.19.2
+├── UNMET DEPENDENCY @radix-ui/react-label@2.1.8
+├── UNMET DEPENDENCY @radix-ui/react-progress@1.1.8
+├── UNMET DEPENDENCY @radix-ui/react-scroll-area@1.2.10
+├── UNMET DEPENDENCY @radix-ui/react-select@2.2.6
+├── UNMET DEPENDENCY @radix-ui/react-slot@^1.2.4
+├── UNMET DEPENDENCY @radix-ui/react-switch@1.2.6
+├── UNMET DEPENDENCY @radix-ui/react-tabs@1.1.13
+├── UNMET DEPENDENCY @tailwindcss/postcss@4.1.18
+├── UNMET DEPENDENCY @tauri-apps/cli@2.10.0
+├── UNMET DEPENDENCY @testing-library/dom@10.4.1
+├── UNMET DEPENDENCY @testing-library/jest-dom@6.9.1
+├── UNMET DEPENDENCY @testing-library/react@16.3.2
+├── UNMET DEPENDENCY @testing-library/user-event@14.6.1
+├── UNMET DEPENDENCY @types/jest@30.0.0
+├── UNMET DEPENDENCY @types/js-yaml@4.0.9
+├── UNMET DEPENDENCY @types/jsonwebtoken@9.0.10
+├── UNMET DEPENDENCY @types/mongodb@4.0.7
+├── UNMET DEPENDENCY @types/node@25.2.3
+├── UNMET DEPENDENCY @types/pg@8.16.0
+├── UNMET DEPENDENCY @types/qrcode@1.5.6
+├── UNMET DEPENDENCY @types/react-dom@19.2.3
+├── UNMET DEPENDENCY @types/react@19.2.14
+├── UNMET DEPENDENCY @types/speakeasy@2.0.10
+├── UNMET DEPENDENCY @types/ws@8.18.1
+├── UNMET DEPENDENCY @valkey/client@1.0.0
+├── UNMET DEPENDENCY @vercel/otel@2.1.0
+├── UNMET DEPENDENCY @xterm/addon-fit@0.11.0
+├── UNMET DEPENDENCY @xterm/addon-web-links@0.12.0
+├── UNMET DEPENDENCY @xterm/xterm@6.0.0
+├── UNMET DEPENDENCY ai@6.0.86
+├── UNMET DEPENDENCY async-mutex@0.5.0
+├── UNMET DEPENDENCY autoprefixer@10.4.24
+├── UNMET DEPENDENCY aws-sdk@2.1693.0
+├── UNMET DEPENDENCY axios@^1.13.4
+├── UNMET DEPENDENCY babel-jest@30.2.0
+├── UNMET DEPENDENCY bcryptjs@3.0.3
+├── UNMET DEPENDENCY chokidar@5.0.0
+├── UNMET DEPENDENCY chromadb@3.3.0
+├── UNMET DEPENDENCY chrome-launcher@1.2.1
+├── UNMET DEPENDENCY class-variance-authority@0.7.1
+├── UNMET DEPENDENCY clsx@2.1.1
+├── UNMET DEPENDENCY cross-env@10.1.0
+├── UNMET DEPENDENCY date-fns@4.1.0
+├── UNMET DEPENDENCY dd-trace@5.86.0
+├── UNMET DEPENDENCY dotenv@17.3.1
+├── UNMET DEPENDENCY esbuild-loader@4.4.2
+├── UNMET DEPENDENCY eslint-config-next@16.1.6
+├── UNMET DEPENDENCY eslint-plugin-jsx-a11y@6.10.2
+├── UNMET DEPENDENCY eslint@10.0.0
+├── UNMET DEPENDENCY framer-motion@12.34.0
+├── UNMET DEPENDENCY globals@17.3.0
+├── UNMET DEPENDENCY gray-matter@4.0.3
+├── UNMET DEPENDENCY hi-base32@0.5.1
+├── UNMET DEPENDENCY hot-shots@13.2.0
+├── UNMET DEPENDENCY husky@9.1.7
+├── UNMET DEPENDENCY ioredis@5.9.3
+├── UNMET DEPENDENCY jest-axe@10.0.0
+├── UNMET DEPENDENCY jest-environment-jsdom@30.2.0
+├── UNMET DEPENDENCY jest-junit@16.0.0
+├── UNMET DEPENDENCY jest-watch-typeahead@3.0.1
+├── UNMET DEPENDENCY jest@30.2.0
+├── UNMET DEPENDENCY jsonwebtoken@9.0.3
+├── kafkajs@2.2.4
+├── UNMET DEPENDENCY langchain@1.2.24
+├── UNMET DEPENDENCY lighthouse@13.0.3
+├── UNMET DEPENDENCY lightningcss@1.31.1
+├── UNMET DEPENDENCY lucide-react@0.564.0
+├── UNMET DEPENDENCY markdownlint-cli2@0.20.0
+├── UNMET DEPENDENCY marked@17.0.2
+├── UNMET DEPENDENCY monaco-editor@0.55.1
+├── UNMET DEPENDENCY monacopilot@1.2.12
+├── UNMET DEPENDENCY mongodb@7.1.0
+├── UNMET DEPENDENCY msw@2.12.10
+├── UNMET DEPENDENCY next-auth@4.24.13
+├── UNMET DEPENDENCY next-themes@0.4.6
+├── UNMET DEPENDENCY next@16.1.6
+├── UNMET DEPENDENCY node-pty@1.1.0
+├── UNMET DEPENDENCY node-statsd@0.1.1
+├── UNMET DEPENDENCY null-loader@4.0.1
+├── UNMET DEPENDENCY openai@6.22.0
+├── UNMET DEPENDENCY pg@8.18.0
+├── UNMET DEPENDENCY pino-datadog@2.0.2
+├── UNMET DEPENDENCY pino-pretty@13.1.3
+├── UNMET DEPENDENCY pino@10.3.1
+├── UNMET DEPENDENCY postcss@8.5.6
+├── UNMET DEPENDENCY prisma@6.19.2
+├── UNMET DEPENDENCY qrcode@1.5.4
+├── UNMET DEPENDENCY react-dom@19.2.4
+├── UNMET DEPENDENCY react-dropzone@14.4.0
+├── UNMET DEPENDENCY react-hook-form@7.71.1
+├── UNMET DEPENDENCY react-resizable-panels@4.6.4
+├── UNMET DEPENDENCY react-router-dom@7.13.0
+├── UNMET DEPENDENCY react-table@7.8.0
+├── UNMET DEPENDENCY react@19.2.4
+├── UNMET DEPENDENCY recharts@3.7.0
+├── UNMET DEPENDENCY redis@5.10.0
+├── UNMET DEPENDENCY socket.io-client@4.8.3
+├── UNMET DEPENDENCY socket.io@4.8.3
+├── UNMET DEPENDENCY sonner@2.0.7
+├── UNMET DEPENDENCY speakeasy@2.0.0
+├── UNMET DEPENDENCY tailwind-merge@3.4.0
+├── UNMET DEPENDENCY tailwindcss@4.1.18
+├── UNMET DEPENDENCY terser-webpack-plugin@5.3.16
+├── UNMET DEPENDENCY testcontainers@11.11.0
+├── UNMET DEPENDENCY tiktoken@1.0.22
+├── UNMET DEPENDENCY ts-node@10.9.2
+├── UNMET DEPENDENCY tsx@4.21.0
+├── UNMET DEPENDENCY typescript@5.9.3
+├── UNMET DEPENDENCY weaviate-ts-client@2.2.0
+├── UNMET DEPENDENCY winston@3.19.0
+├── UNMET DEPENDENCY ws@8.19.0
+├── UNMET DEPENDENCY y-websocket@3.0.0
+├── UNMET DEPENDENCY yjs@13.6.29
+├── UNMET DEPENDENCY zod@4.3.6
+└── UNMET DEPENDENCY zustand@5.0.11
+
+npm error code ELSPROBLEMS
+npm error missing: @ai-sdk/openai@3.0.29, required by vibecode-webgui@5.1.0-beta
+npm error missing: @ai-sdk/react@3.0.88, required by vibecode-webgui@5.1.0-beta
+npm error missing: @axe-core/playwright@4.11.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: @azure/cosmos@4.9.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: @azure/identity@4.13.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @azure/storage-blob@12.31.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @azure/storage-queue@12.29.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @babel/preset-env@7.29.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @babel/preset-react@7.28.5, required by vibecode-webgui@5.1.0-beta
+npm error missing: @babel/preset-typescript@7.28.5, required by vibecode-webgui@5.1.0-beta
+npm error missing: @codemirror/lang-javascript@6.2.4, required by vibecode-webgui@5.1.0-beta
+npm error missing: @datadog/browser-logs@6.27.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: @datadog/browser-rum@6.27.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: @datadog/datadog-ci@5.7.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @emotion/react@11.14.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @emotion/styled@11.14.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: @eslint/eslintrc@3.3.3, required by vibecode-webgui@5.1.0-beta
+npm error missing: @heroicons/react@2.2.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @huggingface/inference@4.13.12, required by vibecode-webgui@5.1.0-beta
+npm error missing: @kubernetes/client-node@1.4.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @langchain/core@1.1.24, required by vibecode-webgui@5.1.0-beta
+npm error missing: @langchain/openai@1.2.7, required by vibecode-webgui@5.1.0-beta
+npm error missing: @modelcontextprotocol/sdk@1.26.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @monaco-editor/react@4.7.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @mui/material@7.3.8, required by vibecode-webgui@5.1.0-beta
+npm error missing: @octokit/rest@22.0.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: @openai/chatkit-react@1.5.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @openai/chatkit@1.6.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @opentelemetry/api@1.9.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @opentelemetry/auto-instrumentations-node@0.69.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @opentelemetry/core@2.5.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: @opentelemetry/exporter-jaeger@2.5.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: @opentelemetry/exporter-otlp-http@0.26.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @opentelemetry/exporter-prometheus@0.212.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @opentelemetry/instrumentation-express@0.59.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @opentelemetry/instrumentation-fs@0.30.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @opentelemetry/instrumentation-http@0.212.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @opentelemetry/instrumentation@0.212.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @opentelemetry/sdk-node@0.212.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @opentelemetry/sdk-trace-base@2.5.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: @opentelemetry/semantic-conventions@1.39.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @playwright/test@1.58.2, required by vibecode-webgui@5.1.0-beta
+npm error missing: @prisma/client@6.19.2, required by vibecode-webgui@5.1.0-beta
+npm error missing: @radix-ui/react-label@2.1.8, required by vibecode-webgui@5.1.0-beta
+npm error missing: @radix-ui/react-progress@1.1.8, required by vibecode-webgui@5.1.0-beta
+npm error missing: @radix-ui/react-scroll-area@1.2.10, required by vibecode-webgui@5.1.0-beta
+npm error missing: @radix-ui/react-select@2.2.6, required by vibecode-webgui@5.1.0-beta
+npm error missing: @radix-ui/react-slot@^1.2.4, required by vibecode-webgui@5.1.0-beta
+npm error missing: @radix-ui/react-switch@1.2.6, required by vibecode-webgui@5.1.0-beta
+npm error missing: @radix-ui/react-tabs@1.1.13, required by vibecode-webgui@5.1.0-beta
+npm error missing: @tailwindcss/postcss@4.1.18, required by vibecode-webgui@5.1.0-beta
+npm error missing: @tauri-apps/cli@2.10.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @testing-library/dom@10.4.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: @testing-library/jest-dom@6.9.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: @testing-library/react@16.3.2, required by vibecode-webgui@5.1.0-beta
+npm error missing: @testing-library/user-event@14.6.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: @types/jest@30.0.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @types/js-yaml@4.0.9, required by vibecode-webgui@5.1.0-beta
+npm error missing: @types/jsonwebtoken@9.0.10, required by vibecode-webgui@5.1.0-beta
+npm error missing: @types/mongodb@4.0.7, required by vibecode-webgui@5.1.0-beta
+npm error missing: @types/node@25.2.3, required by vibecode-webgui@5.1.0-beta
+npm error missing: @types/pg@8.16.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @types/qrcode@1.5.6, required by vibecode-webgui@5.1.0-beta
+npm error missing: @types/react-dom@19.2.3, required by vibecode-webgui@5.1.0-beta
+npm error missing: @types/react@19.2.14, required by vibecode-webgui@5.1.0-beta
+npm error missing: @types/speakeasy@2.0.10, required by vibecode-webgui@5.1.0-beta
+npm error missing: @types/ws@8.18.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: @valkey/client@1.0.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @vercel/otel@2.1.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @xterm/addon-fit@0.11.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @xterm/addon-web-links@0.12.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: @xterm/xterm@6.0.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: ai@6.0.86, required by vibecode-webgui@5.1.0-beta
+npm error missing: async-mutex@0.5.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: autoprefixer@10.4.24, required by vibecode-webgui@5.1.0-beta
+npm error missing: aws-sdk@2.1693.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: axios@^1.13.4, required by vibecode-webgui@5.1.0-beta
+npm error missing: babel-jest@30.2.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: bcryptjs@3.0.3, required by vibecode-webgui@5.1.0-beta
+npm error missing: chokidar@5.0.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: chromadb@3.3.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: chrome-launcher@1.2.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: class-variance-authority@0.7.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: clsx@2.1.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: cross-env@10.1.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: date-fns@4.1.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: dd-trace@5.86.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: dotenv@17.3.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: esbuild-loader@4.4.2, required by vibecode-webgui@5.1.0-beta
+npm error missing: eslint-config-next@16.1.6, required by vibecode-webgui@5.1.0-beta
+npm error missing: eslint-plugin-jsx-a11y@6.10.2, required by vibecode-webgui@5.1.0-beta
+npm error missing: eslint@10.0.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: framer-motion@12.34.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: globals@17.3.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: gray-matter@4.0.3, required by vibecode-webgui@5.1.0-beta
+npm error missing: hi-base32@0.5.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: hot-shots@13.2.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: husky@9.1.7, required by vibecode-webgui@5.1.0-beta
+npm error missing: ioredis@5.9.3, required by vibecode-webgui@5.1.0-beta
+npm error missing: jest-axe@10.0.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: jest-environment-jsdom@30.2.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: jest-junit@16.0.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: jest-watch-typeahead@3.0.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: jest@30.2.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: jsonwebtoken@9.0.3, required by vibecode-webgui@5.1.0-beta
+npm error missing: langchain@1.2.24, required by vibecode-webgui@5.1.0-beta
+npm error missing: lighthouse@13.0.3, required by vibecode-webgui@5.1.0-beta
+npm error missing: lightningcss@1.31.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: lucide-react@0.564.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: markdownlint-cli2@0.20.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: marked@17.0.2, required by vibecode-webgui@5.1.0-beta
+npm error missing: monaco-editor@0.55.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: monacopilot@1.2.12, required by vibecode-webgui@5.1.0-beta
+npm error missing: mongodb@7.1.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: msw@2.12.10, required by vibecode-webgui@5.1.0-beta
+npm error missing: next-auth@4.24.13, required by vibecode-webgui@5.1.0-beta
+npm error missing: next-themes@0.4.6, required by vibecode-webgui@5.1.0-beta
+npm error missing: next@16.1.6, required by vibecode-webgui@5.1.0-beta
+npm error missing: node-pty@1.1.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: node-statsd@0.1.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: null-loader@4.0.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: openai@6.22.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: pg@8.18.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: pino-datadog@2.0.2, required by vibecode-webgui@5.1.0-beta
+npm error missing: pino-pretty@13.1.3, required by vibecode-webgui@5.1.0-beta
+npm error missing: pino@10.3.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: postcss@8.5.6, required by vibecode-webgui@5.1.0-beta
+npm error missing: prisma@6.19.2, required by vibecode-webgui@5.1.0-beta
+npm error missing: qrcode@1.5.4, required by vibecode-webgui@5.1.0-beta
+npm error missing: react-dom@19.2.4, required by vibecode-webgui@5.1.0-beta
+npm error missing: react-dropzone@14.4.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: react-hook-form@7.71.1, required by vibecode-webgui@5.1.0-beta
+npm error missing: react-resizable-panels@4.6.4, required by vibecode-webgui@5.1.0-beta
+npm error missing: react-router-dom@7.13.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: react-table@7.8.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: react@19.2.4, required by vibecode-webgui@5.1.0-beta
+npm error missing: recharts@3.7.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: redis@5.10.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: socket.io-client@4.8.3, required by vibecode-webgui@5.1.0-beta
+npm error missing: socket.io@4.8.3, required by vibecode-webgui@5.1.0-beta
+npm error missing: sonner@2.0.7, required by vibecode-webgui@5.1.0-beta
+npm error missing: speakeasy@2.0.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: tailwind-merge@3.4.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: tailwindcss@4.1.18, required by vibecode-webgui@5.1.0-beta
+npm error missing: terser-webpack-plugin@5.3.16, required by vibecode-webgui@5.1.0-beta
+npm error missing: testcontainers@11.11.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: tiktoken@1.0.22, required by vibecode-webgui@5.1.0-beta
+npm error missing: ts-node@10.9.2, required by vibecode-webgui@5.1.0-beta
+npm error missing: tsx@4.21.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: typescript@5.9.3, required by vibecode-webgui@5.1.0-beta
+npm error missing: weaviate-ts-client@2.2.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: winston@3.19.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: ws@8.19.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: y-websocket@3.0.0, required by vibecode-webgui@5.1.0-beta
+npm error missing: yjs@13.6.29, required by vibecode-webgui@5.1.0-beta
+npm error missing: zod@4.3.6, required by vibecode-webgui@5.1.0-beta
+npm error missing: zustand@5.0.11, required by vibecode-webgui@5.1.0-beta
+npm error A complete log of this run can be found in: /Users/studio/.npm/_logs/2026-02-15T00_04_32_803Z-debug-0.log
