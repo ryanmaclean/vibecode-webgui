@@ -2,7 +2,8 @@
  * Offline Setup Page
  *
  * Guide users through setting up Ollama for offline/air-gapped coding.
- * Shows Ollama status, installed models, and recommended models for offline use.
+ * Shows Ollama status, installed models, recommended models, and vector DB readiness.
+ * Includes a wizard-style interface with readiness scoring.
  */
 
 'use client'
@@ -12,6 +13,41 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ollamaClient, OFFLINE_CODING_MODELS, type OfflineReadinessStatus } from '@/lib/ollama-client'
 
+interface FeatureAvailabilityStatus {
+  ai: {
+    status: string
+    available: boolean
+    ollamaAvailable: boolean
+    installedModels: string[]
+    recommendedModels: string[]
+    missingModels: string[]
+    hasRecommendedModel: boolean
+    modelCount: number
+  }
+  vectorDb: {
+    status: string
+    available: boolean
+    connected: boolean
+    pgVectorInstalled: boolean
+    provider: string
+  }
+  cache: {
+    status: string
+    available: boolean
+    enabled: boolean
+    backend?: string
+  }
+  templates: {
+    status: string
+    available: boolean
+    templateCount: number
+    localOnly: boolean
+  }
+  offlineReady: boolean
+  availableFeatures: string[]
+  unavailableFeatures: string[]
+}
+
 interface ModelCardProps {
   model: string
   size: number
@@ -20,6 +56,97 @@ interface ModelCardProps {
   recommended: boolean
   onInstall?: () => void
   installing?: boolean
+}
+
+interface WizardStepProps {
+  number: number
+  title: string
+  status: 'completed' | 'active' | 'pending'
+  description: string
+}
+
+function WizardStep({ number, title, status, description }: WizardStepProps) {
+  const getStatusColor = () => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-500'
+      case 'active':
+        return 'bg-primary'
+      case 'pending':
+        return 'bg-gray-300 dark:bg-gray-600'
+    }
+  }
+
+  const getTextColor = () => {
+    switch (status) {
+      case 'completed':
+      case 'active':
+        return 'text-foreground'
+      case 'pending':
+        return 'text-muted-foreground'
+    }
+  }
+
+  return (
+    <div className="flex items-start gap-3">
+      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${getStatusColor()} text-sm font-semibold text-white`}>
+        {status === 'completed' ? '✓' : number}
+      </div>
+      <div className="flex-1">
+        <h3 className={`font-semibold ${getTextColor()}`}>{title}</h3>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+    </div>
+  )
+}
+
+interface ReadinessScoreProps {
+  score: number
+  total: number
+}
+
+function ReadinessScore({ score, total }: ReadinessScoreProps) {
+  const percentage = Math.round((score / total) * 100)
+  const isReady = percentage >= 50 // At least 50% ready for basic offline use
+
+  const getScoreColor = () => {
+    if (percentage >= 75) return 'text-green-500'
+    if (percentage >= 50) return 'text-yellow-500'
+    return 'text-red-500'
+  }
+
+  const getProgressColor = () => {
+    if (percentage >= 75) return 'bg-green-500'
+    if (percentage >= 50) return 'bg-yellow-500'
+    return 'bg-red-500'
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-foreground">Offline Readiness</h2>
+        <div className={`text-3xl font-bold ${getScoreColor()}`}>
+          {percentage}%
+        </div>
+      </div>
+      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-4">
+        <div
+          className={`h-3 rounded-full ${getProgressColor()} transition-all duration-500`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+      <p className="text-sm text-muted-foreground">
+        {isReady
+          ? '✓ Your system is ready for offline use!'
+          : `Complete ${total - score} more step${total - score === 1 ? '' : 's'} to enable full offline capability.`}
+      </p>
+      <div className="mt-4 pt-4 border-t border-border">
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium">Status:</span> {score} of {total} requirements met
+        </p>
+      </div>
+    </div>
+  )
 }
 
 function ModelCard({ model, size, description, installed, recommended, onInstall, installing }: ModelCardProps) {
@@ -62,6 +189,7 @@ function ModelCard({ model, size, description, installed, recommended, onInstall
 
 export default function OfflineSetupPage() {
   const [status, setStatus] = useState<OfflineReadinessStatus | null>(null)
+  const [featureStatus, setFeatureStatus] = useState<FeatureAvailabilityStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [installingModel, setInstallingModel] = useState<string | null>(null)
@@ -70,10 +198,19 @@ export default function OfflineSetupPage() {
     try {
       setLoading(true)
       setError(null)
+
+      // Fetch Ollama readiness status
       const readiness = await ollamaClient.checkOfflineReadiness()
       setStatus(readiness)
+
+      // Fetch comprehensive feature availability from API
+      const response = await fetch('/api/offline/status')
+      if (response.ok) {
+        const data = await response.json()
+        setFeatureStatus(data.features)
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to check Ollama status')
+      setError(err instanceof Error ? err.message : 'Failed to check offline status')
     } finally {
       setLoading(false)
     }
@@ -133,9 +270,89 @@ export default function OfflineSetupPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-8">
+        {/* Readiness Score */}
+        {status && featureStatus && (
+          <section className="mb-8">
+            <ReadinessScore
+              score={
+                (status.ollamaAvailable ? 1 : 0) +
+                (status.checks.hasModels ? 1 : 0) +
+                (featureStatus.vectorDb.available ? 1 : 0) +
+                (featureStatus.cache.available ? 1 : 0)
+              }
+              total={4}
+            />
+          </section>
+        )}
+
+        {/* Setup Wizard Steps */}
+        <section className="mb-8">
+          <h2 className="text-xl font-semibold text-foreground mb-4">Setup Wizard</h2>
+          <div className="space-y-4">
+            <WizardStep
+              number={1}
+              title="Install Ollama"
+              status={status?.ollamaAvailable ? 'completed' : 'active'}
+              description={
+                status?.ollamaAvailable
+                  ? 'Ollama is installed and running'
+                  : 'Install Ollama to enable local AI models'
+              }
+            />
+            <WizardStep
+              number={2}
+              title="Download AI Models"
+              status={
+                status?.checks.hasModels
+                  ? 'completed'
+                  : status?.ollamaAvailable
+                  ? 'active'
+                  : 'pending'
+              }
+              description={
+                status?.checks.hasModels
+                  ? `${status.installedModels.length} model${status.installedModels.length === 1 ? '' : 's'} installed`
+                  : 'Download at least one recommended model for offline use'
+              }
+            />
+            <WizardStep
+              number={3}
+              title="Vector Database"
+              status={
+                featureStatus?.vectorDb.available
+                  ? 'completed'
+                  : status?.checks.hasModels
+                  ? 'active'
+                  : 'pending'
+              }
+              description={
+                featureStatus?.vectorDb.available
+                  ? `Vector DB (${featureStatus.vectorDb.provider}) is connected`
+                  : 'Local vector database for code search and embeddings'
+              }
+            />
+            <WizardStep
+              number={4}
+              title="Cache System"
+              status={
+                featureStatus?.cache.available
+                  ? 'completed'
+                  : featureStatus?.vectorDb.available
+                  ? 'active'
+                  : 'pending'
+              }
+              description={
+                featureStatus?.cache.available
+                  ? `Cache enabled (${featureStatus.cache.backend})`
+                  : 'Optional caching for improved performance'
+              }
+            />
+          </div>
+        </section>
+
         {/* Status Overview */}
         <section className="mb-8">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Ollama Status</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-4">System Status</h2>
           <div className="rounded-lg border border-border bg-card p-6">
             {error ? (
               <div className="text-sm text-destructive">
@@ -195,6 +412,46 @@ export default function OfflineSetupPage() {
             ) : null}
           </div>
         </section>
+
+        {/* Vector Database Status */}
+        {featureStatus && (
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-foreground mb-4">Vector Database</h2>
+            <div className="rounded-lg border border-border bg-card p-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className={`h-3 w-3 rounded-full ${featureStatus.vectorDb.available ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <span className="text-sm font-medium text-foreground">
+                    Status: {featureStatus.vectorDb.available ? 'Connected' : 'Not Available'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className={`h-3 w-3 rounded-full ${featureStatus.vectorDb.connected ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <span className="text-sm font-medium text-foreground">
+                    Database Connection: {featureStatus.vectorDb.connected ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className={`h-3 w-3 rounded-full ${featureStatus.vectorDb.pgVectorInstalled ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <span className="text-sm font-medium text-foreground">
+                    pgvector Extension: {featureStatus.vectorDb.pgVectorInstalled ? 'Installed' : 'Not Installed'}
+                  </span>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-border">
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium">Provider:</span> {featureStatus.vectorDb.provider}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Vector database enables semantic code search and AI-powered embeddings for offline use.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Ollama Not Available Message */}
         {status && !status.ollamaAvailable && (
