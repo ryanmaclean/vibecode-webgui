@@ -3,7 +3,7 @@
   "spec": "049-plugin-extension-ecosystem",
   "state": "building",
   "subtasks": {
-    "completed": 18,
+    "completed": 21,
     "total": 22,
     "in_progress": 1,
     "failed": 0
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 20,
+    "number": 23,
     "started_at": "2026-02-21T22:08:15.694140"
   },
-  "last_update": "2026-02-21T23:14:50.742094"
+  "last_update": "2026-02-21T23:23:42.414705"
 }
