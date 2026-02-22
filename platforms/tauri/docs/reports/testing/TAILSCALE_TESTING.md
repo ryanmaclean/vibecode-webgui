@@ -450,7 +450,7 @@ cargo build
 ### Documentation
 - [Tailscale Docs](https://tailscale.com/kb/)
 - [Zero-Trust Architecture](../ZERO_TRUST_ARCHITECTURE.md)
-- [Tauri Commands Guide](https://tauri.app/v1/guides/features/command)
+- [Tauri Commands Guide](https://v2.tauri.app/develop/calling-rust/)
 - [WireGuard Documentation](https://www.wireguard.com/)
 
 ### Related Files
