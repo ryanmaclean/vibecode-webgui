@@ -15,7 +15,7 @@ on:
 
 # FIX #2: Concurrency Control - Include workflow inputs for unique concurrency groups
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.version }}-${{ inputs.profiles }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.inputs.version || 'manual' }}-${{ github.event.inputs.profiles || 'default' }}
   cancel-in-progress: true
 
 env:
@@ -33,7 +33,7 @@ jobs:
 
     strategy:
       matrix:
-        profile: ${{ fromJSON(format('["{0}"]', replace(inputs.profiles, ',', '","'))) }}
+        profile: ${{ fromJSON(format('["{0}"]', replace(github.event.inputs.profiles || 'default', ',', '","'))) }}
 
     steps:
       - name: Checkout repository
@@ -56,14 +56,14 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           # FIX #1: Tag Uniqueness - Include run_id and commit SHA for traceability
           tags: |
-            type=raw,value=${{ inputs.version }}-${{ github.run_id }}-${{ github.sha }}
-            type=raw,value=${{ inputs.version }}-${{ matrix.profile }}
-            type=raw,value=${{ inputs.version }}
+            type=raw,value=${{ github.event.inputs.version || 'manual' }}-${{ github.run_id }}-${{ github.sha }}
+            type=raw,value=${{ github.event.inputs.version || 'manual' }}-${{ matrix.profile }}
+            type=raw,value=${{ github.event.inputs.version || 'manual' }}
             type=raw,value=latest,enable=${{ matrix.profile == 'default' }}
           labels: |
             org.opencontainers.image.title=Codeserver
             org.opencontainers.image.description=Code-server container with various profiles
-            org.opencontainers.image.version=${{ inputs.version }}
+            org.opencontainers.image.version=${{ github.event.inputs.version || 'manual' }}
             org.opencontainers.image.revision=${{ github.sha }}
             profile=${{ matrix.profile }}
 
@@ -77,7 +77,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VERSION=${{ inputs.version }}
+            VERSION=${{ github.event.inputs.version || 'manual' }}
             PROFILE=${{ matrix.profile }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -90,7 +90,7 @@ jobs:
 
       - name: Generate SBOM
         run: |
-          syft scan ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ inputs.version }}-${{ github.run_id }}-${{ github.sha }} \
+          syft scan ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.version || 'manual' }}-${{ github.run_id }}-${{ github.sha }} \
             -o spdx-json \
             --file sbom-${{ matrix.profile }}.json
         continue-on-error: false
@@ -146,7 +146,7 @@ jobs:
       - name: Upload SBOM Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sbom-${{ inputs.version }}-${{ matrix.profile }}-${{ github.run_id }}
+          name: sbom-${{ github.event.inputs.version || 'manual' }}-${{ matrix.profile }}-${{ github.run_id }}
           path: sbom-${{ matrix.profile }}.json
           retention-days: 90
 
@@ -165,7 +165,7 @@ jobs:
                 "type": "count",
                 "points": [[$(date +%s), 1]],
                 "tags": [
-                  "version:${{ inputs.version }}",
+                  "version:${{ github.event.inputs.version || 'manual' }}",
                   "profile:${{ matrix.profile }}",
                   "status:${{ job.status }}",
                   "workflow:${{ github.workflow }}",
@@ -187,11 +187,11 @@ jobs:
         run: |
           echo "## Codeserver Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Profiles:** ${{ inputs.profiles }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ github.event.inputs.version || 'manual' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Profiles:** ${{ github.event.inputs.profiles || 'default' }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "**Run ID:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Image Tags" >> $GITHUB_STEP_SUMMARY
-          echo "- \`${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ inputs.version }}-${{ github.run_id }}-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ inputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.version || 'manual' }}-${{ github.run_id }}-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.version || 'manual' }}\`" >> $GITHUB_STEP_SUMMARY
