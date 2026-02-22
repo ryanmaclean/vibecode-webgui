@@ -286,7 +286,8 @@ export function useAIStream(config: AIStreamConfig = {}): UseAIStreamReturn {
       } catch (err) {
         // Only handle as error if not aborted (cancellation is intentional)
         if (err instanceof Error && err.name === 'AbortError') {
-          // Stream was canceled, not an error
+          // Stream was canceled, not an error - just update streaming state
+          setIsStreaming(false)
           return
         }
 
