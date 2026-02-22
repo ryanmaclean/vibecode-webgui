@@ -16,6 +16,12 @@ import type {
   ConfirmationApprovedEvent,
   ConfirmationRejectedEvent,
 } from '../../../types/agent-confirmation';
+import {
+  OperationInterceptor,
+  type OperationInterceptorOptions,
+  InterceptorEvent,
+} from '../operations/interceptor';
+import type { ToolCall } from '../core';
 
 // Event types
 export enum ConfirmationEvent {
@@ -34,6 +40,15 @@ export interface ConfirmationServiceOptions {
 
   /** Whether to auto-cleanup expired confirmations */
   autoCleanupExpired?: boolean;
+
+  /** Operation interceptor instance (created if not provided) */
+  interceptor?: OperationInterceptor;
+
+  /** Operation interceptor configuration (used if interceptor not provided) */
+  interceptorOptions?: OperationInterceptorOptions;
+
+  /** Whether to enable automatic interception of tool calls */
+  enableAutoInterception?: boolean;
 }
 
 /**
@@ -86,6 +101,8 @@ export class ConfirmationService extends EventEmitter {
   private defaultTimeout: number;
   private maxPendingConfirmations: number;
   private autoCleanupExpired: boolean;
+  private interceptor: OperationInterceptor;
+  private autoInterceptionEnabled: boolean;
 
   constructor(options: ConfirmationServiceOptions = {}) {
     super();
@@ -94,6 +111,19 @@ export class ConfirmationService extends EventEmitter {
     this.defaultTimeout = options.defaultTimeout ?? 300000; // 5 minutes default
     this.maxPendingConfirmations = options.maxPendingConfirmations ?? 50;
     this.autoCleanupExpired = options.autoCleanupExpired ?? true;
+    this.autoInterceptionEnabled = options.enableAutoInterception ?? true;
+
+    // Initialize or use provided interceptor
+    this.interceptor = options.interceptor ?? new OperationInterceptor(
+      options.interceptorOptions ?? {}
+    );
+
+    // Wire up interceptor events to confirmation events
+    this.interceptor.on(InterceptorEvent.OperationDetected, (event) => {
+      // Auto-interception is handled via interceptToolCall method
+      // This event is just forwarded for observability
+      this.emit('operation_detected', event);
+    });
   }
 
   /**
@@ -166,6 +196,94 @@ export class ConfirmationService extends EventEmitter {
     this.emit(ConfirmationEvent.ConfirmationRequired, event);
 
     return request;
+  }
+
+  /**
+   * Intercept a tool call and request confirmation if destructive
+   *
+   * Analyzes the tool call using the OperationInterceptor and automatically
+   * requests confirmation if a destructive operation is detected.
+   *
+   * @param agentId - ID of the agent making the tool call
+   * @param toolCall - The tool call to intercept
+   * @param params - Parsed parameters for the tool call
+   * @returns Confirmation request if operation requires confirmation, null otherwise
+   */
+  async interceptToolCall(
+    agentId: string,
+    toolCall: ToolCall,
+    params: Record<string, any>
+  ): Promise<ConfirmationRequest | null> {
+    // Skip if auto-interception is disabled
+    if (!this.autoInterceptionEnabled) {
+      return null;
+    }
+
+    // Analyze tool call for destructive operations
+    const detection = this.interceptor.analyzeToolCall(toolCall, params);
+
+    // If no destructive operation detected, allow execution
+    if (!detection || !detection.requires_confirmation) {
+      return null;
+    }
+
+    // Build action preview from detection
+    const actionPreview: ActionPreview = {
+      action_id: detection.detection_id,
+      action_type: detection.action_type,
+      tool_name: detection.tool_name,
+      file_path: detection.file_path,
+      explanation: `${detection.risk_reason} (${detection.action_type})`,
+      created_at: detection.detected_at,
+    };
+
+    // Add diff preview if available in metadata
+    const metadata = detection.metadata as {
+      old_content?: string;
+      new_content?: string;
+      content?: string;
+      language?: string;
+    };
+
+    if (metadata.old_content && metadata.new_content) {
+      actionPreview.diff = {
+        old_content: metadata.old_content,
+        new_content: metadata.new_content,
+        language: metadata.language,
+        lines_added: this.countLines(metadata.new_content) - this.countLines(metadata.old_content),
+        lines_removed: Math.max(0, this.countLines(metadata.old_content) - this.countLines(metadata.new_content)),
+      };
+    } else if (metadata.content) {
+      // For file writes without old content, show the new content
+      actionPreview.diff = {
+        old_content: '',
+        new_content: metadata.content,
+        language: metadata.language,
+        lines_added: this.countLines(metadata.content),
+        lines_removed: 0,
+      };
+    }
+
+    // Request confirmation with detected risk level
+    const confirmationRequest = await this.requestConfirmation(
+      agentId,
+      actionPreview,
+      {
+        timeout: this.defaultTimeout,
+        bulkApprovable: detection.action_type !== 'file_delete', // Deletions not bulk-approvable
+        riskLevel: detection.risk_level,
+      }
+    );
+
+    return confirmationRequest;
+  }
+
+  /**
+   * Count number of lines in a string
+   */
+  private countLines(content: string): number {
+    if (!content) return 0;
+    return content.split('\n').length;
   }
 
   /**
@@ -583,6 +701,46 @@ export class ConfirmationService extends EventEmitter {
     }
 
     return prisma.confirmationRequest.count({ where });
+  }
+
+  /**
+   * Get the operation interceptor instance
+   *
+   * Allows external configuration of critical paths and operation patterns.
+   *
+   * @returns The operation interceptor
+   */
+  getInterceptor(): OperationInterceptor {
+    return this.interceptor;
+  }
+
+  /**
+   * Enable automatic interception of tool calls
+   *
+   * When enabled, all tool calls will be analyzed for destructive operations
+   * and confirmations will be requested automatically.
+   */
+  enableAutoInterception(): void {
+    this.autoInterceptionEnabled = true;
+  }
+
+  /**
+   * Disable automatic interception of tool calls
+   *
+   * When disabled, interceptToolCall will return null and no automatic
+   * confirmations will be created. Manual requestConfirmation calls still work.
+   */
+  disableAutoInterception(): void {
+    this.autoInterceptionEnabled = false;
+  }
+
+  /**
+   * Check if automatic interception is enabled
+   *
+   * @returns true if auto-interception is enabled
+   */
+  isAutoInterceptionEnabled(): boolean {
+    return this.autoInterceptionEnabled;
   }
 }
 
