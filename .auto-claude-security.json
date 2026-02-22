@@ -6,8 +6,8 @@
     "ag",
     "awk",
     "basename",
+    "bash",
     "bc",
-    "bg",
     "break",
     "cat",
     "cd",
@@ -30,13 +30,14 @@
     "echo",
     "egrep",
     "env",
+    "eval",
+    "exec",
     "exit",
     "expand",
     "export",
     "expr",
     "false",
     "fd",
-    "fg",
     "fgrep",
     "file",
     "find",
@@ -91,9 +92,11 @@
     "sed",
     "seq",
     "set",
+    "sh",
     "shuf",
     "sleep",
     "sort",
+    "source",
     "split",
     "stat",
     "tail",
@@ -121,7 +124,8 @@
     "xargs",
     "yes",
     "yq",
-    "zip"
+    "zip",
+    "zsh"
   ],
   "stack_commands": [
     "ant",
@@ -149,8 +153,6 @@
     "cmake",
     "composer",
     "cross",
-    "docker",
-    "docker-compose",
     "dotnet",
     "erb",
     "g++",
@@ -165,7 +167,6 @@
     "gotests",
     "gradle",
     "gradlew",
-    "helm",
     "ipython",
     "irb",
     "jar",
@@ -223,8 +224,7 @@
     "tsx",
     "wasm-bindgen",
     "wasm-pack",
-    "xcodebuild",
-    "yarn"
+    "xcodebuild"
   ],
   "script_commands": [],
   "custom_commands": [],
@@ -262,8 +262,8 @@
     "cargo_aliases": [],
     "shell_scripts": []
   },
-  "project_dir": ".",
+  "project_dir": "/Users/studio/Documents/harness",
   "created_at": "2026-02-14T16:40:46.822637",
   "project_hash": "e1bd6907055e9666b61d3a0307998ae5",
-  "inherited_from": "."
+  "inherited_from": "/Users/studio/Documents/harness"
 }
