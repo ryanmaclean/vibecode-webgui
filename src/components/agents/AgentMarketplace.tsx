@@ -11,6 +11,7 @@
  * - Installation workflow
  * - Agent previews
  * - Accessibility compliant (WCAG 2.1 AA)
+ * - Virtualized grid rendering for performance (useVirtualGrid)
  *
  * @module components/agents/AgentMarketplace
  */
@@ -19,12 +20,11 @@
 
 import React, { useState, useMemo, useCallback } from 'react'
 import {
-Store,
+  Store,
   Search,
   Star,
   Download,
   Eye,
-  Filter,
   TrendingUp,
   Clock,
   Users,
@@ -34,9 +34,9 @@ Store,
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
+import { useVirtualGrid } from '@/hooks/useVirtualGrid'
 // import { logger } from '@/lib/logger';
 
 // ============================================================================
@@ -281,6 +281,12 @@ export function AgentMarketplace({
     featured: agents.filter(a => a.isFeatured).length
   }), [agents])
 
+  // Virtual grid: virtualizes agent card rows for smooth scrolling performance
+  const { parentRef, virtualRows, columnCount, totalHeight, measureRef } = useVirtualGrid({
+    count: filteredAgents.length,
+    estimateSize: 280,
+  })
+
   return (
     <div className={cn("flex flex-col h-full", className)}>
       <Card className="mb-6">
@@ -378,48 +384,78 @@ export function AgentMarketplace({
         </CardContent>
       </Card>
 
-      {/* Category Tabs */}
-      <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-5">
-          {CATEGORIES.map((category) => {
-            const Icon = category.icon
-            return (
-              <TabsTrigger key={category.id} value={category.id} className="gap-1">
-                <Icon className="h-4 w-4" aria-hidden="true" />
-                {category.name}
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
+      {/* Category Tabs (selection only) + Virtualized Agent Grid */}
+      <div className="flex-1 flex flex-col">
+        <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
+          <TabsList className="grid w-full grid-cols-5">
+            {CATEGORIES.map((category) => {
+              const Icon = category.icon
+              return (
+                <TabsTrigger key={category.id} value={category.id} className="gap-1">
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                  {category.name}
+                </TabsTrigger>
+              )
+            })}
+          </TabsList>
+        </Tabs>
 
-        {CATEGORIES.map((category) => (
-          <TabsContent key={category.id} value={category.id} className="flex-1 mt-4">
-            <ScrollArea className="h-[600px]">
-              {filteredAgents.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                  <Store className="h-12 w-12 text-muted-foreground/50 mb-4" aria-hidden="true" />
-                  <p className="text-sm text-muted-foreground">
-                    {searchQuery
-                      ? 'No agents match your search'
-                      : 'No agents available in this category'}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
-                  {filteredAgents.map((agent) => (
-                    <AgentCard
-                      key={agent.id}
-                      agent={agent}
-                      onInstall={onInstall}
-                      onPreview={onPreview ? () => onPreview(agent) : undefined}
-                    />
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </TabsContent>
-        ))}
-      </Tabs>
+        <div className="flex-1 mt-4">
+          {filteredAgents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+              <Store className="h-12 w-12 text-muted-foreground/50 mb-4" aria-hidden="true" />
+              <p className="text-sm text-muted-foreground">
+                {searchQuery
+                  ? 'No agents match your search'
+                  : 'No agents available in this category'}
+              </p>
+            </div>
+          ) : (
+            /* Virtualized scroll container — only visible rows are in the DOM */
+            <div
+              ref={parentRef}
+              style={{ height: 600, overflow: 'auto' }}
+              aria-label="Agent list"
+            >
+              <div style={{ height: totalHeight, position: 'relative' }}>
+                {virtualRows.map((virtualRow) => {
+                  const startIndex = virtualRow.index * columnCount
+                  return (
+                    <div
+                      key={virtualRow.key}
+                      ref={measureRef(virtualRow.index)}
+                      data-index={virtualRow.index}
+                      style={{
+                        position: 'absolute',
+                        top: virtualRow.start,
+                        width: '100%',
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
+                        gap: '1rem',
+                        paddingBottom: virtualRow.index === Math.ceil(filteredAgents.length / columnCount) - 1 ? '1rem' : undefined,
+                      }}
+                    >
+                      {Array.from({ length: columnCount }, (_, col) => {
+                        const itemIndex = startIndex + col
+                        if (itemIndex >= filteredAgents.length) return null
+                        const agent = filteredAgents[itemIndex]
+                        return (
+                          <AgentCard
+                            key={agent.id}
+                            agent={agent}
+                            onInstall={onInstall}
+                            onPreview={onPreview ? () => onPreview(agent) : undefined}
+                          />
+                        )
+                      })}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
