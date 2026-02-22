@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import type {
   AiProvider,
@@ -24,6 +24,7 @@ type OnboardingStep =
   | 'extensions'
   | 'integrations'
   | 'ai'
+  | 'essentials'
   | 'complete'
 
 type OnboardingData = UserPreferences
@@ -39,6 +40,12 @@ const steps: OnboardingStep[] = [
   'complete',
 ]
 
+const quickSteps: OnboardingStep[] = [
+  'welcome',
+  'essentials',
+  'complete',
+]
+
 const stepLabels: Record<Exclude<OnboardingStep, 'complete'>, string> = {
   welcome: 'Welcome',
   theme: 'Theme',
@@ -47,6 +54,7 @@ const stepLabels: Record<Exclude<OnboardingStep, 'complete'>, string> = {
   extensions: 'Extensions',
   integrations: 'Integrations',
   ai: 'AI',
+  essentials: 'Essentials',
 }
 
 const extensionCatalog: { id: string; name: string; description: string }[] = [
@@ -116,6 +124,9 @@ const aiProviderOptions: { id: AiProvider; label: string; description: string }[
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const isQuickMode = searchParams.get('mode') === 'quick'
+  const activeSteps = isQuickMode ? quickSteps : steps
   const [step, setStep] = useState<OnboardingStep>('welcome')
   const {
     preferences: storedPreferences,
@@ -178,16 +189,16 @@ export default function OnboardingPage() {
   }
 
   const nextStep = () => {
-    const currentIndex = steps.indexOf(step)
-    if (currentIndex < steps.length - 1) {
-      setStep(steps[currentIndex + 1])
+    const currentIndex = activeSteps.indexOf(step)
+    if (currentIndex < activeSteps.length - 1) {
+      setStep(activeSteps[currentIndex + 1])
     }
   }
 
   const prevStep = () => {
-    const currentIndex = steps.indexOf(step)
+    const currentIndex = activeSteps.indexOf(step)
     if (currentIndex > 0) {
-      setStep(steps[currentIndex - 1])
+      setStep(activeSteps[currentIndex - 1])
     }
   }
 
@@ -211,7 +222,7 @@ export default function OnboardingPage() {
     }
   }
 
-  const progressPercent = (steps.indexOf(step) / (steps.length - 1)) * 100
+  const progressPercent = (activeSteps.indexOf(step) / (activeSteps.length - 1)) * 100
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60)
@@ -221,7 +232,28 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     const merged = mergeWithDefaultPreferences(storedPreferences)
-    setData(merged)
+
+    // Apply smart defaults in quick mode
+    if (isQuickMode) {
+      const quickDefaults = {
+        ...merged,
+        theme: 'auto' as ThemeOption,
+        preferredIde: 'windsurf' as IdeOption,
+        cliEditor: 'neovim' as CliEditorOption,
+        extensions: ['prettier', 'eslint', 'tailwind-intellisense'],
+        integrations: {
+          ...merged.integrations,
+          github: true,
+          linear: true,
+          datadog: true,
+        },
+        aiProviders: ['anthropic' as AiProvider],
+      }
+      setData(mergeWithDefaultPreferences(quickDefaults))
+    } else {
+      setData(merged)
+    }
+
     if (merged.onboardingCompleted) {
       setStep('complete')
     }
@@ -241,12 +273,12 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full p-8 space-y-8">
         <div>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 mb-3 text-center">
-            {(steps.filter((s) => s !== 'complete') as Exclude<OnboardingStep, 'complete'>[]).map((s) => (
+          <div className={`grid ${isQuickMode ? 'grid-cols-2' : 'grid-cols-3 sm:grid-cols-6'} gap-1 mb-3 text-center`}>
+            {(activeSteps.filter((s) => s !== 'complete') as Exclude<OnboardingStep, 'complete'>[]).map((s) => (
               <span
                 key={s}
                 className={`text-xs ${
-                  steps.indexOf(s) <= steps.indexOf(step)
+                  activeSteps.indexOf(s) <= activeSteps.indexOf(step)
                     ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
                     : 'text-gray-400'
                 }`}
@@ -263,7 +295,7 @@ export default function OnboardingPage() {
           </div>
           <div className="flex justify-center mt-2">
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              Time elapsed: {formatTime(elapsedSeconds)}
+              {isQuickMode && '⚡ Quick Start • '}Time elapsed: {formatTime(elapsedSeconds)}
             </span>
           </div>
         </div>
@@ -285,13 +317,30 @@ export default function OnboardingPage() {
           <div className="text-center space-y-6">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Welcome to VibeCode 🚀</h1>
             <p className="text-lg text-gray-600 dark:text-gray-300">
-              Let&apos;s tailor your workspace, IDE, and automations in under two minutes.
+              {isQuickMode
+                ? 'Let\'s get you up and running in under 2 minutes with smart defaults.'
+                : 'Let\'s tailor your workspace, IDE, and automations in under two minutes.'
+              }
             </p>
+            {isQuickMode && (
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 text-sm text-left space-y-2">
+                <p className="font-semibold text-gray-900 dark:text-white">⚡ Quick Start includes:</p>
+                <ul className="text-gray-600 dark:text-gray-400 space-y-1 ml-4">
+                  <li>• Windsurf IDE with Neovim support</li>
+                  <li>• Next.js essentials (Prettier, ESLint, Tailwind)</li>
+                  <li>• GitHub, Linear, and Datadog integrations</li>
+                  <li>• Claude AI for code review and analysis</li>
+                </ul>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  You can customize everything later in Settings.
+                </p>
+              </div>
+            )}
             <button
               onClick={nextStep}
               className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors"
             >
-              Get Started
+              {isQuickMode ? 'Start Quick Setup' : 'Get Started'}
             </button>
           </div>
         )}
@@ -626,12 +675,122 @@ export default function OnboardingPage() {
           </div>
         )}
 
+        {!preferencesLoading && step === 'essentials' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Essential Settings</h2>
+              <p className="text-gray-600 dark:text-gray-300">
+                Quick tweaks to personalize your experience. Everything else is pre-configured.
+              </p>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Theme</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { value: 'light' as ThemeOption, label: 'Light', emoji: '☀️' },
+                    { value: 'dark' as ThemeOption, label: 'Dark', emoji: '🌙' },
+                    { value: 'auto' as ThemeOption, label: 'Auto', emoji: '🔄' },
+                  ].map((theme) => (
+                    <button
+                      key={theme.value}
+                      onClick={() => updateData({ theme: theme.value })}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        data.theme === theme.value
+                          ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300'
+                      }`}
+                    >
+                      <div className="text-3xl mb-2">{theme.emoji}</div>
+                      <div className="font-semibold text-sm text-gray-900 dark:text-white">{theme.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Workspace</h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {[
+                    {
+                      value: 'windsurf' as IdeOption,
+                      label: 'Windsurf',
+                      description: 'Claude-ready with MCP (Recommended)',
+                    },
+                    {
+                      value: 'vs-code' as IdeOption,
+                      label: 'VS Code',
+                      description: 'Classic desktop experience',
+                    },
+                  ].map((workspace) => (
+                    <button
+                      key={workspace.value}
+                      onClick={() => updateData({ preferredIde: workspace.value })}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${
+                        data.preferredIde === workspace.value
+                          ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300'
+                      }`}
+                    >
+                      <div className="font-semibold text-gray-900 dark:text-white mb-1">{workspace.label}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{workspace.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Primary AI</h3>
+                <div className="space-y-2">
+                  {aiProviderOptions.slice(0, 3).map((provider) => (
+                    <label
+                      key={provider.id}
+                      className={`flex items-start gap-3 p-3 border-2 rounded-lg transition-all ${
+                        data.aiProviders.includes(provider.id)
+                          ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={data.aiProviders.includes(provider.id)}
+                        onChange={() => toggleAiProvider(provider.id)}
+                        className="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                      <div>
+                        <div className="font-semibold text-sm text-gray-900 dark:text-white">{provider.label}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">{provider.description}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between">
+              <button onClick={prevStep} className="px-6 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900">
+                Back
+              </button>
+              <button
+                onClick={nextStep}
+                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        )}
+
         {!preferencesLoading && step === 'complete' && (
           <div className="text-center space-y-6">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white">You&apos;re all set 🎉</h2>
               <p className="text-gray-600 dark:text-gray-300">
-                Summary of what we&apos;ll configure for you. You can tweak any setting later.
+                {isQuickMode
+                  ? 'Your workspace is configured with smart defaults. Customize anytime in Settings.'
+                  : 'Summary of what we\'ll configure for you. You can tweak any setting later.'
+                }
               </p>
             </div>
             <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-6 text-left space-y-3">
@@ -662,6 +821,9 @@ export default function OnboardingPage() {
               <div className="pt-3 border-t border-indigo-200 dark:border-indigo-800">
                 <span className="font-semibold text-gray-900 dark:text-white">Setup Time:</span>{' '}
                 {formatTime(elapsedSeconds)}
+                {isQuickMode && elapsedSeconds < 120 && (
+                  <span className="ml-2 text-xs text-green-600 dark:text-green-400">✓ Under 2 minutes!</span>
+                )}
               </div>
             </div>
             <div className="flex justify-between">
