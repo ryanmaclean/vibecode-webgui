@@ -11,6 +11,7 @@ import {
   RetryExhaustedError,
   CircuitOpenError,
 } from '@/lib/utils/retry'
+import { getDefaultOfflineDetector, NetworkStatus } from '@/lib/offline-mode'
 
 // Retry configuration for rate limiting (429) errors
 const RETRY_CONFIG = {
@@ -61,6 +62,47 @@ function isRateLimitError(error: unknown): boolean {
  */
 function shouldRetryError(error: unknown): boolean {
   return isRateLimitError(error) || isRetryableError(error)
+}
+
+/**
+ * Check if an error indicates network/offline issues
+ */
+function isNetworkError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase()
+    const errorName = error.name?.toLowerCase() || ''
+
+    // Common network error patterns
+    const networkErrorPatterns = [
+      'network',
+      'offline',
+      'econnrefused',
+      'enotfound',
+      'etimedout',
+      'econnreset',
+      'enetunreach',
+      'ehostunreach',
+      'fetch failed',
+      'failed to fetch',
+      'connection refused',
+      'connection timeout',
+      'no internet',
+      'dns',
+      'socket hang up'
+    ]
+
+    return networkErrorPatterns.some(pattern =>
+      message.includes(pattern) || errorName.includes(pattern)
+    )
+  }
+
+  // Check for network-related error codes in OpenAI errors
+  if (error instanceof OpenAI.APIError) {
+    // Connection errors typically don't have a status or have specific codes
+    return !error.status || error.status === 0 || error.code === 'ECONNREFUSED'
+  }
+
+  return false
 }
 export interface UnifiedAIProvider {
   id: string
@@ -161,9 +203,29 @@ export const AI_PROVIDERS: Record<string, UnifiedAIProvider> = {
   }
 }
 
+/**
+ * Offline status tracking
+ */
+export interface OfflineStatus {
+  /** Whether the client is currently in offline mode */
+  isOffline: boolean
+  /** Timestamp of when offline mode was detected (null if online) */
+  offlineSince: number | null
+  /** Last network error encountered */
+  lastNetworkError: string | null
+  /** Providers that are offline */
+  offlineProviders: Set<string>
+}
+
 export class UnifiedAIClient {
   private clients: Map<string, OpenAI> = new Map()
   private apiKeys: Record<string, string> = {}
+  private offlineStatus: OfflineStatus = {
+    isOffline: false,
+    offlineSince: null,
+    lastNetworkError: null,
+    offlineProviders: new Set()
+  }
 
   constructor(apiKeys: Record<string, string> = {}) {
     this.apiKeys = apiKeys
@@ -200,18 +262,28 @@ export class UnifiedAIClient {
     try {
       this.clients.set('ollama', new OpenAI({
         baseURL: AI_PROVIDERS.ollama.baseURL,
-        apiKey: 'ollama' // Ollama doesn't require real API key
+        apiKey: 'ollama', // Ollama doesn't require real API key
+        timeout: 5000 // 5 second timeout for local requests
       }))
-    } catch {
+      log.debug('Ollama client initialized', { baseURL: AI_PROVIDERS.ollama.baseURL })
+    } catch (error) {
+      log.debug('Ollama client initialization failed', {
+        error: error instanceof Error ? error.message : String(error)
+      })
       // Ollama not available - this is expected if not running locally
     }
 
     try {
       this.clients.set('localai', new OpenAI({
         baseURL: AI_PROVIDERS.localai.baseURL,
-        apiKey: 'localai' // LocalAI doesn't require real API key
+        apiKey: 'localai', // LocalAI doesn't require real API key
+        timeout: 5000 // 5 second timeout for local requests
       }))
-    } catch {
+      log.debug('LocalAI client initialized', { baseURL: AI_PROVIDERS.localai.baseURL })
+    } catch (error) {
+      log.debug('LocalAI client initialization failed', {
+        error: error instanceof Error ? error.message : String(error)
+      })
       // LocalAI not available - this is expected if not running locally
     }
   }
@@ -222,12 +294,27 @@ export class UnifiedAIClient {
   }
 
   public getProviderForModel(model: string): string {
+    // Check for Ollama model format (e.g., llama3.2:1b, qwen2.5-coder:1.5b)
+    // Ollama models typically have colons for tags or use specific naming patterns
+    if (model.includes(':') && !model.includes('/')) {
+      // Check if it's an Ollama model
+      if (AI_PROVIDERS.ollama.models.includes(model)) {
+        return 'ollama'
+      }
+      // Check if base model name (before colon) matches any Ollama model pattern
+      const baseModel = model.split(':')[0]
+      const ollamaModelBases = AI_PROVIDERS.ollama.models.map(m => m.split(':')[0])
+      if (ollamaModelBases.includes(baseModel)) {
+        return 'ollama'
+      }
+    }
+
     // Try to determine provider from model name
     if (model.includes('/')) {
       // OpenRouter format: provider/model
       return 'openrouter'
     }
-    
+
     // Check direct providers
     for (const [providerId, provider] of Object.entries(AI_PROVIDERS)) {
       if (provider.models.includes(model)) {
@@ -239,16 +326,148 @@ export class UnifiedAIClient {
     return 'openrouter'
   }
 
+  /**
+   * Select best provider based on offline status and availability
+   * Falls back to Ollama when offline, with clear error if unavailable
+   */
+  private selectProviderForOfflineMode(
+    preferredProviderId: string,
+    model: string
+  ): { providerId: string; model: string; isOfflineFallback: boolean } {
+    const offlineDetector = getDefaultOfflineDetector()
+    const isOnline = offlineDetector.isOnline()
+
+    // If we're online, use the preferred provider
+    if (isOnline) {
+      return {
+        providerId: preferredProviderId,
+        model,
+        isOfflineFallback: false
+      }
+    }
+
+    // Offline mode - check if preferred provider is local (Ollama/LocalAI)
+    const localProviders = ['ollama', 'localai']
+    if (localProviders.includes(preferredProviderId)) {
+      if (this.clients.has(preferredProviderId)) {
+        return {
+          providerId: preferredProviderId,
+          model,
+          isOfflineFallback: false
+        }
+      }
+    }
+
+    // Offline mode with non-local provider - fallback to Ollama
+    if (this.clients.has('ollama')) {
+      log.warn('Offline mode detected - falling back to Ollama', {
+        originalProvider: preferredProviderId,
+        originalModel: model
+      })
+
+      // Use a default Ollama model suitable for coding
+      const ollamaModel = 'qwen2.5-coder:1.5b'
+      return {
+        providerId: 'ollama',
+        model: ollamaModel,
+        isOfflineFallback: true
+      }
+    }
+
+    // No local provider available in offline mode
+    throw new Error(
+      'Cannot process AI requests in offline mode: Ollama is not available. ' +
+      'Please install and start Ollama (https://ollama.ai) with a model like qwen2.5-coder:1.5b, ' +
+      'or restore internet connectivity to use cloud providers.'
+    )
+  }
+
+  /**
+   * Update offline status based on error
+   */
+  private updateOfflineStatus(providerId: string, error: unknown): void {
+    if (isNetworkError(error)) {
+      this.offlineStatus.offlineProviders.add(providerId)
+
+      // Mark as globally offline if all configured providers are offline
+      const configuredProviders = Array.from(this.clients.keys())
+      const allOffline = configuredProviders.every(p => this.offlineStatus.offlineProviders.has(p))
+
+      if (allOffline && !this.offlineStatus.isOffline) {
+        this.offlineStatus.isOffline = true
+        this.offlineStatus.offlineSince = Date.now()
+        this.offlineStatus.lastNetworkError = error instanceof Error ? error.message : String(error)
+        log.warn('All providers offline - entering offline mode', {
+          offlineProviders: Array.from(this.offlineStatus.offlineProviders),
+          error: this.offlineStatus.lastNetworkError
+        })
+      }
+    }
+  }
+
+  /**
+   * Clear offline status for a provider (on successful connection)
+   */
+  private clearOfflineStatus(providerId: string): void {
+    if (this.offlineStatus.offlineProviders.has(providerId)) {
+      this.offlineStatus.offlineProviders.delete(providerId)
+
+      // If we have any online providers, clear global offline status
+      if (this.offlineStatus.offlineProviders.size === 0 && this.offlineStatus.isOffline) {
+        log.info('Connectivity restored - exiting offline mode')
+        this.offlineStatus.isOffline = false
+        this.offlineStatus.offlineSince = null
+        this.offlineStatus.lastNetworkError = null
+      }
+    }
+  }
+
+  /**
+   * Get current offline status
+   */
+  public getOfflineStatus(): Readonly<OfflineStatus> {
+    return {
+      ...this.offlineStatus,
+      offlineProviders: new Set(this.offlineStatus.offlineProviders)
+    }
+  }
+
+  /**
+   * Check if client is currently in offline mode
+   */
+  public isOffline(): boolean {
+    return this.offlineStatus.isOffline
+  }
+
   private async testProviderConnection(providerId: string): Promise<boolean> {
     const client = this.clients.get(providerId)
     if (!client) return false
 
     try {
+      // For local providers like Ollama, use a shorter timeout
+      const isLocal = providerId === 'ollama' || providerId === 'localai'
+      const timeoutMs = isLocal ? 2000 : 5000
+
       // Simple API test - try to list models or make a minimal request
-      await client.models.list()
+      const testPromise = client.models.list()
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Connection timeout')), timeoutMs)
+      )
+
+      await Promise.race([testPromise, timeoutPromise])
+      log.debug(`Provider ${providerId} connection test succeeded`)
+      // Clear offline status on successful connection
+      this.clearOfflineStatus(providerId)
       return true
     } catch (error) {
-      log.debug(`Provider ${providerId} connection test failed`, { error: error instanceof Error ? error.message : String(error) })
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      if (providerId === 'ollama' || providerId === 'localai') {
+        log.debug(`Local provider ${providerId} not available`, { error: errorMessage })
+      } else {
+        log.debug(`Provider ${providerId} connection test failed`, { error: errorMessage })
+      }
+      // Update offline status if network error
+      this.updateOfflineStatus(providerId, error)
       return false
     }
   }
@@ -265,18 +484,50 @@ export class UnifiedAIClient {
       presencePenalty?: number
     } = {}
   ): Promise<UnifiedChatResponse> {
-    const providerId = this.getProviderForModel(model)
+    const preferredProviderId = this.getProviderForModel(model)
+
+    // Select provider based on offline status
+    const { providerId, model: selectedModel, isOfflineFallback } = this.selectProviderForOfflineMode(
+      preferredProviderId,
+      model
+    )
+
     const client = this.clients.get(providerId)
 
     if (!client) {
       throw new Error(`No client available for provider: ${providerId}`)
     }
 
+    // Log offline fallback
+    if (isOfflineFallback) {
+      log.info('Using offline fallback', {
+        originalProvider: preferredProviderId,
+        originalModel: model,
+        fallbackProvider: providerId,
+        fallbackModel: selectedModel
+      })
+    }
+
     // Test connection first
     const isConnected = await this.testProviderConnection(providerId)
     if (!isConnected) {
-      // Try fallback to OpenRouter if available
-      if (providerId !== 'openrouter' && this.clients.has('openrouter')) {
+      const offlineDetector = getDefaultOfflineDetector()
+
+      // For local providers, provide specific error message
+      if (providerId === 'ollama') {
+        const errorMsg = 'Ollama is not running. Please start Ollama with: ollama serve'
+        log.warn(errorMsg, { model })
+
+        // Try fallback to OpenRouter if available and online
+        if (offlineDetector.isOnline() && this.clients.has('openrouter')) {
+          log.info('Falling back to OpenRouter', { originalModel: model, reason: 'ollama_not_available' })
+          return this.chat(messages, `openai/gpt-3.5-turbo`, options)
+        }
+        throw new Error(errorMsg)
+      }
+
+      // Try fallback to OpenRouter if available and online
+      if (offlineDetector.isOnline() && providerId !== 'openrouter' && this.clients.has('openrouter')) {
         log.info('Falling back to OpenRouter', { originalModel: model, reason: 'connection_failed' })
         return this.chat(messages, `openai/gpt-3.5-turbo`, options)
       }
@@ -298,7 +549,7 @@ export class UnifiedAIClient {
         () => retryWithBackoff(
           async () => {
             const response = await client.chat.completions.create({
-              model,
+              model: selectedModel,
               messages,
               temperature,
               max_tokens: maxTokens,
@@ -313,9 +564,12 @@ export class UnifiedAIClient {
               throw new Error('No content in response')
             }
 
+            // Clear offline status on successful response
+            this.clearOfflineStatus(providerId)
+
             return {
               content: choice.message.content,
-              model,
+              model: selectedModel,
               provider: providerId,
               usage: response.usage ? {
                 promptTokens: response.usage.prompt_tokens,
@@ -346,9 +600,14 @@ export class UnifiedAIClient {
         // Note: Circuit breaker fallback is handled in the catch block below
       )
     } catch (error) {
+      // Update offline status if network error
+      this.updateOfflineStatus(providerId, error)
+
       log.error('Chat request failed', {
         providerId,
         model,
+        isNetworkError: isNetworkError(error),
+        isOffline: this.offlineStatus.isOffline,
         error: error instanceof Error ? error.message : String(error)
       })
 
@@ -377,11 +636,28 @@ export class UnifiedAIClient {
       presencePenalty?: number
     } = {}
   ): AsyncGenerator<UnifiedStreamChunk> {
-    const providerId = this.getProviderForModel(model)
+    const preferredProviderId = this.getProviderForModel(model)
+
+    // Select provider based on offline status
+    const { providerId, model: selectedModel, isOfflineFallback } = this.selectProviderForOfflineMode(
+      preferredProviderId,
+      model
+    )
+
     const client = this.clients.get(providerId)
 
     if (!client) {
       throw new Error(`No client available for provider: ${providerId}`)
+    }
+
+    // Log offline fallback
+    if (isOfflineFallback) {
+      log.info('Using offline fallback for streaming', {
+        originalProvider: preferredProviderId,
+        originalModel: model,
+        fallbackProvider: providerId,
+        fallbackModel: selectedModel
+      })
     }
 
     const {
@@ -409,7 +685,7 @@ export class UnifiedAIClient {
     for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
       try {
         const stream = await client.chat.completions.create({
-          model,
+          model: selectedModel,
           messages,
           temperature,
           max_tokens: maxTokens,
@@ -426,7 +702,7 @@ export class UnifiedAIClient {
           yield {
             content,
             done: choice?.finish_reason !== null,
-            model,
+            model: selectedModel,
             provider: providerId,
             usage: chunk.usage ? {
               promptTokens: chunk.usage.prompt_tokens || 0,
@@ -439,7 +715,8 @@ export class UnifiedAIClient {
             break
           }
         }
-        // Stream completed successfully, exit retry loop
+        // Stream completed successfully, clear offline status and exit retry loop
+        this.clearOfflineStatus(providerId)
         return
       } catch (error) {
         lastError = error
@@ -463,9 +740,14 @@ export class UnifiedAIClient {
       }
     }
 
+    // Update offline status if network error
+    this.updateOfflineStatus(providerId, lastError)
+
     log.error('Stream request failed after all retries', {
       providerId,
       model,
+      isNetworkError: isNetworkError(lastError),
+      isOffline: this.offlineStatus.isOffline,
       error: lastError instanceof Error ? lastError.message : String(lastError)
     })
 
@@ -556,6 +838,40 @@ export class UnifiedAIClient {
     } else {
       aiProviderCircuitBreakers.resetAll()
       log.info('All circuit breakers reset')
+    }
+  }
+
+  /**
+   * Check if Ollama is available and running locally
+   */
+  public async isOllamaAvailable(): Promise<boolean> {
+    if (!this.clients.has('ollama')) {
+      return false
+    }
+    return await this.testProviderConnection('ollama')
+  }
+
+  /**
+   * Get available Ollama models from running Ollama instance
+   * Returns empty array if Ollama is not available
+   */
+  public async getOllamaModels(): Promise<string[]> {
+    const client = this.clients.get('ollama')
+    if (!client) {
+      return []
+    }
+
+    try {
+      const response = await client.models.list()
+      // Extract model IDs from the response
+      const models = response.data.map((model: { id: string }) => model.id)
+      log.debug('Retrieved Ollama models', { count: models.length, models })
+      return models
+    } catch (error) {
+      log.debug('Failed to retrieve Ollama models', {
+        error: error instanceof Error ? error.message : String(error)
+      })
+      return []
     }
   }
 }

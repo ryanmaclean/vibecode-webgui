@@ -81,7 +81,6 @@ class TestConfig(unittest.TestCase):
         self.assertFalse(config.force_update)
         self.assertFalse(config.dry_run)
         self.assertFalse(config.verbose)
-        self.assertFalse(config.update_preact_only)
         self.assertFalse(config.update_mcp_only)
         self.assertFalse(config.update_langchain_only)
 

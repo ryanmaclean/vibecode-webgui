@@ -4,16 +4,25 @@
  * React component wrapping Monaco Editor with Agent API integration
  * Provides real-time AI assistance, completions, and diagnostics
  *
+ * Performance optimizations:
+ * - Large file optimization with progressive feature disabling
+ * - Memory monitoring and leak detection
+ * - Performance tracking for editor operations
+ * - Optimized editor options based on file size
+ *
  * @module components/editor/AgentMonacoEditor
  */
 
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import type { Monaco } from '@monaco-editor/react'
 import type * as monaco from 'monaco-editor'
 import { MonacoAgentAPI, registerMonacoAgentProviders } from '@/lib/editor/monaco-agentapi'
+import { getOptimizedEditorOptions } from '@/lib/editor/large-file-optimizer'
+import { MemoryMonitor } from '@/lib/performance/memory-monitor'
+import { editorPerformanceTracker } from '@/lib/performance/editor-performance'
 import { cn } from '@/lib/utils'
 // import { logger } from '@/lib/logger';
 
@@ -69,6 +78,12 @@ export interface AgentMonacoEditorProps {
   className?: string
   /** Enable agent features */
   enableAgent?: boolean
+  /** Enable large file optimizations (default: true) */
+  enableOptimizations?: boolean
+  /** Enable memory monitoring (default: true) */
+  enableMemoryMonitoring?: boolean
+  /** Enable performance tracking (default: true) */
+  enablePerformanceTracking?: boolean
 }
 
 export const DEFAULT_EDITOR_LANGUAGE = 'typescript'
@@ -79,6 +94,12 @@ export interface EditorStatus {
   diagnosticsEnabled: boolean
   latency: number
   lastError?: string
+  /** Current memory usage in MB (if monitoring enabled) */
+  memoryUsageMB?: number
+  /** Editor load time in ms */
+  loadTimeMs?: number
+  /** File size category */
+  fileSizeCategory?: 'small' | 'medium' | 'large' | 'very-large' | 'extreme'
 }
 
 // ============================================================================
@@ -98,11 +119,16 @@ export function AgentMonacoEditor({
   onMount,
   className,
   enableAgent = true,
+  enableOptimizations = true,
+  enableMemoryMonitoring = true,
+  enablePerformanceTracking = true,
 }: AgentMonacoEditorProps) {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
   const monacoRef = useRef<Monaco | null>(null)
   const agentAPIRef = useRef<MonacoAgentAPI | null>(null)
   const providersRef = useRef<monaco.IDisposable[]>([])
+  const memoryMonitorRef = useRef<MemoryMonitor | null>(null)
+  const loadStartTimeRef = useRef<number>(0)
 
   const [status, setStatus] = useState<EditorStatus>({
     agentConnected: false,
@@ -112,6 +138,69 @@ export function AgentMonacoEditor({
   })
 
   // ==========================================================================
+  // Performance Optimizations
+  // ==========================================================================
+
+  /**
+   * Calculate optimized editor options based on file size
+   * Uses memoization to avoid recalculating on every render
+   */
+  const editorOptions = useMemo(() => {
+    // Apply large file optimizations if enabled
+    if (enableOptimizations && value) {
+      const optimizedOptions = getOptimizedEditorOptions(value, {
+        overrides: {
+          readOnly,
+          minimap: { enabled: true },
+          fontSize: 14,
+          lineNumbers: 'on' as monaco.editor.LineNumbersType,
+          scrollBeyondLastLine: false,
+          automaticLayout: true,
+          tabSize: 2,
+        },
+        debug: process.env.NODE_ENV === 'development',
+      })
+
+      // Merge with user-provided options (user options take precedence)
+      return {
+        ...optimizedOptions,
+        ...options,
+      } as monaco.editor.IStandaloneEditorConstructionOptions
+    }
+
+    // No optimizations - use default options
+    return {
+      minimap: { enabled: true },
+      fontSize: 14,
+      lineNumbers: 'on' as monaco.editor.LineNumbersType,
+      scrollBeyondLastLine: false,
+      automaticLayout: true,
+      tabSize: 2,
+      readOnly,
+      // Enable rich IntelliSense
+      suggestOnTriggerCharacters: true,
+      quickSuggestions: true,
+      quickSuggestionsDelay: 100,
+      // Enable parameter hints
+      parameterHints: {
+        enabled: true,
+      },
+      // Enable code lens
+      codeLens: true,
+      // Enable hover
+      hover: {
+        enabled: true,
+        delay: 300,
+      },
+      // Enable lightbulb for code actions
+      lightbulb: {
+        enabled: 'on' as monaco.editor.ShowLightbulbIconMode,
+      },
+      ...options,
+    } as monaco.editor.IStandaloneEditorConstructionOptions
+  }, [value, options, enableOptimizations, readOnly])
+
+  // ==========================================================================
   // Editor Initialization
   // ==========================================================================
 
@@ -119,8 +208,25 @@ export function AgentMonacoEditor({
     editor: monaco.editor.IStandaloneCodeEditor,
     monaco: Monaco
   ) => {
+    // Track mount start time
+    const mountStartTime = performance.now()
+    loadStartTimeRef.current = mountStartTime
+
     editorRef.current = editor
     monacoRef.current = monaco
+
+    // Start memory monitoring if enabled
+    if (enableMemoryMonitoring) {
+      const monitor = new MemoryMonitor({
+        label: 'agent-monaco-editor',
+        warnThresholdMB: 512,
+        criticalThresholdMB: 1024,
+        monitoringIntervalMs: 10000, // Check every 10 seconds
+        autoLog: process.env.NODE_ENV === 'development',
+      })
+      monitor.start()
+      memoryMonitorRef.current = monitor
+    }
 
     // Call custom onMount handler
     if (onMount) {
@@ -137,7 +243,54 @@ export function AgentMonacoEditor({
       setupKeybindings(editor, monaco)
     }
 
-    console.info('Monaco Editor mounted with Agent API integration')
+    // Track editor load performance
+    if (enablePerformanceTracking) {
+      const loadTime = performance.now() - mountStartTime
+      const lineCount = value.split('\n').length
+      const byteSize = new Blob([value]).size
+
+      editorPerformanceTracker.trackEditorLoad('agent-monaco-editor', loadTime, {
+        fileSize: byteSize,
+        lineCount,
+        language,
+      })
+
+      // Update status with performance info
+      setStatus((prev) => ({
+        ...prev,
+        loadTimeMs: loadTime,
+        fileSizeCategory: getFileSizeCategory(lineCount),
+      }))
+    }
+
+    // Check for memory snapshot if monitoring enabled
+    if (enableMemoryMonitoring && memoryMonitorRef.current) {
+      const samples = memoryMonitorRef.current.getSamples()
+      if (samples.length > 0) {
+        const latestSample = samples[samples.length - 1]
+        setStatus((prev) => ({
+          ...prev,
+          memoryUsageMB: latestSample.usedJSHeapSizeMB,
+        }))
+      }
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.info('Monaco Editor mounted with Agent API integration and performance optimizations')
+    }
+  }
+
+  /**
+   * Helper to determine file size category
+   */
+  const getFileSizeCategory = (
+    lineCount: number
+  ): 'small' | 'medium' | 'large' | 'very-large' | 'extreme' => {
+    if (lineCount >= 50000) return 'extreme'
+    if (lineCount >= 20000) return 'very-large'
+    if (lineCount >= 10000) return 'large'
+    if (lineCount >= 5000) return 'medium'
+    return 'small'
   }
 
   // ==========================================================================
@@ -227,6 +380,34 @@ export function AgentMonacoEditor({
 
   useEffect(() => {
     return () => {
+      // Stop memory monitoring and generate report
+      if (memoryMonitorRef.current) {
+        const report = memoryMonitorRef.current.stop()
+
+        // Check for memory leaks
+        const leakDetection = memoryMonitorRef.current.detectMemoryLeak()
+
+        if (process.env.NODE_ENV === 'development') {
+          console.info('Memory Monitor Report:', {
+            peakMemoryMB: report.peakMemoryMB,
+            avgMemoryMB: report.avgMemoryMB,
+            memoryGrowthMB: report.memoryGrowthMB,
+            sampleCount: report.sampleCount,
+            durationMs: report.durationMs,
+          })
+
+          if (leakDetection.leakDetected) {
+            console.warn('Potential memory leak detected:', {
+              confidence: leakDetection.confidence,
+              avgGrowthMB: leakDetection.avgGrowthMB,
+              totalGrowthMB: leakDetection.totalGrowthMB,
+            })
+          }
+        }
+
+        memoryMonitorRef.current = null
+      }
+
       // Dispose agent API
       if (agentAPIRef.current) {
         agentAPIRef.current.dispose()
@@ -237,7 +418,9 @@ export function AgentMonacoEditor({
       providersRef.current.forEach((provider) => provider.dispose())
       providersRef.current = []
 
-      console.info('Monaco Editor cleanup complete')
+      if (process.env.NODE_ENV === 'development') {
+        console.info('Monaco Editor cleanup complete')
+      }
     }
   }, [])
 
@@ -274,6 +457,37 @@ export function AgentMonacoEditor({
           {status.latency > 0 && (
             <span className="text-gray-400">Latency: {status.latency}ms</span>
           )}
+
+          {/* Performance metrics */}
+          {status.loadTimeMs && (
+            <span className="text-gray-400">Load: {Math.round(status.loadTimeMs)}ms</span>
+          )}
+
+          {status.fileSizeCategory && status.fileSizeCategory !== 'small' && (
+            <span
+              className={cn(
+                'text-xs px-1.5 py-0.5 rounded',
+                status.fileSizeCategory === 'extreme' && 'bg-red-900/50 text-red-300',
+                status.fileSizeCategory === 'very-large' && 'bg-orange-900/50 text-orange-300',
+                status.fileSizeCategory === 'large' && 'bg-yellow-900/50 text-yellow-300',
+                status.fileSizeCategory === 'medium' && 'bg-blue-900/50 text-blue-300'
+              )}
+            >
+              {status.fileSizeCategory}
+            </span>
+          )}
+
+          {enableMemoryMonitoring && status.memoryUsageMB && (
+            <span
+              className={cn(
+                'text-gray-400',
+                status.memoryUsageMB >= 1024 && 'text-red-400',
+                status.memoryUsageMB >= 512 && status.memoryUsageMB < 1024 && 'text-yellow-400'
+              )}
+            >
+              Mem: {Math.round(status.memoryUsageMB)}MB
+            </span>
+          )}
         </div>
 
         {status.lastError && (
@@ -297,36 +511,7 @@ export function AgentMonacoEditor({
         value={value}
         onChange={onChange}
         onMount={handleEditorDidMount}
-        options={{
-          minimap: { enabled: true },
-          fontSize: 14,
-          lineNumbers: 'on',
-          scrollBeyondLastLine: false,
-          automaticLayout: true,
-          tabSize: 2,
-          readOnly,
-          // Enable rich IntelliSense
-          suggestOnTriggerCharacters: true,
-          quickSuggestions: true,
-          quickSuggestionsDelay: 100,
-          // Enable parameter hints
-          parameterHints: {
-            enabled: true,
-          },
-          // Enable code lens
-          codeLens: true,
-          // Enable hover
-          hover: {
-            enabled: true,
-            delay: 300,
-          },
-          // Enable lightbulb for code actions
-          // Monaco's lightbulb.enabled accepts ShowLightbulbIconMode enum ('on'|'onCode'|'off')
-          lightbulb: {
-            enabled: 'on' as monaco.editor.ShowLightbulbIconMode,
-          },
-          ...options,
-        }}
+        options={editorOptions}
       />
       {renderStatusBar()}
     </div>

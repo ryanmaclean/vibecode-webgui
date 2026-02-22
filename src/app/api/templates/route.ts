@@ -12,11 +12,14 @@ import { templateSubmissionSchema } from '@/lib/api/validation/schemas'
 import { sanitizeDescription, sanitizeTags } from '@/lib/api/validation/sanitize'
 import { z } from '@/lib/zod-compat'
 import { cacheGetOrSet, CacheKeyGenerators, TTLPresets, CacheInvalidators } from '@/lib/cache/cache-utils'
+import { CACHE_HEADER_PRESETS } from '@/lib/cache/http-cache-headers'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+import { getCachedTemplates, cacheTemplates, OfflineTTL } from '@/lib/cache/offline-cache'
 
 export const dynamic = 'force-dynamic'
 
 const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - template browsing
+
 interface ProjectTemplate {
   id: string
   name: string
@@ -605,6 +608,26 @@ Happy coding! 🐍`
   }
 ]
 
+/**
+ * Load templates with offline cache support
+ * Templates are hardcoded but cached for offline mode performance
+ */
+async function loadTemplatesWithCache() {
+  // Try to get from offline cache first
+  const cached = getCachedTemplates<ProjectTemplate[]>();
+  if (cached) {
+    return cached;
+  }
+
+  // Cache templates for offline use
+  await cacheTemplates(templates, {
+    ttl: OfflineTTL.TEMPLATES,
+    source: 'hardcoded',
+  });
+
+  return templates;
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Rate limiting
@@ -624,25 +647,36 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Load templates with offline cache support
+    const cachedTemplates = await loadTemplatesWithCache();
+
     // Use cache for templates response (templates rarely change)
     const response = await cacheGetOrSet(
       CacheKeyGenerators.templates(),
       async () => ({
-        templates,
-        count: templates.length,
+        templates: cachedTemplates,
+        count: cachedTemplates.length,
         categories: {
-          languages: [...new Set(templates.map(t => t.language))],
-          frameworks: [...new Set(templates.map(t => t.framework))],
-          difficulties: [...new Set(templates.map(t => t.difficulty))]
+          languages: [...new Set(cachedTemplates.map(t => t.language))],
+          frameworks: [...new Set(cachedTemplates.map(t => t.framework))],
+          difficulties: [...new Set(cachedTemplates.map(t => t.difficulty))]
         }
       }),
       { ttl: TTLPresets.TEMPLATES } // 2 hours cache
     );
 
-    return NextResponse.json(response)
+    return NextResponse.json(response, {
+      headers: {
+        ...CACHE_HEADER_PRESETS.TEMPLATES,
+        'X-Offline-Capable': 'true',
+        'X-Cache-Source': getCachedTemplates() ? 'cache' : 'hardcoded',
+      },
+    })
   } catch (error) {
-    console.error('Templates API error:', error)
-    return createErrorResponse('Failed to fetch templates', 500)
+    return createErrorResponse('Failed to fetch templates', 500, {
+      code: 'TEMPLATES_ERROR',
+      detail: error instanceof Error ? error.message : 'Unknown error occurred'
+    })
   }
 }
 
@@ -762,8 +796,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response, { status: 201 })
 
   } catch (error) {
-    console.error('Template submission error:', error)
-
     if (error instanceof z.ZodError) {
       return createErrorResponse('Invalid request data', 400, {
         code: 'VALIDATION_ERROR',

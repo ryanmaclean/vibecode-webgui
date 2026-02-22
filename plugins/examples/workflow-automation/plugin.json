@@ -1,0 +1,33 @@
+{
+  "id": "workflow-automation",
+  "name": "Workflow Automation",
+  "version": "1.0.0",
+  "description": "Example plugin demonstrating workflow automation capabilities including scheduled tasks, event-driven workflows, and multi-step orchestration",
+  "author": {
+    "name": "VibeCode Team",
+    "email": "team@vibecode.dev",
+    "url": "https://vibecode.dev"
+  },
+  "type": "workflow",
+  "main": "index.ts",
+  "permissions": [
+    "filesystem:read",
+    "filesystem:write",
+    "commands:register",
+    "settings:read"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "vibecode": ">=1.0.0"
+  },
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "automation",
+    "scheduler",
+    "tasks",
+    "orchestration",
+    "example"
+  ],
+  "homepage": "https://vibecode.dev/docs/plugins/examples/workflow-automation"
+}

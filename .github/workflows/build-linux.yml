@@ -311,6 +311,11 @@ jobs:
 
       - name: Generate checksums
         run: |
+          if [ ! -d "platforms/tauri/target/aarch64-unknown-linux-gnu/release/bundle" ]; then
+            echo "Skipping checksum generation: no ARM64 bundle directory was produced"
+            exit 0
+          fi
+
           cd platforms/tauri/target/aarch64-unknown-linux-gnu/release/bundle
 
           for dir in deb rpm; do
