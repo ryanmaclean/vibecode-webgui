@@ -198,14 +198,148 @@ export interface ComparisonResult {
 export type ProviderTier = 'free' | 'low' | 'medium' | 'high' | 'enterprise';
 
 /**
+ * Display metadata for provider tier badges
+ */
+export interface ProviderTierBadge {
+  /** Tier level */
+  tier: ProviderTier;
+  /** Display label */
+  label: string;
+  /** Badge color variant */
+  variant: 'default' | 'secondary' | 'success' | 'warning' | 'destructive';
+  /** Description of this tier */
+  description?: string;
+}
+
+/**
+ * Default provider tier badge configurations
+ */
+export const PROVIDER_TIER_BADGES: Record<ProviderTier, ProviderTierBadge> = {
+  free: {
+    tier: 'free',
+    label: 'Free',
+    variant: 'success',
+    description: 'No cost to use',
+  },
+  low: {
+    tier: 'low',
+    label: 'Low Cost',
+    variant: 'secondary',
+    description: 'Budget-friendly pricing',
+  },
+  medium: {
+    tier: 'medium',
+    label: 'Medium Cost',
+    variant: 'default',
+    description: 'Balanced cost and performance',
+  },
+  high: {
+    tier: 'high',
+    label: 'Premium',
+    variant: 'warning',
+    description: 'Higher cost, better performance',
+  },
+  enterprise: {
+    tier: 'enterprise',
+    label: 'Enterprise',
+    variant: 'destructive',
+    description: 'Enterprise-grade pricing and support',
+  },
+};
+
+/**
  * Speed tier levels
  */
 export type SpeedTier = 'slow' | 'medium' | 'fast' | 'very_fast';
 
 /**
+ * Display metadata for speed tier badges
+ */
+export interface SpeedTierBadge {
+  /** Tier level */
+  tier: SpeedTier;
+  /** Display label */
+  label: string;
+  /** Badge color variant */
+  variant: 'default' | 'secondary' | 'success' | 'warning' | 'destructive';
+  /** Icon name if any */
+  icon?: string;
+}
+
+/**
+ * Default speed tier badge configurations
+ */
+export const SPEED_TIER_BADGES: Record<SpeedTier, SpeedTierBadge> = {
+  slow: {
+    tier: 'slow',
+    label: 'Slow',
+    variant: 'default',
+  },
+  medium: {
+    tier: 'medium',
+    label: 'Medium Speed',
+    variant: 'secondary',
+  },
+  fast: {
+    tier: 'fast',
+    label: 'Fast',
+    variant: 'success',
+    icon: 'zap',
+  },
+  very_fast: {
+    tier: 'very_fast',
+    label: 'Very Fast',
+    variant: 'success',
+    icon: 'zap',
+  },
+};
+
+/**
  * Quality tier levels
  */
 export type QualityTier = 'basic' | 'good' | 'excellent' | 'state_of_art';
+
+/**
+ * Display metadata for quality tier badges
+ */
+export interface QualityTierBadge {
+  /** Tier level */
+  tier: QualityTier;
+  /** Display label */
+  label: string;
+  /** Badge color variant */
+  variant: 'default' | 'secondary' | 'success' | 'warning' | 'destructive';
+  /** Icon name if any */
+  icon?: string;
+}
+
+/**
+ * Default quality tier badge configurations
+ */
+export const QUALITY_TIER_BADGES: Record<QualityTier, QualityTierBadge> = {
+  basic: {
+    tier: 'basic',
+    label: 'Basic',
+    variant: 'default',
+  },
+  good: {
+    tier: 'good',
+    label: 'Good',
+    variant: 'secondary',
+  },
+  excellent: {
+    tier: 'excellent',
+    label: 'Excellent',
+    variant: 'success',
+    icon: 'star',
+  },
+  state_of_art: {
+    tier: 'state_of_art',
+    label: 'State of the Art',
+    variant: 'success',
+    icon: 'crown',
+  },
+};
 
 /**
  * Model pricing information
@@ -223,6 +357,12 @@ export interface ModelPricing {
   currency: string;
   /** Any usage limits for free tier */
   freeLimit?: string;
+  /** Display-formatted input cost (e.g., "$0.003/1K") */
+  inputCostDisplay?: string;
+  /** Display-formatted output cost (e.g., "$0.015/1K") */
+  outputCostDisplay?: string;
+  /** Price tier for badge display */
+  priceTier?: 'free' | 'low' | 'medium' | 'high' | 'enterprise';
 }
 
 /**
@@ -276,6 +416,26 @@ export interface ModelProvider {
 }
 
 /**
+ * Deprecation warning information
+ */
+export interface DeprecationWarning {
+  /** Whether model is deprecated */
+  isDeprecated: boolean;
+  /** Warning message to display */
+  message: string;
+  /** Severity level */
+  severity: 'info' | 'warning' | 'critical';
+  /** Recommended replacement model ID */
+  replacementModelId?: string;
+  /** Replacement model display name */
+  replacementModelName?: string;
+  /** Deprecation date */
+  deprecatedDate?: string;
+  /** End of life date (when model will stop working) */
+  endOfLifeDate?: string;
+}
+
+/**
  * Complete model profile with all information
  */
 export interface ModelProfile {
@@ -309,6 +469,8 @@ export interface ModelProfile {
   deprecated: boolean;
   /** Replacement model if deprecated */
   replacementModelId?: string;
+  /** Deprecation warning details for UI display */
+  deprecationWarning?: DeprecationWarning;
   /** Additional metadata */
   metadata?: Record<string, unknown>;
 }

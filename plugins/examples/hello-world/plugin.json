@@ -1,0 +1,28 @@
+{
+  "id": "hello-world",
+  "name": "Hello World",
+  "version": "1.0.0",
+  "description": "A simple example plugin that demonstrates the basic plugin structure and API",
+  "author": {
+    "name": "VibeCode Team",
+    "email": "team@vibecode.dev",
+    "url": "https://vibecode.dev"
+  },
+  "type": "other",
+  "main": "index.ts",
+  "permissions": [
+    "commands:register"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "vibecode": ">=1.0.0"
+  },
+  "license": "MIT",
+  "keywords": [
+    "example",
+    "hello-world",
+    "demo",
+    "tutorial"
+  ],
+  "homepage": "https://vibecode.dev/docs/plugins/examples/hello-world"
+}

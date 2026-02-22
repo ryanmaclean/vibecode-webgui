@@ -1,0 +1,124 @@
+name: Shared Setup
+
+# This is a reusable workflow that standardizes common setup steps
+# across multiple calling workflows to reduce duplication
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: 'Node.js version to use'
+        required: false
+        type: string
+        default: '20.11.0'
+      cache-dependency-path:
+        description: 'Path to package-lock.json for cache key'
+        required: false
+        type: string
+        default: 'package-lock.json'
+      install-command:
+        description: 'Command to install dependencies'
+        required: false
+        type: string
+        default: 'npm ci --legacy-peer-deps'
+      skip-env-setup:
+        description: 'Skip .env file creation'
+        required: false
+        type: boolean
+        default: false
+      setup-services:
+        description: 'Wait for PostgreSQL and Redis services'
+        required: false
+        type: boolean
+        default: false
+    outputs:
+      node-version:
+        description: 'Node.js version that was set up'
+        value: ${{ jobs.setup.outputs.node-version }}
+      cache-hit:
+        description: 'Whether npm cache was hit'
+        value: ${{ jobs.setup.outputs.cache-hit }}
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      node-version: ${{ steps.setup-node.outputs.node-version }}
+      cache-hit: ${{ steps.setup-node.outputs.cache-hit }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        id: setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'npm'
+          cache-dependency-path: ${{ inputs.cache-dependency-path }}
+
+      - name: Prepare environment file
+        if: inputs.skip-env-setup != true
+        run: |
+          if [ -f .env.template ]; then
+            cp .env.template .env
+            echo "✅ Created .env from .env.template"
+          elif [ -f .env.example ]; then
+            cp .env.example .env
+            echo "✅ Created .env from .env.example"
+          else
+            echo "⚠️ No .env template found, skipping"
+          fi
+
+      - name: Install dependencies with retry
+        uses: nick-fields/retry-action@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: ${{ inputs.install-command }}
+
+      - name: Wait for PostgreSQL
+        if: inputs.setup-services == true
+        run: |
+          echo "Waiting for PostgreSQL..."
+          max_attempts=30
+          attempt=1
+          until pg_isready -h localhost -p 5432 -U test || [ $attempt -eq $max_attempts ]; do
+            echo "PostgreSQL not ready, attempt $attempt/$max_attempts"
+            sleep 2
+            attempt=$((attempt + 1))
+          done
+          if ! pg_isready -h localhost -p 5432 -U test; then
+            echo "❌ PostgreSQL failed to become ready after $max_attempts attempts"
+            exit 1
+          fi
+          echo "✅ PostgreSQL is ready"
+
+      - name: Wait for Redis
+        if: inputs.setup-services == true
+        run: |
+          echo "Waiting for Redis..."
+          max_attempts=30
+          attempt=1
+          until redis-cli -h localhost -p 6379 ping > /dev/null 2>&1 || [ $attempt -eq $max_attempts ]; do
+            echo "Redis not ready, attempt $attempt/$max_attempts"
+            sleep 2
+            attempt=$((attempt + 1))
+          done
+          if ! redis-cli -h localhost -p 6379 ping > /dev/null 2>&1; then
+            echo "❌ Redis failed to become ready after $max_attempts attempts"
+            exit 1
+          fi
+          echo "✅ Redis is ready"
+
+      - name: Setup complete
+        run: |
+          echo "✅ Shared setup complete"
+          echo "Node.js version: ${{ inputs.node-version }}"
+          echo "Install command: ${{ inputs.install-command }}"
+          echo "Environment setup: ${{ inputs.skip-env-setup != true && 'enabled' || 'skipped' }}"
+          echo "Service health checks: ${{ inputs.setup-services == true && 'enabled' || 'skipped' }}"

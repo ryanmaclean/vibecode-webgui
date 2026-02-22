@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "021-multi-agent-orchestration-framework",
+  "state": "building",
+  "subtasks": {
+    "completed": 12,
+    "total": 15,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Audit Trail & Rollback UI",
+    "id": null,
+    "total": 3
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 7,
+    "started_at": "2026-02-14T19:55:53.802146"
+  },
+  "last_update": "2026-02-14T20:14:07.356406"
+}
