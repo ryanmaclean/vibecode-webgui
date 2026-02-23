@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "059-add-vector-embedding-similarity-explorer",
+  "spec": "034-ai-quality-metrics-tracking",
   "state": "building",
   "subtasks": {
-    "completed": 2,
-    "total": 5,
+    "completed": 9,
+    "total": 14,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Vector Explorer Page",
+    "current": "Dashboard API Endpoints",
     "id": null,
-    "total": 1
+    "total": 2
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 4,
-    "started_at": "2026-02-21T20:22:35.382132"
+    "number": 11,
+    "started_at": "2026-02-23T12:20:44.646913"
   },
-  "last_update": "2026-02-21T20:33:01.080723"
+  "last_update": "2026-02-23T12:55:40.966064"
 }
