@@ -25,8 +25,8 @@ export const dynamic = 'force-dynamic';
 const querySchema = z.object({
   period: z.enum(['day', 'week', 'month']).optional().default('week'),
   modelIds: z.string().optional(), // Comma-separated model IDs
-  includeAlerts: z.string().optional().transform(val => val === 'true').default('true'),
-  includeTrends: z.string().optional().transform(val => val === 'true').default('true'),
+  includeAlerts: z.string().optional().default('true').transform(val => val === 'true'),
+  includeTrends: z.string().optional().default('true').transform(val => val === 'true'),
   skipCache: z.string().optional().transform(val => val === 'true'),
 });
 
