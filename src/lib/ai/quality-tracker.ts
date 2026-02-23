@@ -30,6 +30,12 @@ import { calculateCodeEditDistance, type EditDistanceResult } from './edit-dista
 import type { QualityMetrics, UserRating, QualityTrackingConfig } from '@/types/ai-quality-metrics';
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
+import {
+  QualityDegradationDetector,
+  type QualityDegradationAlert,
+  type DegradationThresholds
+} from './quality-degradation-detector';
+import { QualityAlertManager } from './quality-alerts';
 
 // =============================================================================
 // Types
@@ -99,10 +105,15 @@ export class QualityTracker {
   private metricsProvider: IMetricsProvider;
   private config: QualityTrackingConfig;
   private suggestions: Map<string, SuggestionData> = new Map();
+  private degradationDetector: QualityDegradationDetector | null = null;
+  private alertManager: QualityAlertManager | null = null;
+  private monitoringInterval?: NodeJS.Timeout;
 
   constructor(
     metricsProvider: IMetricsProvider,
-    config: Partial<QualityTrackingConfig> = {}
+    config: Partial<QualityTrackingConfig> = {},
+    degradationDetector?: QualityDegradationDetector,
+    alertManager?: QualityAlertManager
   ) {
     this.metricsProvider = metricsProvider;
     this.config = {
@@ -116,8 +127,16 @@ export class QualityTracker {
       judgeModelId: config.judgeModelId,
     };
 
+    this.degradationDetector = degradationDetector || null;
+    this.alertManager = alertManager || null;
+
     if (this.config.enabled) {
       logger.info('[QualityTracker] Initialized', { config: this.config });
+
+      // Start periodic degradation monitoring if detector and alert manager are available
+      if (this.degradationDetector && this.alertManager) {
+        this.startDegradationMonitoring();
+      }
     }
   }
 
@@ -466,6 +485,154 @@ export class QualityTracker {
   }
 
   /**
+   * Start periodic degradation monitoring
+   */
+  startDegradationMonitoring(intervalMs: number = 300000): void {
+    if (!this.degradationDetector || !this.alertManager) {
+      logger.warn('[QualityTracker] Cannot start monitoring: detector or alert manager not initialized');
+      return;
+    }
+
+    if (this.monitoringInterval) {
+      logger.warn('[QualityTracker] Degradation monitoring already started');
+      return;
+    }
+
+    logger.info('[QualityTracker] Starting degradation monitoring', { intervalMs });
+
+    // Subscribe to degradation alerts
+    this.degradationDetector.on('degradationDetected', (alert: QualityDegradationAlert) => {
+      this.handleDegradationAlert(alert);
+    });
+
+    // Start periodic checks
+    this.monitoringInterval = setInterval(async () => {
+      try {
+        await this.checkForDegradation();
+      } catch (error) {
+        logger.error('[QualityTracker] Error during degradation check', { error });
+      }
+    }, intervalMs);
+  }
+
+  /**
+   * Stop periodic degradation monitoring
+   */
+  stopDegradationMonitoring(): void {
+    if (this.monitoringInterval) {
+      clearInterval(this.monitoringInterval);
+      this.monitoringInterval = undefined;
+      logger.info('[QualityTracker] Degradation monitoring stopped');
+    }
+
+    if (this.degradationDetector) {
+      this.degradationDetector.removeAllListeners('degradationDetected');
+    }
+  }
+
+  /**
+   * Run a degradation check across all models
+   */
+  async checkForDegradation(): Promise<void> {
+    if (!this.degradationDetector) {
+      logger.warn('[QualityTracker] Cannot check degradation: detector not initialized');
+      return;
+    }
+
+    logger.info('[QualityTracker] Running degradation check');
+
+    try {
+      const results = await this.degradationDetector.checkAllModels();
+
+      logger.info('[QualityTracker] Degradation check complete', {
+        modelsChecked: results.length,
+        degradationDetected: results.filter(r => r.hasDegradation).length,
+      });
+
+      // Alerts are emitted via the 'degradationDetected' event
+      // and handled by handleDegradationAlert()
+    } catch (error) {
+      logger.error('[QualityTracker] Failed to check for degradation', { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Handle a detected degradation alert
+   */
+  private async handleDegradationAlert(alert: QualityDegradationAlert): Promise<void> {
+    if (!this.alertManager) {
+      logger.warn('[QualityTracker] Cannot handle alert: alert manager not initialized');
+      return;
+    }
+
+    try {
+      logger.warn('[QualityTracker] Degradation alert detected', {
+        modelId: alert.modelId,
+        alertType: alert.alertType,
+        severity: alert.severity,
+        message: alert.message,
+      });
+
+      // Create the alert in the database
+      const alertRecord = await this.alertManager.createAlert(alert);
+
+      // Emit metrics for the alert
+      this.emitMetric('degradation.alert', 1, {
+        model: alert.modelId,
+        alert_type: alert.alertType,
+        severity: alert.severity,
+      });
+
+      logger.info('[QualityTracker] Alert created', {
+        alertId: alertRecord.id,
+        modelId: alert.modelId,
+        alertType: alert.alertType,
+      });
+    } catch (error) {
+      logger.error('[QualityTracker] Failed to handle degradation alert', {
+        error,
+        alert,
+      });
+    }
+  }
+
+  /**
+   * Get active degradation alerts
+   */
+  async getActiveAlerts(modelId?: string): Promise<any[]> {
+    if (!this.alertManager) {
+      logger.warn('[QualityTracker] Cannot get alerts: alert manager not initialized');
+      return [];
+    }
+
+    try {
+      return await this.alertManager.getActiveAlerts({ modelId });
+    } catch (error) {
+      logger.error('[QualityTracker] Failed to get active alerts', { error, modelId });
+      return [];
+    }
+  }
+
+  /**
+   * Resolve a degradation alert
+   */
+  async resolveAlert(alertId: number, resolutionNote?: string): Promise<void> {
+    if (!this.alertManager) {
+      logger.warn('[QualityTracker] Cannot resolve alert: alert manager not initialized');
+      return;
+    }
+
+    try {
+      await this.alertManager.resolveAlert(alertId, resolutionNote);
+      logger.info('[QualityTracker] Alert resolved', { alertId, resolutionNote });
+    } catch (error) {
+      logger.error('[QualityTracker] Failed to resolve alert', { error, alertId });
+      throw error;
+    }
+  }
+
+  /**
    * Flush any buffered metrics
    */
   async flush(): Promise<void> {
@@ -476,8 +643,17 @@ export class QualityTracker {
    * Shutdown the tracker
    */
   async shutdown(): Promise<void> {
+    this.stopDegradationMonitoring();
     await this.metricsProvider.shutdown();
     this.suggestions.clear();
+
+    if (this.degradationDetector) {
+      this.degradationDetector.shutdown();
+    }
+
+    if (this.alertManager) {
+      this.alertManager.shutdown();
+    }
   }
 
   // Private helper methods
@@ -512,10 +688,23 @@ let globalTracker: QualityTracker | null = null;
 /**
  * Get the global quality tracker instance
  */
-export function getQualityTracker(config?: Partial<QualityTrackingConfig>): QualityTracker {
+export function getQualityTracker(
+  config?: Partial<QualityTrackingConfig>,
+  degradationThresholds?: Partial<DegradationThresholds>
+): QualityTracker {
   if (!globalTracker) {
     const metricsProvider = getMetricsProvider();
-    globalTracker = new QualityTracker(metricsProvider, config);
+
+    // Initialize degradation detector and alert manager
+    const degradationDetector = new QualityDegradationDetector(prisma, degradationThresholds);
+    const alertManager = new QualityAlertManager(prisma);
+
+    globalTracker = new QualityTracker(
+      metricsProvider,
+      config,
+      degradationDetector,
+      alertManager
+    );
   }
   return globalTracker;
 }
@@ -525,10 +714,12 @@ export function getQualityTracker(config?: Partial<QualityTrackingConfig>): Qual
  */
 export function createQualityTracker(
   metricsProvider?: IMetricsProvider,
-  config?: Partial<QualityTrackingConfig>
+  config?: Partial<QualityTrackingConfig>,
+  degradationDetector?: QualityDegradationDetector,
+  alertManager?: QualityAlertManager
 ): QualityTracker {
   const provider = metricsProvider || getMetricsProvider();
-  return new QualityTracker(provider, config);
+  return new QualityTracker(provider, config, degradationDetector, alertManager);
 }
 
 /**
