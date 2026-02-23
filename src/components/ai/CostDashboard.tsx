@@ -20,6 +20,17 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   AlertCircle,
   DollarSign,
@@ -60,8 +71,11 @@ import {
   CostSettings,
   TimePeriod,
   ModelPricing,
+  AlertType,
+  AlertSeverity,
 } from '@/types/cost-estimation';
 import { getCostTracker, CostTracker, MODEL_PRICING } from '@/lib/ai/cost/cost-tracker';
+import { CostSettingsPanel } from '@/components/ai/CostSettingsPanel';
 
 // ============================================================================
 // Types
@@ -166,9 +180,10 @@ interface StatCardProps {
   trend?: number;
   trendLabel?: string;
   variant?: 'default' | 'success' | 'warning' | 'danger';
+  testId?: string;
 }
 
-function StatCard({ title, value, description, icon, trend, trendLabel, variant = 'default' }: StatCardProps) {
+function StatCard({ title, value, description, icon, trend, trendLabel, variant = 'default', testId }: StatCardProps) {
   const variantStyles = {
     default: 'bg-card',
     success: 'bg-green-50 border-green-200',
@@ -182,7 +197,7 @@ function StatCard({ title, value, description, icon, trend, trendLabel, variant 
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold">{value}</p>
+            <p data-testid={testId} className="text-2xl font-bold">{value}</p>
             {description && (
               <p className="text-xs text-muted-foreground">{description}</p>
             )}
@@ -497,6 +512,15 @@ export default function CostDashboard({
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
+  // Alert creation dialog state
+  const [isCreateAlertOpen, setIsCreateAlertOpen] = useState(false);
+  const [newAlertType, setNewAlertType] = useState<AlertType>('budget_threshold');
+  const [newAlertThreshold, setNewAlertThreshold] = useState<string>('10.00');
+  const [newAlertSeverity, setNewAlertSeverity] = useState<AlertSeverity>('warning');
+  const [newAlertResetPeriod, setNewAlertResetPeriod] = useState<TimePeriod>('monthly');
+  const [newAlertEnabled, setNewAlertEnabled] = useState(true);
+  const [newAlertNotify, setNewAlertNotify] = useState(true);
+
   // Load dashboard data
   const loadData = useCallback(() => {
     try {
@@ -570,6 +594,39 @@ export default function CostDashboard({
     [tracker, selectedPeriod]
   );
 
+  // Handle alert creation
+  const handleCreateAlert = useCallback(() => {
+    try {
+      const threshold = parseFloat(newAlertThreshold);
+      if (isNaN(threshold) || threshold <= 0) {
+        return;
+      }
+
+      tracker.createAlert({
+        type: newAlertType,
+        threshold,
+        enabled: newAlertEnabled,
+        notifyOnTrigger: newAlertNotify,
+        notificationChannels: newAlertNotify ? ['in_app'] : [],
+        resetPeriod: newAlertResetPeriod,
+      });
+
+      // Reset form and close dialog
+      setNewAlertType('budget_threshold');
+      setNewAlertThreshold('10.00');
+      setNewAlertSeverity('warning');
+      setNewAlertResetPeriod('monthly');
+      setNewAlertEnabled(true);
+      setNewAlertNotify(true);
+      setIsCreateAlertOpen(false);
+
+      // Reload data to show new alert
+      loadData();
+    } catch (error) {
+      console.error('Failed to create alert:', error);
+    }
+  }, [tracker, newAlertType, newAlertThreshold, newAlertSeverity, newAlertResetPeriod, newAlertEnabled, newAlertNotify, loadData]);
+
   if (isLoading || !data) {
     return (
       <div className={`space-y-6 ${className}`}>
@@ -641,6 +698,7 @@ export default function CostDashboard({
           value={formatCost(session.totalCost)}
           description={`${session.requests} requests`}
           icon={<DollarSign className="h-5 w-5" />}
+          testId="session-cost"
         />
         <StatCard
           title="Today's Cost"
@@ -671,11 +729,11 @@ export default function CostDashboard({
             <BarChart3 className="h-4 w-4 mr-1" />
             Overview
           </TabsTrigger>
-          <TabsTrigger value="models">
+          <TabsTrigger value="models" data-testid="models-tab">
             <PieChart className="h-4 w-4 mr-1" />
             By Model
           </TabsTrigger>
-          <TabsTrigger value="alerts">
+          <TabsTrigger value="alerts" data-testid="alerts-tab">
             <Bell className="h-4 w-4 mr-1" />
             Alerts
             {alerts.filter((a) => a.triggered).length > 0 && (
@@ -685,7 +743,7 @@ export default function CostDashboard({
             )}
           </TabsTrigger>
           {showSettings && (
-            <TabsTrigger value="settings">
+            <TabsTrigger value="settings" data-testid="settings-tab">
               <Settings className="h-4 w-4 mr-1" />
               Settings
             </TabsTrigger>
@@ -757,7 +815,7 @@ export default function CostDashboard({
                   Breakdown of spending across different AI models
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent data-testid="model-breakdown">
                 <ModelBreakdownChart data={session.byModel} />
               </CardContent>
             </Card>
@@ -821,10 +879,18 @@ export default function CostDashboard({
         <TabsContent value="alerts" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Cost Alerts</CardTitle>
-              <CardDescription>
-                Configure alerts to monitor your AI spending
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Cost Alerts</CardTitle>
+                  <CardDescription>
+                    Configure alerts to monitor your AI spending
+                  </CardDescription>
+                </div>
+                <Button onClick={() => setIsCreateAlertOpen(true)}>
+                  <Bell className="h-4 w-4 mr-2" />
+                  Create Alert
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {alerts.length === 0 ? (
@@ -833,10 +899,10 @@ export default function CostDashboard({
                   <p className="text-muted-foreground mb-4">
                     No alerts configured. Set up alerts to monitor your spending.
                   </p>
-                  <Button>Create Alert</Button>
+                  <Button onClick={() => setIsCreateAlertOpen(true)}>Create Alert</Button>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div data-testid="alert-list" className="space-y-4">
                   {alerts.map((alert) => (
                     <div
                       key={alert.id}
@@ -893,97 +959,124 @@ export default function CostDashboard({
         {/* Settings Tab */}
         {showSettings && (
           <TabsContent value="settings" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Budget Settings</CardTitle>
-                  <CardDescription>
-                    Configure spending limits and budgets
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Monthly Budget</label>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-muted-foreground">$</span>
-                      <input
-                        type="number"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        value={settings.monthlyBudget}
-                        placeholder="0 (unlimited)"
-                        readOnly
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Set to 0 for unlimited spending
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Daily Budget</label>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-muted-foreground">$</span>
-                      <input
-                        type="number"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        value={settings.dailyBudget}
-                        placeholder="0 (unlimited)"
-                        readOnly
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Display Preferences</CardTitle>
-                  <CardDescription>
-                    Customize how costs are displayed
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Show estimates before send</p>
-                      <p className="text-sm text-muted-foreground">
-                        Display cost estimates before sending messages
-                      </p>
-                    </div>
-                    <Badge variant={settings.showEstimatesBeforeSend ? 'default' : 'secondary'}>
-                      {settings.showEstimatesBeforeSend ? 'Enabled' : 'Disabled'}
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Real-time cost tracking</p>
-                      <p className="text-sm text-muted-foreground">
-                        Show running cost total during sessions
-                      </p>
-                    </div>
-                    <Badge variant={settings.showRealtimeCosts ? 'default' : 'secondary'}>
-                      {settings.showRealtimeCosts ? 'Enabled' : 'Disabled'}
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Optimization suggestions</p>
-                      <p className="text-sm text-muted-foreground">
-                        Suggest cost-effective model alternatives
-                      </p>
-                    </div>
-                    <Badge variant={settings.enableOptimizationSuggestions ? 'default' : 'secondary'}>
-                      {settings.enableOptimizationSuggestions ? 'Enabled' : 'Disabled'}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <CostSettingsPanel
+              costTracker={tracker}
+              onSettingsSaved={loadData}
+            />
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Create Alert Dialog */}
+      <Dialog open={isCreateAlertOpen} onOpenChange={setIsCreateAlertOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Create Cost Alert</DialogTitle>
+            <DialogDescription>
+              Set up a new alert to monitor your AI spending
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="alert-type">Alert Type</Label>
+              <Select
+                value={newAlertType}
+                onValueChange={(v) => setNewAlertType(v as AlertType)}
+              >
+                <SelectTrigger data-testid="alert-type" id="alert-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="budget_threshold">Budget Threshold</SelectItem>
+                  <SelectItem value="daily_limit">Daily Limit</SelectItem>
+                  <SelectItem value="session_limit">Session Limit</SelectItem>
+                  <SelectItem value="rate_spike">Rate Spike</SelectItem>
+                  <SelectItem value="unusual_usage">Unusual Usage</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="alert-threshold">Threshold (USD)</Label>
+              <Input
+                data-testid="alert-threshold"
+                id="alert-threshold"
+                type="number"
+                step="0.01"
+                min="0"
+                value={newAlertThreshold}
+                onChange={(e) => setNewAlertThreshold(e.target.value)}
+                placeholder="10.00"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="alert-severity">Severity</Label>
+              <Select
+                value={newAlertSeverity}
+                onValueChange={(v) => setNewAlertSeverity(v as AlertSeverity)}
+              >
+                <SelectTrigger data-testid="alert-severity" id="alert-severity">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info">Info</SelectItem>
+                  <SelectItem value="warning">Warning</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="alert-reset-period">Reset Period</Label>
+              <Select
+                value={newAlertResetPeriod}
+                onValueChange={(v) => setNewAlertResetPeriod(v as TimePeriod)}
+              >
+                <SelectTrigger id="alert-reset-period">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hourly">Hourly</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="alert-enabled"
+                checked={newAlertEnabled}
+                onCheckedChange={setNewAlertEnabled}
+              />
+              <Label htmlFor="alert-enabled" className="cursor-pointer">
+                Enable alert immediately
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="alert-notify"
+                checked={newAlertNotify}
+                onCheckedChange={setNewAlertNotify}
+              />
+              <Label htmlFor="alert-notify" className="cursor-pointer">
+                Send notifications when triggered
+              </Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateAlertOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateAlert}>Create Alert</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Footer */}
       <div className="text-xs text-muted-foreground text-center">

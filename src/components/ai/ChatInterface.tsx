@@ -11,6 +11,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { chatStreamRequest, ChatMessage as APIChatMessage } from '@/lib/ai-client';
 import {
   saveSession,
@@ -22,8 +30,11 @@ import {
 } from '@/lib/session-manager';
 import ModelSelector from '@/components/ai/ModelSelector';
 import ModelDisplay from '@/components/ai/ModelDisplay';
+import CostEstimator from '@/components/ai/CostEstimator';
 import type { ModelProfile } from '@/types/model-comparison';
 import { modelRegistry } from '@/lib/ai/models/model-registry';
+import { estimateTokens } from '@/lib/ai/context/token-counter';
+import { getCostTracker } from '@/lib/ai/cost/cost-tracker';
 
 export interface ChatMessage {
   id: string;
@@ -60,6 +71,10 @@ export function ChatInterface({
   const [availableModels, setAvailableModels] = useState<ModelProfile[]>([]);
   const [favoriteModelIds, setFavoriteModelIds] = useState<string[]>([]);
   const [recentModelIds, setRecentModelIds] = useState<string[]>([]);
+
+  // Cost confirmation dialog state
+  const [showCostDialog, setShowCostDialog] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState<string>('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -178,15 +193,12 @@ export function ChatInterface({
     });
   }, []);
 
-  const handleSendMessage = useCallback(async () => {
-    if (!input.trim() || isLoading) {
-      return;
-    }
-
+  // Core message sending logic
+  const sendMessageWithContent = useCallback(async (messageContent: string) => {
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
-      content: input.trim(),
+      content: messageContent,
       timestamp: new Date(),
     };
 
@@ -243,6 +255,24 @@ export function ChatInterface({
         throw streamError;
       }
 
+      // Record usage after successful response
+      try {
+        const costTracker = getCostTracker();
+
+        // Estimate prompt tokens (all messages sent to API)
+        const promptText = apiMessages.map(m => m.content).join('\n');
+        const promptTokens = estimateTokens(promptText, selectedModel);
+
+        // Estimate completion tokens (assistant's response)
+        const completionTokens = estimateTokens(accumulatedContent, selectedModel);
+
+        // Record usage
+        costTracker.recordUsage(selectedModel, promptTokens, completionTokens);
+      } catch (trackingError) {
+        // Don't fail the request if tracking fails
+        console.error('Failed to record usage:', trackingError);
+      }
+
       setIsStreaming(false);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error');
@@ -264,7 +294,41 @@ export function ChatInterface({
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, messages, selectedModel, onMessageSent, onError]);
+  }, [isLoading, messages, selectedModel, onMessageSent, onError]);
+
+  const handleSendMessage = useCallback(async () => {
+    if (!input.trim() || isLoading) {
+      return;
+    }
+
+    const messageContent = input.trim();
+
+    // Estimate token count
+    const tokenCount = estimateTokens(messageContent, selectedModel);
+
+    // Show confirmation dialog for expensive requests (>500 tokens)
+    if (tokenCount > 500) {
+      setPendingMessage(messageContent);
+      setShowCostDialog(true);
+      return;
+    }
+
+    // Send immediately for smaller messages
+    await sendMessageWithContent(messageContent);
+  }, [input, isLoading, selectedModel, sendMessageWithContent]);
+
+  // Handle confirmed expensive message send
+  const handleConfirmSend = useCallback(async () => {
+    setShowCostDialog(false);
+    await sendMessageWithContent(pendingMessage);
+    setPendingMessage('');
+  }, [pendingMessage, sendMessageWithContent]);
+
+  // Handle canceled expensive message
+  const handleCancelSend = useCallback(() => {
+    setShowCostDialog(false);
+    setPendingMessage('');
+  }, []);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -314,6 +378,7 @@ export function ChatInterface({
       {/* Model Selector */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <ModelSelector
+          data-testid="model-selector"
           selectedModelId={selectedModel}
           onModelSelect={handleModelSelect}
           models={availableModels}
@@ -350,7 +415,7 @@ export function ChatInterface({
               className={`flex ${
                 message.role === 'user' ? 'justify-end' : 'justify-start'
               }`}
-              data-testid={`message-${message.role}`}
+              data-testid={message.role === 'user' ? 'user-message' : 'assistant-message'}
             >
               <div
                 className={`max-w-[80%] rounded-lg p-3 ${
@@ -404,7 +469,7 @@ export function ChatInterface({
             placeholder="Type your message... (Shift+Enter for new line)"
             disabled={isLoading || isStreaming}
             className="min-h-[60px] max-h-[200px] resize-none"
-            data-testid="message-input"
+            data-testid="chat-input"
           />
           <Button
             onClick={handleSendMessage}
@@ -415,7 +480,95 @@ export function ChatInterface({
             {isLoading ? 'Sending...' : 'Send'}
           </Button>
         </div>
+        {/* Cost Estimation Preview */}
+        {input.trim() && (
+          <CostEstimator
+            message={input}
+            selectedModel={selectedModel}
+            inline={true}
+            className="mt-2"
+          />
+        )}
       </div>
+
+      {/* Cost Confirmation Dialog */}
+      <Dialog open={showCostDialog} onOpenChange={setShowCostDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Expensive Request</DialogTitle>
+            <DialogDescription>
+              This message is estimated to use more than 500 tokens. Please review the cost estimate below.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Model Information */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Model:</span>
+              <ModelDisplay
+                data-testid="model-display"
+                model={availableModels.find((m) => m.id === selectedModel)}
+                compact
+              />
+            </div>
+
+            {/* Cost Estimate */}
+            {pendingMessage && (
+              <div className="rounded-lg border p-4 bg-muted/50">
+                <CostEstimator
+                  message={pendingMessage}
+                  selectedModel={selectedModel}
+                  inline={false}
+                  showComparison={false}
+                  expandedByDefault={true}
+                />
+              </div>
+            )}
+
+            {/* Token Count Warning */}
+            <div className="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+              <svg
+                className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                  High token count detected
+                </p>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                  Estimated {estimateTokens(pendingMessage, selectedModel)} tokens.
+                  This request may incur higher costs.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleCancelSend}
+              data-testid="cancel-send-button"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmSend}
+              data-testid="confirm-send-button"
+            >
+              Send Anyway
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
