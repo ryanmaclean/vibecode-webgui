@@ -32,6 +32,9 @@ model User {
   conversations    Conversation[]
   session_contexts SessionContext[]
   codebaseIndexes  CodebaseIndex[]
+  pluginRepositories PluginRepository[]
+  pluginRatings      PluginRating[]
+  pluginDownloads    PluginDownload[]
 
   @@map("users")
 }
@@ -337,6 +340,7 @@ model AISuggestion {
   content    String // Suggestion content
   type       String // Type of suggestion (e.g., "code", "refactor", "feature")
   status     String   @default("pending") // pending, accepted, rejected
+  metadata   Json? // Additional suggestion metadata
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -345,6 +349,8 @@ model AISuggestion {
 
   @@index([project_id])
   @@index([status])
+  @@index([type])
+  @@index([project_id, status, created_at])
   @@index([created_at])
   @@map("ai_suggestions")
 }
@@ -764,6 +770,125 @@ model Plugin {
   @@index([status])
   @@index([installed_at])
   @@map("plugins")
+}
+
+// Plugin Repository - Community marketplace for plugins
+model PluginRepository {
+  id                Int      @id @default(autoincrement())
+  name              String
+  display_name      String // Friendly display name
+  description       String
+  author_id         Int
+  repository_url    String? // Source code repository URL
+  homepage_url      String? // Plugin homepage/docs
+  icon_url          String? // Plugin icon/logo URL
+  category          String // integration, ai-model, theme, extension, etc.
+  tags              Json? // Array of tags for categorization
+  downloads_count   Int      @default(0)
+  average_rating    Float? // Calculated average rating
+  status            String   @default("published") // published, unpublished, deprecated
+  featured          Boolean  @default(false) // Featured/promoted plugin
+  verified          Boolean  @default(false) // Verified by VibeCode team
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  // Relations
+  author   User            @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  versions PluginVersion[]
+  ratings  PluginRating[]
+  downloads PluginDownload[]
+
+  @@index([author_id])
+  @@index([name])
+  @@index([status])
+  @@index([category])
+  @@index([featured, status]) // For featured plugin queries
+  @@index([verified, status]) // For verified plugin queries
+  @@index([downloads_count, status]) // For sorting by popularity
+  @@index([average_rating, status]) // For sorting by rating
+  @@index([status, created_at]) // For sorting by newest
+  @@index([category, status, downloads_count]) // For category-specific popular plugins
+  @@map("plugin_repository")
+}
+
+// Plugin Versions - Different releases of marketplace plugins
+model PluginVersion {
+  id                  Int      @id @default(autoincrement())
+  plugin_id           Int
+  version             String // Semantic version (e.g., "1.2.3")
+  changelog           String? // Release notes
+  package_url         String // Download URL for plugin package
+  package_checksum    String // SHA-256 checksum for integrity
+  compatible_versions Json? // Compatible VibeCode versions
+  downloads_count     Int      @default(0)
+  status              String   @default("active") // active, deprecated, yanked
+  published_at        DateTime @default(now())
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  // Relations
+  plugin    PluginRepository @relation(fields: [plugin_id], references: [id], onDelete: Cascade)
+  downloads PluginDownload[]
+
+  @@unique([plugin_id, version], name: "plugin_id_version")
+  @@index([plugin_id])
+  @@index([version])
+  @@index([status])
+  @@index([published_at])
+  @@index([plugin_id, status, published_at]) // For plugin version history
+  @@index([downloads_count, status]) // For popular version tracking
+  @@map("plugin_versions")
+}
+
+// Plugin Ratings - User reviews and ratings
+model PluginRating {
+  id            Int      @id @default(autoincrement())
+  plugin_id     Int
+  user_id       Int
+  rating        Int // 1-5 stars
+  title         String? // Review title
+  review        String? // Review text
+  helpful_count Int      @default(0) // Number of "helpful" votes
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  // Relations
+  plugin PluginRepository @relation(fields: [plugin_id], references: [id], onDelete: Cascade)
+  user   User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([plugin_id, user_id], name: "plugin_id_user_id")
+  @@index([plugin_id])
+  @@index([user_id])
+  @@index([rating])
+  @@index([plugin_id, rating]) // For rating distribution queries
+  @@index([helpful_count, plugin_id]) // For sorting reviews by helpfulness
+  @@index([created_at])
+  @@map("plugin_ratings")
+}
+
+// Plugin Downloads - Track plugin download metrics
+model PluginDownload {
+  id         Int      @id @default(autoincrement())
+  plugin_id  Int
+  version_id Int?
+  user_id    Int? // Nullable for anonymous downloads
+  ip_address String?
+  user_agent String?
+  created_at DateTime @default(now())
+
+  // Relations
+  plugin  PluginRepository @relation(fields: [plugin_id], references: [id], onDelete: Cascade)
+  version PluginVersion?   @relation(fields: [version_id], references: [id], onDelete: SetNull)
+  user    User?            @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([plugin_id])
+  @@index([version_id])
+  @@index([user_id])
+  @@index([created_at])
+  @@index([plugin_id, created_at]) // For plugin download time series
+  @@index([version_id, created_at]) // For version download tracking
+  @@index([user_id, created_at]) // For user download history
+  @@map("plugin_downloads")
 }
 
 // ============================================

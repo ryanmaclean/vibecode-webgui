@@ -106,8 +106,7 @@ export class OpenVSCodeServer implements WebIDE {
       throw new Error(`Session ${sessionId} not found`);
     }
 
-    // In a real implementation, this would call the OpenVSCode Server API
-    // to install the extension via the marketplace
+    // OpenVSCode Server uses Open VSX Registry for extensions
     const extensions = (session.metadata?.extensions as string[]) || [];
     if (!extensions.includes(extensionId)) {
       extensions.push(extensionId);

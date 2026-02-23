@@ -37,6 +37,7 @@ const ALLOWED_MIME_TYPES = [
  * Request body schema for URL-based installation
  */
 const installRequestSchema = z.object({
+  pluginId: z.string().optional(), // Optional plugin ID for reference
   source: z.string().min(1, 'Plugin source is required'),
   version: z.string().optional(),
   force: z.boolean().optional(),

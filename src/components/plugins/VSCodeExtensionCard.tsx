@@ -1,6 +1,6 @@
 /**
- * Plugin Card Component
- * Display individual plugin information in the marketplace
+ * VS Code Extension Card Component
+ * Display individual VS Code extension information in the marketplace
  */
 
 'use client';
@@ -16,48 +16,42 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolidFilled } from '@heroicons/react/24/solid';
 
-export interface PluginCardData {
-  id: number;
+export interface VSCodeExtensionData {
+  id: string;
   name: string;
   displayName: string;
   description: string;
-  authorId: number;
-  authorName?: string;
-  repositoryUrl?: string;
-  homepageUrl?: string;
+  publisher: string;
   iconUrl?: string;
-  category: string;
+  categories?: string[];
   tags?: string[];
   downloadsCount: number;
   averageRating?: number;
   ratingsCount?: number;
-  status: string;
-  featured: boolean;
   verified: boolean;
-  latestVersion?: string;
-  createdAt: Date;
+  version?: string;
   updatedAt: Date;
 }
 
-interface PluginCardProps {
-  plugin: PluginCardData;
-  onInstall?: (plugin: PluginCardData) => void;
-  onCardClick?: (plugin: PluginCardData) => void;
+interface VSCodeExtensionCardProps {
+  extension: VSCodeExtensionData;
+  onInstall?: (extension: VSCodeExtensionData) => void;
+  onCardClick?: (extension: VSCodeExtensionData) => void;
   isInstalled?: boolean;
   isInstalling?: boolean;
-  selectedPluginId?: number;
+  selectedExtensionId?: string;
   className?: string;
 }
 
-export function PluginCard({
-  plugin,
+export function VSCodeExtensionCard({
+  extension,
   onInstall,
   onCardClick,
   isInstalled = false,
   isInstalling = false,
-  selectedPluginId,
+  selectedExtensionId,
   className = ''
-}: PluginCardProps) {
+}: VSCodeExtensionCardProps) {
   const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'sm') => {
     const sizeClasses = {
       sm: 'h-4 w-4',
@@ -111,32 +105,32 @@ export function PluginCard({
 
   const handleInstallClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onInstall?.(plugin);
+    onInstall?.(extension);
   };
 
   return (
     <div
       className={`bg-white rounded-lg border ${
-        selectedPluginId === plugin.id
+        selectedExtensionId === extension.id
           ? 'border-blue-500 ring-2 ring-blue-200'
           : 'border-gray-200 hover:border-gray-300'
       } overflow-hidden hover:shadow-md transition-all cursor-pointer ${className}`}
-      onClick={() => onCardClick?.(plugin)}
+      onClick={() => onCardClick?.(extension)}
     >
-      {/* Plugin Icon/Preview */}
+      {/* Extension Icon/Preview */}
       <div className="aspect-video bg-gray-100 relative">
-        {plugin.iconUrl ? (
+        {extension.iconUrl ? (
           <img
-            src={plugin.iconUrl}
-            alt={plugin.displayName}
+            src={extension.iconUrl}
+            alt={extension.displayName}
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-100">
             <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 rounded-lg mx-auto mb-2 flex items-center justify-center">
+              <div className="w-16 h-16 bg-purple-600 rounded-lg mx-auto mb-2 flex items-center justify-center">
                 <span className="text-white font-bold text-xl">
-                  {plugin.displayName.charAt(0).toUpperCase()}
+                  {extension.displayName.charAt(0).toUpperCase()}
                 </span>
               </div>
               <p className="text-sm text-gray-600">No icon</p>
@@ -144,15 +138,8 @@ export function PluginCard({
           </div>
         )}
 
-        {/* Featured Badge */}
-        {plugin.featured && (
-          <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-            Featured
-          </div>
-        )}
-
         {/* Verified Badge */}
-        {plugin.verified && (
+        {extension.verified && (
           <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
             <CheckBadgeIcon className="h-3 w-3 mr-1" />
             Verified
@@ -167,25 +154,25 @@ export function PluginCard({
         )}
       </div>
 
-      {/* Plugin Info */}
+      {/* Extension Info */}
       <div className="p-4">
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 truncate">{plugin.displayName}</h3>
+            <h3 className="font-semibold text-gray-900 truncate">{extension.displayName}</h3>
             <p className="text-sm text-gray-600 line-clamp-2 mt-1">
-              {plugin.description}
+              {extension.description}
             </p>
           </div>
         </div>
 
         {/* Stats */}
         <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-          {plugin.averageRating !== undefined && plugin.averageRating > 0 ? (
+          {extension.averageRating !== undefined && extension.averageRating > 0 ? (
             <div className="flex items-center">
-              {renderStars(plugin.averageRating)}
-              <span className="ml-1">{plugin.averageRating.toFixed(1)}</span>
-              {plugin.ratingsCount !== undefined && plugin.ratingsCount > 0 && (
-                <span className="ml-1 text-xs">({plugin.ratingsCount})</span>
+              {renderStars(extension.averageRating)}
+              <span className="ml-1">{extension.averageRating.toFixed(1)}</span>
+              {extension.ratingsCount !== undefined && extension.ratingsCount > 0 && (
+                <span className="ml-1 text-xs">({extension.ratingsCount})</span>
               )}
             </div>
           ) : (
@@ -195,26 +182,28 @@ export function PluginCard({
           )}
           <div className="flex items-center">
             <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
-            {formatNumber(plugin.downloadsCount)}
+            {formatNumber(extension.downloadsCount)}
           </div>
         </div>
 
         {/* Version and Category */}
         <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-          <span className="bg-gray-100 px-2 py-1 rounded">
-            {plugin.category}
-          </span>
-          {plugin.latestVersion && (
+          {extension.categories && extension.categories.length > 0 && (
+            <span className="bg-gray-100 px-2 py-1 rounded">
+              {extension.categories[0]}
+            </span>
+          )}
+          {extension.version && (
             <span className="text-gray-600">
-              v{plugin.latestVersion}
+              v{extension.version}
             </span>
           )}
         </div>
 
         {/* Tags */}
-        {plugin.tags && plugin.tags.length > 0 && (
+        {extension.tags && extension.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
-            {plugin.tags.slice(0, 3).map((tag) => (
+            {extension.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
                 className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700"
@@ -223,8 +212,8 @@ export function PluginCard({
                 {tag}
               </span>
             ))}
-            {plugin.tags.length > 3 && (
-              <span className="text-xs text-gray-500">+{plugin.tags.length - 3} more</span>
+            {extension.tags.length > 3 && (
+              <span className="text-xs text-gray-500">+{extension.tags.length - 3} more</span>
             )}
           </div>
         )}
@@ -233,7 +222,7 @@ export function PluginCard({
         <div className="flex items-center justify-between pt-3 border-t border-gray-200">
           <div className="flex items-center text-sm text-gray-500">
             <UserIcon className="h-4 w-4 mr-1" />
-            <span className="truncate">{plugin.authorName || 'Unknown'}</span>
+            <span className="truncate">{extension.publisher || 'Unknown'}</span>
           </div>
           <button
             onClick={handleInstallClick}
@@ -253,7 +242,7 @@ export function PluginCard({
         {/* Last Updated */}
         <div className="flex items-center text-xs text-gray-400 mt-2">
           <ClockIcon className="h-3 w-3 mr-1" />
-          Updated {new Date(plugin.updatedAt).toLocaleDateString()}
+          Updated {new Date(extension.updatedAt).toLocaleDateString()}
         </div>
       </div>
     </div>
