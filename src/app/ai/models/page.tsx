@@ -22,6 +22,7 @@ import ModelSelector from '@/components/ai/ModelSelector';
 import ModelComparison from '@/components/ai/ModelComparison';
 import ModelDetails from '@/components/ai/ModelDetails';
 import OllamaModelManager from '@/components/ai/OllamaModelManager';
+import { ModelChangeNotification } from '@/components/ai/ModelChangeNotification';
 import type { ModelProfile, TaskType } from '@/types/model-comparison';
 
 // ============================================================================
@@ -204,6 +205,14 @@ export default function AIModelsPage() {
             Browse, compare, and get recommendations for AI models
           </p>
         </div>
+
+        {/* Model Change Notifications */}
+        <ModelChangeNotification
+          showDetails
+          showRefreshButton
+          onRefresh={fetchModels}
+          className="mb-6"
+        />
 
         {/* Error State */}
         {error && (
