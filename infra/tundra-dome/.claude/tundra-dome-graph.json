@@ -1,0 +1,465 @@
+{
+  "apollo_mappings": {
+    "Dome": "K8s Cluster - The entire computational domain",
+    "Town": "K8s Namespace - A logical grouping of workloads",
+    "Polecat": "K8s Pod - A worker unit that processes beads",
+    "Bead": "Work Item - A unit of work (issue, PR, task)",
+    "Lane": "Priority Queue - Routing tier (experimental/standard/critical)",
+    "Mayor": "Controller - Oversees town operations",
+    "Sling": "Kafka - Message transport between components"
+  },
+  "lane_models": {
+    "experimental": {
+      "provider": "openrouter",
+      "model": "deepseek/deepseek-r1-0528:free"
+    },
+    "standard": {
+      "provider": "openrouter",
+      "model": "meta-llama/llama-3.3-70b-instruct:free"
+    },
+    "critical": {
+      "provider": "anthropic",
+      "model": "claude-opus-4-5-20251101"
+    }
+  },
+  "nodes": {
+    "dome-tundra": {
+      "id": "dome-tundra",
+      "type": "cluster",
+      "name": "Tundra Dome",
+      "apollo_type": "Dome",
+      "metadata": {
+        "namespace": "tundra-dome"
+      }
+    },
+    "town-tundra-dome": {
+      "id": "town-tundra-dome",
+      "type": "namespace",
+      "name": "tundra-dome",
+      "apollo_type": "Town"
+    },
+    "polecat-github-syncer": {
+      "id": "polecat-github-syncer",
+      "type": "polecat-crd",
+      "name": "github-syncer",
+      "apollo_type": "Polecat",
+      "k8s_status": "Running",
+      "metadata": {
+        "role": "polecat",
+        "skills": [
+          "github-api",
+          "issue-sync",
+          "pr-sync"
+        ],
+        "lanes": [
+          "standard",
+          "experimental"
+        ],
+        "replicas": 2,
+        "kafka_consume": [
+          "tundra-work-intake",
+          "tundra-polecat-commands"
+        ],
+        "kafka_produce": [
+          "tundra-beads-created",
+          "tundra-audit-actions"
+        ]
+      }
+    },
+    "topic-tundra-work-intake": {
+      "id": "topic-tundra-work-intake",
+      "type": "kafka-topic",
+      "name": "tundra-work-intake",
+      "apollo_type": "Sling"
+    },
+    "topic-tundra-polecat-commands": {
+      "id": "topic-tundra-polecat-commands",
+      "type": "kafka-topic",
+      "name": "tundra-polecat-commands",
+      "apollo_type": "Sling"
+    },
+    "topic-tundra-beads-created": {
+      "id": "topic-tundra-beads-created",
+      "type": "kafka-topic",
+      "name": "tundra-beads-created",
+      "apollo_type": "Sling"
+    },
+    "topic-tundra-audit-actions": {
+      "id": "topic-tundra-audit-actions",
+      "type": "kafka-topic",
+      "name": "tundra-audit-actions",
+      "apollo_type": "Sling"
+    },
+    "polecat-kafka-emitter": {
+      "id": "polecat-kafka-emitter",
+      "type": "polecat-crd",
+      "name": "kafka-emitter",
+      "apollo_type": "Polecat",
+      "k8s_status": "Running",
+      "metadata": {
+        "role": "polecat",
+        "skills": [
+          "kafka-produce",
+          "event-emit"
+        ],
+        "lanes": [
+          "critical",
+          "standard",
+          "experimental"
+        ],
+        "replicas": 1,
+        "kafka_consume": [
+          "tundra-beads-in-progress"
+        ],
+        "kafka_produce": [
+          "tundra-beads-completed",
+          "tundra-beads-failed",
+          "tundra-metrics-kpi"
+        ]
+      }
+    },
+    "topic-tundra-beads-in-progress": {
+      "id": "topic-tundra-beads-in-progress",
+      "type": "kafka-topic",
+      "name": "tundra-beads-in-progress",
+      "apollo_type": "Sling"
+    },
+    "topic-tundra-beads-completed": {
+      "id": "topic-tundra-beads-completed",
+      "type": "kafka-topic",
+      "name": "tundra-beads-completed",
+      "apollo_type": "Sling"
+    },
+    "topic-tundra-beads-failed": {
+      "id": "topic-tundra-beads-failed",
+      "type": "kafka-topic",
+      "name": "tundra-beads-failed",
+      "apollo_type": "Sling"
+    },
+    "topic-tundra-metrics-kpi": {
+      "id": "topic-tundra-metrics-kpi",
+      "type": "kafka-topic",
+      "name": "tundra-metrics-kpi",
+      "apollo_type": "Sling"
+    },
+    "polecat-td-overseer": {
+      "id": "polecat-td-overseer",
+      "type": "polecat-crd",
+      "name": "td-overseer",
+      "apollo_type": "Polecat",
+      "k8s_status": "Running",
+      "metadata": {
+        "role": "overseer",
+        "skills": [
+          "validation",
+          "quality-check",
+          "schema-enforcement"
+        ],
+        "lanes": [
+          "critical",
+          "standard"
+        ],
+        "replicas": 1,
+        "kafka_consume": [
+          "tundra-overseer-commands",
+          "tundra-beads-created"
+        ],
+        "kafka_produce": [
+          "tundra-beads-in-progress",
+          "tundra-beads-failed",
+          "tundra-schema-dlq"
+        ]
+      }
+    },
+    "topic-tundra-overseer-commands": {
+      "id": "topic-tundra-overseer-commands",
+      "type": "kafka-topic",
+      "name": "tundra-overseer-commands",
+      "apollo_type": "Sling"
+    },
+    "topic-tundra-schema-dlq": {
+      "id": "topic-tundra-schema-dlq",
+      "type": "kafka-topic",
+      "name": "tundra-schema-dlq",
+      "apollo_type": "Sling"
+    },
+    "polecat-td-reaper": {
+      "id": "polecat-td-reaper",
+      "type": "polecat-crd",
+      "name": "td-reaper",
+      "apollo_type": "Polecat",
+      "k8s_status": "Running",
+      "metadata": {
+        "role": "reaper",
+        "skills": [
+          "garbage-collection",
+          "resource-cleanup",
+          "stale-bead-removal"
+        ],
+        "lanes": [
+          "experimental"
+        ],
+        "replicas": 1,
+        "kafka_consume": [
+          "tundra-reaper-commands",
+          "tundra-beads-failed"
+        ],
+        "kafka_produce": [
+          "tundra-audit-actions"
+        ]
+      }
+    },
+    "topic-tundra-reaper-commands": {
+      "id": "topic-tundra-reaper-commands",
+      "type": "kafka-topic",
+      "name": "tundra-reaper-commands",
+      "apollo_type": "Sling"
+    },
+    "polecat-td-witness": {
+      "id": "polecat-td-witness",
+      "type": "polecat-crd",
+      "name": "td-witness",
+      "apollo_type": "Polecat",
+      "k8s_status": "Running",
+      "metadata": {
+        "role": "witness",
+        "skills": [
+          "logging",
+          "metrics",
+          "tracing",
+          "audit"
+        ],
+        "lanes": [
+          "critical",
+          "standard",
+          "experimental"
+        ],
+        "replicas": 1,
+        "kafka_consume": [
+          "tundra-witness-commands",
+          "tundra-beads-completed",
+          "tundra-beads-failed",
+          "tundra-beads-escalated"
+        ],
+        "kafka_produce": [
+          "tundra-audit-actions",
+          "tundra-metrics-kpi"
+        ]
+      }
+    },
+    "topic-tundra-witness-commands": {
+      "id": "topic-tundra-witness-commands",
+      "type": "kafka-topic",
+      "name": "tundra-witness-commands",
+      "apollo_type": "Sling"
+    },
+    "topic-tundra-beads-escalated": {
+      "id": "topic-tundra-beads-escalated",
+      "type": "kafka-topic",
+      "name": "tundra-beads-escalated",
+      "apollo_type": "Sling"
+    },
+    "lane-experimental": {
+      "id": "lane-experimental",
+      "type": "lane",
+      "name": "experimental",
+      "apollo_type": "Lane",
+      "metadata": {
+        "provider": "openrouter",
+        "model": "deepseek/deepseek-r1-0528:free"
+      }
+    },
+    "lane-standard": {
+      "id": "lane-standard",
+      "type": "lane",
+      "name": "standard",
+      "apollo_type": "Lane",
+      "metadata": {
+        "provider": "openrouter",
+        "model": "meta-llama/llama-3.3-70b-instruct:free"
+      }
+    },
+    "lane-critical": {
+      "id": "lane-critical",
+      "type": "lane",
+      "name": "critical",
+      "apollo_type": "Lane",
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-opus-4-5-20251101"
+      }
+    },
+    "dag-tundra_dome_integrations": {
+      "id": "dag-tundra_dome_integrations",
+      "type": "airflow-dag",
+      "name": "tundra_dome_integrations",
+      "apollo_type": "Mayor"
+    },
+    "dag-tundra_dome_kafka": {
+      "id": "dag-tundra_dome_kafka",
+      "type": "airflow-dag",
+      "name": "tundra_dome_kafka",
+      "apollo_type": "Mayor"
+    },
+    "dag-tundra_gitea_cicd": {
+      "id": "dag-tundra_gitea_cicd",
+      "type": "airflow-dag",
+      "name": "tundra_gitea_cicd",
+      "apollo_type": "Mayor"
+    },
+    "dag-tundra_github_ollama": {
+      "id": "dag-tundra_github_ollama",
+      "type": "airflow-dag",
+      "name": "tundra_github_ollama",
+      "apollo_type": "Mayor"
+    },
+    "dag-tundra_superdome_policies": {
+      "id": "dag-tundra_superdome_policies",
+      "type": "airflow-dag",
+      "name": "tundra_superdome_policies",
+      "apollo_type": "Mayor"
+    }
+  },
+  "edges": [
+    {
+      "from": "dome-tundra",
+      "to": "town-tundra-dome",
+      "type": "contains"
+    },
+    {
+      "from": "town-tundra-dome",
+      "to": "polecat-github-syncer",
+      "type": "contains"
+    },
+    {
+      "from": "topic-tundra-work-intake",
+      "to": "polecat-github-syncer",
+      "type": "consumed-by"
+    },
+    {
+      "from": "topic-tundra-polecat-commands",
+      "to": "polecat-github-syncer",
+      "type": "consumed-by"
+    },
+    {
+      "from": "polecat-github-syncer",
+      "to": "topic-tundra-beads-created",
+      "type": "produces"
+    },
+    {
+      "from": "polecat-github-syncer",
+      "to": "topic-tundra-audit-actions",
+      "type": "produces"
+    },
+    {
+      "from": "town-tundra-dome",
+      "to": "polecat-kafka-emitter",
+      "type": "contains"
+    },
+    {
+      "from": "topic-tundra-beads-in-progress",
+      "to": "polecat-kafka-emitter",
+      "type": "consumed-by"
+    },
+    {
+      "from": "polecat-kafka-emitter",
+      "to": "topic-tundra-beads-completed",
+      "type": "produces"
+    },
+    {
+      "from": "polecat-kafka-emitter",
+      "to": "topic-tundra-beads-failed",
+      "type": "produces"
+    },
+    {
+      "from": "polecat-kafka-emitter",
+      "to": "topic-tundra-metrics-kpi",
+      "type": "produces"
+    },
+    {
+      "from": "town-tundra-dome",
+      "to": "polecat-td-overseer",
+      "type": "contains"
+    },
+    {
+      "from": "topic-tundra-overseer-commands",
+      "to": "polecat-td-overseer",
+      "type": "consumed-by"
+    },
+    {
+      "from": "topic-tundra-beads-created",
+      "to": "polecat-td-overseer",
+      "type": "consumed-by"
+    },
+    {
+      "from": "polecat-td-overseer",
+      "to": "topic-tundra-beads-in-progress",
+      "type": "produces"
+    },
+    {
+      "from": "polecat-td-overseer",
+      "to": "topic-tundra-beads-failed",
+      "type": "produces"
+    },
+    {
+      "from": "polecat-td-overseer",
+      "to": "topic-tundra-schema-dlq",
+      "type": "produces"
+    },
+    {
+      "from": "town-tundra-dome",
+      "to": "polecat-td-reaper",
+      "type": "contains"
+    },
+    {
+      "from": "topic-tundra-reaper-commands",
+      "to": "polecat-td-reaper",
+      "type": "consumed-by"
+    },
+    {
+      "from": "topic-tundra-beads-failed",
+      "to": "polecat-td-reaper",
+      "type": "consumed-by"
+    },
+    {
+      "from": "polecat-td-reaper",
+      "to": "topic-tundra-audit-actions",
+      "type": "produces"
+    },
+    {
+      "from": "town-tundra-dome",
+      "to": "polecat-td-witness",
+      "type": "contains"
+    },
+    {
+      "from": "topic-tundra-witness-commands",
+      "to": "polecat-td-witness",
+      "type": "consumed-by"
+    },
+    {
+      "from": "topic-tundra-beads-completed",
+      "to": "polecat-td-witness",
+      "type": "consumed-by"
+    },
+    {
+      "from": "topic-tundra-beads-failed",
+      "to": "polecat-td-witness",
+      "type": "consumed-by"
+    },
+    {
+      "from": "topic-tundra-beads-escalated",
+      "to": "polecat-td-witness",
+      "type": "consumed-by"
+    },
+    {
+      "from": "polecat-td-witness",
+      "to": "topic-tundra-audit-actions",
+      "type": "produces"
+    },
+    {
+      "from": "polecat-td-witness",
+      "to": "topic-tundra-metrics-kpi",
+      "type": "produces"
+    }
+  ]
+}
