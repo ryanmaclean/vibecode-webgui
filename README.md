@@ -106,3 +106,63 @@ To control costs, we use a two-tier CI/CD strategy:
 # Create release branch for full testing
 ./create-release-branch.sh v1.2.0
 ```
+
+## 🔒 Security Considerations
+
+### Environment Isolation
+
+The environment isolation feature provides **safety**, not **security**.
+
+#### ✅ What It Protects Against
+
+- Accidental operations in the wrong environment
+- Human error and confusion
+- Lack of visual environment indicators
+- Unintentional production changes
+
+#### ❌ What It Does NOT Protect Against
+
+- **Determined attackers** with system access
+- **Environment variable manipulation** (`NODE_ENV`, `DD_ENV`, etc.)
+- **Hostname or domain spoofing**
+- **Malicious code execution**
+- **Privileged users** intentionally bypassing checks
+
+#### Attack Vectors
+
+Environment detection can be bypassed by:
+- Setting environment variables (`NODE_ENV=test`)
+- Modifying hostname or domain configuration
+- Manipulating git branch information
+- Setting custom environment detection rules
+
+#### For True Security Isolation
+
+To protect against determined attackers:
+
+1. **Infrastructure Isolation**
+   - Separate AWS accounts/GCP projects per environment
+   - Network-level firewall rules
+   - VPC/subnet isolation
+
+2. **Cryptographic Attestation**
+   - Use TPM or HSM for environment proof
+   - Signed environment tokens
+   - Certificate-based validation
+
+3. **Access Control**
+   - Multi-factor authentication for production
+   - Role-based access control (RBAC)
+   - Just-in-time (JIT) access
+
+4. **Monitoring & Audit**
+   - Comprehensive audit logging
+   - Real-time alerting on suspicious activity
+   - Regular security reviews
+
+#### Recommendation
+
+**Treat environment isolation as a guardrail, not a security boundary.**
+
+For production systems, implement defense-in-depth with infrastructure, network,
+identity, and application-level security controls.
