@@ -204,17 +204,22 @@ export class EnhancedRAGService {
 
       // Convert context sources to RAG sources
       for (const contextSource of enhanced.contextSources) {
-        const category = this.mapSourceTypeToCategory(contextSource.type)
+        if (!contextSource.metadata) {
+          console.warn('Skipping context source without metadata:', contextSource)
+          continue
+        }
+
+        const category = this.mapSourceTypeToCategory(contextSource.metadata.type)
 
         sources.push({
-          id: `code-${contextSource.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: `code-${contextSource.metadata.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           content: contextSource.content,
           metadata: {
-            title: contextSource.identifier,
+            title: contextSource.metadata.title || 'Untitled',
             type: 'code',
             category,
             timestamp,
-            relevance: contextSource.relevance
+            relevance: contextSource.metadata.relevance
           }
         })
       }

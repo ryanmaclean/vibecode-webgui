@@ -519,7 +519,7 @@ export class NamingDetector {
     });
 
     return Array.from(foundPrefixes.entries())
-      .filter(([_, count]) => count >= Math.max(2, names.length * 0.1)) // At least 2 or 10%
+      .filter(([_, count]) => count >= Math.max(1, Math.ceil(names.length * 0.1))) // At least 1 or 10%
       .sort((a, b) => b[1] - a[1])
       .map(([prefix]) => prefix)
       .slice(0, 5);
@@ -541,7 +541,7 @@ export class NamingDetector {
     });
 
     return Array.from(foundSuffixes.entries())
-      .filter(([_, count]) => count >= Math.max(2, names.length * 0.1)) // At least 2 or 10%
+      .filter(([_, count]) => count >= Math.max(1, Math.ceil(names.length * 0.1))) // At least 1 or 10%
       .sort((a, b) => b[1] - a[1])
       .map(([suffix]) => suffix)
       .slice(0, 5);
@@ -622,7 +622,8 @@ export class NamingDetector {
         pattern = conventions.classes.enums;
       }
 
-      if (pattern && pattern.confidence >= this.options.minConfidence) {
+      // Use a lower threshold for inconsistency detection (0.5) to catch outliers
+      if (pattern && pattern.confidence >= 0.5 && pattern.case !== NamingCase.MIXED) {
         expectedCase = pattern.case;
         const actualCase = this.detectCase(element.name);
 
@@ -660,10 +661,22 @@ export class NamingDetector {
    * Check if variable is const
    */
   private isConstVariable(node: ts.VariableDeclaration): boolean {
+    // Check if it's a const declaration
     const parent = node.parent;
-    if (ts.isVariableDeclarationList(parent)) {
-      return !!(parent.flags & ts.NodeFlags.Const);
+    const isConstDecl = ts.isVariableDeclarationList(parent) && !!(parent.flags & ts.NodeFlags.Const);
+
+    // Only treat as constant if it's const AND uses SCREAMING_SNAKE_CASE or all uppercase
+    if (!isConstDecl) {
+      return false;
     }
+
+    // Check naming pattern
+    if (node.name && ts.isIdentifier(node.name)) {
+      const name = node.name.text;
+      // SCREAMING_SNAKE_CASE or all uppercase (e.g., MAX_SIZE, API_KEY, PI)
+      return /^[A-Z][A-Z0-9_]*$/.test(name);
+    }
+
     return false;
   }
 

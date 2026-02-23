@@ -439,7 +439,7 @@ export class PatternDetector {
     // Check naming
     if (className.endsWith('Service')) {
       evidence.push('Name ends with "Service"');
-      confidence += 0.4;
+      confidence += 0.5;  // Increased weight for naming convention
     }
 
     // Check for business logic methods (CRUD operations)
@@ -447,13 +447,13 @@ export class PatternDetector {
     const hasCrudMethods = methods.filter(m =>
       crudMethods.some(crud => m.toLowerCase().includes(crud))
     );
-    if (hasCrudMethods.length >= 2) {
+    if (hasCrudMethods.length >= 1) {  // Reduced from 2 to 1
       evidence.push(`Has ${hasCrudMethods.length} business logic methods`);
-      confidence += 0.3;
+      confidence += 0.2;
     }
 
     // Has multiple methods
-    if (methods.length >= 3) {
+    if (methods.length >= 2) {  // Reduced from 3 to 2
       evidence.push(`Has ${methods.length} methods`);
       confidence += 0.2;
     }
@@ -601,16 +601,16 @@ export class PatternDetector {
     // Check naming
     if (className.endsWith('Repository') || className.endsWith('Store') || className.endsWith('Storage')) {
       evidence.push('Name suggests repository pattern');
-      confidence += 0.4;
+      confidence += 0.5;  // Increased weight for naming convention
     }
 
     // Check for data access methods
     const dataAccessMethods = methods.filter(m =>
       /^(find|get|save|update|delete|insert|query|fetch|load)/.test(m.toLowerCase())
     );
-    if (dataAccessMethods.length >= 3) {
+    if (dataAccessMethods.length >= 2) {  // Reduced from 3 to 2
       evidence.push(`Has ${dataAccessMethods.length} data access methods`);
-      confidence += 0.4;
+      confidence += 0.2;
     }
 
     // Check for list/collection methods

@@ -158,6 +158,7 @@ export class SuggestionContextBuilder {
       if (includeRelatedCode && sourceFile && workspaceRoot) {
         relatedCode = await this.findRelatedCode(
           sourceFile,
+          sourceCode,
           imports,
           workspaceRoot,
           maxRelatedElements,
@@ -178,7 +179,7 @@ export class SuggestionContextBuilder {
       const sources = this.buildContextSources(
         imports,
         types,
-        functions,
+        functions.functions,
         relatedCode,
         conventions,
         intent
@@ -192,7 +193,7 @@ export class SuggestionContextBuilder {
         totalSources: optimizedSources.length,
         importCount: imports.stats.total,
         typeCount: types.stats.total,
-        functionCount: functions.length,
+        functionCount: functions.functions.length,
         relatedCodeCount: relatedCode?.stats.total || 0,
         conventionCount: conventions?.stats.totalConventions || 0
       };
@@ -201,7 +202,7 @@ export class SuggestionContextBuilder {
       const relevanceScore = this.calculateRelevanceScore(
         imports,
         types,
-        functions,
+        functions.functions,
         relatedCode,
         conventions
       );
@@ -215,7 +216,7 @@ export class SuggestionContextBuilder {
         sources: optimizedSources,
         imports,
         types,
-        functions,
+        functions: functions.functions,
         relatedCode,
         conventions,
         totalTokens,
@@ -264,18 +265,14 @@ export class SuggestionContextBuilder {
    */
   private async findRelatedCode(
     sourceFile: string,
+    sourceCode: string,
     imports: ImportExtractionResult,
     workspaceRoot: string,
     maxElements: number,
     minRelevance: number
   ): Promise<RelatedCodeResult | undefined> {
     try {
-      const result = await this.relatedCodeFinder.findRelated(sourceFile, {
-        workspaceRoot,
-        maxResults: maxElements,
-        minRelevanceScore: minRelevance,
-        includeTransitive: false // Only direct dependencies for performance
-      });
+      const result = await this.relatedCodeFinder.findRelated(sourceFile, sourceCode);
 
       return result;
     } catch (error) {
@@ -300,10 +297,7 @@ export class SuggestionContextBuilder {
       }
 
       // Aggregate conventions
-      const result = this.conventionsAggregator.aggregate({
-        maxExamples,
-        minConfidence: 0.6
-      });
+      const result = this.conventionsAggregator.aggregate();
 
       return result;
     } catch (error) {
@@ -363,7 +357,7 @@ export class SuggestionContextBuilder {
       const relevance = this.calculateFunctionRelevance(func, intent);
       sources.push({
         id: `function-${index}`,
-        content: func.signature,
+        content: func.text,
         metadata: {
           title: `Function: ${func.name}`,
           type: 'function',
