@@ -9,11 +9,24 @@
  * - Implements progressive optimization levels based on file size
  * - Reduces memory usage through strategic feature toggling
  * - Maintains essential editing functionality while optimizing performance
+ * - Integrates with virtualized editor for viewport-based rendering
+ * - Provides virtualization-aware optimizations for extremely large files
+ * - Monitors memory usage during editor lifecycle to detect leaks
  *
  * @module lib/editor/large-file-optimizer
  */
 
 import type * as monaco from 'monaco-editor';
+import {
+  MemoryMonitor,
+  getMemorySnapshot,
+  trackMemoryUsage,
+  withMemoryTracking,
+  type MemorySnapshot,
+  type MemoryTrackingResult,
+  type MemoryMonitorConfig,
+  type MemoryMonitorReport
+} from '@/lib/performance/memory-monitor';
 
 // ============================================================================
 // Constants and Thresholds
@@ -60,6 +73,24 @@ export const BYTE_SIZE_THRESHOLDS = {
   EXTREME: 10 * 1024 * 1024, // 10MB
 } as const;
 
+/**
+ * Virtualization thresholds for viewport-based rendering
+ * Aligned with virtualized-editor.ts configuration
+ */
+export const VIRTUALIZATION_THRESHOLDS = {
+  /** Enable virtualization for files exceeding this line count */
+  ENABLE_VIRTUALIZATION: 5000,
+
+  /** Force aggressive virtualization for files exceeding this line count */
+  FORCE_VIRTUALIZATION: 20000,
+
+  /** Recommended overscan size (lines to render outside viewport) */
+  VIEWPORT_OVERSCAN: 100,
+
+  /** Estimated viewport height in lines (typical screen) */
+  TYPICAL_VIEWPORT_HEIGHT: 50,
+} as const;
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -95,6 +126,12 @@ export interface FileSizeInfo {
 
   /** Estimated memory usage (bytes) */
   estimatedMemoryUsage: number;
+
+  /** Whether virtualization is recommended for this file */
+  shouldVirtualize: boolean;
+
+  /** Whether aggressive virtualization is recommended */
+  shouldForceVirtualization: boolean;
 }
 
 /**
@@ -112,6 +149,15 @@ export interface OptimizationOptions {
 
   /** Enable debug logging */
   debug?: boolean;
+
+  /** Enable virtualization-aware optimizations */
+  enableVirtualization?: boolean;
+
+  /** Force virtualization regardless of file size */
+  forceVirtualization?: boolean;
+
+  /** Viewport height hint for virtualization calculations (lines) */
+  viewportHeight?: number;
 }
 
 // ============================================================================
@@ -177,6 +223,10 @@ export function analyzeFileSize(content: string): FileSizeInfo {
   // Monaco typically uses 2-3x the file size in memory
   const estimatedMemoryUsage = byteSize * 2.5;
 
+  // Determine virtualization recommendations
+  const shouldVirtualize = lineCount >= VIRTUALIZATION_THRESHOLDS.ENABLE_VIRTUALIZATION;
+  const shouldForceVirtualization = lineCount >= VIRTUALIZATION_THRESHOLDS.FORCE_VIRTUALIZATION;
+
   return {
     lineCount,
     byteSize,
@@ -184,6 +234,8 @@ export function analyzeFileSize(content: string): FileSizeInfo {
     optimizationLevel,
     isLarge,
     estimatedMemoryUsage,
+    shouldVirtualize,
+    shouldForceVirtualization,
   };
 }
 
@@ -303,6 +355,46 @@ const MAXIMUM_OPTIMIZATIONS: monaco.editor.IStandaloneEditorConstructionOptions 
 };
 
 /**
+ * Virtualization-optimized settings for viewport-based rendering
+ * Used when virtualized editor wrapper is active
+ * Focuses on optimizing rendering within viewport boundaries
+ */
+const VIRTUALIZED_OPTIMIZATIONS: monaco.editor.IStandaloneEditorConstructionOptions = {
+  ...AGGRESSIVE_OPTIMIZATIONS,
+  // Keep line numbers for navigation context in virtualized view
+  lineNumbers: 'on',
+  // Disable decorations that span beyond viewport
+  glyphMargin: false,
+  folding: false,
+  // Optimize scrollbar for large files with viewport rendering
+  scrollbar: {
+    useShadows: false,
+    verticalScrollbarSize: 6,
+    horizontalScrollbarSize: 6,
+    // Enable smooth scrolling for virtualized content
+    handleMouseWheel: true,
+    alwaysConsumeMouseWheel: false,
+  },
+  // Optimize for viewport-based rendering
+  renderLineHighlight: 'line',
+  selectionHighlight: false,
+  // Disable features that require full-document analysis
+  occurrencesHighlight: 'off',
+  unicodeHighlight: {
+    ambiguousCharacters: false,
+    invisibleCharacters: false,
+  },
+  // Keep basic bracket matching for editing within viewport
+  matchBrackets: 'never',
+  bracketPairColorization: { enabled: false },
+  guides: {
+    indentation: false,
+    bracketPairs: false,
+    highlightActiveIndentation: false,
+  },
+};
+
+/**
  * Gets Monaco editor options for a specific optimization level
  *
  * @param level - Optimization level
@@ -343,6 +435,21 @@ function getOptionsForLevel(
  *   ...editorOptions,
  * });
  * ```
+ *
+ * @example With virtualization
+ * ```typescript
+ * const content = fs.readFileSync('very-large-file.ts', 'utf-8');
+ * const editorOptions = getOptimizedEditorOptions(content, {
+ *   enableVirtualization: true,
+ *   viewportHeight: 50,
+ * });
+ * const editor = monaco.editor.create(container, {
+ *   value: content,
+ *   language: 'typescript',
+ *   ...editorOptions,
+ * });
+ * // Then wrap with createVirtualizedEditor for viewport-based rendering
+ * ```
  */
 export function getOptimizedEditorOptions(
   content: string,
@@ -351,11 +458,25 @@ export function getOptimizedEditorOptions(
   // Analyze file size
   const sizeInfo = analyzeFileSize(content);
 
+  // Check if virtualization should be applied
+  const useVirtualization =
+    options.enableVirtualization ||
+    options.forceVirtualization ||
+    (sizeInfo.shouldVirtualize && options.enableVirtualization !== false);
+
   // Determine optimization level
-  const level = options.forceLevel || sizeInfo.optimizationLevel;
+  let level = options.forceLevel || sizeInfo.optimizationLevel;
 
   // Get base options for level
-  const baseOptions = getOptionsForLevel(level);
+  let baseOptions = getOptionsForLevel(level);
+
+  // Apply virtualization-specific optimizations if enabled
+  if (useVirtualization && sizeInfo.shouldVirtualize) {
+    baseOptions = {
+      ...baseOptions,
+      ...VIRTUALIZED_OPTIMIZATIONS,
+    };
+  }
 
   // Apply custom overrides
   const finalOptions = {
@@ -371,6 +492,9 @@ export function getOptimizedEditorOptions(
       category: sizeInfo.category,
       optimizationLevel: level,
       estimatedMemoryUsage: `${(sizeInfo.estimatedMemoryUsage / 1024 / 1024).toFixed(2)}MB`,
+      virtualizationEnabled: useVirtualization,
+      shouldVirtualize: sizeInfo.shouldVirtualize,
+      shouldForceVirtualization: sizeInfo.shouldForceVirtualization,
     });
   }
 
@@ -390,6 +514,14 @@ export function getOptimizedEditorOptions(
  * const lineCount = 50000;
  * const editorOptions = getOptimizedEditorOptionsByLineCount(lineCount);
  * ```
+ *
+ * @example With virtualization
+ * ```typescript
+ * const lineCount = 50000;
+ * const editorOptions = getOptimizedEditorOptionsByLineCount(lineCount, {
+ *   enableVirtualization: true,
+ * });
+ * ```
  */
 export function getOptimizedEditorOptionsByLineCount(
   lineCount: number,
@@ -402,8 +534,23 @@ export function getOptimizedEditorOptionsByLineCount(
   const category = getFileSizeCategory(lineCount, estimatedByteSize);
   const level = options.forceLevel || getOptimizationLevel(category);
 
+  // Determine virtualization needs
+  const shouldVirtualize = lineCount >= VIRTUALIZATION_THRESHOLDS.ENABLE_VIRTUALIZATION;
+  const useVirtualization =
+    options.enableVirtualization ||
+    options.forceVirtualization ||
+    (shouldVirtualize && options.enableVirtualization !== false);
+
   // Get base options for level
-  const baseOptions = getOptionsForLevel(level);
+  let baseOptions = getOptionsForLevel(level);
+
+  // Apply virtualization-specific optimizations if enabled
+  if (useVirtualization && shouldVirtualize) {
+    baseOptions = {
+      ...baseOptions,
+      ...VIRTUALIZED_OPTIMIZATIONS,
+    };
+  }
 
   // Apply custom overrides
   const finalOptions = {
@@ -417,6 +564,8 @@ export function getOptimizedEditorOptionsByLineCount(
       lineCount,
       category,
       optimizationLevel: level,
+      virtualizationEnabled: useVirtualization,
+      shouldVirtualize,
     });
   }
 
@@ -462,10 +611,308 @@ export function getOptimizationRecommendation(content: string): string {
 }
 
 // ============================================================================
+// Virtualization Utilities
+// ============================================================================
+
+/**
+ * Determines if virtualization should be enabled for the given file
+ *
+ * @param content - File content or line count
+ * @returns Whether viewport-based virtualization is recommended
+ *
+ * @example
+ * ```typescript
+ * const content = largeFileContent;
+ * if (shouldEnableVirtualization(content)) {
+ *   // Use createVirtualizedEditor wrapper
+ * }
+ * ```
+ */
+export function shouldEnableVirtualization(content: string | number): boolean {
+  const lineCount = typeof content === 'number' ? content : content.split('\n').length;
+  return lineCount >= VIRTUALIZATION_THRESHOLDS.ENABLE_VIRTUALIZATION;
+}
+
+/**
+ * Calculates viewport-aware optimization configuration
+ *
+ * @param lineCount - Total number of lines in the file
+ * @param viewportHeight - Height of the viewport in lines (default: typical screen)
+ * @returns Optimization configuration optimized for viewport rendering
+ *
+ * @example
+ * ```typescript
+ * const config = getViewportOptimizedConfig(50000, 50);
+ * const editorOptions = getOptimizedEditorOptionsByLineCount(50000, config);
+ * ```
+ */
+export function getViewportOptimizedConfig(
+  lineCount: number,
+  viewportHeight: number = VIRTUALIZATION_THRESHOLDS.TYPICAL_VIEWPORT_HEIGHT
+): OptimizationOptions {
+  const shouldVirtualize = shouldEnableVirtualization(lineCount);
+  const shouldForce = lineCount >= VIRTUALIZATION_THRESHOLDS.FORCE_VIRTUALIZATION;
+
+  return {
+    enableVirtualization: shouldVirtualize,
+    forceVirtualization: shouldForce,
+    viewportHeight,
+    debug: false,
+  };
+}
+
+/**
+ * Estimates the number of lines that should be kept in memory for viewport rendering
+ *
+ * @param viewportHeight - Height of the viewport in lines
+ * @param overscan - Number of lines to render outside viewport (default: recommended)
+ * @returns Total number of lines to keep loaded
+ *
+ * @example
+ * ```typescript
+ * const linesToLoad = estimateViewportMemoryLines(50, 100);
+ * // linesToLoad = 250 (viewport + overscan on both sides)
+ * ```
+ */
+export function estimateViewportMemoryLines(
+  viewportHeight: number = VIRTUALIZATION_THRESHOLDS.TYPICAL_VIEWPORT_HEIGHT,
+  overscan: number = VIRTUALIZATION_THRESHOLDS.VIEWPORT_OVERSCAN
+): number {
+  // Viewport + overscan on top + overscan on bottom
+  return viewportHeight + overscan * 2;
+}
+
+/**
+ * Calculates memory savings from virtualization
+ *
+ * @param totalLines - Total number of lines in the file
+ * @param viewportHeight - Height of the viewport in lines
+ * @param avgCharsPerLine - Average characters per line (default: 80)
+ * @returns Estimated memory savings in bytes
+ */
+export function estimateVirtualizationMemorySavings(
+  totalLines: number,
+  viewportHeight: number = VIRTUALIZATION_THRESHOLDS.TYPICAL_VIEWPORT_HEIGHT,
+  avgCharsPerLine: number = 80
+): {
+  totalMemory: number;
+  viewportMemory: number;
+  savings: number;
+  savingsPercent: number;
+} {
+  const viewportLines = estimateViewportMemoryLines(viewportHeight);
+  const totalMemory = totalLines * avgCharsPerLine * 2.5; // Monaco memory multiplier
+  const viewportMemory = viewportLines * avgCharsPerLine * 2.5;
+  const savings = Math.max(0, totalMemory - viewportMemory);
+  const savingsPercent = totalMemory > 0 ? (savings / totalMemory) * 100 : 0;
+
+  return {
+    totalMemory,
+    viewportMemory,
+    savings,
+    savingsPercent,
+  };
+}
+
+// ============================================================================
+// Memory Monitoring Integration
+// ============================================================================
+
+/**
+ * Default memory monitoring configuration for editor sessions
+ */
+export const EDITOR_MEMORY_CONFIG: MemoryMonitorConfig = {
+  warnThresholdMB: 512,
+  criticalThresholdMB: 1024,
+  monitoringIntervalMs: 5000,
+  autoLog: true,
+  label: 'editor-session'
+};
+
+/**
+ * Creates a memory monitor configured for editor lifecycle tracking
+ *
+ * @param config - Optional configuration overrides
+ * @returns Configured MemoryMonitor instance
+ *
+ * @example
+ * ```typescript
+ * const monitor = createEditorMemoryMonitor({ label: 'large-file-edit' });
+ * monitor.start();
+ * // ... perform editor operations ...
+ * const report = monitor.stop();
+ * console.log(`Peak memory: ${report.peakMemoryMB}MB`);
+ * ```
+ */
+export function createEditorMemoryMonitor(config?: Partial<MemoryMonitorConfig>): MemoryMonitor {
+  return new MemoryMonitor({
+    ...EDITOR_MEMORY_CONFIG,
+    ...config
+  });
+}
+
+/**
+ * Tracks memory usage during file loading operation
+ *
+ * @param operation - Description of the file operation
+ * @param fn - Async function that loads the file
+ * @param fileSize - Optional file size info for logging
+ * @returns Result with memory tracking data
+ *
+ * @example
+ * ```typescript
+ * const result = await trackFileLoadMemory('load-50k-lines', async () => {
+ *   return await loadLargeFile();
+ * }, { lineCount: 50000 });
+ *
+ * console.log(`File loaded in ${result.durationMs}ms`);
+ * console.log(`Memory delta: ${result.memoryDelta.deltaMB}MB`);
+ * ```
+ */
+export async function trackFileLoadMemory<T>(
+  operation: string,
+  fn: () => Promise<T> | T,
+  fileSize?: { lineCount?: number; byteSize?: number }
+): Promise<MemoryTrackingResult<T>> {
+  const fullOperation = fileSize?.lineCount
+    ? `${operation} (${fileSize.lineCount} lines)`
+    : operation;
+
+  return withMemoryTracking(fullOperation, fn, {
+    warnThresholdMB: 100, // Warn if loading adds >100MB
+    autoLog: true
+  });
+}
+
+/**
+ * Tracks memory usage during editor operations (scroll, search, etc.)
+ *
+ * @param operation - Description of the editor operation
+ * @param fn - Function to execute
+ * @returns Result with memory tracking data
+ *
+ * @example
+ * ```typescript
+ * const result = await trackEditorOperation('search-in-large-file', async () => {
+ *   return await performSearch(query);
+ * });
+ * ```
+ */
+export async function trackEditorOperation<T>(
+  operation: string,
+  fn: () => Promise<T> | T
+): Promise<MemoryTrackingResult<T>> {
+  return withMemoryTracking(`editor-op: ${operation}`, fn, {
+    warnThresholdMB: 50, // Warn if operation adds >50MB
+    autoLog: true
+  });
+}
+
+/**
+ * Gets current memory snapshot with editor-specific context
+ *
+ * @param label - Optional label for the snapshot
+ * @param fileInfo - Optional file information for context
+ * @returns Memory snapshot
+ *
+ * @example
+ * ```typescript
+ * const snapshot = getEditorMemorySnapshot('after-file-load', {
+ *   lineCount: 50000,
+ *   category: 'extreme'
+ * });
+ * ```
+ */
+export function getEditorMemorySnapshot(
+  label?: string,
+  fileInfo?: { lineCount?: number; category?: FileSizeCategory }
+): MemorySnapshot {
+  const snapshot = getMemorySnapshot();
+
+  if (label || fileInfo) {
+    trackMemoryUsage(
+      label ?? (fileInfo?.category ? `editor-${fileInfo.category}` : 'editor'),
+      EDITOR_MEMORY_CONFIG
+    );
+  }
+
+  return snapshot;
+}
+
+/**
+ * Monitors memory during extended editor session and detects potential leaks
+ *
+ * @param sessionLabel - Label for the session
+ * @param config - Optional configuration
+ * @returns Object with start, stop, and getReport methods
+ *
+ * @example
+ * ```typescript
+ * const session = monitorEditorSession('extended-editing');
+ * session.start();
+ *
+ * // ... user edits for 30 minutes ...
+ *
+ * const report = session.stop();
+ * if (report.memoryGrowthMB > 200) {
+ *   console.warn('Significant memory growth detected');
+ * }
+ * ```
+ */
+export function monitorEditorSession(
+  sessionLabel: string,
+  config?: Partial<MemoryMonitorConfig>
+): {
+  monitor: MemoryMonitor;
+  start: () => void;
+  stop: () => MemoryMonitorReport;
+  isRunning: () => boolean;
+  detectLeak: () => ReturnType<MemoryMonitor['detectMemoryLeak']>;
+} {
+  const monitor = createEditorMemoryMonitor({
+    ...config,
+    label: sessionLabel
+  });
+
+  return {
+    monitor,
+    start: () => monitor.start(),
+    stop: () => monitor.stop(),
+    isRunning: () => monitor.isRunning(),
+    detectLeak: () => monitor.detectMemoryLeak()
+  };
+}
+
+/**
+ * Tracks memory for editor initialization with optimization level
+ *
+ * @param optimizationLevel - The optimization level being applied
+ * @param fn - Function that initializes the editor
+ * @returns Result with memory tracking data
+ *
+ * @example
+ * ```typescript
+ * const result = await trackEditorInitialization('aggressive', async () => {
+ *   return await initializeMonacoEditor(options);
+ * });
+ * ```
+ */
+export async function trackEditorInitialization<T>(
+  optimizationLevel: OptimizationLevel,
+  fn: () => Promise<T> | T
+): Promise<MemoryTrackingResult<T>> {
+  return withMemoryTracking(`editor-init: ${optimizationLevel}`, fn, {
+    warnThresholdMB: 150, // Warn if initialization uses >150MB
+    autoLog: true
+  });
+}
+
+// ============================================================================
 // Exports
 // ============================================================================
 
 export default {
+  // Core analysis functions
   analyzeFileSize,
   getOptimizedEditorOptions,
   getOptimizedEditorOptionsByLineCount,
@@ -474,6 +921,24 @@ export default {
   isLargeFile,
   shouldOptimize,
   getOptimizationRecommendation,
+
+  // Virtualization utilities
+  shouldEnableVirtualization,
+  getViewportOptimizedConfig,
+  estimateViewportMemoryLines,
+  estimateVirtualizationMemorySavings,
+
+  // Memory monitoring integration
+  createEditorMemoryMonitor,
+  trackFileLoadMemory,
+  trackEditorOperation,
+  getEditorMemorySnapshot,
+  monitorEditorSession,
+  trackEditorInitialization,
+
+  // Constants
   FILE_SIZE_THRESHOLDS,
   BYTE_SIZE_THRESHOLDS,
+  VIRTUALIZATION_THRESHOLDS,
+  EDITOR_MEMORY_CONFIG,
 };

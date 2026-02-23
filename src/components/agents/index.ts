@@ -16,6 +16,9 @@ export { CreateAgentWizard } from './CreateAgentWizard'
 export { AgentMarketplace } from './AgentMarketplace'
 export { AgentMonitoringDashboard } from './AgentMonitoringDashboard'
 export { AgentBuilderWorkflowEmbed } from './AgentBuilderWorkflowEmbed'
+export { DiffViewer } from './DiffViewer'
+export { ConfirmationDialog } from './ConfirmationDialog'
+export { PendingConfirmations } from './PendingConfirmations'
 
 // Type exports
 export type {
@@ -64,3 +67,20 @@ export type {
 } from './AgentMonitoringDashboard'
 
 export type { AgentBuilderWorkflowEmbedProps } from './AgentBuilderWorkflowEmbed'
+
+export type {
+  DiffLine,
+  DiffViewerProps,
+  DiffStats
+} from './DiffViewer'
+
+export type {
+  ConfirmationDialogProps,
+  RiskBadgeProps,
+  ActionTypeBadgeProps,
+  MetadataSectionProps
+} from './ConfirmationDialog'
+
+export type {
+  PendingConfirmationsProps
+} from './PendingConfirmations'

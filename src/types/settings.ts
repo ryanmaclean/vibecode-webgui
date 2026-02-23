@@ -220,6 +220,54 @@ export interface AgentConfirmationSettings {
 }
 
 // ============================================================================
+// Environment Settings
+// ============================================================================
+
+/**
+ * Environment detection and safety settings
+ */
+export interface EnvironmentSettings {
+  /** Whether environment detection is enabled */
+  detectionEnabled: boolean;
+  /** Permission configuration for different environments */
+  permissions: {
+    /** Global permission settings */
+    enabled: boolean;
+    /** Fallback decision for unknown environments */
+    unknownEnvironmentDefault: 'allowed' | 'denied' | 'requires_approval';
+    /** Whether to log permission checks */
+    logChecks: boolean;
+    /** Development environment permissions */
+    development: {
+      enabled: boolean;
+      defaultDecision: 'allowed' | 'denied' | 'requires_approval';
+      /** List of approvers for this environment */
+      approvers: string[];
+    };
+    /** Staging environment permissions */
+    staging: {
+      enabled: boolean;
+      defaultDecision: 'allowed' | 'denied' | 'requires_approval';
+      /** List of approvers for this environment */
+      approvers: string[];
+    };
+    /** Production environment permissions */
+    production: {
+      enabled: boolean;
+      defaultDecision: 'allowed' | 'denied' | 'requires_approval';
+      /** List of approvers for this environment */
+      approvers: string[];
+    };
+  };
+  /** Visual indicator settings */
+  showEnvironmentBadge: boolean;
+  /** Warn when environment conflicts are detected */
+  warnOnConflicts: boolean;
+  /** Fallback environment when detection fails */
+  fallbackEnvironment: 'development' | 'staging' | 'production' | 'test';
+}
+
+// ============================================================================
 // Telemetry & Advanced Settings
 // ============================================================================
 
@@ -279,6 +327,8 @@ export interface AppSettings {
   advanced: AdvancedSettings;
   /** Agent confirmation and preview settings */
   agentConfirmation: AgentConfirmationSettings;
+  /** Environment detection and safety settings */
+  environment: EnvironmentSettings;
   /** Last modified timestamp */
   lastModified: string;
 }
@@ -424,6 +474,36 @@ export const DEFAULT_AGENT_CONFIRMATION_SETTINGS: AgentConfirmationSettings = {
 };
 
 /**
+ * Default environment settings
+ */
+export const DEFAULT_ENVIRONMENT_SETTINGS: EnvironmentSettings = {
+  detectionEnabled: true,
+  permissions: {
+    enabled: true,
+    unknownEnvironmentDefault: 'denied',
+    logChecks: true,
+    development: {
+      enabled: true,
+      defaultDecision: 'allowed',
+      approvers: [],
+    },
+    staging: {
+      enabled: true,
+      defaultDecision: 'requires_approval',
+      approvers: [],
+    },
+    production: {
+      enabled: true,
+      defaultDecision: 'requires_approval',
+      approvers: [],
+    },
+  },
+  showEnvironmentBadge: true,
+  warnOnConflicts: true,
+  fallbackEnvironment: 'development',
+};
+
+/**
  * Complete default settings
  */
 export const DEFAULT_APP_SETTINGS: AppSettings = {
@@ -433,6 +513,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   ai: DEFAULT_AI_SETTINGS,
   advanced: DEFAULT_ADVANCED_SETTINGS,
   agentConfirmation: DEFAULT_AGENT_CONFIRMATION_SETTINGS,
+  environment: DEFAULT_ENVIRONMENT_SETTINGS,
   lastModified: new Date().toISOString(),
 };
 

@@ -259,6 +259,7 @@ HANDOFF.md
 community/
 marketing/
 operations/
+!src/lib/agent-framework/operations/
 optimization/
 development/
 technical-debt/
