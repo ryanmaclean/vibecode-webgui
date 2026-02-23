@@ -69,11 +69,20 @@ Replit, GitHub Codespaces, and other cloud-based IDEs **require** constant inter
 **Already have Ollama installed?** Jump straight to verification:
 
 ```bash
-# Check if you're ready for offline mode
-curl http://localhost:3000/api/offline/setup -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"action": "check"}'
+# Check comprehensive offline readiness with feature availability
+curl http://localhost:3000/api/offline/status | jq
 ```
+
+Or visit the enhanced setup wizard:
+```
+http://localhost:3000/offline-setup
+```
+
+The wizard provides:
+- Visual readiness score (0-100%)
+- Step-by-step setup guidance
+- Feature-by-feature status breakdown
+- One-click model installation
 
 **New to Ollama?** Follow the [Installation & Setup](#installation--setup) guide below.
 
@@ -166,39 +175,123 @@ Navigate to the **Offline Setup Page** in VibeCode:
 http://localhost:3000/offline-setup
 ```
 
-This page shows:
-- ✅ **Ollama Service Status**: Running / Not Running
-- ✅ **Installed Models**: Count and total disk usage
-- ✅ **Offline Readiness**: Ready / Setup Required
-- ✅ **Recommendations**: Actionable steps to complete setup
+**Enhanced Readiness Wizard Features:**
+
+The offline setup page includes a comprehensive readiness wizard with visual feedback and step-by-step guidance:
+
+**Overall Readiness Score:**
+- Visual progress bar showing percentage ready (0-100%)
+- Color-coded status:
+  - 🟢 Green (80-100%): Fully ready for offline operation
+  - 🟡 Yellow (40-79%): Partial offline capability
+  - 🔴 Red (0-39%): Setup required for offline mode
+
+**Step-by-Step Wizard (4 Stages):**
+
+1. **Ollama Installation**
+   - Service status (Running / Not Running)
+   - Version information
+   - Installation instructions if not installed
+   - Quick-start commands for your OS
+
+2. **AI Models**
+   - List of installed models with sizes
+   - Recommended models for offline coding
+   - One-click model download buttons
+   - Model count and total disk usage
+
+3. **Vector Database**
+   - Connection status (Connected / Disconnected)
+   - pgvector extension status (Installed / Not Installed)
+   - Database provider information (PostgreSQL)
+   - Local vector storage readiness
+
+4. **Cache System**
+   - Cache availability status
+   - Cache backend information (Redis/Memory)
+   - Storage capacity information
+
+Each stage shows:
+- ✅ Green checkmark: Component ready
+- ⚠️ Yellow warning: Component degraded or optional
+- ❌ Red cross: Component unavailable or setup needed
 
 **Check Readiness via API:**
+
+The enhanced `/api/offline/status` endpoint provides comprehensive feature availability information:
+
+```bash
+curl http://localhost:3000/api/offline/status | jq
+```
+
+**Enhanced Response with Feature Availability:**
+```json
+{
+  "online": true,
+  "status": {
+    "offline": false,
+    "lastChecked": "2026-02-22T08:00:00.000Z"
+  },
+  "features": {
+    "ai": {
+      "status": "AVAILABLE",
+      "available": true,
+      "ollamaAvailable": true,
+      "installedModels": ["qwen2.5-coder:1.5b", "qwen2.5-coder:7b"],
+      "recommendedModels": ["qwen2.5-coder:1.5b", "qwen2.5-coder:7b"],
+      "hasRecommendedModel": true,
+      "modelCount": 2
+    },
+    "vectorDb": {
+      "status": "AVAILABLE",
+      "available": true,
+      "connected": true,
+      "pgVectorInstalled": true,
+      "provider": "postgresql"
+    },
+    "cache": {
+      "status": "AVAILABLE",
+      "available": true,
+      "enabled": true,
+      "backend": "redis"
+    },
+    "templates": {
+      "status": "AVAILABLE",
+      "available": true,
+      "templateCount": 10,
+      "localOnly": false
+    },
+    "offlineReady": true,
+    "availableFeatures": ["AI Models", "Vector Search", "Cache", "Templates"],
+    "unavailableFeatures": []
+  },
+  "config": {
+    "autoFallback": true,
+    "preferredModel": "qwen2.5-coder:1.5b"
+  }
+}
+```
+
+**Key Response Fields:**
+- `features.offlineReady`: Overall offline readiness (true/false)
+- `features.ai.available`: Local AI models ready for offline use
+- `features.vectorDb.available`: Local vector database operational
+- `features.cache.available`: Caching system available
+- `features.templates.available`: Project templates accessible offline
+- `features.availableFeatures`: List of features that work offline
+- `features.unavailableFeatures`: List of features requiring connectivity
+
+If `features.offlineReady: true`, you're fully prepared for offline operation!
+
+**Legacy Setup Endpoint:**
+
+The original setup endpoint is still available for configuration:
+
 ```bash
 curl http://localhost:3000/api/offline/setup -X POST \
   -H "Content-Type: application/json" \
   -d '{"action": "check"}' | jq
 ```
-
-**Expected Response:**
-```json
-{
-  "success": true,
-  "ready": true,
-  "ollamaAvailable": true,
-  "models": {
-    "installed": ["qwen2.5-coder:1.5b"],
-    "recommended": ["qwen2.5-coder:1.5b", "qwen2.5-coder:7b"],
-    "missing": ["qwen2.5-coder:7b"]
-  },
-  "diskUsage": {
-    "used": "1.7 GB",
-    "needed": "4.7 GB"
-  },
-  "recommendations": []
-}
-```
-
-If `ready: true`, you're all set! If not, follow the recommendations provided.
 
 ---
 
@@ -258,10 +351,157 @@ The **OfflineIndicator** component appears in the top-right corner of every page
 - 🟢 **"Online"** (green badge): Connected to internet, using cloud AI providers
 - 🟡 **"Offline Mode"** (yellow badge): No internet, using local Ollama models
 
-Click the indicator to:
-- View current network status
-- See which AI provider is active
-- Jump to Offline Setup page
+**Enhanced Feature Availability Dropdown:**
+
+Click the indicator badge to open an interactive dropdown menu showing real-time feature availability:
+
+**Features Available Offline:**
+- ✅ **Browse Local Files**: Access your project files without connectivity
+- ✅ **View Organizations**: View cached organization data
+- ✅ **View Projects**: Browse local project information
+
+**Features Requiring Connection:**
+- ❌ **Create Tasks**: Requires server connection to create new tasks
+- ❌ **Sync Data**: Real-time data synchronization needs internet
+- ❌ **Real-time Updates**: Live collaboration requires connectivity
+
+The dropdown automatically updates as network status changes, providing instant visibility into which capabilities are currently available. Click outside the dropdown or press ESC to close it.
+
+---
+
+## Feature Availability
+
+VibeCode provides transparent visibility into which features work offline vs require internet connectivity. The system continuously monitors the availability of key capabilities and provides real-time status updates.
+
+### Checking Feature Availability
+
+**Via UI:**
+1. Click the **OfflineIndicator** badge in the top-right corner
+2. View the feature availability dropdown showing all capabilities
+3. Green checkmarks (✅) indicate features available in current mode
+4. Red crosses (❌) indicate features requiring connectivity
+
+**Via Offline Setup Page:**
+1. Navigate to `http://localhost:3000/offline-setup`
+2. View the comprehensive readiness wizard
+3. Check the overall readiness score (percentage)
+4. Review individual feature status in each wizard stage
+
+**Via API:**
+```bash
+curl http://localhost:3000/api/offline/status | jq '.features'
+```
+
+### Feature Categories
+
+**Core Offline Capabilities (Always Available):**
+
+- **AI Code Assistance** (when Ollama installed with models)
+  - Code completion and suggestions
+  - Code generation and refactoring
+  - AI chat for coding questions
+  - Requires: Ollama service + at least one model installed
+
+- **Vector Similarity Search** (when pgvector configured)
+  - Semantic code search
+  - Documentation similarity search
+  - Embedding-based retrieval
+  - Requires: PostgreSQL with pgvector extension
+
+- **Local File Operations**
+  - Browse and edit project files
+  - File tree navigation
+  - Syntax highlighting
+  - Requires: Local file system access only
+
+- **Project Templates**
+  - Browse available templates
+  - Create new projects from templates
+  - Template configuration
+  - Requires: No external dependencies (built-in)
+
+- **Cache System** (when configured)
+  - Documentation caching
+  - API response caching
+  - Template caching
+  - Requires: Redis or in-memory cache
+
+**Network-Dependent Capabilities:**
+
+- **Real-time Collaboration**
+  - Live cursor sharing
+  - Real-time document editing
+  - Presence indicators
+  - Requires: WebSocket connection to server
+
+- **Cloud AI Providers**
+  - OpenAI, Anthropic, OpenRouter APIs
+  - Premium models (GPT-4, Claude, etc.)
+  - Cloud-based embeddings
+  - Requires: Internet connection + API keys
+
+- **Data Synchronization**
+  - Project sync across devices
+  - Settings synchronization
+  - Backup to cloud storage
+  - Requires: Server connection
+
+- **Package Management**
+  - npm/yarn package installation
+  - Dependency updates
+  - Registry access
+  - Requires: Internet connection to package registries
+
+### Feature Status Indicators
+
+Each feature can have one of three statuses:
+
+**AVAILABLE (Green ✅)**
+- Feature is fully operational
+- All dependencies are met
+- Ready for immediate use
+
+**DEGRADED (Yellow ⚠️)**
+- Feature partially available
+- Some capabilities may be limited
+- Example: AI available but with limited model selection
+
+**UNAVAILABLE (Red ❌)**
+- Feature cannot be used
+- Missing required dependencies or connectivity
+- Setup required or wait for network restoration
+
+### Monitoring Feature Health
+
+The **FeatureAvailabilityPanel** component (accessible via OfflineIndicator dropdown) provides:
+
+- **Real-time Status**: Updates every 30 seconds automatically
+- **Detailed Information**: Shows specific status for each feature area
+- **Visual Feedback**: Color-coded indicators for quick assessment
+- **Actionable Guidance**: Links to setup pages when features unavailable
+
+**Example Feature Status Display:**
+
+```
+AI Models: ✅ Available
+  - 2 models installed (qwen2.5-coder:1.5b, qwen2.5-coder:7b)
+  - Ollama service running
+  - Ready for offline code assistance
+
+Vector Search: ✅ Available
+  - PostgreSQL connected
+  - pgvector extension installed
+  - Local similarity search operational
+
+Cache: ✅ Available
+  - Redis backend active
+  - 128 MB cached data
+  - Documentation and templates cached
+
+Templates: ✅ Available
+  - 10 templates available
+  - All templates accessible offline
+```
 
 ---
 
@@ -703,6 +943,10 @@ Now that you have offline mode configured:
 
 ---
 
-**Document Version**: 1.0.0
-**Last Updated**: 2026-02-19
+**Document Version**: 1.1.0
+**Last Updated**: 2026-02-22
 **Maintained By**: VibeCode Team
+
+**Changelog:**
+- v1.1.0 (2026-02-22): Enhanced with feature availability tracking, improved setup wizard documentation, and comprehensive API response examples
+- v1.0.0 (2026-02-19): Initial offline mode documentation
