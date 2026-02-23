@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 import { getDefaultOfflineDetector } from '@/lib/offline-mode';
 import { getOfflineConfig } from '@/lib/config/offline-config';
+import { OfflineFeatureManager } from '@/lib/offline-features';
 
 export const dynamic = 'force-dynamic'
 
@@ -50,6 +51,10 @@ export async function GET(request: NextRequest) {
     // Get offline configuration
     const config = await getOfflineConfig();
 
+    // Get feature availability status
+    const featureManager = OfflineFeatureManager.getInstance();
+    const featureStatus = await featureManager.checkAllFeatures();
+
     return NextResponse.json({
       online: isOnline,
       status,
@@ -74,6 +79,40 @@ export async function GET(request: NextRequest) {
         fallbackLocalModels: config.fallbackLocalModels,
         showOfflineNotifications: config.showOfflineNotifications,
         offlineCheckInterval: config.offlineCheckInterval,
+      },
+      features: {
+        ai: {
+          status: featureStatus.ai.status,
+          available: featureStatus.ai.available,
+          ollamaAvailable: featureStatus.ai.ollamaAvailable,
+          installedModels: featureStatus.ai.installedModels,
+          recommendedModels: featureStatus.ai.recommendedModels,
+          missingModels: featureStatus.ai.missingModels,
+          hasRecommendedModel: featureStatus.ai.hasRecommendedModel,
+          modelCount: featureStatus.ai.modelCount,
+        },
+        vectorDb: {
+          status: featureStatus.vectorDb.status,
+          available: featureStatus.vectorDb.available,
+          connected: featureStatus.vectorDb.connected,
+          pgVectorInstalled: featureStatus.vectorDb.pgVectorInstalled,
+          provider: featureStatus.vectorDb.provider,
+        },
+        cache: {
+          status: featureStatus.cache.status,
+          available: featureStatus.cache.available,
+          enabled: featureStatus.cache.enabled,
+          backend: featureStatus.cache.backend,
+        },
+        templates: {
+          status: featureStatus.templates.status,
+          available: featureStatus.templates.available,
+          templateCount: featureStatus.templates.templateCount,
+          localOnly: featureStatus.templates.localOnly,
+        },
+        offlineReady: featureStatus.offlineReady,
+        availableFeatures: featureStatus.availableFeatures,
+        unavailableFeatures: featureStatus.unavailableFeatures,
       },
       timestamp: new Date().toISOString()
     });
