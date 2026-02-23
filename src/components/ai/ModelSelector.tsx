@@ -40,6 +40,7 @@ import type {
   SpeedTier,
   DEFAULT_QUICK_FILTERS,
 } from '@/types/model-comparison';
+import { ModelStatusBadge } from '@/components/ai/ModelStatusBadge';
 
 // ============================================================================
 // Types
@@ -287,6 +288,7 @@ const ModelListItem: React.FC<ModelListItemProps> = ({
 
           {showDetails && (
             <div className="flex flex-wrap gap-1.5 mt-2">
+              <ModelStatusBadge model={model} compact={true} />
               <Badge className={`text-xs ${getQualityColor(model.qualityTier)}`}>
                 {model.qualityTier.replace('_', ' ')}
               </Badge>
