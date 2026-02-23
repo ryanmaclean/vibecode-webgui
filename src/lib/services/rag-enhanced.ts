@@ -1,46 +1,100 @@
 import { webSearchService, WebSearchResult } from './web-search'
+import {
+  createSuggestionEnhancer,
+  SuggestionEnhancer,
+  EnhancedSuggestion
+} from '@/lib/ai/suggestion-enhancer'
 // import { logger } from '@/lib/logger';
+
+/**
+ * RAG context with enriched sources
+ */
 export interface RAGContext {
   sources: RAGSource[]
   webResults?: WebSearchResult[]
+  codeAnalysis?: CodeAnalysisResult
   totalTokens: number
   relevanceScore: number
 }
 
+/**
+ * RAG source with metadata
+ */
 export interface RAGSource {
   id: string
   content: string
   metadata: {
     title?: string
     url?: string
-    type: 'file' | 'web' | 'database'
+    type: 'file' | 'web' | 'database' | 'code'
     timestamp?: string
     relevance: number
+    category?: string // For code sources: 'import', 'type', 'function', 'related', 'convention'
   }
 }
 
+/**
+ * Code analysis result from suggestion enhancer
+ */
+export interface CodeAnalysisResult {
+  imports: number
+  types: number
+  functions: number
+  relatedCode: number
+  conventions: number
+  totalTokens: number
+  relevanceScore: number
+}
+
+/**
+ * RAG query with optional code analysis
+ */
 export interface RAGQuery {
   query: string
   workspaceId: string
   includeWebSearch?: boolean
+  includeCodeAnalysis?: boolean
+  sourceCode?: string
+  sourceFile?: string
   maxFileResults?: number
   maxWebResults?: number
+  maxCodeElements?: number
   timeFilter?: 'day' | 'week' | 'month' | 'year'
+  tokenBudget?: number
 }
 
 export class EnhancedRAGService {
+  private suggestionEnhancer: SuggestionEnhancer
+
+  constructor() {
+    this.suggestionEnhancer = createSuggestionEnhancer({
+      cacheTTL: 5 * 60 * 1000, // 5 minutes
+      defaultOptimizationOptions: {
+        tokenBudget: 2000,
+        strategy: 'balanced' as any,
+        minRelevanceScore: 0.2
+      }
+    })
+  }
+
   async buildContext(ragQuery: RAGQuery): Promise<RAGContext> {
-    const { 
-      query, 
-      workspaceId, 
+    const {
+      query,
+      workspaceId,
       includeWebSearch = false,
+      includeCodeAnalysis = false,
+      sourceCode,
+      sourceFile,
       maxFileResults = 5,
       maxWebResults = 3,
-      timeFilter
+      maxCodeElements = 10,
+      timeFilter,
+      tokenBudget = 4000
     } = ragQuery
 
     const sources: RAGSource[] = []
     let webResults: WebSearchResult[] = []
+    let codeAnalysis: CodeAnalysisResult | undefined
     let totalTokens = 0
 
     try {
@@ -60,16 +114,34 @@ export class EnhancedRAGService {
         sources.push(...webSources)
       }
 
-      // 3. Calculate relevance and optimize context
-      const optimizedSources = this.optimizeSources(sources, query)
+      // 3. Perform code analysis if enabled and source code provided
+      if (includeCodeAnalysis && sourceCode) {
+        const codeAnalysisResult = await this.analyzeCode({
+          sourceCode,
+          sourceFile,
+          workspaceId,
+          intent: query,
+          maxElements: maxCodeElements,
+          tokenBudget: Math.floor(tokenBudget * 0.5) // Allocate 50% of budget to code analysis
+        })
+
+        if (codeAnalysisResult) {
+          sources.push(...codeAnalysisResult.sources)
+          codeAnalysis = codeAnalysisResult.stats
+        }
+      }
+
+      // 4. Calculate relevance and optimize context
+      const optimizedSources = this.optimizeSources(sources, query, tokenBudget)
       totalTokens = this.estimateTokenCount(optimizedSources)
 
-      // 4. Calculate overall relevance score
+      // 5. Calculate overall relevance score
       const relevanceScore = this.calculateRelevanceScore(optimizedSources, webResults)
 
       return {
         sources: optimizedSources,
         webResults: webResults.length > 0 ? webResults : undefined,
+        codeAnalysis,
         totalTokens,
         relevanceScore
       }
@@ -83,6 +155,102 @@ export class EnhancedRAGService {
         relevanceScore: 0
       }
     }
+  }
+
+  /**
+   * Analyze source code and extract contextual information
+   */
+  private async analyzeCode(options: {
+    sourceCode: string
+    sourceFile?: string
+    workspaceId: string
+    intent?: string
+    maxElements?: number
+    tokenBudget?: number
+  }): Promise<{ sources: RAGSource[]; stats: CodeAnalysisResult } | null> {
+    const {
+      sourceCode,
+      sourceFile,
+      workspaceId,
+      intent,
+      maxElements = 10,
+      tokenBudget = 2000
+    } = options
+
+    try {
+      // Use suggestion enhancer to analyze code
+      const enhanced: EnhancedSuggestion = await this.suggestionEnhancer.enhance({
+        sourceCode,
+        sourceFile,
+        workspaceId,
+        intent,
+        contextOptions: {
+          includeRelatedCode: true,
+          includeConventions: true,
+          maxRelatedElements: maxElements,
+          maxConventionExamples: 5,
+          minRelevanceScore: 0.2
+        },
+        optimizationOptions: {
+          tokenBudget,
+          strategy: 'balanced' as any,
+          minRelevanceScore: 0.2,
+          maxSourcesPerType: maxElements
+        }
+      })
+
+      const sources: RAGSource[] = []
+      const timestamp = new Date().toISOString()
+
+      // Convert context sources to RAG sources
+      for (const contextSource of enhanced.contextSources) {
+        const category = this.mapSourceTypeToCategory(contextSource.type)
+
+        sources.push({
+          id: `code-${contextSource.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          content: contextSource.content,
+          metadata: {
+            title: contextSource.identifier,
+            type: 'code',
+            category,
+            timestamp,
+            relevance: contextSource.relevance
+          }
+        })
+      }
+
+      const stats: CodeAnalysisResult = {
+        imports: enhanced.stats.importsIncluded,
+        types: enhanced.stats.typesIncluded,
+        functions: enhanced.stats.functionsIncluded,
+        relatedCode: enhanced.stats.relatedCodeIncluded,
+        conventions: enhanced.stats.conventionsIncluded,
+        totalTokens: enhanced.totalTokens,
+        relevanceScore: enhanced.relevanceScore
+      }
+
+      return { sources, stats }
+
+    } catch (error) {
+      console.warn('Code analysis failed:', error)
+      return null
+    }
+  }
+
+  /**
+   * Map context source type to RAG source category
+   */
+  private mapSourceTypeToCategory(sourceType: string): string {
+    const typeMap: Record<string, string> = {
+      'import': 'import',
+      'type': 'type',
+      'interface': 'type',
+      'function': 'function',
+      'class': 'function',
+      'related': 'related',
+      'convention': 'convention'
+    }
+    return typeMap[sourceType] || 'code'
   }
 
   private async searchFileContent(query: string, workspaceId: string, maxResults: number): Promise<RAGSource[]> {
@@ -228,7 +396,7 @@ export class EnhancedRAGService {
     return chunks
   }
 
-  private optimizeSources(sources: RAGSource[], query: string): RAGSource[] {
+  private optimizeSources(sources: RAGSource[], query: string, tokenBudget: number): RAGSource[] {
     // Remove duplicates based on content similarity
     const uniqueSources: RAGSource[] = []
     const seenContent = new Set<string>()
@@ -241,10 +409,25 @@ export class EnhancedRAGService {
       }
     }
 
-    // Sort by relevance and limit total context size
-    return uniqueSources
-      .sort((a, b) => b.metadata.relevance - a.metadata.relevance)
-      .slice(0, 10) // Limit to top 10 sources
+    // Sort by relevance
+    const sortedSources = uniqueSources.sort((a, b) => b.metadata.relevance - a.metadata.relevance)
+
+    // Limit by token budget
+    const optimized: RAGSource[] = []
+    let currentTokens = 0
+    const maxTokens = tokenBudget * 0.8 // Use 80% of budget for sources, leave room for formatting
+
+    for (const source of sortedSources) {
+      const sourceTokens = Math.ceil(source.content.length / 4)
+      if (currentTokens + sourceTokens <= maxTokens) {
+        optimized.push(source)
+        currentTokens += sourceTokens
+      } else {
+        break
+      }
+    }
+
+    return optimized
   }
 
   private estimateTokenCount(sources: RAGSource[]): number {
@@ -269,6 +452,50 @@ export class EnhancedRAGService {
 
     let prompt = "Based on the following context:\n\n"
 
+    // Add code analysis sources
+    const codeSources = context.sources.filter(s => s.metadata.type === 'code')
+    if (codeSources.length > 0) {
+      prompt += "💻 From code analysis:\n"
+
+      // Group by category
+      const codeByCategory = this.groupSourcesByCategory(codeSources)
+
+      if (codeByCategory.import && codeByCategory.import.length > 0) {
+        prompt += "\nImports:\n"
+        codeByCategory.import.forEach((source, index) => {
+          prompt += `${index + 1}. ${source.metadata.title || 'Import'}:\n${source.content}\n\n`
+        })
+      }
+
+      if (codeByCategory.type && codeByCategory.type.length > 0) {
+        prompt += "\nType Definitions:\n"
+        codeByCategory.type.forEach((source, index) => {
+          prompt += `${index + 1}. ${source.metadata.title || 'Type'}:\n${source.content}\n\n`
+        })
+      }
+
+      if (codeByCategory.function && codeByCategory.function.length > 0) {
+        prompt += "\nFunctions & Classes:\n"
+        codeByCategory.function.forEach((source, index) => {
+          prompt += `${index + 1}. ${source.metadata.title || 'Function'}:\n${source.content}\n\n`
+        })
+      }
+
+      if (codeByCategory.related && codeByCategory.related.length > 0) {
+        prompt += "\nRelated Code:\n"
+        codeByCategory.related.forEach((source, index) => {
+          prompt += `${index + 1}. ${source.metadata.title || 'Related'}:\n${source.content}\n\n`
+        })
+      }
+
+      if (codeByCategory.convention && codeByCategory.convention.length > 0) {
+        prompt += "\nProject Conventions:\n"
+        codeByCategory.convention.forEach((source, index) => {
+          prompt += `${index + 1}. ${source.metadata.title || 'Convention'}:\n${source.content}\n\n`
+        })
+      }
+    }
+
     // Add file sources
     const fileSources = context.sources.filter(s => s.metadata.type === 'file')
     if (fileSources.length > 0) {
@@ -287,11 +514,40 @@ export class EnhancedRAGService {
       })
     }
 
+    // Add statistics
+    if (context.codeAnalysis) {
+      prompt += `\n📊 Code Analysis Stats:\n`
+      prompt += `- Imports: ${context.codeAnalysis.imports}\n`
+      prompt += `- Types: ${context.codeAnalysis.types}\n`
+      prompt += `- Functions: ${context.codeAnalysis.functions}\n`
+      prompt += `- Related Code: ${context.codeAnalysis.relatedCode}\n`
+      prompt += `- Conventions: ${context.codeAnalysis.conventions}\n`
+      prompt += `- Code Tokens: ${context.codeAnalysis.totalTokens}\n\n`
+    }
+
     prompt += `Context relevance: ${(context.relevanceScore * 100).toFixed(1)}%\n`
-    prompt += `Total sources: ${context.sources.length}\n\n`
+    prompt += `Total sources: ${context.sources.length}\n`
+    prompt += `Total tokens: ${context.totalTokens}\n\n`
     prompt += "Please answer based on this context. If the context doesn't contain relevant information, please say so.\n\n"
 
     return prompt
+  }
+
+  /**
+   * Group sources by category
+   */
+  private groupSourcesByCategory(sources: RAGSource[]): Record<string, RAGSource[]> {
+    const grouped: Record<string, RAGSource[]> = {}
+
+    for (const source of sources) {
+      const category = source.metadata.category || 'other'
+      if (!grouped[category]) {
+        grouped[category] = []
+      }
+      grouped[category].push(source)
+    }
+
+    return grouped
   }
 }
 
