@@ -28,6 +28,8 @@ import { logger } from '@/lib/logger';
 import { getMetricsProvider, type IMetricsProvider, type MetricTags } from '@/lib/monitoring/metrics-provider';
 import { calculateCodeEditDistance, type EditDistanceResult } from './edit-distance';
 import type { QualityMetrics, UserRating, QualityTrackingConfig } from '@/types/ai-quality-metrics';
+import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 
 // =============================================================================
 // Types
@@ -133,7 +135,41 @@ export class QualityTracker {
       timestamp: Date.now(),
     };
 
+    // Store in memory cache for fast lookups
     this.suggestions.set(suggestion.id, suggestion);
+
+    // Persist to database
+    try {
+      const createData: Record<string, unknown> = {
+        model_id: suggestion.modelId,
+        suggestion: suggestion.suggestion,
+        language: suggestion.language,
+        context: suggestion.context as Prisma.InputJsonValue,
+        timestamp: new Date(suggestion.timestamp),
+        outcome: 'pending',
+      };
+
+      // Only add optional foreign keys if they exist
+      if (suggestion.userId) {
+        createData.user_id = parseInt(suggestion.userId);
+      }
+      if (suggestion.workspaceId) {
+        createData.workspace_id = parseInt(suggestion.workspaceId);
+      }
+      if (suggestion.projectId) {
+        createData.project_id = parseInt(suggestion.projectId);
+      }
+
+      await prisma.aISuggestion.create({
+        data: createData as Prisma.AISuggestionUncheckedCreateInput,
+      });
+    } catch (error) {
+      logger.error('[QualityTracker] Failed to persist suggestion to database', {
+        error,
+        suggestionId: suggestion.id,
+      });
+      // Continue even if DB persistence fails
+    }
 
     // Emit metrics
     this.emitMetric('suggestion.generated', 1, {
@@ -177,6 +213,30 @@ export class QualityTracker {
       change_magnitude: editMetrics.changeMagnitude,
     };
 
+    // Persist acceptance to database
+    try {
+      await prisma.aISuggestion.updateMany({
+        where: {
+          model_id: suggestion.modelId,
+          timestamp: new Date(suggestion.timestamp),
+          outcome: 'pending',
+        },
+        data: {
+          outcome: 'accepted',
+          final_code: data.finalCode,
+          edit_distance: editMetrics.distance,
+          similarity: editMetrics.similarity,
+          time_to_accept: data.timeToAccept,
+        },
+      });
+    } catch (error) {
+      logger.error('[QualityTracker] Failed to persist acceptance to database', {
+        error,
+        suggestionId,
+      });
+      // Continue even if DB persistence fails
+    }
+
     // Emit acceptance metrics
     this.emitMetric('suggestion.accepted', 1, tags);
     this.emitMetric('suggestion.time_to_accept', data.timeToAccept, tags);
@@ -216,6 +276,28 @@ export class QualityTracker {
       reason: data.reason || 'unknown',
     };
 
+    // Persist rejection to database
+    try {
+      await prisma.aISuggestion.updateMany({
+        where: {
+          model_id: suggestion.modelId,
+          timestamp: new Date(suggestion.timestamp),
+          outcome: 'pending',
+        },
+        data: {
+          outcome: 'rejected',
+          time_to_reject: data.timeToReject,
+          rejection_reason: data.reason,
+        },
+      });
+    } catch (error) {
+      logger.error('[QualityTracker] Failed to persist rejection to database', {
+        error,
+        suggestionId,
+      });
+      // Continue even if DB persistence fails
+    }
+
     // Emit rejection metrics
     this.emitMetric('suggestion.rejected', 1, tags);
     this.emitMetric('suggestion.time_to_reject', data.timeToReject, tags);
@@ -250,6 +332,27 @@ export class QualityTracker {
       language: suggestion.language || 'unknown',
       rating: data.rating,
     };
+
+    // Persist rating to database
+    try {
+      await prisma.aISuggestion.updateMany({
+        where: {
+          model_id: suggestion.modelId,
+          timestamp: new Date(suggestion.timestamp),
+          user_id: parseInt(data.userId),
+        },
+        data: {
+          rating: data.rating,
+          rating_comment: data.comment,
+        },
+      });
+    } catch (error) {
+      logger.error('[QualityTracker] Failed to persist rating to database', {
+        error,
+        suggestionId,
+      });
+      // Continue even if DB persistence fails
+    }
 
     // Emit rating metrics
     this.emitMetric('suggestion.rated', 1, tags);
@@ -308,19 +411,58 @@ export class QualityTracker {
   /**
    * Get acceptance rate for a model
    */
-  getAcceptanceRate(modelId: string): number {
-    // In production, this would query the database
-    // For now, return a placeholder
-    return 0;
+  async getAcceptanceRate(modelId: string): Promise<number> {
+    try {
+      const total = await prisma.aISuggestion.count({
+        where: {
+          model_id: modelId,
+          outcome: { in: ['accepted', 'rejected'] },
+        },
+      });
+
+      if (total === 0) return 0;
+
+      const accepted = await prisma.aISuggestion.count({
+        where: {
+          model_id: modelId,
+          outcome: 'accepted',
+        },
+      });
+
+      return accepted / total;
+    } catch (error) {
+      logger.error('[QualityTracker] Failed to get acceptance rate', {
+        error,
+        modelId,
+      });
+      return 0;
+    }
   }
 
   /**
    * Get average edit distance for a model
    */
-  getAverageEditDistance(modelId: string): number {
-    // In production, this would query the database
-    // For now, return a placeholder
-    return 0;
+  async getAverageEditDistance(modelId: string): Promise<number> {
+    try {
+      const result = await prisma.aISuggestion.aggregate({
+        where: {
+          model_id: modelId,
+          outcome: 'accepted',
+          edit_distance: { not: null },
+        },
+        _avg: {
+          edit_distance: true,
+        },
+      });
+
+      return result._avg.edit_distance ?? 0;
+    } catch (error) {
+      logger.error('[QualityTracker] Failed to get average edit distance', {
+        error,
+        modelId,
+      });
+      return 0;
+    }
   }
 
   /**
