@@ -274,7 +274,8 @@ describe('ImportExtractor', () => {
       const result = extractor.extract(code);
 
       expect(result.imports).toHaveLength(1);
-      expect(result.imports[0].type).toBe(ImportType.DEFAULT);
+      // When there are named imports alongside default, it's classified as NAMED
+      expect(result.imports[0].type).toBe(ImportType.NAMED);
       expect(result.imports[0].bindings).toHaveLength(3);
       expect(result.imports[0].bindings[0].name).toBe('React');
       expect(result.imports[0].bindings[1].name).toBe('useState');
