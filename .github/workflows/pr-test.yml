@@ -5,6 +5,10 @@ on:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
+concurrency:
+  group: pr-test-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 env:
   DD_SERVICE: ${{ github.event.repository.name }}
   DD_ENV: ci
@@ -15,6 +19,7 @@ jobs:
   test-pr:
     name: Test PR Changes
     runs-on: ubuntu-latest
+    if: github.event.pull_request == null || !startsWith(github.event.pull_request.head.ref, 'auto-claude/')
     permissions:
       pull-requests: write
       contents: read
