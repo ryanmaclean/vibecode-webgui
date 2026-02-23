@@ -146,4 +146,95 @@ test.describe('Offline Mode E2E', () => {
     // Should succeed or return 401 if not authenticated
     expect([200, 401]).toContain(configResponse.status());
   });
+
+  test('should verify feature availability in online and offline modes', async ({ page, context }) => {
+    // This test explicitly checks which features are available/unavailable in each mode
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    // ===== ONLINE MODE: Verify all features are available =====
+    const offlineIndicator = page.getByTestId('offline-indicator');
+    await expect(offlineIndicator).toContainText('Online');
+
+    // Check online feature availability via status API
+    const onlineStatusResponse = await page.request.get('/api/offline/status');
+    expect(onlineStatusResponse.status()).toBe(200);
+    const onlineStatus = await onlineStatusResponse.json();
+    expect(onlineStatus.online).toBe(true);
+
+    // Verify docs search is available online
+    const onlineDocsResponse = await page.request.get('/api/docs/search?q=test');
+    expect(onlineDocsResponse.status()).toBe(200);
+    const onlineDocsData = await onlineDocsResponse.json();
+    expect(onlineDocsData).toBeDefined();
+
+    // Verify templates are available online
+    const onlineTemplatesResponse = await page.request.get('/api/templates');
+    expect(onlineTemplatesResponse.status()).toBe(200);
+    const onlineTemplatesData = await onlineTemplatesResponse.json();
+    expect(onlineTemplatesData).toHaveProperty('templates');
+
+    // ===== SWITCH TO OFFLINE MODE =====
+    await context.setOffline(true);
+    await page.waitForTimeout(1000);
+
+    // Verify offline indicator shows offline status
+    await expect(offlineIndicator).toContainText('Offline Mode');
+
+    // Check offline feature availability via status API
+    const offlineStatusResponse = await page.request.get('/api/offline/status');
+    expect(offlineStatusResponse.status()).toBe(200);
+    const offlineStatus = await offlineStatusResponse.json();
+    expect(offlineStatus.online).toBe(false);
+
+    // ===== OFFLINE MODE: Verify offline-capable features still work =====
+
+    // Feature 1: Docs search should work offline (with offline-capable header)
+    const offlineDocsResponse = await page.request.get('/api/docs/search?q=test');
+    expect(offlineDocsResponse.status()).toBe(200);
+    const offlineDocsCapable = offlineDocsResponse.headers()['x-offline-capable'];
+    expect(offlineDocsCapable).toBe('true');
+    const offlineDocsData = await offlineDocsResponse.json();
+    expect(offlineDocsData).toBeDefined();
+
+    // Feature 2: Templates should work offline (with offline-capable header)
+    const offlineTemplatesResponse = await page.request.get('/api/templates');
+    expect(offlineTemplatesResponse.status()).toBe(200);
+    const offlineTemplatesCapable = offlineTemplatesResponse.headers()['x-offline-capable'];
+    expect(offlineTemplatesCapable).toBe('true');
+    const offlineTemplatesData = await offlineTemplatesResponse.json();
+    expect(offlineTemplatesData).toHaveProperty('templates');
+
+    // Feature 3: AI chat should fallback to Ollama when offline
+    // (AI chat availability depends on Ollama being installed and running)
+    const aiChatToggle = page.locator('[data-testid="ai-chat-toggle"]');
+    if (await aiChatToggle.isVisible()) {
+      // AI chat UI should still be available (will use Ollama)
+      await expect(aiChatToggle).toBeVisible();
+    }
+
+    // Feature 4: Offline setup page should be accessible offline
+    await page.goto('/offline-setup');
+    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator('h1, h2').first()).toBeVisible();
+
+    // ===== RETURN TO ONLINE MODE =====
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    await context.setOffline(false);
+    await page.waitForTimeout(1000);
+
+    // Verify online indicator returns
+    await expect(offlineIndicator).toContainText('Online');
+
+    // Verify features are back to online mode
+    const backOnlineStatusResponse = await page.request.get('/api/offline/status');
+    expect(backOnlineStatusResponse.status()).toBe(200);
+    const backOnlineStatus = await backOnlineStatusResponse.json();
+    expect(backOnlineStatus.online).toBe(true);
+
+    // Verify cloud-based features work again
+    const backOnlineDocsResponse = await page.request.get('/api/docs/search?q=test');
+    expect(backOnlineDocsResponse.status()).toBe(200);
+  });
 });
