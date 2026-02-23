@@ -13,6 +13,7 @@ import { cache, CacheTTL } from '@/lib/cache/unified-cache-client'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { createErrorResponseFromError } from '@/lib/utils/api-response'
 import * as crypto from 'crypto'
+import { getDefaultEnhancer, type EnhancedSuggestion } from '@/lib/ai/suggestion-enhancer'
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
@@ -171,6 +172,59 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       requestId
     });
 
+    // Enhance context with AI suggestions if code-related
+    let enhancedContext: EnhancedSuggestion | null = null;
+    let systemPrompt = 'You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.';
+
+    if (isCodeRelatedQuery(messages)) {
+      try {
+        const sourceCode = extractCodeFromMessages(messages) || '';
+        const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content || '';
+
+        if (sourceCode || lastUserMessage) {
+          const enhancer = getDefaultEnhancer();
+          enhancedContext = await enhancer.enhance({
+            sourceCode: sourceCode || lastUserMessage,
+            intent: lastUserMessage,
+            workspaceId: request.user?.id,
+            contextOptions: {
+              includeRelatedCode: true,
+              includeConventions: true,
+              maxRelatedElements: 5,
+              maxConventionExamples: 3,
+              minRelevanceScore: 0.3
+            },
+            optimizationOptions: {
+              tokenBudget: 2000,
+              strategy: 'BALANCED' as any,
+              minRelevanceScore: 0.2
+            }
+          });
+
+          // Include enhanced context in system prompt
+          if (enhancedContext.formattedContext) {
+            systemPrompt = `You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.
+
+${enhancedContext.formattedContext}
+
+Use the above context to provide more accurate and relevant suggestions.`;
+
+            logger.info('AI chat context enhanced', {
+              totalTokens: enhancedContext.totalTokens,
+              relevanceScore: enhancedContext.relevanceScore,
+              contextSources: enhancedContext.contextSources.length,
+              requestId
+            });
+          }
+        }
+      } catch (enhanceError) {
+        logger.warn('Context enhancement failed, continuing without enhancement', {
+          error: enhanceError instanceof Error ? enhanceError.message : 'Unknown error',
+          requestId
+        });
+      }
+    }
+
     // Real AI response using Vercel AI SDK
     let response = ''
     let aiError: unknown = null
@@ -197,7 +251,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
         // Real AI streaming
         const result = await streamText({
           model,
-          system: 'You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.',
+          system: systemPrompt,
           messages,
           tools,
         });
@@ -269,7 +323,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
         if (model) {
           await streamText({
             model,
-            system: 'You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.',
+            system: systemPrompt,
             messages,
             tools,
           })
@@ -361,6 +415,14 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       cache_hit: false,
       userId: request.user?.id,
       userRole: request.user?.role,
+      ...(enhancedContext && {
+        context_enhancement: {
+          enabled: true,
+          totalTokens: enhancedContext.totalTokens,
+          relevanceScore: enhancedContext.relevanceScore,
+          stats: enhancedContext.stats
+        }
+      })
     };
     
     // Cache the response if conditions are met
@@ -492,12 +554,50 @@ function generateAIChatCacheKey(
     temperature,
     maxTokens
   };
-  
+
   const hash = crypto
     .createHash('sha256')
     .update(JSON.stringify(keyData))
     .digest('hex')
     .substring(0, 16);
-    
+
   return `ai:chat:${hash}`;
+}
+
+// Helper function to extract code blocks from messages
+function extractCodeFromMessages(messages: Array<{ role: string; content: string }>): string | null {
+  // Look for code blocks in markdown format ```code``` or inline code `code`
+  const codeBlockRegex = /```[\s\S]*?```|`[^`]+`/g;
+
+  // Iterate in reverse order without modifying the original array
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    if (message.role === 'user') {
+      const matches = message.content.match(codeBlockRegex);
+      if (matches && matches.length > 0) {
+        // Extract the most recent code block
+        const codeBlock = matches[matches.length - 1];
+        // Remove markdown code fences
+        return codeBlock.replace(/```[\w]*\n?/g, '').replace(/```$/g, '').replace(/`/g, '').trim();
+      }
+    }
+  }
+
+  return null;
+}
+
+// Helper function to detect if message is code-related
+function isCodeRelatedQuery(messages: Array<{ role: string; content: string }>): boolean {
+  const codeKeywords = [
+    'code', 'function', 'component', 'class', 'implement', 'create',
+    'build', 'debug', 'fix', 'error', 'typescript', 'javascript', 'react',
+    'how do i', 'how to', 'write', 'develop'
+  ];
+
+  const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+  if (!lastUserMessage) return false;
+
+  const content = lastUserMessage.content.toLowerCase();
+  return codeKeywords.some(keyword => content.includes(keyword)) ||
+         extractCodeFromMessages(messages) !== null;
 }
