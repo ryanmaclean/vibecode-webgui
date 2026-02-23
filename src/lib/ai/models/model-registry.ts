@@ -29,6 +29,12 @@ import type {
 import { DEFAULT_COMPARISON_CRITERIA } from '@/types/model-comparison';
 import { MODEL_CONFIGS, ModelFamily } from '@/types/context';
 import { ollamaClient, type OllamaModel } from '@/lib/ollama-client';
+import {
+  ModelSyncService,
+  type ModelSyncConfig,
+  type SyncEvent,
+  type ModelChange,
+} from '@/lib/ai/models/model-sync-service';
 
 // ============================================================================
 // Static Model Data
@@ -725,6 +731,7 @@ class ModelRegistryService {
   private openRouterCacheDuration = 1000 * 60 * 60; // 1 hour
   private lastOllamaFetch: number = 0;
   private ollamaCacheDuration = 1000 * 60 * 5; // 5 minutes (shorter cache for local models)
+  private syncService: ModelSyncService | null = null;
 
   constructor() {
     this.initializeModels();
@@ -1823,6 +1830,173 @@ class ModelRegistryService {
     const tagSet = new Set<string>();
     this.cachedModels.forEach(m => m.tags.forEach(t => tagSet.add(t)));
     return Array.from(tagSet).sort();
+  }
+
+  // ============================================================================
+  // Model Sync Integration
+  // ============================================================================
+
+  /**
+   * Initialize and start the sync service for automatic model updates
+   */
+  initializeSyncService(config?: ModelSyncConfig): void {
+    if (this.syncService) {
+      console.warn('[ModelRegistry] Sync service already initialized');
+      return;
+    }
+
+    // Create sync service with configuration
+    this.syncService = new ModelSyncService({
+      syncIntervalMs: config?.syncIntervalMs ?? 60 * 60 * 1000, // 1 hour default
+      autoStart: false, // We'll start it manually after setting up listeners
+      detectPriceChanges: config?.detectPriceChanges ?? true,
+      detectCapabilityChanges: config?.detectCapabilityChanges ?? true,
+      minPriceChangePercent: config?.minPriceChangePercent ?? 5,
+    });
+
+    // Set up event listeners
+    this.syncService.on('sync_started', this.handleSyncStarted.bind(this));
+    this.syncService.on('sync_completed', this.handleSyncCompleted.bind(this));
+    this.syncService.on('sync_failed', this.handleSyncFailed.bind(this));
+    this.syncService.on('models_changed', this.handleModelsChanged.bind(this));
+
+    console.log('[ModelRegistry] Sync service initialized');
+  }
+
+  /**
+   * Start the sync service
+   */
+  startSync(): void {
+    if (!this.syncService) {
+      console.warn('[ModelRegistry] Sync service not initialized. Call initializeSyncService() first.');
+      return;
+    }
+
+    this.syncService.start();
+    console.log('[ModelRegistry] Sync service started');
+  }
+
+  /**
+   * Stop the sync service
+   */
+  stopSync(): void {
+    if (!this.syncService) {
+      console.warn('[ModelRegistry] Sync service not initialized');
+      return;
+    }
+
+    this.syncService.stop();
+    console.log('[ModelRegistry] Sync service stopped');
+  }
+
+  /**
+   * Manually trigger a sync
+   */
+  async triggerSync(): Promise<void> {
+    if (!this.syncService) {
+      console.warn('[ModelRegistry] Sync service not initialized');
+      return;
+    }
+
+    await this.syncService.sync();
+  }
+
+  /**
+   * Get sync service status
+   */
+  getSyncStatus(): {
+    isRunning: boolean;
+    lastSyncTime: number;
+    modelCount: number;
+    syncIntervalMs: number;
+  } | null {
+    if (!this.syncService) {
+      return null;
+    }
+
+    return this.syncService.getStatus();
+  }
+
+  /**
+   * Handle sync started event
+   */
+  private handleSyncStarted(event: SyncEvent): void {
+    console.log('[ModelRegistry] Sync started at', new Date(event.timestamp).toISOString());
+  }
+
+  /**
+   * Handle sync completed event
+   */
+  private handleSyncCompleted(event: SyncEvent): void {
+    console.log(
+      '[ModelRegistry] Sync completed at',
+      new Date(event.timestamp).toISOString(),
+      event.changes ? `with ${event.changes.length} changes` : 'with no changes'
+    );
+  }
+
+  /**
+   * Handle sync failed event
+   */
+  private handleSyncFailed(event: SyncEvent): void {
+    console.error('[ModelRegistry] Sync failed:', event.error?.message);
+  }
+
+  /**
+   * Handle models changed event - update internal registry
+   */
+  private handleModelsChanged(event: SyncEvent): void {
+    if (!event.changes || event.changes.length === 0) {
+      return;
+    }
+
+    console.log(`[ModelRegistry] Processing ${event.changes.length} model changes`);
+
+    for (const change of event.changes) {
+      this.applyModelChange(change);
+    }
+
+    // Rebuild cached models array
+    this.cachedModels = Array.from(this.models.values());
+
+    console.log(`[ModelRegistry] Registry updated. Total models: ${this.models.size}`);
+  }
+
+  /**
+   * Apply a single model change to the registry
+   */
+  private applyModelChange(change: ModelChange): void {
+    switch (change.type) {
+      case 'added':
+        if (change.model) {
+          this.models.set(change.modelId, change.model);
+          console.log(`[ModelRegistry] Added model: ${change.modelId}`);
+        }
+        break;
+
+      case 'removed':
+        this.models.delete(change.modelId);
+        console.log(`[ModelRegistry] Removed model: ${change.modelId}`);
+        break;
+
+      case 'updated':
+      case 'price_changed':
+      case 'deprecated':
+        if (change.model) {
+          this.models.set(change.modelId, change.model);
+          console.log(`[ModelRegistry] Updated model: ${change.modelId} (${change.type})`);
+
+          // Log specific changes for transparency
+          if (change.changes && change.changes.length > 0) {
+            change.changes.forEach(c => {
+              console.log(
+                `  - ${c.field}: ${JSON.stringify(c.oldValue)} → ${JSON.stringify(c.newValue)}`
+              );
+            });
+          }
+        }
+        break;
+    }
   }
 }
 
