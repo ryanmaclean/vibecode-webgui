@@ -1,15 +1,15 @@
 {
   "active": true,
-  "spec": "059-add-vector-embedding-similarity-explorer",
+  "spec": "035-full-codebase-rag-integration",
   "state": "building",
   "subtasks": {
-    "completed": 2,
-    "total": 5,
+    "completed": 9,
+    "total": 10,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Vector Explorer Page",
+    "current": "End-to-End Integration",
     "id": null,
     "total": 1
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 4,
-    "started_at": "2026-02-21T20:22:35.382132"
+    "number": 11,
+    "started_at": "2026-02-23T12:20:47.262641"
   },
-  "last_update": "2026-02-21T20:33:01.080723"
+  "last_update": "2026-02-23T12:52:08.907083"
 }
