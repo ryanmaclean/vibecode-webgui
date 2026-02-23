@@ -410,6 +410,35 @@ model AIQualityMetric {
   @@map("ai_quality_metrics")
 }
 
+// AI Quality Alerts - Alert system for quality degradation detection
+model AIQualityAlert {
+  id             Int       @id @default(autoincrement())
+  model_id       String // AI model identifier (e.g., "anthropic/claude-3.5-sonnet")
+  alert_type     String // acceptance_rate_drop, edit_distance_increase, rating_decline, slow_acceptance
+  severity       String // warning, critical
+  message        String // Human-readable alert message
+  threshold      Float // Threshold value that triggered the alert
+  current_value  Float // Current metric value
+  previous_value Float // Previous metric value for comparison
+  detected_at    DateTime  @default(now()) // When the alert was detected
+  resolved_at    DateTime? // When the alert was resolved
+  resolved       Boolean   @default(false) // Whether the alert has been resolved
+  metadata       Json? // Additional alert context
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  @@index([model_id])
+  @@index([alert_type])
+  @@index([severity])
+  @@index([resolved])
+  @@index([detected_at])
+  @@index([model_id, resolved, detected_at]) // For active alerts by model
+  @@index([alert_type, severity, resolved]) // For filtering by type and severity
+  @@index([resolved, detected_at]) // For active alerts time series
+  @@index([model_id, alert_type, resolved]) // For model-specific alert type queries
+  @@map("ai_quality_alerts")
+}
+
 // Monitoring and Analytics
 model Event {
   id         Int      @id @default(autoincrement())
