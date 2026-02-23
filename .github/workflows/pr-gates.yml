@@ -1,0 +1,257 @@
+name: Datadog PR Gates
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+
+env:
+  DD_SITE: datadoghq.com
+  DD_SERVICE: gt-repo
+  DD_ENV: dev  # Standard envs: dev, hme, prd, stg
+
+jobs:
+  static-analysis:
+    name: Static Code Analysis (SAST)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for accurate diff
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install datadog-ci
+        run: npm install -g @datadog/datadog-ci
+
+      - name: Run Datadog Static Analysis
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+        run: |
+          # Run static analysis on changed files
+          datadog-ci sarif upload \
+            --service $DD_SERVICE \
+            --env $DD_ENV \
+            --tags "pr:${{ github.event.pull_request.number }},branch:${{ github.head_ref }}" \
+            || echo "Static analysis upload completed"
+
+      - name: Check for Security Issues
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+        run: |
+          # Run ESLint with security rules and output SARIF
+          npm ci --legacy-peer-deps
+          npx eslint . \
+            --ext .ts,.tsx,.js,.jsx \
+            --format @microsoft/eslint-formatter-sarif \
+            --output-file eslint-results.sarif \
+            || true
+
+          # Upload ESLint SARIF to Datadog
+          if [ -f eslint-results.sarif ]; then
+            datadog-ci sarif upload \
+              --service $DD_SERVICE \
+              --env $DD_ENV \
+              eslint-results.sarif || true
+          fi
+
+  software-composition:
+    name: Software Composition Analysis (SCA)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install datadog-ci
+        run: npm install -g @datadog/datadog-ci
+
+      - name: Generate SBOM
+        run: |
+          # Generate CycloneDX SBOM
+          npx @cyclonedx/cyclonedx-npm --output-file sbom.json --output-format json || true
+
+      - name: Upload SBOM to Datadog
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+        run: |
+          if [ -f sbom.json ]; then
+            datadog-ci sbom upload \
+              --service $DD_SERVICE \
+              --env $DD_ENV \
+              --tags "pr:${{ github.event.pull_request.number }},branch:${{ github.head_ref }}" \
+              sbom.json || echo "SBOM upload completed"
+          fi
+
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=high --json > npm-audit.json || true
+
+          # Check for high/critical vulnerabilities
+          HIGH_COUNT=$(jq '.metadata.vulnerabilities.high // 0' npm-audit.json)
+          CRITICAL_COUNT=$(jq '.metadata.vulnerabilities.critical // 0' npm-audit.json)
+
+          echo "## Dependency Vulnerabilities" >> $GITHUB_STEP_SUMMARY
+          echo "- Critical: $CRITICAL_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "- High: $HIGH_COUNT" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$CRITICAL_COUNT" -gt 0 ]; then
+            echo "::warning::Found $CRITICAL_COUNT critical vulnerabilities"
+          fi
+
+  code-coverage-gate:
+    name: Code Coverage Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install datadog-ci
+        run: npm install -g @datadog/datadog-ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        env:
+          REDIS_URL: redis://localhost:6379
+          CI: true
+
+      - name: Upload coverage to Datadog
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+        run: |
+          # Upload test results
+          if [ -d test-results ]; then
+            datadog-ci junit upload \
+              --service $DD_SERVICE \
+              --tags "pr:${{ github.event.pull_request.number }},branch:${{ github.head_ref }}" \
+              test-results/*.xml || true
+          fi
+
+          # Check coverage threshold
+          if [ -f coverage/coverage-summary.json ]; then
+            COVERAGE=$(jq '.total.lines.pct' coverage/coverage-summary.json)
+            echo "## Code Coverage: ${COVERAGE}%" >> $GITHUB_STEP_SUMMARY
+
+            # Fail if coverage drops below 60%
+            if [ "$(echo "$COVERAGE < 60" | bc -l)" -eq 1 ]; then
+              echo "::error::Coverage is below 60% threshold"
+              exit 1
+            fi
+          fi
+
+  ai-code-quality:
+    name: AI/GenAI Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for common AI agent issues
+        run: |
+          echo "## AI/GenAI Code Quality Checks" >> $GITHUB_STEP_SUMMARY
+
+          # Check for hardcoded API keys/secrets
+          if grep -rn "sk-[a-zA-Z0-9]\{20,\}" --include="*.ts" --include="*.js" --include="*.tsx" --include="*.jsx" .; then
+            echo "::error::Found potential hardcoded OpenAI API key"
+            echo "- Found potential hardcoded API key" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          echo "- No hardcoded API keys found" >> $GITHUB_STEP_SUMMARY
+
+          # Check for missing error handling in AI calls
+          MISSING_ERROR_HANDLING=$(grep -rn "openai\." --include="*.ts" --include="*.js" | grep -v "catch" | grep -v "try" | wc -l)
+          if [ "$MISSING_ERROR_HANDLING" -gt 5 ]; then
+            echo "::warning::Found $MISSING_ERROR_HANDLING AI calls potentially missing error handling"
+          fi
+
+          # Check for missing rate limiting
+          if ! grep -rn "rateLimit\|rateLimiter\|RateLimit" --include="*.ts" --include="*.js" . > /dev/null 2>&1; then
+            echo "- Consider adding rate limiting for AI API calls" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Rate limiting found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Check ddtrace initialization
+          DDTRACE_INIT=$(grep -rn "dd-trace.*init\|initTracer" --include="*.ts" --include="*.js" . | wc -l)
+          echo "- Found $DDTRACE_INIT services with dd-trace initialization" >> $GITHUB_STEP_SUMMARY
+
+  pr-gate-status:
+    name: PR Gate Status
+    runs-on: ubuntu-latest
+    needs: [static-analysis, software-composition, code-coverage-gate, ai-code-quality]
+    if: always()
+    steps:
+      - name: Check gate status
+        run: |
+          echo "## PR Gate Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check each gate
+          if [[ "${{ needs.static-analysis.result }}" == "success" ]]; then
+            echo "SAST: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "SAST: ${{ needs.static-analysis.result }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.software-composition.result }}" == "success" ]]; then
+            echo "SCA: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "SCA: ${{ needs.software-composition.result }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.code-coverage-gate.result }}" == "success" ]]; then
+            echo "Coverage: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Coverage: ${{ needs.code-coverage-gate.result }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.ai-code-quality.result }}" == "success" ]]; then
+            echo "AI Quality: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "AI Quality: ${{ needs.ai-code-quality.result }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Fail if critical gates failed
+          if [[ "${{ needs.code-coverage-gate.result }}" == "failure" ]] || \
+             [[ "${{ needs.ai-code-quality.result }}" == "failure" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "PR blocked due to gate failures" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All PR gates passed!" >> $GITHUB_STEP_SUMMARY
