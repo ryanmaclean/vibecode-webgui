@@ -31,6 +31,8 @@ import {
   Gift,
   Check,
   Sparkles,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 import type {
   ModelProfile,
@@ -41,6 +43,7 @@ import type {
   DEFAULT_QUICK_FILTERS,
 } from '@/types/model-comparison';
 import { ModelStatusBadge } from '@/components/ai/ModelStatusBadge';
+import { useModelChangeDetection } from '@/hooks/useModelChangeDetection';
 
 // ============================================================================
 // Types
@@ -252,6 +255,53 @@ const applyFilters = (models: ModelProfile[], filters: ModelFilterOptions): Mode
 // Sub-Components
 // ============================================================================
 
+/**
+ * PriceDisplay Component - Shows pricing with optional old/new comparison
+ */
+interface PriceDisplayProps {
+  currentPrice: number;
+  oldPrice?: number;
+  type: 'input' | 'output';
+  compact?: boolean;
+}
+
+const PriceDisplay: React.FC<PriceDisplayProps> = ({
+  currentPrice,
+  oldPrice,
+  type,
+  compact = false,
+}) => {
+  const hasPriceChange = oldPrice !== undefined && oldPrice !== currentPrice;
+  const priceIncreased = hasPriceChange && currentPrice > oldPrice;
+  const priceDecreased = hasPriceChange && currentPrice < oldPrice;
+
+  if (!hasPriceChange) {
+    return (
+      <span className="text-xs text-gray-600">
+        {formatPrice(currentPrice)}
+      </span>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-xs text-gray-400 line-through">
+        {formatPrice(oldPrice)}
+      </span>
+      <span className={`text-xs font-medium ${priceIncreased ? 'text-red-600' : 'text-green-600'}`}>
+        {formatPrice(currentPrice)}
+      </span>
+      {!compact && (
+        priceIncreased ? (
+          <TrendingUp className="h-3 w-3 text-red-600" />
+        ) : (
+          <TrendingDown className="h-3 w-3 text-green-600" />
+        )
+      )}
+    </div>
+  );
+};
+
 interface ModelListItemProps {
   model: ModelProfile;
   isSelected: boolean;
@@ -260,6 +310,10 @@ interface ModelListItemProps {
   onSelect: () => void;
   onFavoriteToggle?: () => void;
   showDetails?: boolean;
+  oldPricing?: {
+    inputPer1K: number;
+    outputPer1K: number;
+  };
 }
 
 const ModelListItem: React.FC<ModelListItemProps> = ({
@@ -270,6 +324,7 @@ const ModelListItem: React.FC<ModelListItemProps> = ({
   onSelect,
   onFavoriteToggle,
   showDetails = false,
+  oldPricing,
 }) => {
   return (
     <button
@@ -298,8 +353,20 @@ const ModelListItem: React.FC<ModelListItemProps> = ({
               <Badge variant="outline" className="text-xs">
                 {formatContext(model.limits.contextWindow)}
               </Badge>
-              <Badge variant="outline" className="text-xs">
-                {formatPrice(model.pricing.inputPer1K)}
+              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                <PriceDisplay
+                  currentPrice={model.pricing.inputPer1K}
+                  oldPrice={oldPricing?.inputPer1K}
+                  type="input"
+                  compact={true}
+                />
+                {' / '}
+                <PriceDisplay
+                  currentPrice={model.pricing.outputPer1K}
+                  oldPrice={oldPricing?.outputPer1K}
+                  type="output"
+                  compact={true}
+                />
               </Badge>
             </div>
           )}
@@ -340,6 +407,7 @@ interface ProviderGroupProps {
   isExpanded: boolean;
   onToggle: () => void;
   showDetails?: boolean;
+  priceChangeMap?: Map<string, { inputPer1K: number; outputPer1K: number }>;
 }
 
 const ProviderGroup: React.FC<ProviderGroupProps> = ({
@@ -353,6 +421,7 @@ const ProviderGroup: React.FC<ProviderGroupProps> = ({
   isExpanded,
   onToggle,
   showDetails,
+  priceChangeMap,
 }) => {
   return (
     <div className="border-b last:border-b-0">
@@ -385,6 +454,7 @@ const ProviderGroup: React.FC<ProviderGroupProps> = ({
               onSelect={() => onModelSelect(model)}
               onFavoriteToggle={onFavoriteToggle ? () => onFavoriteToggle(model.id) : undefined}
               showDetails={showDetails}
+              oldPricing={priceChangeMap?.get(model.id)}
             />
           ))}
         </div>
@@ -419,6 +489,24 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   const [showFilters, setShowFilters] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Use model change detection hook to get price changes
+  const { priceChanges } = useModelChangeDetection({ enableSync: false });
+
+  // Build price change map for quick lookups
+  const priceChangeMap = useMemo(() => {
+    const map = new Map<string, { inputPer1K: number; outputPer1K: number }>();
+    priceChanges.forEach(notification => {
+      const { change } = notification;
+      if (change.oldModel?.pricing) {
+        map.set(change.modelId, {
+          inputPer1K: change.oldModel.pricing.inputPer1K,
+          outputPer1K: change.oldModel.pricing.outputPer1K,
+        });
+      }
+    });
+    return map;
+  }, [priceChanges]);
 
   // Get selected model
   const selectedModel = useMemo(() => {
@@ -740,6 +828,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                     isExpanded={expandedProviders.has(provider) || provider === 'Favorites' || provider === 'Recent'}
                     onToggle={() => toggleProvider(provider)}
                     showDetails={showDetails}
+                    priceChangeMap={priceChangeMap}
                   />
                 ))
               )}
