@@ -378,6 +378,38 @@ model AISuggestion {
   @@map("ai_suggestions")
 }
 
+// AI Quality Metrics - Aggregated quality metrics over time periods
+model AIQualityMetric {
+  id                    Int      @id @default(autoincrement())
+  model_id              String // AI model identifier (e.g., "anthropic/claude-3.5-sonnet")
+  period                String // Aggregation period: day, week, month
+  start_date            DateTime // Start of the period
+  end_date              DateTime // End of the period
+  total_suggestions     Int      @default(0) // Total suggestions in period
+  accepted_suggestions  Int      @default(0) // Number of accepted suggestions
+  rejected_suggestions  Int      @default(0) // Number of rejected suggestions
+  acceptance_rate       Float? // Acceptance rate (0-1)
+  avg_edit_distance     Float? // Average Levenshtein distance
+  avg_similarity        Float? // Average similarity score (0-1)
+  avg_time_to_accept    Float? // Average time to accept in milliseconds
+  avg_rating            Float? // Average user rating (1-5)
+  trend_slope           Float? // Trend slope for detecting degradation
+  health_status         String   @default("healthy") // healthy, warning, critical
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  @@unique([model_id, period, start_date]) // One metric per model/period/date combination
+  @@index([model_id])
+  @@index([period])
+  @@index([start_date])
+  @@index([health_status])
+  @@index([model_id, period, start_date]) // For time series queries
+  @@index([model_id, health_status]) // For model health monitoring
+  @@index([acceptance_rate, model_id]) // For acceptance rate analysis
+  @@index([created_at]) // For recent metrics queries
+  @@map("ai_quality_metrics")
+}
+
 // Monitoring and Analytics
 model Event {
   id         Int      @id @default(autoincrement())
