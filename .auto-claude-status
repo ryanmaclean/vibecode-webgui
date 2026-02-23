@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "038-cost-estimation-alerts",
+  "spec": "059-add-vector-embedding-similarity-explorer",
   "state": "building",
   "subtasks": {
-    "completed": 10,
-    "total": 12,
+    "completed": 2,
+    "total": 5,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Integration Testing & Polish",
+    "current": "Vector Explorer Page",
     "id": null,
-    "total": 2
+    "total": 1
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 12,
-    "started_at": "2026-02-22T06:34:11.275693"
+    "number": 4,
+    "started_at": "2026-02-21T20:22:35.382132"
   },
-  "last_update": "2026-02-22T07:06:05.650120"
+  "last_update": "2026-02-21T20:33:01.080723"
 }
