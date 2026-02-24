@@ -120,6 +120,81 @@ Follow the naming convention: `feature/`, `bugfix/`, `refactor/`, or `docs/` pre
 5. Request review from team members
 6. Address feedback and re-request review
 
+### Branch Protection and Merge Requirements
+
+VibeCode enforces strict branch protection rules on the `main` branch to maintain code quality and prevent breaking changes from being merged.
+
+#### Required Status Checks
+
+All pull requests must pass the following CI checks before merging:
+
+1. **PR Tests (`pr-test.yml`)** - Runs on every pull request
+   - ✅ Node.js dependency installation
+   - ✅ TypeScript type checking (`npm run type-check`)
+   - ✅ ESLint code linting (`npm run lint`)
+   - ✅ Next.js production build (`npm run build`)
+   - ✅ Test suite execution (`npm test -- --maxWorkers=2`)
+
+2. **Main Branch CI (`main-branch-ci.yml`)** - Additional validation
+   - ✅ Code linting verification
+   - ✅ TypeScript type checking
+   - ✅ Unit test execution
+
+3. **Security Scanning** (if configured)
+   - ✅ Dependency vulnerability scanning
+   - ✅ Code security analysis
+
+**Note:** Optional checks (launcher tests, log uploads, test summaries) may show as warnings but won't block merging if they fail. Only the critical checks listed above are blocking.
+
+#### Branch Protection Configuration
+
+Repository maintainers should configure branch protection with the following settings:
+
+**For the `main` branch:**
+
+1. **Require pull request reviews before merging**
+   - At least 1 approval required
+   - Dismiss stale pull request approvals when new commits are pushed
+
+2. **Require status checks to pass before merging**
+   - Require branches to be up to date before merging
+   - Required status checks:
+     - `pr-test` (Node.js, TypeScript, Lint, Build, Tests)
+     - `main-branch-ci` (Lint, Type-check, Unit tests)
+
+3. **Do not allow bypassing the above settings**
+   - Enforce requirements for administrators
+   - This ensures even maintainers follow the same quality gates
+
+4. **Additional recommended settings**
+   - Require linear history (optional, prevents merge commits)
+   - Require signed commits (optional, for enhanced security)
+
+#### Why These Rules Matter
+
+Branch protection rules ensure:
+- **Code Quality**: TypeScript errors, linting issues, and test failures are caught before merge
+- **Stability**: The `main` branch always builds successfully and passes all tests
+- **Review Culture**: Every change receives human review before integration
+- **Regression Prevention**: Automated tests verify new code doesn't break existing functionality
+
+#### Troubleshooting CI Failures
+
+If your pull request fails CI checks:
+
+1. **Review the workflow logs**: Click "Details" next to the failed check
+2. **Fix the issue locally**:
+   ```bash
+   npm run type-check  # Fix TypeScript errors
+   npm run lint        # Fix linting issues
+   npm run build       # Ensure build succeeds
+   npm test -- --maxWorkers=2  # Fix failing tests
+   ```
+3. **Commit and push the fix**: CI will automatically re-run
+4. **Need help?** See [`.github/workflows/TROUBLESHOOTING.md`](.github/workflows/TROUBLESHOOTING.md)
+
+For detailed troubleshooting guidance on specific workflow failures, consult the [GitHub Actions Troubleshooting Guide](.github/workflows/TROUBLESHOOTING.md).
+
 ## Testing
 
 Testing is critical to maintaining code quality. Always test your changes.
