@@ -114,7 +114,6 @@ jobs:
           DD_CI_VISIBILITY_AGENTLESS_ENABLED: true
           NODE_OPTIONS: -r dd-trace/ci/init
           CI: true
-        continue-on-error: true
 
       - name: Upload test results to Datadog
         if: always()
