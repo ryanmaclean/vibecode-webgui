@@ -45,16 +45,15 @@ jobs:
         id: typecheck
         run: |
           echo "## TypeScript Type Check" >> $GITHUB_STEP_SUMMARY
-          npm run type-check 2>&1 | tee typecheck.log || true
-          if [ ${PIPESTATUS[0]} -eq 0 ]; then
+          if npm run type-check 2>&1 | tee typecheck.log; then
             echo "✅ Type check passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Type check failed" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             tail -50 typecheck.log >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
           fi
-        continue-on-error: true
 
       - name: Run ESLint
         id: lint
