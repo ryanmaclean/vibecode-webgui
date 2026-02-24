@@ -52,7 +52,18 @@ jobs:
           fi
 
       - name: Type check
-        run: npm run type-check || echo "Type issues found (non-blocking)"
+        id: typecheck
+        run: |
+          echo "## TypeScript Type Check" >> $GITHUB_STEP_SUMMARY
+          if npm run type-check 2>&1 | tee typecheck.log; then
+            echo "✅ Type check passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Type check failed" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            tail -50 typecheck.log >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
       - name: Basic unit tests
         run: npm test -- --testPathPatterns="(auth|security|utils)" --passWithNoTests || echo "Unit test issues found (non-blocking in lightweight main CI)"
