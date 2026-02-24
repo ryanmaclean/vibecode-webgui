@@ -177,6 +177,38 @@ export async function logAIRequest(data: {
   if (isBuilding) {
     return null
   }
+
+  // Record latency histogram if duration is provided
+  if (data.duration_ms !== undefined) {
+    metrics.histogram('ai.request.duration', data.duration_ms, {
+      service: 'vibecode-webgui',
+      request_type: data.request_type,
+      model: data.model,
+      provider: data.provider,
+      status: data.status
+    })
+  }
+
+  // Record AI request count
+  metrics.increment('ai.request.count', {
+    service: 'vibecode-webgui',
+    request_type: data.request_type,
+    model: data.model,
+    provider: data.provider,
+    status: data.status
+  })
+
+  // Record error details if present
+  if (data.error) {
+    metrics.increment('ai.request.error', {
+      service: 'vibecode-webgui',
+      request_type: data.request_type,
+      model: data.model,
+      provider: data.provider,
+      error_type: data.status === 'failed' ? 'request_failed' : 'unknown_error'
+    })
+  }
+
   return prisma.aIRequest.create({
     data: {
       ...data,
