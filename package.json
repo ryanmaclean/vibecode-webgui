@@ -165,7 +165,7 @@
     "@azure/storage-blob": "12.31.0",
     "@azure/storage-queue": "12.29.0",
     "@codemirror/lang-javascript": "6.2.4",
-    "@datadog/browser-logs": "6.27.1",
+    "@datadog/browser-logs": "6.28.0",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
     "@heroicons/react": "2.2.0",
