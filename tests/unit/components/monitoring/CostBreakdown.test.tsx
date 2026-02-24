@@ -135,23 +135,23 @@ describe('CostBreakdown Component', () => {
   test('renders cost summary metrics', async () => {
     render(<CostBreakdown />)
 
-    await screen.findByText(/\$12\.45/i, {}, { timeout: 5000 })
-    await screen.findByText(/\$0\.0124/i, {}, { timeout: 5000 })
+    await screen.findByText(/\$12\.45/i, { timeout: 5000 })
+    await screen.findByText(/\$0\.0124/i, { timeout: 5000 })
   })
 
   test('displays cost trend indicator', async () => {
     render(<CostBreakdown />)
 
-    await screen.findByText(/15%/i, {}, { timeout: 5000 })
+    await screen.findByText(/15\.0%/i, { timeout: 5000 })
     // Should show up arrow icon for positive trend
-    const trendIcon = await screen.findByTestId('trend-up-icon', {}, { timeout: 5000 })
+    const trendIcon = await screen.findByTestId('trend-up-icon', { timeout: 5000 })
     expect(trendIcon).toBeInTheDocument()
   })
 
   test('renders period selector dropdown', async () => {
     render(<CostBreakdown />)
 
-    const periodSelector = await screen.findByRole('combobox', {}, { timeout: 5000 })
+    const periodSelector = await screen.findByRole('combobox', { timeout: 5000 })
     expect(periodSelector).toBeInTheDocument()
     expect(periodSelector).toHaveValue('24h')
   })
@@ -163,7 +163,7 @@ describe('CostBreakdown Component', () => {
       expect(global.fetch).toHaveBeenCalledWith('/api/monitoring/ai-metrics?period=24h')
     }, { timeout: 5000 })
 
-    const periodSelector = await screen.findByRole('combobox', {}, { timeout: 5000 })
+    const periodSelector = await screen.findByRole('combobox', { timeout: 5000 })
 
     fireEvent.change(periodSelector, { target: { value: '7d' } })
 
@@ -176,7 +176,7 @@ describe('CostBreakdown Component', () => {
     const { container } = render(<CostBreakdown />)
 
     // Wait for data to load
-    await screen.findByText(/\$12\.45/i, {}, { timeout: 5000 })
+    await screen.findByText(/\$12\.45/i, { timeout: 5000 })
 
     await waitFor(() => {
       // Look for PieChart component
@@ -189,7 +189,7 @@ describe('CostBreakdown Component', () => {
     const { container } = render(<CostBreakdown />)
 
     // Wait for data to load
-    await screen.findByText(/\$12\.45/i, {}, { timeout: 5000 })
+    await screen.findByText(/\$12\.45/i, { timeout: 5000 })
 
     await waitFor(() => {
       // Look for BarChart component
@@ -201,9 +201,9 @@ describe('CostBreakdown Component', () => {
   test('displays detailed breakdown table', async () => {
     render(<CostBreakdown />)
 
-    await screen.findByText(/gpt-4/i, {}, { timeout: 5000 })
-    await screen.findByText(/\$8\.50/i, {}, { timeout: 5000 })
-    await screen.findByText(/500/, {}, { timeout: 5000 })
+    await screen.findByText(/gpt-4/i, { timeout: 5000 })
+    await screen.findByText(/\$8\.50/i, { timeout: 5000 })
+    await screen.findByText(/500/, { timeout: 5000 })
   })
 
   test('export button is visible', async () => {
@@ -241,7 +241,7 @@ describe('CostBreakdown Component', () => {
 
     render(<CostBreakdown />)
 
-    const errorElement = await screen.findByText(/error loading cost data/i, {}, { timeout: 5000 })
+    const errorElement = await screen.findByText(/error loading cost data/i, { timeout: 5000 })
     expect(errorElement).toBeInTheDocument()
   })
 
@@ -269,7 +269,7 @@ describe('CostBreakdown Component', () => {
     render(<CostBreakdown />)
 
     // Component still renders with zero values, check for "$0.00"
-    const zeroElement = await screen.findByText(/\$0\.00/i, {}, { timeout: 5000 })
+    const zeroElement = await screen.findByText(/\$0\.00/i, { timeout: 5000 })
     expect(zeroElement).toBeInTheDocument()
   })
 
@@ -279,7 +279,7 @@ describe('CostBreakdown Component', () => {
     render(<CostBreakdown refreshInterval={5000} />)
 
     // Wait for initial fetch
-    await screen.findByText(/\$12\.45/i, {}, { timeout: 5000 })
+    await screen.findByText(/\$12\.45/i, { timeout: 5000 })
     expect(global.fetch).toHaveBeenCalledTimes(1)
 
     // Advance time and check for second fetch

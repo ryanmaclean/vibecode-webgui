@@ -166,6 +166,13 @@ function LatencyHistogramInner({
     return () => clearInterval(interval)
   }, [fetchLatencyData, refreshInterval])
 
+  // Get color based on latency range (defined before use in histogramData)
+  const getBarColor = useCallback((minLatency: number): string => {
+    if (minLatency < 500) return '#10b981' // green - fast
+    if (minLatency < 2000) return '#f59e0b' // yellow - moderate
+    return '#ef4444' // red - slow
+  }, [])
+
   // Memoize histogram chart data
   const histogramData = useMemo(() => {
     if (!data?.latency?.histogram) return []
@@ -174,14 +181,7 @@ function LatencyHistogramInner({
       count: bucket.count,
       fill: getBarColor(bucket.min)
     }))
-  }, [data])
-
-  // Get color based on latency range
-  const getBarColor = (minLatency: number): string => {
-    if (minLatency < 500) return '#10b981' // green - fast
-    if (minLatency < 2000) return '#f59e0b' // yellow - moderate
-    return '#ef4444' // red - slow
-  }
+  }, [data, getBarColor])
 
   // Memoize latency formatter
   const formatLatency = useCallback((ms: number) => {

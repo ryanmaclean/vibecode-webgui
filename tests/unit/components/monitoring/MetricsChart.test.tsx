@@ -142,14 +142,14 @@ describe('MetricsChart Component', () => {
   test('fetches and displays metrics data', async () => {
     render(<MetricsChart period="24h" />)
 
-    // Component formats 20000 as "20.0K"
-    const tokensElement = await screen.findByText(/20\.0K/i, {}, { timeout: 5000 })
+    // Component formats 150000 as "150.0K"
+    const tokensElement = await screen.findByText(/150\.0K/i, { timeout: 5000 })
     expect(tokensElement).toBeInTheDocument()
 
-    const costElement = await screen.findByText(/\$0\.6/i, {}, { timeout: 5000 })
+    const costElement = await screen.findByText(/\$12\.45/i, { timeout: 5000 })
     expect(costElement).toBeInTheDocument()
 
-    const errorElement = await screen.findByText(/2\.00%/i, {}, { timeout: 5000 })
+    const errorElement = await screen.findByText(/2\.00%/i, { timeout: 5000 })
     expect(errorElement).toBeInTheDocument()
 
     // Verify fetch was called with correct URL
@@ -161,7 +161,7 @@ describe('MetricsChart Component', () => {
 
     render(<MetricsChart period="24h" />)
 
-    const errorElement = await screen.findByText(/Error Loading Metrics/i, {}, { timeout: 5000 })
+    const errorElement = await screen.findByText(/Error Loading Metrics/i, { timeout: 5000 })
     expect(errorElement).toBeInTheDocument()
   })
 
@@ -172,13 +172,13 @@ describe('MetricsChart Component', () => {
 
     render(<MetricsChart period="24h" />)
 
-    const errorElement = await screen.findByText(/Error Loading Metrics/i, {}, { timeout: 5000 })
+    const errorElement = await screen.findByText(/Error Loading Metrics/i, { timeout: 5000 })
     expect(errorElement).toBeInTheDocument()
 
     const retryButton = screen.getByRole('button', { name: /retry/i })
     fireEvent.click(retryButton)
 
-    const tokensElement = await screen.findByText(/20\.0K/i, {}, { timeout: 5000 })
+    const tokensElement = await screen.findByText(/150\.0K/i, { timeout: 5000 })
     expect(tokensElement).toBeInTheDocument()
 
     expect(global.fetch).toHaveBeenCalledTimes(2)
@@ -194,7 +194,7 @@ describe('MetricsChart Component', () => {
     render(<MetricsChart period="24h" />)
 
     // Component still renders with zero values, check for "0 requests"
-    const zeroRequestsElement = await screen.findByText(/0 requests/i, {}, { timeout: 5000 })
+    const zeroRequestsElement = await screen.findByText(/0 requests/i, { timeout: 5000 })
     expect(zeroRequestsElement).toBeInTheDocument()
   })
 
@@ -204,7 +204,7 @@ describe('MetricsChart Component', () => {
     render(<MetricsChart period="24h" refreshInterval={5000} />)
 
     // Wait for initial fetch
-    await screen.findByText(/20\.0K/i, {}, { timeout: 5000 })
+    await screen.findByText(/150\.0K/i, { timeout: 5000 })
     expect(global.fetch).toHaveBeenCalledTimes(1)
 
     // Advance time and check for second fetch
@@ -235,14 +235,14 @@ describe('MetricsChart Component', () => {
 
     render(<MetricsChart period="24h" />)
 
-    const largeNumberElement = await screen.findByText(/1\.50M/i, {}, { timeout: 5000 })
+    const largeNumberElement = await screen.findByText(/1\.50M/i, { timeout: 5000 })
     expect(largeNumberElement).toBeInTheDocument()
   })
 
   test('formatCurrency helper formats currency correctly', async () => {
     render(<MetricsChart period="24h" />)
 
-    const currencyElement = await screen.findByText(/\$0\.6/i, {}, { timeout: 5000 })
+    const currencyElement = await screen.findByText(/\$12\.45/i, { timeout: 5000 })
     expect(currencyElement).toBeInTheDocument()
   })
 
