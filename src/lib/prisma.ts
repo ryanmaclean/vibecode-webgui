@@ -22,8 +22,9 @@ if (isBuilding) {
   // Create a mock Prisma client for build time
   prismaClient = {} as PrismaClient
 } else {
-  // Add DBM tags to the database URL
-  const dbUrl = new URL(process.env.DATABASE_URL || 'postgresql://localhost:5432/placeholder');
+  // Add DBM tags to the database URL (Prisma 5+ uses env vars, not constructor datasources)
+  const baseUrl = process.env.DATABASE_URL || 'postgresql://localhost:5432/placeholder'
+  const dbUrl = new URL(baseUrl);
   if (!dbUrl.searchParams.has('application_name')) {
     dbUrl.searchParams.set('application_name', 'vibecode-webgui');
   }
@@ -31,15 +32,13 @@ if (isBuilding) {
     dbUrl.searchParams.set('options', `-c datadog.tags=env:${process.env.NODE_ENV},service:vibecode-webgui,version:1.0.0`);
   }
 
+  // Set DATABASE_URL for Prisma client (Prisma 5+ requires this)
+  process.env.DATABASE_URL = dbUrl.toString()
+
   prismaClient = globalForPrisma.prisma ?? new PrismaClient({
-    log: process.env.NODE_ENV === 'development' 
+    log: process.env.NODE_ENV === 'development'
       ? ['query', 'info', 'warn', 'error']
-      : ['error'],
-    datasources: {
-      db: {
-        url: dbUrl.toString(),
-      },
-    },
+      : ['error']
   })
 }
 
