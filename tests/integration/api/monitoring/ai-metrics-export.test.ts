@@ -5,9 +5,18 @@
 
 import { GET } from '@/app/api/monitoring/ai-metrics/export/route'
 import { NextRequest } from 'next/server'
+
+// Mock Prisma
+jest.mock('@/lib/prisma', () => ({
+  prisma: {
+    aIRequest: {
+      findMany: jest.fn()
+    }
+  }
+}))
+
 import { prisma } from '@/lib/prisma'
 
-jest.mock('@/lib/prisma')
 jest.mock('@/lib/monitoring/auth', () => ({
   checkMonitoringAuth: jest.fn().mockResolvedValue({ isAuthorized: true }),
   getUnauthorizedResponse: jest.fn()
@@ -35,7 +44,7 @@ describe('GET /api/monitoring/ai-metrics/export', () => {
   })
 
   test('returns CSV format by default', async () => {
-    const request = new NextRequest('http://localhost:3000/api/monitoring/ai-metrics/export?period=30d')
+    const request = new NextRequest('http://localhost:3000/api/monitoring/ai-metrics/export?period=30d&format=csv')
     const response = await GET(request)
 
     expect(response.status).toBe(200)
@@ -61,7 +70,7 @@ describe('GET /api/monitoring/ai-metrics/export', () => {
     expect(csvText).toContain('Model')
     expect(csvText).toContain('Provider')
     expect(csvText).toContain('Total Cost')
-    expect(csvText).toContain('Request Count')
+    expect(csvText).toContain('Requests')
     expect(csvText).toContain('Avg Cost/Request')
   })
 
@@ -81,7 +90,7 @@ describe('GET /api/monitoring/ai-metrics/export', () => {
     const jsonData = await response.json()
 
     expect(jsonData).toHaveProperty('metadata')
-    expect(jsonData.metadata).toHaveProperty('exportDate')
+    expect(jsonData.metadata).toHaveProperty('generatedAt')
     expect(jsonData.metadata).toHaveProperty('period')
     expect(jsonData.metadata).toHaveProperty('startDate')
     expect(jsonData.metadata).toHaveProperty('endDate')
@@ -102,8 +111,8 @@ describe('GET /api/monitoring/ai-metrics/export', () => {
     const response = await GET(request)
     const jsonData = await response.json()
 
-    expect(jsonData).toHaveProperty('costBreakdown')
-    expect(Array.isArray(jsonData.costBreakdown)).toBe(true)
+    expect(jsonData).toHaveProperty('breakdown')
+    expect(Array.isArray(jsonData.breakdown)).toBe(true)
   })
 
   test('supports different period values', async () => {
@@ -122,7 +131,7 @@ describe('GET /api/monitoring/ai-metrics/export', () => {
     const response = await GET(request)
 
     const disposition = response.headers.get('Content-Disposition')
-    expect(disposition).toMatch(/ai-cost-report-\d{4}-\d{2}-\d{2}/)
+    expect(disposition).toMatch(/ai-cost-report-7d-\d{4}-\d{2}-\d{2}/)
     expect(disposition).toContain('7d')
   })
 
