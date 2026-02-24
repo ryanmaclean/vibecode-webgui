@@ -455,9 +455,13 @@ export class QualityReportGenerator {
     // Query suggestions
     const suggestions = await this.prisma.aISuggestion.findMany({
       where,
-      include: {
-        events: true,
-        ratings: true,
+      select: {
+        model_id: true,
+        outcome: true,
+        edit_distance: true,
+        similarity: true,
+        time_to_accept: true,
+        rating: true,
       },
     });
 
@@ -484,44 +488,38 @@ export class QualityReportGenerator {
       const metrics = modelMap.get(modelId)!;
       metrics.totalSuggestions++;
 
-      // Count events
-      const acceptedEvents = suggestion.events.filter(e => e.event_type === 'accepted');
-      const rejectedEvents = suggestion.events.filter(e => e.event_type === 'rejected');
-
-      if (acceptedEvents.length > 0) {
+      // Count by outcome
+      if (suggestion.outcome === 'accepted') {
         metrics.acceptedSuggestions++;
 
         // Aggregate edit distance and similarity
-        const editDistances: number[] = [];
-        const similarities: number[] = [];
-        const timesToAccept: number[] = [];
-
-        for (const event of acceptedEvents) {
-          if (event.edit_distance !== null) editDistances.push(event.edit_distance);
-          if (event.similarity_score !== null) similarities.push(event.similarity_score);
-          if (event.time_to_decision_ms !== null) timesToAccept.push(event.time_to_decision_ms);
+        if (suggestion.edit_distance !== null) {
+          const currentAvg = metrics.avgEditDistance || 0;
+          const count = metrics.acceptedSuggestions;
+          metrics.avgEditDistance = (currentAvg * (count - 1) + suggestion.edit_distance) / count;
         }
-
-        if (editDistances.length > 0) {
-          metrics.avgEditDistance = this.average(editDistances);
+        if (suggestion.similarity !== null) {
+          const currentAvg = metrics.avgSimilarity || 0;
+          const count = metrics.acceptedSuggestions;
+          metrics.avgSimilarity = (currentAvg * (count - 1) + suggestion.similarity) / count;
         }
-        if (similarities.length > 0) {
-          metrics.avgSimilarity = this.average(similarities);
-        }
-        if (timesToAccept.length > 0) {
-          metrics.avgTimeToAccept = this.average(timesToAccept);
+        if (suggestion.time_to_accept !== null) {
+          const currentAvg = metrics.avgTimeToAccept || 0;
+          const count = metrics.acceptedSuggestions;
+          metrics.avgTimeToAccept = (currentAvg * (count - 1) + suggestion.time_to_accept) / count;
         }
       }
 
-      if (rejectedEvents.length > 0) {
+      if (suggestion.outcome === 'rejected') {
         metrics.rejectedSuggestions++;
       }
 
       // Aggregate ratings
-      if (suggestion.ratings.length > 0) {
-        const ratings = suggestion.ratings.map(r => r.rating_value);
-        metrics.avgRating = this.average(ratings);
-        metrics.ratingCount += ratings.length;
+      if (suggestion.rating !== null) {
+        metrics.ratingCount++;
+        const currentAvg = metrics.avgRating || 0;
+        const count = metrics.ratingCount;
+        metrics.avgRating = (currentAvg * (count - 1) + suggestion.rating) / count;
       }
     }
 
@@ -530,14 +528,19 @@ export class QualityReportGenerator {
 
   /**
    * Query quality metrics from database
+   *
+   * Note: AIQualityMetric table stores aggregated data, not individual evaluations.
+   * This method converts aggregated metrics into individual data points for statistical analysis.
    */
   private async getQualityMetrics(
     timePeriod: { start: string; end: string },
     modelIds?: string[]
   ): Promise<QualityMetricRecord[]> {
     const where: any = {
-      evaluated_at: {
+      start_date: {
         gte: new Date(timePeriod.start),
+      },
+      end_date: {
         lte: new Date(timePeriod.end),
       },
     };
@@ -550,26 +553,40 @@ export class QualityReportGenerator {
       where,
       select: {
         model_id: true,
-        overall_score: true,
-        relevance: true,
-        completeness: true,
-        accuracy: true,
-        coherence: true,
-        evaluation_method: true,
-        evaluated_at: true,
+        acceptance_rate: true,
+        avg_similarity: true,
+        avg_rating: true,
+        total_suggestions: true,
+        created_at: true,
       },
     });
 
-    return metrics.map(m => ({
-      modelId: m.model_id,
-      score: m.overall_score,
-      relevance: m.relevance ?? 0,
-      completeness: m.completeness ?? 0,
-      accuracy: m.accuracy ?? 0,
-      coherence: m.coherence ?? 0,
-      method: m.evaluation_method,
-      timestamp: m.evaluated_at,
-    }));
+    // Convert aggregated metrics to individual data points for statistical analysis
+    // Derive quality scores from available metrics
+    return metrics.map(m => {
+      // Calculate an overall score based on available metrics
+      const acceptanceScore = (m.acceptance_rate ?? 0) * 100;
+      const similarityScore = (m.avg_similarity ?? 0) * 100;
+      const ratingScore = ((m.avg_rating ?? 0) / 5) * 100;
+
+      // Weight the components: acceptance (40%), similarity (40%), rating (20%)
+      const overallScore = (
+        acceptanceScore * 0.4 +
+        similarityScore * 0.4 +
+        ratingScore * 0.2
+      );
+
+      return {
+        modelId: m.model_id,
+        score: overallScore,
+        relevance: acceptanceScore, // Acceptance rate reflects relevance
+        completeness: similarityScore, // Similarity reflects completeness
+        accuracy: similarityScore, // Similarity also indicates accuracy
+        coherence: ratingScore, // User rating reflects coherence
+        method: 'aggregated' as EvaluationMethod,
+        timestamp: m.created_at,
+      };
+    });
   }
 
   /**
@@ -581,8 +598,10 @@ export class QualityReportGenerator {
     granularity: 'hour' | 'day' | 'week' = 'day'
   ): Promise<TimeSeriesBucket[]> {
     const where: any = {
-      evaluated_at: {
+      start_date: {
         gte: new Date(timePeriod.start),
+      },
+      end_date: {
         lte: new Date(timePeriod.end),
       },
     };
@@ -595,8 +614,14 @@ export class QualityReportGenerator {
       where,
       select: {
         model_id: true,
-        overall_score: true,
-        evaluated_at: true,
+        acceptance_rate: true,
+        avg_similarity: true,
+        avg_rating: true,
+        total_suggestions: true,
+        start_date: true,
+      },
+      orderBy: {
+        start_date: 'asc',
       },
     });
 
@@ -604,7 +629,7 @@ export class QualityReportGenerator {
     const bucketMap = new Map<string, TimeSeriesBucket>();
 
     for (const metric of metrics) {
-      const timestamp = new Date(metric.evaluated_at);
+      const timestamp = new Date(metric.start_date);
       let bucketTime: Date;
 
       if (granularity === 'hour') {
@@ -620,18 +645,29 @@ export class QualityReportGenerator {
 
       const bucketKey = `${metric.model_id}_${bucketTime.toISOString()}`;
 
+      // Calculate overall score from available metrics
+      const acceptanceScore = (metric.acceptance_rate ?? 0) * 100;
+      const similarityScore = (metric.avg_similarity ?? 0) * 100;
+      const ratingScore = ((metric.avg_rating ?? 0) / 5) * 100;
+      const overallScore = (
+        acceptanceScore * 0.4 +
+        similarityScore * 0.4 +
+        ratingScore * 0.2
+      );
+
       if (!bucketMap.has(bucketKey)) {
         bucketMap.set(bucketKey, {
           modelId: metric.model_id,
           timeBucket: bucketTime,
-          avgScore: 0,
-          sampleCount: 0,
+          avgScore: overallScore,
+          sampleCount: metric.total_suggestions,
         });
+      } else {
+        const bucket = bucketMap.get(bucketKey)!;
+        const totalSamples = bucket.sampleCount + metric.total_suggestions;
+        bucket.avgScore = (bucket.avgScore * bucket.sampleCount + overallScore * metric.total_suggestions) / totalSamples;
+        bucket.sampleCount = totalSamples;
       }
-
-      const bucket = bucketMap.get(bucketKey)!;
-      bucket.avgScore = (bucket.avgScore * bucket.sampleCount + metric.overall_score) / (bucket.sampleCount + 1);
-      bucket.sampleCount++;
     }
 
     return Array.from(bucketMap.values());
