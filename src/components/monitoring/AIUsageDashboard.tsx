@@ -9,6 +9,9 @@ import React, { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle, Brain, Activity, TrendingUp, Clock, DollarSign } from 'lucide-react'
+import { MetricsChart } from './MetricsChart'
+import { LatencyHistogram } from './LatencyHistogram'
+import { CostBreakdown } from './CostBreakdown'
 
 interface ModelMetrics {
   model_name: string
@@ -467,6 +470,13 @@ function AIUsageDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Detailed Visualizations */}
+      <MetricsChart period="24h" refreshInterval={30000} />
+
+      <LatencyHistogram period="24h" refreshInterval={30000} />
+
+      <CostBreakdown period="24h" refreshInterval={30000} />
 
       {/* Active Alerts */}
       {data.alerts.active.length > 0 && (
