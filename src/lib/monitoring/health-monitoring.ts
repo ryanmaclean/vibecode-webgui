@@ -3,9 +3,9 @@
  * Integrates Datadog APM tracing, Winston logging, and custom metrics
  */
 
-import { createLogger, format, transports } from 'winston';
 import tracer from '@/instrument';
-// import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
+
 // Initialize Datadog tracer (should be done before importing other modules)
 if (process.env.DD_API_KEY) {
   tracer.init({
@@ -23,51 +23,7 @@ if (process.env.DD_API_KEY) {
   console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }
 
-// Custom Winston formatter for structured logging
-const structuredFormat = format.combine(
-  format.timestamp({
-    format: 'YYYY-MM-DD HH:mm:ss.SSS'
-  }),
-  format.errors({ stack: true }),
-  format.json(),
-  format.printf(({ timestamp, level, message, service, ...meta }) => {
-    return JSON.stringify({
-      timestamp,
-      level,
-      message,
-      service: service || 'vibecode-webgui',
-      ...meta
-    })
-  })
-)
-
-// Create logger instance
-const logger = createLogger({
-  level: process.env.LOG_LEVEL || 'info',
-  format: structuredFormat,
-  defaultMeta: {
-    service: 'vibecode-webgui',
-    environment: process.env.NODE_ENV || 'development',
-    version: process.env.APP_VERSION || '1.0.0'
-  },
-  transports: [
-    // Console transport for development
-    new transports.Console({
-      format: format.combine(
-        format.colorize(),
-        format.simple(),
-        format.printf(({ timestamp, level, message, ...meta }) => {
-          const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''
-          return `${timestamp} [${level}]: ${message} ${metaStr}`
-        })
-      )
-    }),
-    // In production, you would add transports for services like Datadog, Logstash, etc.
-    // new transports.Http({ host: 'datadog-agent', port: 80, path: '/v1/input' })
-  ]
-})
-
-logger.info('Winston logger initialized')
+logger.info('Health monitoring logger initialized')
 
 /**
  * Custom metrics collector (compatible with Datadog)
