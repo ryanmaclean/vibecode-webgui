@@ -9,6 +9,7 @@
 import { useEffect, useState, useCallback, useMemo, memo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   PieChart,
   Pie,
@@ -22,7 +23,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts'
-import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react'
+import { DollarSign, TrendingUp, TrendingDown, Download } from 'lucide-react'
 
 interface ModelCostData {
   model: string
@@ -292,6 +293,23 @@ function CostBreakdownInner({
     setLoading(true)
   }, [])
 
+  // Memoize export handler
+  const handleExport = useCallback(() => {
+    const params = new URLSearchParams({
+      format: 'csv',
+      period: selectedPeriod
+    })
+    const url = `/api/monitoring/ai-metrics/export?${params.toString()}`
+
+    // Create a temporary anchor element to trigger download
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ai-cost-report-${selectedPeriod}-${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }, [selectedPeriod])
+
   // Memoize tooltip style
   const tooltipStyle = useMemo(() => ({
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -404,6 +422,15 @@ function CostBreakdownInner({
               <option value="7d">Last 7 Days</option>
               <option value="30d">Last 30 Days</option>
             </select>
+            <Button
+              onClick={handleExport}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
           </div>
         </div>
       </CardHeader>
