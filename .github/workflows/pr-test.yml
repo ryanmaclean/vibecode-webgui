@@ -117,6 +117,7 @@ jobs:
 
       - name: Upload test results to Datadog
         if: always()
+        continue-on-error: true
         env:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: datadoghq.com
@@ -152,6 +153,7 @@ jobs:
 
       - name: Generate test summary
         if: always()
+        continue-on-error: true
         run: |
           echo "# PR Test Results Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -163,6 +165,7 @@ jobs:
 
       - name: Upload logs
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: pr-test-logs
