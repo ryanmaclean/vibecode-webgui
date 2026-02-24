@@ -135,24 +135,24 @@ describe('LatencyHistogram Component', () => {
   test('renders latency percentile metrics cards', async () => {
     render(<LatencyHistogram period="24h" />)
 
-    await screen.findByText(/600ms/i, {}, { timeout: 5000 })
-    await screen.findByText(/1,500ms/i, {}, { timeout: 5000 })
-    await screen.findByText(/2,200ms/i, {}, { timeout: 5000 })
-    await screen.findByText(/850ms/i, {}, { timeout: 5000 })
+    await screen.findByText(/450ms/i, { timeout: 5000 })
+    await screen.findByText(/1\.20s/i, { timeout: 5000 })
+    await screen.findByText(/2\.00s/i, { timeout: 5000 })
+    await screen.findByText(/500ms/i, { timeout: 5000 })
   })
 
   test('renders histogram with correct bucket counts', async () => {
     render(<LatencyHistogram period="24h" />)
 
-    await screen.findByText(/<500ms/i, {}, { timeout: 5000 })
-    await screen.findByText(/45/, {}, { timeout: 5000 })
+    await screen.findByText(/100-500ms/i, { timeout: 5000 })
+    await screen.findByText(/50/, { timeout: 5000 })
   })
 
   test('histogram bars have correct color coding', async () => {
     const { container } = render(<LatencyHistogram period="24h" />)
 
     // Wait for data to load
-    await screen.findByText(/<500ms/i, {}, { timeout: 5000 })
+    await screen.findByText(/100-500ms/i, { timeout: 5000 })
 
     await waitFor(() => {
       // Green for fast responses (<500ms)
@@ -172,10 +172,10 @@ describe('LatencyHistogram Component', () => {
   test('displays model breakdown table', async () => {
     render(<LatencyHistogram period="24h" />)
 
-    await screen.findByText(/gpt-4/i, {}, { timeout: 5000 })
-    await screen.findByText(/gpt-3.5-turbo/i, {}, { timeout: 5000 })
-    await screen.findByText(/1,200ms/i, {}, { timeout: 5000 })
-    await screen.findByText(/500ms/i, {}, { timeout: 5000 })
+    await screen.findByText(/gpt-4/i, { timeout: 5000 })
+    await screen.findByText(/gpt-3.5-turbo/i, { timeout: 5000 })
+    await screen.findByText(/450ms/i, { timeout: 5000 })
+    await screen.findByText(/800ms/i, { timeout: 5000 })
   })
 
   test('handles loading state', () => {
@@ -189,7 +189,7 @@ describe('LatencyHistogram Component', () => {
 
     render(<LatencyHistogram period="24h" />)
 
-    const errorElement = await screen.findByText(/Error Loading Latency Data/i, {}, { timeout: 5000 })
+    const errorElement = await screen.findByText(/Error Loading Latency Data/i, { timeout: 5000 })
     expect(errorElement).toBeInTheDocument()
   })
 
@@ -216,7 +216,7 @@ describe('LatencyHistogram Component', () => {
     render(<LatencyHistogram period="24h" refreshInterval={5000} />)
 
     // Wait for initial fetch
-    await screen.findByText(/600ms/i, {}, { timeout: 5000 })
+    await screen.findByText(/450ms/i, { timeout: 5000 })
     expect(global.fetch).toHaveBeenCalledTimes(1)
 
     // Advance time and check for second fetch
