@@ -5,6 +5,96 @@
 VibeCode is the AI-native IDE and Agent Orchestrator.
 **Current Backend:** Ubuntu 24.04 via `vfkit` (Fast, Stable).
 
+## ✨ Features
+
+- **🤖 AI-Powered Development**: Multi-provider AI integration (OpenAI, Anthropic, Gemini, Groq, DeepSeek)
+- **🔍 Semantic Code Search**: Vector-based code search using pgvector with HNSW indexes
+- **📝 Monaco Editor Integration**: Advanced code editing with AI completion via Monacopilot
+- **👥 Real-time Collaboration**: WebSocket-based collaborative editing
+- **💻 Terminal Integration**: Web-based terminal with node-pty
+- **🎯 Onboarding System**: 7-step guided setup for new users
+- **🧩 Extension Marketplace**: 53+ VS Code extensions support
+- **🔌 MCP Server**: Model Context Protocol for AI integrations
+- **🧪 Offline Testing**: Comprehensive cloud infrastructure testing without cloud resources
+
+## 🏗️ Architecture Overview
+
+VibeCode is an AI-powered development platform built on a modern, cloud-native technology stack. The system provides a web-based IDE with integrated AI assistance, semantic code search, and collaborative development features.
+
+### System Architecture
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        Browser[Web Browser]
+        Monaco[Monaco Editor 0.53.0]
+    end
+
+    subgraph "Application Layer"
+        NextJS[Next.js 15 App Router]
+        React[React 19]
+        API[API Routes]
+    end
+
+    subgraph "Service Layer"
+        AI[AI Services]
+        Vector[Vector Search]
+        Collab[Collaboration]
+        Terminal[Terminal Service]
+    end
+
+    subgraph "Data Layer"
+        Postgres[(PostgreSQL 16 + pgvector)]
+        Cache[(Redis/Valkey)]
+        VectorDB[(Vector Store)]
+    end
+
+    subgraph "Infrastructure Layer"
+        K8s[Kubernetes]
+        Docker[Docker]
+        Datadog[Datadog Monitoring]
+    end
+
+    Browser --> NextJS
+    Monaco --> NextJS
+    NextJS --> API
+    API --> AI
+    API --> Vector
+    API --> Collab
+    API --> Terminal
+    AI --> Postgres
+    Vector --> Postgres
+    Vector --> VectorDB
+    Collab --> Cache
+    NextJS --> Postgres
+    NextJS --> Cache
+    K8s --> Docker
+    Docker --> NextJS
+    Datadog -.-> K8s
+    Datadog -.-> Postgres
+    Datadog -.-> NextJS
+```
+
+### Key Architecture Components
+
+- **Client Layer**: Monaco Editor 0.53.0 integrated with React 19 for advanced code editing
+- **Application Layer**: Next.js 15 with App Router for modern React development
+- **Service Layer**: AI services, vector search, collaboration, and terminal integration
+- **Data Layer**: PostgreSQL 16 with pgvector for semantic search, Redis/Valkey for caching
+- **Infrastructure Layer**: Kubernetes orchestration with Docker containers, Datadog monitoring
+
+### Detailed Documentation
+
+For comprehensive architecture information including:
+- Complete technology stack and versions
+- Architecture Decision Records (ADRs)
+- Core subsystems and integration details
+- Security architecture
+- Deployment models
+- Scalability considerations
+
+**See: [Architecture Documentation](docs/ARCHITECTURE.md)** | **[Architecture Diagrams](docs/ARCHITECTURE_DIAGRAM.md)** | **[Folder Structure](docs/FOLDER_STRUCTURE.md)**
+
 ## 🚀 Quick Start
 
 > **📖 New to VibeCode?** See the [Environment Setup Guide](docs/ENVIRONMENT_SETUP_GUIDE.md) for detailed configuration instructions.
@@ -22,6 +112,8 @@ This single command will:
 - ✅ Create a sample project for you to explore
 
 📚 **For detailed quickstart flow and troubleshooting**, see [QUICK_START.md](docs/QUICK_START.md)
+
+> **🤝 Want to contribute?** See our [Contributing Guide](CONTRIBUTING.md) for development setup, coding standards, and PR workflows.
 
 ### 1. Install Dependencies
 ```bash
