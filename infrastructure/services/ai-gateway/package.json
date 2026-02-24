@@ -39,8 +39,10 @@
     "hot-shots": "^9.3.0",
     "jsonwebtoken": "^9.0.2",
     "node-cron": "^3.0.3",
-    "redis": "^4.6.10",
-    "winston": "^3.11.0"
+    "pino": "^8.16.0",
+    "pino-datadog": "^1.0.0",
+    "pino-pretty": "^10.2.0",
+    "redis": "^4.6.10"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
