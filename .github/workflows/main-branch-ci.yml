@@ -66,7 +66,19 @@ jobs:
           fi
 
       - name: Basic unit tests
-        run: npm test -- --testPathPatterns="(auth|security|utils)" --passWithNoTests || echo "Unit test issues found (non-blocking in lightweight main CI)"
+        id: test
+        run: |
+          echo "## Unit Tests" >> $GITHUB_STEP_SUMMARY
+          npm test -- --testPathPatterns="(auth|security|utils)" --passWithNoTests 2>&1 | tee test.log || true
+          if [ ${PIPESTATUS[0]} -eq 0 ]; then
+            echo "✅ Unit tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Unit tests failed" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            tail -50 test.log >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
         timeout-minutes: 5
         env:
           DD_CI_VISIBILITY_ENABLED: ${{ secrets.DD_API_KEY != '' }}
