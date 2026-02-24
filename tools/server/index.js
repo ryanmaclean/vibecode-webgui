@@ -9,34 +9,11 @@ const cors = require('cors');
 const helmet = require('helmet');
 const pty = require('node-pty');
 const chokidar = require('chokidar');
-const winston = require('winston');
+const { logger: baseLogger } = require('../../src/lib/logger-node');
 const { createGracefulShutdown } = require('./graceful-shutdown');
 
-// Initialize Winston logger for server
-const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.errors({ stack: true }),
-    winston.format.json()
-  ),
-  defaultMeta: { service: 'websocket-server' },
-  transports: [
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.timestamp(),
-        winston.format.printf(({ timestamp, level, message, ...metadata }) => {
-          let msg = `${timestamp} [${level}]: ${message}`;
-          if (Object.keys(metadata).length > 0) {
-            msg += ` ${JSON.stringify(metadata)}`;
-          }
-          return msg;
-        })
-      ),
-    }),
-  ],
-});
+// Initialize Pino logger for server with service context
+const logger = baseLogger.child({ service: 'websocket-server' });
 
 // Configuration with security validation
 const PORT = process.env.WS_PORT || 3001;
