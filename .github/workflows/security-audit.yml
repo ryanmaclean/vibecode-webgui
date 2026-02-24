@@ -110,7 +110,6 @@ jobs:
       # Check 3: NPM Audit
       - name: Run npm audit
         id: npm-audit
-        continue-on-error: true
         run: |
           echo "## NPM Security Audit" >> $GITHUB_STEP_SUMMARY
 

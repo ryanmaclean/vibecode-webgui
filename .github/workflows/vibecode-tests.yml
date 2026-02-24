@@ -30,7 +30,6 @@ jobs:
   swift-tests:
     name: Swift Unit Tests
     runs-on: macos-latest
-    continue-on-error: true
 
     steps:
     - uses: actions/checkout@v4
@@ -80,7 +79,6 @@ jobs:
         fi
       env:
         CI: true
-      continue-on-error: true
 
     - name: Run functional tests
       run: ./scripts/functional-tests.sh
@@ -96,7 +94,6 @@ jobs:
         fi
       env:
         CI: true
-      continue-on-error: true
 
     - name: Run E2E with Datadog
       run: |
@@ -107,7 +104,6 @@ jobs:
         fi
       env:
         CI: true
-      continue-on-error: true
     
     - name: Check for test artifacts
       if: always()
@@ -130,7 +126,6 @@ jobs:
           echo "SwiftLint not installed, skipping"
         fi
       working-directory: platforms/macos/VibeCodeSwift
-      continue-on-error: true
     
     - name: Check for TODO/FIXME
       run: |
@@ -139,4 +134,3 @@ jobs:
           exit 1
         fi
       continue-on-error: true
-

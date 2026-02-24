@@ -49,8 +49,7 @@ jobs:
           npm audit --audit-level=moderate 2>&1 | tee audit-output.txt
           exit_code=${PIPESTATUS[0]}
           echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
-          exit 0
-        continue-on-error: true
+          exit "$exit_code"
 
       - name: Comment audit results on PR
         if: github.event_name == 'pull_request'
@@ -207,7 +206,6 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
-        continue-on-error: true
 
   sbom-generation:
     name: Generate SBOM (Software Bill of Materials)
@@ -233,7 +231,6 @@ jobs:
         run: |
           cyclonedx-npm --output-file sbom.json
           cyclonedx-npm --output-file sbom.xml --format xml
-        continue-on-error: true
 
       - name: Upload SBOM artifacts
         uses: actions/upload-artifact@v4

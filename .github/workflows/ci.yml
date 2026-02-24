@@ -41,7 +41,6 @@ jobs:
 
       - name: Lint Markdown files
         run: npm run lint:markdown
-        continue-on-error: true
 
   test:
     name: Test (Node ${{ matrix.node-version }})
@@ -89,10 +88,10 @@ jobs:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: datadoghq.com
           DD_ENV: ci
-          DD_SERVICE: vibecode-webgui
+          DD_SERVICE: ${{ github.event.repository.name }}
         run: |
           npm install -g @datadog/datadog-ci
-          datadog-ci junit upload --service vibecode-webgui test-results/*.xml || echo "No test results to upload"
+          datadog-ci junit upload --service "$DD_SERVICE" test-results/*.xml || echo "No test results to upload"
 
       - name: Generate test summary
         if: always()
@@ -138,18 +137,15 @@ jobs:
           cache: 'npm'
 
       - name: Run npm audit
-        run: npm audit --audit-level=moderate || true
-        continue-on-error: true
+        run: npm audit --audit-level=moderate
 
       - name: Run security tests
-        run: npm run test:security || true
-        continue-on-error: true
+        run: npm run test:security
 
       - name: Run Snyk security scan
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        continue-on-error: true
 
   dependency-check:
     name: Dependency Compatibility

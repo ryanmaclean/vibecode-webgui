@@ -94,16 +94,20 @@ jobs:
       - name: Run ESLint
         id: eslint
         run: |
+          set +e
           npm run lint 2>&1 | tee eslint-output.txt
-          echo "status=$?" >> $GITHUB_OUTPUT
-        continue-on-error: true
+          status=$?
+          set -e
+          echo "status=$status" >> $GITHUB_OUTPUT
 
       - name: Run TypeScript check
         id: typecheck
         run: |
+          set +e
           npm run type-check 2>&1 | tee typecheck-output.txt
-          echo "status=$?" >> $GITHUB_OUTPUT
-        continue-on-error: true
+          status=$?
+          set -e
+          echo "status=$status" >> $GITHUB_OUTPUT
 
       - name: Post check results
         if: always()
@@ -167,8 +171,11 @@ jobs:
       - name: Run all tests
         id: tests
         run: |
+          set +e
           npm test 2>&1 | tee test-output.txt
-          echo "status=$?" >> $GITHUB_OUTPUT
+          status=$?
+          set -e
+          echo "status=$status" >> $GITHUB_OUTPUT
         env:
           DD_CI_VISIBILITY_ENABLED: ${{ secrets.DD_API_KEY != '' }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
@@ -186,7 +193,6 @@ jobs:
           NODE_OPTIONS: -r dd-trace/ci/init
           REDIS_URL: redis://localhost:6379
           CI: true
-        continue-on-error: true
 
       - name: Upload test results to Datadog
         if: always()
@@ -271,11 +277,13 @@ jobs:
       - name: Build application
         id: build
         run: |
+          set +e
           npm run build 2>&1 | tee build-output.txt
-          echo "status=$?" >> $GITHUB_OUTPUT
+          status=$?
+          set -e
+          echo "status=$status" >> $GITHUB_OUTPUT
         env:
           NEXT_TELEMETRY_DISABLED: 1
-        continue-on-error: true
 
       - name: Comment build results
         if: always()

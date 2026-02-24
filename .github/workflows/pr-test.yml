@@ -11,8 +11,13 @@ env:
   DD_VERSION: ${{ github.sha }}
   DD_TAGS: team:platform,component:ci
 
+concurrency:
+  group: pr-test-${{ (github.event.pull_request != null && github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   test-pr:
+    if: github.event.pull_request == null || !startsWith(github.event.pull_request.head.ref, 'auto-claude/')
     name: Test PR Changes
     runs-on: ubuntu-latest
     permissions:
@@ -40,8 +45,12 @@ jobs:
         id: typecheck
         run: |
           echo "## TypeScript Type Check" >> $GITHUB_STEP_SUMMARY
-          npm run type-check 2>&1 | tee typecheck.log || true
-          if [ ${PIPESTATUS[0]} -eq 0 ]; then
+          set +e
+          npm run type-check 2>&1 | tee typecheck.log
+          status=${PIPESTATUS[0]}
+          set -e
+          echo "status=$status" >> $GITHUB_OUTPUT
+          if [ "$status" -eq 0 ]; then
             echo "✅ Type check passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Type check failed" >> $GITHUB_STEP_SUMMARY
@@ -49,14 +58,17 @@ jobs:
             tail -50 typecheck.log >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi
-        continue-on-error: true
 
       - name: Run ESLint
         id: lint
         run: |
           echo "## ESLint" >> $GITHUB_STEP_SUMMARY
-          npm run lint 2>&1 | tee lint.log || true
-          if [ ${PIPESTATUS[0]} -eq 0 ]; then
+          set +e
+          npm run lint 2>&1 | tee lint.log
+          status=${PIPESTATUS[0]}
+          set -e
+          echo "status=$status" >> $GITHUB_OUTPUT
+          if [ "$status" -eq 0 ]; then
             echo "✅ Lint passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Lint failed" >> $GITHUB_STEP_SUMMARY
@@ -64,14 +76,17 @@ jobs:
             tail -50 lint.log >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi
-        continue-on-error: true
 
       - name: Run Next.js build
         id: build
         run: |
           echo "## Next.js Build" >> $GITHUB_STEP_SUMMARY
-          npm run build 2>&1 | tee build.log || true
-          if [ ${PIPESTATUS[0]} -eq 0 ]; then
+          set +e
+          npm run build 2>&1 | tee build.log
+          status=${PIPESTATUS[0]}
+          set -e
+          echo "status=$status" >> $GITHUB_OUTPUT
+          if [ "$status" -eq 0 ]; then
             echo "✅ Build passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Build failed" >> $GITHUB_STEP_SUMMARY
@@ -79,7 +94,6 @@ jobs:
             tail -100 build.log >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi
-        continue-on-error: true
         env:
           NEXT_TELEMETRY_DISABLED: 1
 
@@ -90,8 +104,12 @@ jobs:
         id: test
         run: |
           echo "## Test Suite" >> $GITHUB_STEP_SUMMARY
-          npm test 2>&1 | tee test.log || true
-          if [ ${PIPESTATUS[0]} -eq 0 ]; then
+          set +e
+          npm test 2>&1 | tee test.log
+          status=${PIPESTATUS[0]}
+          set -e
+          echo "status=$status" >> $GITHUB_OUTPUT
+          if [ "$status" -eq 0 ]; then
             echo "✅ Tests passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Tests failed" >> $GITHUB_STEP_SUMMARY
@@ -112,7 +130,6 @@ jobs:
           DD_CI_VISIBILITY_AGENTLESS_ENABLED: true
           NODE_OPTIONS: -r dd-trace/ci/init
           CI: true
-        continue-on-error: true
 
       - name: Upload test results to Datadog
         if: always()
@@ -135,8 +152,12 @@ jobs:
           echo "## Launcher Tests" >> $GITHUB_STEP_SUMMARY
           if [ -f "scripts/test-launcher.sh" ]; then
             echo "Found test-launcher.sh, running..." >> $GITHUB_STEP_SUMMARY
-            bash scripts/test-launcher.sh 2>&1 | tee launcher-test.log || true
-            if [ ${PIPESTATUS[0]} -eq 0 ]; then
+            set +e
+            bash scripts/test-launcher.sh 2>&1 | tee launcher-test.log
+            status=${PIPESTATUS[0]}
+            set -e
+            echo "status=$status" >> $GITHUB_OUTPUT
+            if [ "$status" -eq 0 ]; then
               echo "✅ Launcher tests passed" >> $GITHUB_STEP_SUMMARY
             else
               echo "❌ Launcher tests failed" >> $GITHUB_STEP_SUMMARY
@@ -145,9 +166,9 @@ jobs:
               echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             fi
           else
+            echo "status=0" >> $GITHUB_OUTPUT
             echo "ℹ️ No launcher test script found" >> $GITHUB_STEP_SUMMARY
           fi
-        continue-on-error: true
 
       - name: Generate test summary
         if: always()
@@ -168,3 +189,12 @@ jobs:
           path: |
             *.log
           retention-days: 7
+
+      - name: Enforce failure conditions
+        if: always()
+        run: |
+          test "${{ steps.typecheck.outputs.status }}" = "0"
+          test "${{ steps.lint.outputs.status }}" = "0"
+          test "${{ steps.build.outputs.status }}" = "0"
+          test "${{ steps.test.outputs.status }}" = "0"
+          test "${{ steps.launcher-test.outputs.status }}" = "0"
