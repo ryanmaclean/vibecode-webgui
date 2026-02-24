@@ -1,5 +1,10 @@
 # VibeCode Studio (v5.1.0-beta)
 
+[![Main Branch CI](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/main-branch-ci.yml/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/main-branch-ci.yml)
+[![PR Checks](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/pr-checks.yml)
+[![VibeCode Tests](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/vibecode-tests.yml/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/vibecode-tests.yml)
+[![Security Scanning](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/security-scan.yml/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/security-scan.yml)
+
 > **🚨 Emergency Release (Feb 2026)** - The "Ruthless" Edition
 
 VibeCode is the AI-native IDE and Agent Orchestrator.
