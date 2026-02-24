@@ -63,13 +63,10 @@ function DiffEditorLoadingSkeleton() {
 // ============================================================================
 
 // Dynamically import Monaco DiffEditor with SSR disabled
-const DiffEditorComponent = dynamic(
-  () => import('@monaco-editor/react').then((mod) => mod.DiffEditor),
-  {
-    ssr: false,
-    loading: () => <DiffEditorLoadingSkeleton />,
-  }
-);
+const DiffEditorComponent = dynamic(() => import('@monaco-editor/react').then((mod) => mod.DiffEditor), {
+  ssr: false,
+  loading: () => <DiffEditorLoadingSkeleton />,
+});
 
 // ============================================================================
 // VisualDiff Component
