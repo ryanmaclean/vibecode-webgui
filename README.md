@@ -5,6 +5,18 @@
 VibeCode is the AI-native IDE and Agent Orchestrator.
 **Current Backend:** Ubuntu 24.04 via `vfkit` (Fast, Stable).
 
+## ✨ Features
+
+- **🤖 AI-Powered Development**: Multi-provider AI integration (OpenAI, Anthropic, Gemini, Groq, DeepSeek)
+- **🔍 Semantic Code Search**: Vector-based code search using pgvector with HNSW indexes
+- **📝 Monaco Editor Integration**: Advanced code editing with AI completion via Monacopilot
+- **👥 Real-time Collaboration**: WebSocket-based collaborative editing
+- **💻 Terminal Integration**: Web-based terminal with node-pty
+- **🎯 Onboarding System**: 7-step guided setup for new users
+- **🧩 Extension Marketplace**: 53+ VS Code extensions support
+- **🔌 MCP Server**: Model Context Protocol for AI integrations
+- **🧪 Offline Testing**: Comprehensive cloud infrastructure testing without cloud resources
+
 ## 🚀 Quick Start
 
 > **📖 New to VibeCode?** See the [Environment Setup Guide](docs/ENVIRONMENT_SETUP_GUIDE.md) for detailed configuration instructions.
