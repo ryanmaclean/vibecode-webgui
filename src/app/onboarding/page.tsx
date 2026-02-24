@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import type {
@@ -122,7 +122,7 @@ const aiProviderOptions: { id: AiProvider; label: string; description: string }[
   { id: 'groq', label: 'Groq', description: 'Lightning-fast LPU inference for automations.' },
 ]
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isQuickMode = searchParams?.get('mode') === 'quick'
@@ -874,5 +874,22 @@ export default function OnboardingPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full p-8">
+          <div className="flex flex-col items-center justify-center py-32 space-y-4 text-center">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">Loading onboarding...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <OnboardingContent />
+    </Suspense>
   )
 }
