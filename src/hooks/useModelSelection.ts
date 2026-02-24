@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { intelligentModelSelection, ModelCapability } from '@/lib/services/intelligent-model-selection'
 import type { ModelProfile } from '@/types/model-comparison'
+import { useModelChangeDetection } from './useModelChangeDetection'
 
 interface UseModelSelectionOptions {
   /** Initial model ID to select */
@@ -39,6 +40,13 @@ export function useModelSelection(options: UseModelSelectionOptions = {}) {
     type: 'info' | 'success' | 'error'
     show: boolean
   } | null>(null)
+
+  // Integrate model change detection
+  const modelChanges = useModelChangeDetection({
+    storagePrefix: `${storagePrefix}_changes`,
+    autoSave,
+    enableSync: false, // Let the app control when to start sync
+  })
 
   // LocalStorage keys
   const STORAGE_KEYS = {
@@ -315,6 +323,32 @@ export function useModelSelection(options: UseModelSelectionOptions = {}) {
 
     // Utilities
     clearError: () => setError(null),
+
+    // Model change detection
+    modelChanges: {
+      isSyncing: modelChanges.isSyncing,
+      lastSyncTime: modelChanges.lastSyncTime,
+      notifications: modelChanges.notifications,
+      activeNotifications: modelChanges.activeNotifications,
+      unseenNotifications: modelChanges.unseenNotifications,
+      unseenCount: modelChanges.unseenCount,
+      activeCount: modelChanges.activeCount,
+      newModels: modelChanges.newModels,
+      deprecatedModels: modelChanges.deprecatedModels,
+      priceChanges: modelChanges.priceChanges,
+      updatedModels: modelChanges.updatedModels,
+      removedModels: modelChanges.removedModels,
+      triggerSync: modelChanges.triggerSync,
+      dismissNotification: modelChanges.dismissNotification,
+      markNotificationSeen: modelChanges.markNotificationSeen,
+      markAllSeen: modelChanges.markAllSeen,
+      clearDismissed: modelChanges.clearDismissed,
+      clearAll: modelChanges.clearAll,
+      hasDeprecation: modelChanges.hasDeprecation,
+      hasPriceChange: modelChanges.hasPriceChange,
+      getReplacementModel: modelChanges.getReplacementModel,
+      getSyncStatus: modelChanges.getSyncStatus,
+    },
   }
 }
 

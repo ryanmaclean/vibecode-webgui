@@ -28,6 +28,7 @@ model User {
   files            File[]
   uploads          Upload[]
   ai_requests      AIRequest[]
+  ai_suggestions   AISuggestion[]
   rag_chunks       RAGChunk[]
   conversations    Conversation[]
   session_contexts SessionContext[]
@@ -96,6 +97,7 @@ model Workspace {
   projects         Project[]
   files            File[]
   uploads          Upload[]
+  ai_suggestions   AISuggestion[]
   rag_chunks       RAGChunk[]
   conversations    Conversation[]
   session_contexts SessionContext[]
@@ -333,26 +335,108 @@ model AIRequest {
   @@map("ai_requests")
 }
 
-// AI Suggestions
+// AI Suggestions - Enhanced for quality metrics tracking
 model AISuggestion {
-  id         Int      @id @default(autoincrement())
-  project_id Int
-  content    String // Suggestion content
-  type       String // Type of suggestion (e.g., "code", "refactor", "feature")
-  status     String   @default("pending") // pending, accepted, rejected
-  metadata   Json? // Additional suggestion metadata
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id                Int       @id @default(autoincrement())
+  model_id          String // AI model identifier (e.g., "anthropic/claude-3.5-sonnet")
+  suggestion        String // Suggested code/content
+  language          String? // Programming language
+  user_id           Int
+  workspace_id      Int?
+  project_id        Int?
+  context           Json? // Context about the suggestion
+  timestamp         DateTime  @default(now())
+  outcome           String    @default("pending") // pending, accepted, rejected
+  final_code        String? // Final code after user edits (if accepted)
+  edit_distance     Int? // Levenshtein distance between suggestion and final code
+  similarity        Float? // Similarity score (0-1) between suggestion and final code
+  time_to_accept    Int? // Time in milliseconds from suggestion to acceptance
+  time_to_reject    Int? // Time in milliseconds from suggestion to rejection
+  rejection_reason  String? // Reason for rejection
+  rating            Int? // User rating (1-5 stars)
+  rating_comment    String? // User feedback comment
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
 
   // Relations
-  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  project   Project?   @relation(fields: [project_id], references: [id], onDelete: SetNull)
 
+  @@index([user_id])
+  @@index([workspace_id])
   @@index([project_id])
-  @@index([status])
-  @@index([type])
-  @@index([project_id, status, created_at])
-  @@index([created_at])
+  @@index([model_id])
+  @@index([outcome])
+  @@index([language])
+  @@index([model_id, outcome, created_at]) // For model quality queries
+  @@index([user_id, created_at]) // For user suggestion history
+  @@index([workspace_id, outcome, created_at]) // For workspace analytics
+  @@index([project_id, outcome, created_at]) // For project-specific tracking
+  @@index([outcome, created_at]) // For overall outcome trends
+  @@index([rating, model_id]) // For rating analysis by model
   @@map("ai_suggestions")
+}
+
+// AI Quality Metrics - Aggregated quality metrics over time periods
+model AIQualityMetric {
+  id                    Int      @id @default(autoincrement())
+  model_id              String // AI model identifier (e.g., "anthropic/claude-3.5-sonnet")
+  period                String // Aggregation period: day, week, month
+  start_date            DateTime // Start of the period
+  end_date              DateTime // End of the period
+  total_suggestions     Int      @default(0) // Total suggestions in period
+  accepted_suggestions  Int      @default(0) // Number of accepted suggestions
+  rejected_suggestions  Int      @default(0) // Number of rejected suggestions
+  acceptance_rate       Float? // Acceptance rate (0-1)
+  avg_edit_distance     Float? // Average Levenshtein distance
+  avg_similarity        Float? // Average similarity score (0-1)
+  avg_time_to_accept    Float? // Average time to accept in milliseconds
+  avg_rating            Float? // Average user rating (1-5)
+  trend_slope           Float? // Trend slope for detecting degradation
+  health_status         String   @default("healthy") // healthy, warning, critical
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  @@unique([model_id, period, start_date]) // One metric per model/period/date combination
+  @@index([model_id])
+  @@index([period])
+  @@index([start_date])
+  @@index([health_status])
+  @@index([model_id, period, start_date]) // For time series queries
+  @@index([model_id, health_status]) // For model health monitoring
+  @@index([acceptance_rate, model_id]) // For acceptance rate analysis
+  @@index([created_at]) // For recent metrics queries
+  @@map("ai_quality_metrics")
+}
+
+// AI Quality Alerts - Alert system for quality degradation detection
+model AIQualityAlert {
+  id             Int       @id @default(autoincrement())
+  model_id       String // AI model identifier (e.g., "anthropic/claude-3.5-sonnet")
+  alert_type     String // acceptance_rate_drop, edit_distance_increase, rating_decline, slow_acceptance
+  severity       String // warning, critical
+  message        String // Human-readable alert message
+  threshold      Float // Threshold value that triggered the alert
+  current_value  Float // Current metric value
+  previous_value Float // Previous metric value for comparison
+  detected_at    DateTime  @default(now()) // When the alert was detected
+  resolved_at    DateTime? // When the alert was resolved
+  resolved       Boolean   @default(false) // Whether the alert has been resolved
+  metadata       Json? // Additional alert context
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  @@index([model_id])
+  @@index([alert_type])
+  @@index([severity])
+  @@index([resolved])
+  @@index([detected_at])
+  @@index([model_id, resolved, detected_at]) // For active alerts by model
+  @@index([alert_type, severity, resolved]) // For filtering by type and severity
+  @@index([resolved, detected_at]) // For active alerts time series
+  @@index([model_id, alert_type, resolved]) // For model-specific alert type queries
+  @@map("ai_quality_alerts")
 }
 
 // Monitoring and Analytics

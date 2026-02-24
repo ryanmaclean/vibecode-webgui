@@ -1,0 +1,59 @@
+# Build outputs
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Generated files
+.prisma/
+prisma/generated/
+
+# Coverage and test results
+coverage/
+.nyc_output/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE and editor files
+.vscode/
+.idea/
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Tauri and native binaries
+src-tauri/target/
+src-tauri/Cargo.lock
+
+# Public assets (may be minified)
+public/*.min.js
+public/*.min.css
+
+# Auto-generated documentation
+docs/api/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
