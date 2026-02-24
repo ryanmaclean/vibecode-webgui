@@ -59,16 +59,15 @@ jobs:
         id: lint
         run: |
           echo "## ESLint" >> $GITHUB_STEP_SUMMARY
-          npm run lint 2>&1 | tee lint.log || true
-          if [ ${PIPESTATUS[0]} -eq 0 ]; then
+          if npm run lint 2>&1 | tee lint.log; then
             echo "✅ Lint passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Lint failed" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             tail -50 lint.log >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
           fi
-        continue-on-error: true
 
       - name: Run Next.js build
         id: build
