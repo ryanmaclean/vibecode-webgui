@@ -13,10 +13,17 @@ describe('CostBreakdown Component', () => {
   const mockCostData = {
     timestamp: '2026-02-23T00:00:00Z',
     period: '24h',
+    startDate: '2026-02-22T00:00:00Z',
+    endDate: '2026-02-23T00:00:00Z',
     overview: {
       totalCost: 12.45,
+      totalRequests: 1000,
+      totalTokens: 150000,
       avgCostPerRequest: 0.0124,
-      costTrend: 0.15 // 15% increase
+      avgCostPerToken: 0.000083,
+      costTrend: 'increasing' as const,
+      costChange: 1.62,
+      costChangePercent: 15
     },
     byModel: [
       { model: 'gpt-4', totalCost: 8.50, requestCount: 500, avgCost: 0.017 },
@@ -24,7 +31,8 @@ describe('CostBreakdown Component', () => {
     ],
     byProvider: [
       { provider: 'openai', totalCost: 12.45, requestCount: 1000 }
-    ]
+    ],
+    trend: []
   }
 
   beforeEach(() => {
@@ -158,7 +166,16 @@ describe('CostBreakdown Component', () => {
   test('handles empty state', async () => {
     const emptyData = {
       ...mockCostData,
-      overview: { totalCost: 0, avgCostPerRequest: 0, costTrend: 0 },
+      overview: {
+        totalCost: 0,
+        totalRequests: 0,
+        totalTokens: 0,
+        avgCostPerRequest: 0,
+        avgCostPerToken: 0,
+        costTrend: 'stable' as const,
+        costChange: 0,
+        costChangePercent: 0
+      },
       byModel: [],
       byProvider: []
     }
