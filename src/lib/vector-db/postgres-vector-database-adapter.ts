@@ -32,6 +32,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   private prisma: PrismaClient | null = null;
   protected postgresConfig: PostgresVectorDatabaseConfig;
   private cacheInvalidator: VectorCacheInvalidator | null = null;
+  private errorHandler: VectorDbErrorHandler;
 
   /**
    * Constructor for PostgreSQL adapter

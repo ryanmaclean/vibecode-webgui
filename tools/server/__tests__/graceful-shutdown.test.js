@@ -1,6 +1,8 @@
 const { createGracefulShutdown } = require('../graceful-shutdown');
 
 describe('createGracefulShutdown', () => {
+  // Mock logger compatible with Pino interface
+  // Pino logger methods accept (message, metadata) similar to Winston
   const createLogger = () => ({
     info: jest.fn(),
     warn: jest.fn(),
@@ -50,6 +52,20 @@ describe('createGracefulShutdown', () => {
     expect(options.io.close).toHaveBeenCalledTimes(1);
     expect(options.server.close).toHaveBeenCalledTimes(1);
     expect(options.redisClient.quit).toHaveBeenCalledTimes(1);
+
+    // Verify Pino logger was called
+    expect(options.logger.info).toHaveBeenCalledWith(
+      'Initiating graceful shutdown',
+      expect.objectContaining({
+        signal: 'SIGTERM',
+        activeTerminals: 1,
+        activeWatchers: 1,
+      })
+    );
+    expect(options.logger.info).toHaveBeenCalledWith(
+      'Graceful shutdown complete',
+      expect.objectContaining({ signal: 'SIGTERM' })
+    );
   });
 
   test('prevents duplicate shutdown work when already in progress', async () => {
@@ -64,5 +80,11 @@ describe('createGracefulShutdown', () => {
     expect(options.io.close).toHaveBeenCalledTimes(1);
     expect(options.server.close).toHaveBeenCalledTimes(1);
     expect(options.redisClient.quit).toHaveBeenCalledTimes(1);
+
+    // Verify logger warned about duplicate shutdown
+    expect(options.logger.warn).toHaveBeenCalledWith(
+      'Shutdown already in progress',
+      expect.objectContaining({ signal: 'SIGTERM' })
+    );
   });
 });

@@ -531,7 +531,6 @@ else
         fi
 
         # Check available disk space before building
-        local available_space_gb
         available_space_gb=$(df -g . | awk 'NR==2 {print $4}')
         if [ "$available_space_gb" -lt 5 ]; then
             log_error "Insufficient disk space for Docker build: ${available_space_gb}GB available"

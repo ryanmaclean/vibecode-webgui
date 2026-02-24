@@ -1,0 +1,28 @@
+{
+  "id": "e2e-test-plugin",
+  "name": "E2e Test Plugin",
+  "version": "1.0.0",
+  "description": "End-to-end test plugin",
+  "author": {
+    "name": "E2E Test",
+    "email": "you@example.com",
+    "url": "https://example.com"
+  },
+  "type": "integration",
+  "main": "index.ts",
+  "permissions": [
+    "network:outbound",
+    "settings:read"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "vibecode": ">=1.0.0"
+  },
+  "license": "MIT",
+  "keywords": [
+    "integration",
+    "plugin",
+    "vibecode"
+  ],
+  "homepage": "https://vibecode.dev/docs/plugins/e2e-test-plugin"
+}

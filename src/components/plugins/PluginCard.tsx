@@ -1,297 +1,261 @@
+/**
+ * Plugin Card Component
+ * Display individual plugin information in the marketplace
+ */
+
 'use client';
 
-import * as React from 'react';
-import { cn } from '@/lib/utils';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import type { Plugin, PluginStatus, PluginType } from '@/types/plugin';
+import React from 'react';
+import {
+  StarIcon as StarIconOutline,
+  ArrowDownTrayIcon,
+  UserIcon,
+  TagIcon,
+  CheckBadgeIcon,
+  ClockIcon
+} from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolidFilled } from '@heroicons/react/24/solid';
 
-/**
- * Props for PluginCard component
- */
-export interface PluginCardProps {
-  /** Plugin instance data */
-  plugin: Plugin;
-  /** Handle enable action */
-  onEnable?: (id: string) => void;
-  /** Handle disable action */
-  onDisable?: (id: string) => void;
-  /** Handle uninstall action */
-  onUninstall?: (id: string) => void;
-  /** Handle configure action */
-  onConfigure?: (id: string) => void;
-  /** Handle view details action */
-  onViewDetails?: (id: string) => void;
-  /** Whether actions are disabled */
-  disabled?: boolean;
-  /** Additional class name */
+export interface PluginCardData {
+  id: number;
+  name: string;
+  displayName: string;
+  description: string;
+  authorId: number;
+  authorName?: string;
+  repositoryUrl?: string;
+  homepageUrl?: string;
+  iconUrl?: string;
+  category: string;
+  tags?: string[];
+  downloadsCount: number;
+  averageRating?: number;
+  ratingsCount?: number;
+  status: string;
+  featured: boolean;
+  verified: boolean;
+  latestVersion?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface PluginCardProps {
+  plugin: PluginCardData;
+  onInstall?: (plugin: PluginCardData) => void;
+  onCardClick?: (plugin: PluginCardData) => void;
+  isInstalled?: boolean;
+  isInstalling?: boolean;
+  selectedPluginId?: number;
   className?: string;
 }
 
-/**
- * Status badge variant mapping
- */
-const statusVariants: Record<PluginStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  active: 'default',
-  inactive: 'secondary',
-  error: 'destructive',
-  installing: 'outline',
-  uninstalling: 'outline'
-};
-
-/**
- * Status display text
- */
-const statusText: Record<PluginStatus, string> = {
-  active: 'Active',
-  inactive: 'Inactive',
-  error: 'Error',
-  installing: 'Installing...',
-  uninstalling: 'Uninstalling...'
-};
-
-/**
- * Plugin type display text
- */
-const typeText: Record<PluginType, string> = {
-  'ai-model': 'AI Model',
-  'integration': 'Integration',
-  'workflow': 'Workflow',
-  'ui-extension': 'UI Extension',
-  'code-generator': 'Code Generator',
-  'linter': 'Linter',
-  'formatter': 'Formatter',
-  'other': 'Other'
-};
-
-/**
- * Format relative time
- */
-function formatRelativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-  return `${Math.floor(diffDays / 365)} years ago`;
-}
-
-/**
- * Get capability badges to display
- */
-function getCapabilityBadges(plugin: Plugin): string[] {
-  const badges: string[] = [];
-  const { capabilities } = plugin;
-
-  if (capabilities.providesAIModel) badges.push('AI Model');
-  if (capabilities.providesIntegration) badges.push('Integration');
-  if (capabilities.providesCommands) badges.push('Commands');
-  if (capabilities.providesUIComponents) badges.push('UI');
-  if (capabilities.providesCodeActions) badges.push('Code Actions');
-  if (capabilities.providesWorkflows) badges.push('Workflows');
-  if (capabilities.providesFormatters) badges.push('Formatter');
-  if (capabilities.providesLinters) badges.push('Linter');
-
-  return badges.slice(0, 3); // Limit to 3 badges
-}
-
-/**
- * Plugin Card Component
- * Displays a single plugin with status, metadata, and actions
- */
-export const PluginCard = React.memo(function PluginCard({
+export function PluginCard({
   plugin,
-  onEnable,
-  onDisable,
-  onUninstall,
-  onConfigure,
-  onViewDetails,
-  disabled = false,
-  className
+  onInstall,
+  onCardClick,
+  isInstalled = false,
+  isInstalling = false,
+  selectedPluginId,
+  className = ''
 }: PluginCardProps) {
-  const isActive = plugin.status === 'active';
-  const isInactive = plugin.status === 'inactive';
-  const isTransitioning = plugin.status === 'installing' || plugin.status === 'uninstalling';
-  const hasError = plugin.status === 'error';
+  const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'sm') => {
+    const sizeClasses = {
+      sm: 'h-4 w-4',
+      md: 'h-5 w-5',
+      lg: 'h-6 w-6'
+    };
 
-  const handleEnable = React.useCallback(() => {
-    onEnable?.(plugin.manifest.id);
-  }, [plugin.manifest.id, onEnable]);
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
 
-  const handleDisable = React.useCallback(() => {
-    onDisable?.(plugin.manifest.id);
-  }, [plugin.manifest.id, onDisable]);
+    // Full stars
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(
+        <StarIconSolidFilled key={i} className={`${sizeClasses[size]} text-yellow-400`} />
+      );
+    }
 
-  const handleUninstall = React.useCallback(() => {
-    onUninstall?.(plugin.manifest.id);
-  }, [plugin.manifest.id, onUninstall]);
+    // Half star (if needed)
+    if (hasHalfStar) {
+      stars.push(
+        <div key="half" className={`relative ${sizeClasses[size]}`}>
+          <StarIconOutline className="text-yellow-400" />
+          <div className="absolute inset-0 overflow-hidden w-1/2">
+            <StarIconSolidFilled className="text-yellow-400" />
+          </div>
+        </div>
+      );
+    }
 
-  const handleConfigure = React.useCallback(() => {
-    onConfigure?.(plugin.manifest.id);
-  }, [plugin.manifest.id, onConfigure]);
+    // Empty stars
+    const remainingStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    for (let i = 0; i < remainingStars; i++) {
+      stars.push(
+        <StarIconOutline key={`empty-${i}`} className={`${sizeClasses[size]} text-gray-300`} />
+      );
+    }
 
-  const handleViewDetails = React.useCallback(() => {
-    onViewDetails?.(plugin.manifest.id);
-  }, [plugin.manifest.id, onViewDetails]);
+    return stars;
+  };
 
-  const capabilityBadges = getCapabilityBadges(plugin);
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`;
+    }
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`;
+    }
+    return num.toString();
+  };
+
+  const handleInstallClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onInstall?.(plugin);
+  };
 
   return (
-    <Card
-      className={cn(
-        'relative transition-shadow hover:shadow-md',
-        hasError && 'border-destructive',
-        className
-      )}
+    <div
+      className={`bg-white rounded-lg border ${
+        selectedPluginId === plugin.id
+          ? 'border-blue-500 ring-2 ring-blue-200'
+          : 'border-gray-200 hover:border-gray-300'
+      } overflow-hidden hover:shadow-md transition-all cursor-pointer ${className}`}
+      onClick={() => onCardClick?.(plugin)}
     >
-      {/* Status indicator dot */}
-      <div
-        className={cn(
-          'absolute top-4 right-4 w-3 h-3 rounded-full',
-          isActive && 'bg-green-500 animate-pulse',
-          isInactive && 'bg-gray-400',
-          isTransitioning && 'bg-yellow-500 animate-pulse',
-          hasError && 'bg-red-500'
-        )}
-      />
-
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between pr-6">
-          <div className="flex-1">
-            <CardTitle className="text-lg font-semibold">{plugin.manifest.name}</CardTitle>
-            <CardDescription className="mt-1 line-clamp-2">
-              {plugin.manifest.description}
-            </CardDescription>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 mt-2">
-          <Badge variant={statusVariants[plugin.status]}>
-            {statusText[plugin.status]}
-          </Badge>
-          <Badge variant="outline" className="text-xs">
-            {typeText[plugin.manifest.type]}
-          </Badge>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* Metadata */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span>v{plugin.manifest.version}</span>
-            <span>•</span>
-            <span>{plugin.manifest.author.name}</span>
-          </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span>Installed {formatRelativeTime(plugin.installedAt)}</span>
-            {plugin.enabledAt && isActive && (
-              <>
-                <span>•</span>
-                <span>Enabled {formatRelativeTime(plugin.enabledAt)}</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Capabilities */}
-        {capabilityBadges.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Capabilities</h4>
-            <div className="flex flex-wrap gap-2">
-              {capabilityBadges.map((badge) => (
-                <Badge key={badge} variant="outline" className="text-xs font-normal">
-                  {badge}
-                </Badge>
-              ))}
+      {/* Plugin Icon/Preview */}
+      <div className="aspect-video bg-gray-100 relative">
+        {plugin.iconUrl ? (
+          <img
+            src={plugin.iconUrl}
+            alt={plugin.displayName}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-600 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                <span className="text-white font-bold text-xl">
+                  {plugin.displayName.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600">No icon</p>
             </div>
           </div>
         )}
 
-        {/* Permissions */}
-        {plugin.manifest.permissions.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Permissions</h4>
-            <div className="flex flex-wrap gap-1">
-              {plugin.manifest.permissions.slice(0, 3).map((permission) => (
-                <Badge key={permission} variant="secondary" className="text-xs font-normal">
-                  {permission.split(':')[0]}
-                </Badge>
-              ))}
-              {plugin.manifest.permissions.length > 3 && (
-                <span className="text-xs text-muted-foreground">
-                  +{plugin.manifest.permissions.length - 3} more
-                </span>
+        {/* Featured Badge */}
+        {plugin.featured && (
+          <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+            Featured
+          </div>
+        )}
+
+        {/* Verified Badge */}
+        {plugin.verified && (
+          <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
+            <CheckBadgeIcon className="h-3 w-3 mr-1" />
+            Verified
+          </div>
+        )}
+
+        {/* Installed Badge */}
+        {isInstalled && (
+          <div className="absolute bottom-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+            Installed
+          </div>
+        )}
+      </div>
+
+      {/* Plugin Info */}
+      <div className="p-4">
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1">
+            <h3 className="font-semibold text-gray-900 truncate">{plugin.displayName}</h3>
+            <p className="text-sm text-gray-600 line-clamp-2 mt-1">
+              {plugin.description}
+            </p>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+          {plugin.averageRating !== undefined && plugin.averageRating > 0 ? (
+            <div className="flex items-center">
+              {renderStars(plugin.averageRating)}
+              <span className="ml-1">{plugin.averageRating.toFixed(1)}</span>
+              {plugin.ratingsCount !== undefined && plugin.ratingsCount > 0 && (
+                <span className="ml-1 text-xs">({plugin.ratingsCount})</span>
               )}
             </div>
+          ) : (
+            <div className="flex items-center text-xs text-gray-400">
+              No ratings yet
+            </div>
+          )}
+          <div className="flex items-center">
+            <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
+            {formatNumber(plugin.downloadsCount)}
+          </div>
+        </div>
+
+        {/* Version and Category */}
+        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+          <span className="bg-gray-100 px-2 py-1 rounded">
+            {plugin.category}
+          </span>
+          {plugin.latestVersion && (
+            <span className="text-gray-600">
+              v{plugin.latestVersion}
+            </span>
+          )}
+        </div>
+
+        {/* Tags */}
+        {plugin.tags && plugin.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-3">
+            {plugin.tags.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700"
+              >
+                <TagIcon className="h-3 w-3 mr-1" />
+                {tag}
+              </span>
+            ))}
+            {plugin.tags.length > 3 && (
+              <span className="text-xs text-gray-500">+{plugin.tags.length - 3} more</span>
+            )}
           </div>
         )}
 
-        {/* Error Message */}
-        {hasError && plugin.lastError && (
-          <div className="p-2 bg-destructive/10 rounded text-sm text-destructive">
-            {plugin.lastError}
+        {/* Metadata and Install Button */}
+        <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+          <div className="flex items-center text-sm text-gray-500">
+            <UserIcon className="h-4 w-4 mr-1" />
+            <span className="truncate">{plugin.authorName || 'Unknown'}</span>
           </div>
-        )}
-      </CardContent>
+          <button
+            onClick={handleInstallClick}
+            disabled={isInstalled || isInstalling}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              isInstalled
+                ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                : isInstalling
+                ? 'bg-blue-100 text-blue-600 cursor-wait'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            {isInstalled ? 'Installed' : isInstalling ? 'Installing...' : 'Install'}
+          </button>
+        </div>
 
-      <CardFooter className="flex flex-wrap gap-2 pt-2">
-        {isInactive && onEnable && (
-          <Button
-            size="sm"
-            onClick={handleEnable}
-            disabled={disabled || isTransitioning}
-          >
-            Enable
-          </Button>
-        )}
-        {isActive && onDisable && (
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={handleDisable}
-            disabled={disabled || isTransitioning}
-          >
-            Disable
-          </Button>
-        )}
-        {onConfigure && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleConfigure}
-            disabled={disabled || isTransitioning}
-          >
-            Configure
-          </Button>
-        )}
-        {onViewDetails && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleViewDetails}
-          >
-            Details
-          </Button>
-        )}
-        {onUninstall && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-destructive hover:text-destructive"
-            onClick={handleUninstall}
-            disabled={disabled || isTransitioning}
-          >
-            Uninstall
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
+        {/* Last Updated */}
+        <div className="flex items-center text-xs text-gray-400 mt-2">
+          <ClockIcon className="h-3 w-3 mr-1" />
+          Updated {new Date(plugin.updatedAt).toLocaleDateString()}
+        </div>
+      </div>
+    </div>
   );
-});
-
-PluginCard.displayName = 'PluginCard';
+}

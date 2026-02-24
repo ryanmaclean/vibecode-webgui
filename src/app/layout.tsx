@@ -10,6 +10,8 @@ import BrowserTelemetryInit from '@/components/monitoring/BrowserTelemetryInit';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { GlobalCommandPalette } from '@/components/command-palette/GlobalCommandPalette';
 import { ModelSwitcher } from '@/components/ai/ModelSwitcher';
+import { GlobalCostAlerts } from '@/components/ai/GlobalCostAlerts';
+import { EnvironmentBadge } from '@/components/environment/EnvironmentBadge';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
 // const geistSans = Geist({
@@ -84,6 +86,8 @@ export default function RootLayout({
         </a>
         {/* Offline indicator - fixed position to avoid layout shift */}
         <OfflineIndicator className="fixed top-4 right-4 z-50" />
+        {/* Environment badge - displays current environment with color coding */}
+        <EnvironmentBadge className="fixed top-4 left-4 z-50" showIcon={true} />
         <Providers>
           {/* Initialize OpenTelemetry browser instrumentation */}
           {process.env.NEXT_PUBLIC_OTEL_ENABLED !== 'false' && process.env.NEXT_PUBLIC_SKIP_MONITORING !== 'true' && (
@@ -98,6 +102,8 @@ export default function RootLayout({
           </ErrorBoundary>
           {/* Global command palette accessible from any page via Cmd+Shift+P or Cmd+K */}
           <GlobalCommandPalette />
+          {/* Global cost alert notifications */}
+          <GlobalCostAlerts />
         </Providers>
       </body>
     </html>

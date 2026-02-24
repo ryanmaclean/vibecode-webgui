@@ -9,6 +9,11 @@ import AIUsageDashboard from '@/components/monitoring/AIUsageDashboard'
 import AIUsageAlerts from './alerts'
 
 export default function AIUsageMonitoringPage() {
+  // Datadog dashboard configuration
+  // Replace with actual Datadog dashboard URL from your Datadog account
+  const datadogDashboardUrl = process.env.NEXT_PUBLIC_DATADOG_DASHBOARD_URL ||
+    'https://app.datadoghq.com/dashboard/ai-operations?theme=dark&embed=true&from_ts=0&to_ts=0&live=true'
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
@@ -18,8 +23,32 @@ export default function AIUsageMonitoringPage() {
         </p>
       </div>
 
+      {/* Native Dashboard Components */}
       <AIUsageDashboard />
 
+      {/* Datadog Dashboard Embed */}
+      <div className="mt-8">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 className="text-xl font-semibold text-gray-900">Datadog AI Operations Dashboard</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Real-time metrics and visualizations from Datadog
+            </p>
+          </div>
+          <div className="relative w-full" style={{ height: '800px' }}>
+            <iframe
+              src={datadogDashboardUrl}
+              className="absolute inset-0 w-full h-full"
+              frameBorder="0"
+              title="Datadog AI Operations Dashboard"
+              allow="clipboard-write"
+              sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* AI Usage Alerts */}
       <div className="mt-8">
         <AIUsageAlerts />
       </div>

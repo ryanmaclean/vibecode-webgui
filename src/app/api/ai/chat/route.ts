@@ -12,7 +12,9 @@ import { z } from 'zod'
 import { cache, CacheTTL } from '@/lib/cache/unified-cache-client'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { createErrorResponseFromError } from '@/lib/utils/api-response'
+import { getContextRetriever } from '@/lib/rag/context-retriever'
 import * as crypto from 'crypto'
+import { getDefaultEnhancer, type EnhancedSuggestion } from '@/lib/ai/suggestion-enhancer'
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
@@ -59,6 +61,8 @@ const chatRequestSchema = z.object({
   stream: z.boolean().optional().default(false),
   temperature: z.number().min(0).max(2).optional().default(0.7),
   maxTokens: z.number().min(1).max(4000).optional().default(1000),
+  useRAG: z.boolean().optional().default(false),
+  projectId: z.number().optional(),
 }).strict()
 
 // Log AI interaction events to Datadog
@@ -132,8 +136,77 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     );
     }
 
-    const { messages, model, stream, temperature, maxTokens } = validation.data as z.infer<typeof chatRequestSchema>;
-    
+    const { messages, model, stream, temperature, maxTokens, useRAG, projectId } = validation.data as z.infer<typeof chatRequestSchema>;
+
+    // Retrieve RAG context if enabled
+    let ragContext: string | null = null;
+    let ragMetadata: { totalChunks: number; avgSimilarity: number } | null = null;
+
+    if (useRAG) {
+      if (!projectId) {
+        logAIInteraction(request, 'chat_error', {
+          error: 'RAG enabled but projectId not provided',
+          userId: request.user?.id,
+        });
+
+        return applyChatRateLimitHeaders(
+          NextResponse.json(
+            {
+              error: 'Invalid request',
+              details: 'projectId is required when useRAG is enabled'
+            },
+            { status: 400 }
+          ),
+          rateLimitInfo
+        );
+      }
+
+      try {
+        const contextRetriever = getContextRetriever();
+
+        if (!contextRetriever.isAvailable()) {
+          logger.warn('RAG requested but embedding service not available', {
+            projectId,
+            userId: request.user?.id
+          });
+        } else {
+          // Get the last user message as the query
+          const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+          if (lastUserMessage) {
+            const formattedContext = await contextRetriever.getFormattedContext(
+              lastUserMessage.content,
+              {
+                projectId,
+                limit: 5,
+                minSimilarity: 0.7
+              }
+            );
+
+            ragContext = formattedContext.contextText;
+            ragMetadata = {
+              totalChunks: formattedContext.totalChunks,
+              avgSimilarity: formattedContext.avgSimilarity
+            };
+
+            logger.info('RAG context retrieved', {
+              projectId,
+              totalChunks: formattedContext.totalChunks,
+              avgSimilarity: formattedContext.avgSimilarity,
+              contextLength: ragContext.length,
+              userId: request.user?.id
+            });
+          }
+        }
+      } catch (error) {
+        logger.error('RAG context retrieval failed', {
+          error: error instanceof Error ? error.message : error,
+          projectId,
+          userId: request.user?.id
+        });
+        // Continue without RAG context rather than failing the request
+      }
+    }
+
     // Generate cache key for AI chat responses (30-50% cost reduction)
     // Only cache non-streaming, deterministic responses
     let cacheKey: string | null = null;
@@ -168,8 +241,66 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       last_message_length: messages[messages.length - 1]?.content?.length || 0,
       userId: request.user?.id,
       userRole: request.user?.role,
-      requestId
+      requestId,
+      useRAG,
+      ...(ragMetadata && {
+        rag_chunks: ragMetadata.totalChunks,
+        rag_similarity: ragMetadata.avgSimilarity
+      })
     });
+
+    // Enhance context with AI suggestions if code-related
+    let enhancedContext: EnhancedSuggestion | null = null;
+    let systemPrompt = 'You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.';
+
+    if (isCodeRelatedQuery(messages)) {
+      try {
+        const sourceCode = extractCodeFromMessages(messages) || '';
+        const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content || '';
+
+        if (sourceCode || lastUserMessage) {
+          const enhancer = getDefaultEnhancer();
+          enhancedContext = await enhancer.enhance({
+            sourceCode: sourceCode || lastUserMessage,
+            intent: lastUserMessage,
+            workspaceId: request.user?.id,
+            contextOptions: {
+              includeRelatedCode: true,
+              includeConventions: true,
+              maxRelatedElements: 5,
+              maxConventionExamples: 3,
+              minRelevanceScore: 0.3
+            },
+            optimizationOptions: {
+              tokenBudget: 2000,
+              strategy: 'BALANCED' as any,
+              minRelevanceScore: 0.2
+            }
+          });
+
+          // Include enhanced context in system prompt
+          if (enhancedContext.formattedContext) {
+            systemPrompt = `You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.
+
+${enhancedContext.formattedContext}
+
+Use the above context to provide more accurate and relevant suggestions.`;
+
+            logger.info('AI chat context enhanced', {
+              totalTokens: enhancedContext.totalTokens,
+              relevanceScore: enhancedContext.relevanceScore,
+              contextSources: enhancedContext.contextSources.length,
+              requestId
+            });
+          }
+        }
+      } catch (enhanceError) {
+        logger.warn('Context enhancement failed, continuing without enhancement', {
+          error: enhanceError instanceof Error ? enhanceError.message : 'Unknown error',
+          requestId
+        });
+      }
+    }
 
     // Real AI response using Vercel AI SDK
     let response = ''
@@ -194,10 +325,16 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
         // Fallback for missing API key
         response = "I'm a VibeCode AI assistant. I'm currently running in development mode without API access, but I can help you with code-related questions and GitHub repository information.";
       } else {
+        // Build system prompt with optional RAG context
+        let systemPrompt = 'You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.';
+        if (ragContext) {
+          systemPrompt = `${systemPrompt}\n\n${ragContext}\n\nUse the above codebase context to provide accurate, specific answers about the code. Reference specific files, functions, and code patterns when relevant.`;
+        }
+
         // Real AI streaming
         const result = await streamText({
           model,
-          system: 'You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.',
+          system: systemPrompt,
           messages,
           tools,
         });
@@ -265,11 +402,17 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
         const { tools } = await import('@/lib/tools');
         
         const model = openai('gpt-4o-mini');
-        
+
         if (model) {
+          // Build system prompt with optional RAG context
+          let systemPrompt = 'You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.';
+          if (ragContext) {
+            systemPrompt = `${systemPrompt}\n\n${ragContext}\n\nUse the above codebase context to provide accurate, specific answers about the code. Reference specific files, functions, and code patterns when relevant.`;
+          }
+
           await streamText({
             model,
-            system: 'You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.',
+            system: systemPrompt,
             messages,
             tools,
           })
@@ -361,6 +504,21 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       cache_hit: false,
       userId: request.user?.id,
       userRole: request.user?.role,
+      ...(ragMetadata && {
+        rag: {
+          enabled: true,
+          chunks: ragMetadata.totalChunks,
+          avgSimilarity: ragMetadata.avgSimilarity
+        }
+      }),
+      ...(enhancedContext && {
+        context_enhancement: {
+          enabled: true,
+          totalTokens: enhancedContext.totalTokens,
+          relevanceScore: enhancedContext.relevanceScore,
+          stats: enhancedContext.stats
+        }
+      })
     };
     
     // Cache the response if conditions are met
@@ -492,12 +650,50 @@ function generateAIChatCacheKey(
     temperature,
     maxTokens
   };
-  
+
   const hash = crypto
     .createHash('sha256')
     .update(JSON.stringify(keyData))
     .digest('hex')
     .substring(0, 16);
-    
+
   return `ai:chat:${hash}`;
+}
+
+// Helper function to extract code blocks from messages
+function extractCodeFromMessages(messages: Array<{ role: string; content: string }>): string | null {
+  // Look for code blocks in markdown format ```code``` or inline code `code`
+  const codeBlockRegex = /```[\s\S]*?```|`[^`]+`/g;
+
+  // Iterate in reverse order without modifying the original array
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    if (message.role === 'user') {
+      const matches = message.content.match(codeBlockRegex);
+      if (matches && matches.length > 0) {
+        // Extract the most recent code block
+        const codeBlock = matches[matches.length - 1];
+        // Remove markdown code fences
+        return codeBlock.replace(/```[\w]*\n?/g, '').replace(/```$/g, '').replace(/`/g, '').trim();
+      }
+    }
+  }
+
+  return null;
+}
+
+// Helper function to detect if message is code-related
+function isCodeRelatedQuery(messages: Array<{ role: string; content: string }>): boolean {
+  const codeKeywords = [
+    'code', 'function', 'component', 'class', 'implement', 'create',
+    'build', 'debug', 'fix', 'error', 'typescript', 'javascript', 'react',
+    'how do i', 'how to', 'write', 'develop'
+  ];
+
+  const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+  if (!lastUserMessage) return false;
+
+  const content = lastUserMessage.content.toLowerCase();
+  return codeKeywords.some(keyword => content.includes(keyword)) ||
+         extractCodeFromMessages(messages) !== null;
 }

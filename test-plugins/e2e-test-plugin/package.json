@@ -1,0 +1,23 @@
+{
+  "name": "@vibecode-plugin/e2e-test-plugin",
+  "version": "1.0.0",
+  "description": "End-to-end test plugin",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src --ext .ts"
+  },
+  "keywords": [
+    "vibecode",
+    "plugin",
+    "integration"
+  ],
+  "author": "E2E Test",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}

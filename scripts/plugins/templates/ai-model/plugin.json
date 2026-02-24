@@ -1,0 +1,48 @@
+{
+  "id": "my-ai-model",
+  "name": "My AI Model Provider",
+  "version": "1.0.0",
+  "description": "A custom AI model provider plugin for VibeCode",
+  "author": {
+    "name": "Your Name",
+    "email": "you@example.com",
+    "url": "https://example.com"
+  },
+  "type": "ai-model",
+  "main": "index.ts",
+  "permissions": [
+    "ai:model:register",
+    "network:request"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "vibecode": ">=1.0.0"
+  },
+  "license": "MIT",
+  "keywords": [
+    "ai",
+    "model",
+    "llm",
+    "provider"
+  ],
+  "config": {
+    "apiKey": {
+      "type": "string",
+      "description": "API key for the AI model provider",
+      "required": true,
+      "secret": true
+    },
+    "endpoint": {
+      "type": "string",
+      "description": "API endpoint URL",
+      "required": false,
+      "default": "https://api.example.com/v1"
+    },
+    "defaultModel": {
+      "type": "string",
+      "description": "Default model to use",
+      "required": false,
+      "default": "gpt-4"
+    }
+  }
+}
