@@ -54,7 +54,7 @@ interface CostData {
   period: string
   startDate: string
   endDate: string
-  summary: {
+  overview: {
     totalCost: number
     totalRequests: number
     totalTokens: number
@@ -319,8 +319,8 @@ function CostBreakdownInner({
 
   // Get trend icon
   const getTrendIcon = () => {
-    if (!data?.summary) return null
-    const trend = data.summary.costTrend
+    if (!data?.overview) return null
+    const trend = data.overview.costTrend
     if (trend === 'increasing') {
       return <TrendingUp className="h-4 w-4 text-red-500" />
     } else if (trend === 'decreasing') {
@@ -331,8 +331,8 @@ function CostBreakdownInner({
 
   // Get trend color
   const getTrendColor = () => {
-    if (!data?.summary) return 'text-gray-600'
-    const trend = data.summary.costTrend
+    if (!data?.overview) return 'text-gray-600'
+    const trend = data.overview.costTrend
     if (trend === 'increasing') return 'text-red-600'
     if (trend === 'decreasing') return 'text-green-600'
     return 'text-blue-600'
@@ -388,7 +388,7 @@ function CostBreakdownInner({
     )
   }
 
-  if (!data?.summary) {
+  if (!data?.overview) {
     return (
       <Card className={className}>
         <CardHeader>
@@ -439,25 +439,25 @@ function CostBreakdownInner({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <CostSummary
             label="Total Cost"
-            value={formatCost(data.summary.totalCost)}
-            subtext={`${data.summary.totalRequests.toLocaleString()} requests`}
+            value={formatCost(data.overview.totalCost)}
+            subtext={`${data.overview.totalRequests.toLocaleString()} requests`}
             colorClass="bg-gradient-to-br from-blue-50 to-blue-100 text-blue-900"
             icon={<DollarSign className="h-5 w-5" />}
           />
           <CostSummary
             label="Avg Cost/Request"
-            value={formatCost(data.summary.avgCostPerRequest)}
-            subtext={`${data.summary.totalTokens.toLocaleString()} total tokens`}
+            value={formatCost(data.overview.avgCostPerRequest)}
+            subtext={`${data.overview.totalTokens.toLocaleString()} total tokens`}
             colorClass="bg-gradient-to-br from-green-50 to-green-100 text-green-900"
           />
           <CostSummary
             label="Cost Trend"
-            value={data.summary.costChangePercent >= 0 ? `+${data.summary.costChangePercent.toFixed(1)}%` : `${data.summary.costChangePercent.toFixed(1)}%`}
-            subtext={`${data.summary.costTrend} compared to previous period`}
+            value={data.overview.costChangePercent >= 0 ? `+${data.overview.costChangePercent.toFixed(1)}%` : `${data.overview.costChangePercent.toFixed(1)}%`}
+            subtext={`${data.overview.costTrend} compared to previous period`}
             colorClass={`bg-gradient-to-br ${
-              data.summary.costTrend === 'increasing'
+              data.overview.costTrend === 'increasing'
                 ? 'from-red-50 to-red-100 text-red-900'
-                : data.summary.costTrend === 'decreasing'
+                : data.overview.costTrend === 'decreasing'
                 ? 'from-green-50 to-green-100 text-green-900'
                 : 'from-gray-50 to-gray-100 text-gray-900'
             }`}
