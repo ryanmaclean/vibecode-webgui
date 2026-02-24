@@ -25,6 +25,8 @@ This changelog covers 45 releases from the project's inception through the curre
 ### Changed
 - Update .monaco-version-lock
 
+### Experiments
+
 ### Other
 - docs: update handoff with link to comprehensive walkthrough
 - docs: add comprehensive step-by-step implementation walkthrough
