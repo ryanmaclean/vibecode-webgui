@@ -10,6 +10,7 @@ import { EmbeddingServiceFactory, EmbeddingServiceType } from '../ai/embeddingSe
 import fs from 'fs/promises'
 import path from 'path'
 import { minimatch } from 'minimatch'
+import { FileWatcher, FileChangeEvent } from './file-watcher'
 
 // Check if we're in build mode
 const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' ||
@@ -713,6 +714,101 @@ export class CodebaseIndexer {
 
     await traverseDirectory(projectPath)
     return sourceFiles
+  }
+
+  /**
+   * Integrate with FileWatcher for automatic reindexing on file changes
+   * @param fileWatcher - FileWatcher instance to listen to
+   * @param workspaceId - Workspace ID for reindexing
+   * @param projectId - Project ID for reindexing
+   * @param userId - User ID for reindexing
+   * @param projectPath - Project root path for validation
+   */
+  integrateWithFileWatcher(
+    fileWatcher: FileWatcher,
+    workspaceId: number,
+    projectId: number,
+    userId: number,
+    projectPath: string
+  ): void {
+    // Listen for file additions
+    fileWatcher.on('file-added', async (event: FileChangeEvent) => {
+      console.log(`File changed: ${event.filePath}`)
+      try {
+        // Verify file is within project path
+        const relativePath = path.relative(projectPath, event.filePath)
+        if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+          console.log(`File ${event.filePath} is outside project path, skipping`)
+          return
+        }
+
+        console.log(`Reindexing: ${event.filePath}`)
+        const result = await this.indexFile(event.filePath, workspaceId, projectId, userId)
+
+        if (result.success) {
+          console.log(`Successfully indexed new file: ${event.filePath} (${result.chunkCount} chunks)`)
+        } else {
+          console.error(`Failed to index new file: ${event.filePath}`, result.error)
+        }
+      } catch (error) {
+        console.error(`Error handling file-added event for ${event.filePath}:`, error)
+      }
+    })
+
+    // Listen for file changes
+    fileWatcher.on('file-changed', async (event: FileChangeEvent) => {
+      console.log(`File changed: ${event.filePath}`)
+      try {
+        // Verify file is within project path
+        const relativePath = path.relative(projectPath, event.filePath)
+        if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+          console.log(`File ${event.filePath} is outside project path, skipping`)
+          return
+        }
+
+        console.log(`Reindexing: ${event.filePath}`)
+        const result = await this.updateIndex(event.filePath, workspaceId, projectId, userId)
+
+        if (result.success) {
+          console.log(`Successfully reindexed changed file: ${event.filePath} (${result.chunkCount} chunks)`)
+        } else {
+          console.error(`Failed to reindex changed file: ${event.filePath}`, result.error)
+        }
+      } catch (error) {
+        console.error(`Error handling file-changed event for ${event.filePath}:`, error)
+      }
+    })
+
+    // Listen for file deletions
+    fileWatcher.on('file-deleted', async (event: FileChangeEvent) => {
+      console.log(`File changed: ${event.filePath}`)
+      try {
+        // Verify file is within project path
+        const relativePath = path.relative(projectPath, event.filePath)
+        if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+          console.log(`File ${event.filePath} is outside project path, skipping`)
+          return
+        }
+
+        console.log(`Removing index: ${event.filePath}`)
+        const success = await this.deleteIndex(event.filePath, projectId)
+
+        if (success) {
+          console.log(`Successfully removed index for deleted file: ${event.filePath}`)
+        } else {
+          console.error(`Failed to remove index for deleted file: ${event.filePath}`)
+        }
+      } catch (error) {
+        console.error(`Error handling file-deleted event for ${event.filePath}:`, error)
+      }
+    })
+
+    // Listen for errors
+    fileWatcher.on('error', (error: Error) => {
+      console.error('FileWatcher error:', error)
+    })
+
+    console.log(`CodebaseIndexer integrated with FileWatcher for project ${projectId}`)
   }
 
   /**

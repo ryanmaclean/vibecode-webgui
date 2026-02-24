@@ -12,6 +12,7 @@ import { z } from 'zod'
 import { cache, CacheTTL } from '@/lib/cache/unified-cache-client'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { createErrorResponseFromError } from '@/lib/utils/api-response'
+import { getContextRetriever } from '@/lib/rag/context-retriever'
 import * as crypto from 'crypto'
 import { getDefaultEnhancer, type EnhancedSuggestion } from '@/lib/ai/suggestion-enhancer'
 // Force dynamic rendering to prevent static analysis during build
@@ -60,6 +61,8 @@ const chatRequestSchema = z.object({
   stream: z.boolean().optional().default(false),
   temperature: z.number().min(0).max(2).optional().default(0.7),
   maxTokens: z.number().min(1).max(4000).optional().default(1000),
+  useRAG: z.boolean().optional().default(false),
+  projectId: z.number().optional(),
 }).strict()
 
 // Log AI interaction events to Datadog
@@ -133,8 +136,77 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     );
     }
 
-    const { messages, model, stream, temperature, maxTokens } = validation.data as z.infer<typeof chatRequestSchema>;
-    
+    const { messages, model, stream, temperature, maxTokens, useRAG, projectId } = validation.data as z.infer<typeof chatRequestSchema>;
+
+    // Retrieve RAG context if enabled
+    let ragContext: string | null = null;
+    let ragMetadata: { totalChunks: number; avgSimilarity: number } | null = null;
+
+    if (useRAG) {
+      if (!projectId) {
+        logAIInteraction(request, 'chat_error', {
+          error: 'RAG enabled but projectId not provided',
+          userId: request.user?.id,
+        });
+
+        return applyChatRateLimitHeaders(
+          NextResponse.json(
+            {
+              error: 'Invalid request',
+              details: 'projectId is required when useRAG is enabled'
+            },
+            { status: 400 }
+          ),
+          rateLimitInfo
+        );
+      }
+
+      try {
+        const contextRetriever = getContextRetriever();
+
+        if (!contextRetriever.isAvailable()) {
+          logger.warn('RAG requested but embedding service not available', {
+            projectId,
+            userId: request.user?.id
+          });
+        } else {
+          // Get the last user message as the query
+          const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+          if (lastUserMessage) {
+            const formattedContext = await contextRetriever.getFormattedContext(
+              lastUserMessage.content,
+              {
+                projectId,
+                limit: 5,
+                minSimilarity: 0.7
+              }
+            );
+
+            ragContext = formattedContext.contextText;
+            ragMetadata = {
+              totalChunks: formattedContext.totalChunks,
+              avgSimilarity: formattedContext.avgSimilarity
+            };
+
+            logger.info('RAG context retrieved', {
+              projectId,
+              totalChunks: formattedContext.totalChunks,
+              avgSimilarity: formattedContext.avgSimilarity,
+              contextLength: ragContext.length,
+              userId: request.user?.id
+            });
+          }
+        }
+      } catch (error) {
+        logger.error('RAG context retrieval failed', {
+          error: error instanceof Error ? error.message : error,
+          projectId,
+          userId: request.user?.id
+        });
+        // Continue without RAG context rather than failing the request
+      }
+    }
+
     // Generate cache key for AI chat responses (30-50% cost reduction)
     // Only cache non-streaming, deterministic responses
     let cacheKey: string | null = null;
@@ -169,7 +241,12 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       last_message_length: messages[messages.length - 1]?.content?.length || 0,
       userId: request.user?.id,
       userRole: request.user?.role,
-      requestId
+      requestId,
+      useRAG,
+      ...(ragMetadata && {
+        rag_chunks: ragMetadata.totalChunks,
+        rag_similarity: ragMetadata.avgSimilarity
+      })
     });
 
     // Enhance context with AI suggestions if code-related
@@ -248,6 +325,12 @@ Use the above context to provide more accurate and relevant suggestions.`;
         // Fallback for missing API key
         response = "I'm a VibeCode AI assistant. I'm currently running in development mode without API access, but I can help you with code-related questions and GitHub repository information.";
       } else {
+        // Build system prompt with optional RAG context
+        let systemPrompt = 'You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.';
+        if (ragContext) {
+          systemPrompt = `${systemPrompt}\n\n${ragContext}\n\nUse the above codebase context to provide accurate, specific answers about the code. Reference specific files, functions, and code patterns when relevant.`;
+        }
+
         // Real AI streaming
         const result = await streamText({
           model,
@@ -319,8 +402,14 @@ Use the above context to provide more accurate and relevant suggestions.`;
         const { tools } = await import('@/lib/tools');
         
         const model = openai('gpt-4o-mini');
-        
+
         if (model) {
+          // Build system prompt with optional RAG context
+          let systemPrompt = 'You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.';
+          if (ragContext) {
+            systemPrompt = `${systemPrompt}\n\n${ragContext}\n\nUse the above codebase context to provide accurate, specific answers about the code. Reference specific files, functions, and code patterns when relevant.`;
+          }
+
           await streamText({
             model,
             system: systemPrompt,
@@ -415,6 +504,13 @@ Use the above context to provide more accurate and relevant suggestions.`;
       cache_hit: false,
       userId: request.user?.id,
       userRole: request.user?.role,
+      ...(ragMetadata && {
+        rag: {
+          enabled: true,
+          chunks: ragMetadata.totalChunks,
+          avgSimilarity: ragMetadata.avgSimilarity
+        }
+      }),
       ...(enhancedContext && {
         context_enhancement: {
           enabled: true,
