@@ -139,8 +139,9 @@ describe('CostBreakdown Component', () => {
   })
 
   test('handles loading state', () => {
-    render(<CostBreakdown />)
-    expect(screen.getByText(/loading/i)).toBeInTheDocument()
+    const { container } = render(<CostBreakdown />)
+    // Check for skeleton loading UI (component renders animate-pulse div, not "loading" text)
+    expect(container.querySelector('.animate-pulse')).toBeInTheDocument()
   })
 
   test('handles error state', async () => {
@@ -149,7 +150,8 @@ describe('CostBreakdown Component', () => {
     render(<CostBreakdown />)
 
     await waitFor(() => {
-      expect(screen.getByText(/failed to load/i)).toBeInTheDocument()
+      // Match actual error message from component: "Error Loading Cost Data"
+      expect(screen.getByText(/error loading cost data/i)).toBeInTheDocument()
     })
   })
 
