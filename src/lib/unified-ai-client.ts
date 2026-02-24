@@ -12,6 +12,7 @@ import {
   CircuitOpenError,
 } from '@/lib/utils/retry'
 import { getDefaultOfflineDetector, NetworkStatus } from '@/lib/offline-mode'
+import { recordAIOperation, recordAIError } from '@/lib/monitoring/datadog-ai-metrics'
 
 // Retry configuration for rate limiting (429) errors
 const RETRY_CONFIG = {
@@ -542,9 +543,13 @@ export class UnifiedAIClient {
       presencePenalty = 0
     } = options
 
+    const startTime = Date.now()
+    let operationSuccess = false
+    let operationError: string | undefined
+
     try {
       // Use circuit breaker with retry for resilient API calls
-      return await aiProviderCircuitBreakers.execute(
+      const result = await aiProviderCircuitBreakers.execute(
         providerId,
         () => retryWithBackoff(
           async () => {
@@ -599,9 +604,52 @@ export class UnifiedAIClient {
         )
         // Note: Circuit breaker fallback is handled in the catch block below
       )
+
+      // Record successful operation metrics
+      operationSuccess = true
+      const durationMs = Date.now() - startTime
+      recordAIOperation({
+        provider: providerId,
+        model: selectedModel,
+        operation: 'chat',
+        durationMs,
+        tokensInput: result.usage?.promptTokens,
+        tokensOutput: result.usage?.completionTokens,
+        tokensTotal: result.usage?.totalTokens,
+        success: true
+      })
+
+      return result
     } catch (error) {
       // Update offline status if network error
       this.updateOfflineStatus(providerId, error)
+
+      // Determine error type for metrics
+      if (error instanceof CircuitOpenError) {
+        operationError = 'circuit_open'
+      } else if (error instanceof RetryExhaustedError) {
+        operationError = 'retries_exhausted'
+      } else if (isRateLimitError(error)) {
+        operationError = 'rate_limit'
+      } else if (isNetworkError(error)) {
+        operationError = 'network_error'
+      } else if (error instanceof OpenAI.APIError) {
+        operationError = `api_error_${error.status || 'unknown'}`
+      } else {
+        operationError = 'unknown_error'
+      }
+
+      // Record failed operation metrics
+      const durationMs = Date.now() - startTime
+      recordAIOperation({
+        provider: providerId,
+        model: selectedModel,
+        operation: 'chat',
+        durationMs,
+        success: false,
+        errorType: operationError,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      })
 
       log.error('Chat request failed', {
         providerId,
@@ -681,7 +729,12 @@ export class UnifiedAIClient {
     }
 
     // Retry loop for rate limit (429) errors with exponential backoff
+    const startTime = Date.now()
     let lastError: Error | unknown
+    let tokensInput = 0
+    let tokensOutput = 0
+    let tokensTotal = 0
+
     for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
       try {
         const stream = await client.chat.completions.create({
@@ -699,6 +752,13 @@ export class UnifiedAIClient {
           const choice = chunk.choices[0]
           const content = choice?.delta?.content || ''
 
+          // Accumulate token usage from chunks
+          if (chunk.usage) {
+            tokensInput = chunk.usage.prompt_tokens || tokensInput
+            tokensOutput = chunk.usage.completion_tokens || tokensOutput
+            tokensTotal = chunk.usage.total_tokens || tokensTotal
+          }
+
           yield {
             content,
             done: choice?.finish_reason !== null,
@@ -715,8 +775,22 @@ export class UnifiedAIClient {
             break
           }
         }
-        // Stream completed successfully, clear offline status and exit retry loop
+
+        // Stream completed successfully, clear offline status and record metrics
         this.clearOfflineStatus(providerId)
+        const durationMs = Date.now() - startTime
+
+        recordAIOperation({
+          provider: providerId,
+          model: selectedModel,
+          operation: 'stream',
+          durationMs,
+          tokensInput: tokensInput || undefined,
+          tokensOutput: tokensOutput || undefined,
+          tokensTotal: tokensTotal || undefined,
+          success: true
+        })
+
         return
       } catch (error) {
         lastError = error
@@ -742,6 +816,33 @@ export class UnifiedAIClient {
 
     // Update offline status if network error
     this.updateOfflineStatus(providerId, lastError)
+
+    // Determine error type for metrics
+    let operationError: string
+    if (isRateLimitError(lastError)) {
+      operationError = 'rate_limit'
+    } else if (isNetworkError(lastError)) {
+      operationError = 'network_error'
+    } else if (lastError instanceof OpenAI.APIError) {
+      operationError = `api_error_${lastError.status || 'unknown'}`
+    } else {
+      operationError = 'unknown_error'
+    }
+
+    // Record failed stream metrics
+    const durationMs = Date.now() - startTime
+    recordAIOperation({
+      provider: providerId,
+      model: selectedModel,
+      operation: 'stream',
+      durationMs,
+      tokensInput: tokensInput || undefined,
+      tokensOutput: tokensOutput || undefined,
+      tokensTotal: tokensTotal || undefined,
+      success: false,
+      errorType: operationError,
+      errorMessage: lastError instanceof Error ? lastError.message : String(lastError)
+    })
 
     log.error('Stream request failed after all retries', {
       providerId,
