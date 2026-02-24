@@ -246,6 +246,11 @@ async function getAIMetrics(
   // Format model breakdown
   const modelBreakdown = Array.from(modelStats.entries()).map(([model, stats]) => {
     const sortedModelLatencies = stats.latencies.sort((a, b) => a - b)
+    const avgCostPerRequest = stats.requestCount > 0 ? stats.cost / stats.requestCount : 0
+    const avgCostPerToken = (stats.inputTokens + stats.outputTokens) > 0
+      ? stats.cost / (stats.inputTokens + stats.outputTokens)
+      : 0
+
     return {
       model,
       requestCount: stats.requestCount,
@@ -257,9 +262,19 @@ async function getAIMetrics(
       avgLatency: stats.latencies.length > 0
         ? stats.latencies.reduce((a, b) => a + b, 0) / stats.latencies.length
         : 0,
-      p95Latency: calculatePercentile(sortedModelLatencies, 95)
+      p95Latency: calculatePercentile(sortedModelLatencies, 95),
+      // Add derived cost fields
+      avgCostPerRequest,
+      avgCostPerToken,
+      costPercentage: 0  // Will be calculated below
     }
   }).sort((a, b) => b.requestCount - a.requestCount) // Sort by request count desc
+
+  // Calculate cost percentages after all models are processed
+  const totalModelCost = modelBreakdown.reduce((sum, m) => sum + m.totalCost, 0)
+  modelBreakdown.forEach(m => {
+    m.costPercentage = totalModelCost > 0 ? (m.totalCost / totalModelCost) * 100 : 0
+  })
 
   // Format provider breakdown
   const providerBreakdown = Array.from(providerStats.entries()).map(([provider, stats]) => ({
