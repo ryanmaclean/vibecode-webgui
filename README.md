@@ -113,6 +113,8 @@ This single command will:
 
 📚 **For detailed quickstart flow and troubleshooting**, see [QUICK_START.md](docs/QUICK_START.md)
 
+> **🤝 Want to contribute?** See our [Contributing Guide](CONTRIBUTING.md) for development setup, coding standards, and PR workflows.
+
 ### 1. Install Dependencies
 ```bash
 brew install vfkit
