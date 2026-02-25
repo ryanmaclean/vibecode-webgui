@@ -57,7 +57,7 @@ jobs:
           cd infra/tundra-dome
           for file in $(find . -name "*.yaml" -o -name "*.yml"); do
             echo "Validating: $file"
-            python -c "import yaml; yaml.safe_load(open('$file'))" || exit 1
+            python -c "import yaml; list(yaml.safe_load_all(open('$file')))" || exit 1
           done
 
       - name: Validate CRD schemas
@@ -193,9 +193,9 @@ jobs:
           pip install pyyaml
           cd infra/tundra-dome
 
-          # Check that all YAML is valid
+          # Check that all YAML is valid (supports multi-document YAML)
           for file in $(find . -name "*.yaml" -o -name "*.yml"); do
-            python -c "import yaml; yaml.safe_load(open('$file'))" || exit 1
+            python -c "import yaml; list(yaml.safe_load_all(open('$file')))" || exit 1
           done
 
           # Check that scripts are syntactically valid
