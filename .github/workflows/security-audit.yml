@@ -138,7 +138,25 @@ jobs:
               # Show top 5 vulnerabilities
               echo "" >> $GITHUB_STEP_SUMMARY
               echo "### Top Vulnerabilities" >> $GITHUB_STEP_SUMMARY
-              jq -r '.vulnerabilities | to_entries | sort_by(.value.severity) | reverse | .[:5] | .[] | "- **\(.key)**: \(.value.severity) - \(.value.via[0].title // "No title")"' audit-results.json >> $GITHUB_STEP_SUMMARY
+              jq -r '
+                .vulnerabilities
+                | to_entries
+                | sort_by(.value.severity)
+                | reverse
+                | .[:5]
+                | .[]
+                | "- **\(.key)**: \(.value.severity) - " +
+                  (
+                    (
+                      .value.via
+                      | if type == "array" then .[0] else null end
+                    ) as $via0
+                    | if ($via0 | type) == "object" then ($via0.title // "No title")
+                      elif ($via0 | type) == "string" then $via0
+                      else "No title"
+                      end
+                  )
+              ' audit-results.json >> $GITHUB_STEP_SUMMARY
             else
               echo "⚠️ Moderate or low vulnerabilities found" >> $GITHUB_STEP_SUMMARY
               echo "status=warning" >> $GITHUB_OUTPUT
