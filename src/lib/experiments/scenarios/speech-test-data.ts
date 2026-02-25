@@ -5,8 +5,7 @@
  * cost, and accuracy metrics for both GPT-4 and GPT-4.1 variants.
  */
 
-import { warehouse } from '../warehouse';
-import { SPEECH_TO_TEXT_EXPERIMENT } from './speech-to-text';
+const SPEECH_TO_TEXT_EXPERIMENT_KEY = 'speech_to_text_gpt4_vs_gpt41';
 
 // ==================== TYPES ====================
 
@@ -126,7 +125,8 @@ export const TEST_TRANSCRIPTIONS: SyntheticTranscription[] = [
  * @param count - Number of synthetic assignments to generate
  */
 export async function generateSyntheticData(count: number): Promise<void> {
-  const { experimentKey } = SPEECH_TO_TEXT_EXPERIMENT;
+  const experimentKey = SPEECH_TO_TEXT_EXPERIMENT_KEY;
+  const { warehouse } = await import('../warehouse');
 
   console.log(`Generating ${count} synthetic experiment records...`);
 
@@ -157,6 +157,7 @@ async function generateBatch(
   count: number,
   offset: number
 ): Promise<void> {
+  const { warehouse } = await import('../warehouse');
   const promises: Promise<void>[] = [];
 
   for (let i = 0; i < count; i++) {

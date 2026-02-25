@@ -5,6 +5,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { Suspense } from 'react'
 import { PluginMarketplace } from '@/components/plugins/PluginMarketplace'
 import { type PluginCardData } from '@/components/plugins/PluginCard'
 
@@ -112,12 +113,14 @@ export default function PluginsPage() {
         </div>
 
         {/* Marketplace Component */}
-        <PluginMarketplace
-          onPluginInstall={handlePluginInstall}
-          onPluginUninstall={handlePluginUninstall}
-          onPluginSelect={handlePluginSelect}
-          installedPluginIds={installedPluginIds}
-        />
+        <Suspense fallback={<div className="text-sm text-gray-500 dark:text-gray-400">Loading marketplace...</div>}>
+          <PluginMarketplace
+            onPluginInstall={handlePluginInstall}
+            onPluginUninstall={handlePluginUninstall}
+            onPluginSelect={handlePluginSelect}
+            installedPluginIds={installedPluginIds}
+          />
+        </Suspense>
       </div>
     </div>
   )

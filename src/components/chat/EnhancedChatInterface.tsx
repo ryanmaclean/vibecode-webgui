@@ -1,13 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare, Wand2, FileText, Image, Paperclip, Search, Zap, Globe, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
 import { ContextViewer } from '@/components/ai/ContextViewer'
+import ModelDisplay from '@/components/ai/ModelDisplay'
+import { modelRegistry } from '@/lib/ai/models/model-registry'
+import { StreamTracker, type StreamMetadata } from '@/lib/ai/stream-utils'
+import type { ModelProfile } from '@/types/model-comparison'
 // import { logger } from '@/lib/logger';
 interface Message {
   id: string

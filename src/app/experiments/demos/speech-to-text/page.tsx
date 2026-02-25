@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { TranscriptionResult, ExperimentSummary } from '@/lib/experiments/scenarios/speech-to-text';
-import { TEST_TRANSCRIPTIONS } from '@/lib/experiments/scenarios/speech-test-data';
+import { TEST_TRANSCRIPTIONS } from '@/lib/experiments/scenarios/speech-test-transcriptions';
 
 export default function SpeechToTextDemo() {
   const [userId, setUserId] = useState<string>('');
