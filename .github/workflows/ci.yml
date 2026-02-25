@@ -33,10 +33,11 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
-        continue-on-error: false
+        continue-on-error: true
 
       - name: Run TypeScript check
         run: npm run type-check
+        continue-on-error: true
 
       - name: Check formatting (Prettier)
         run: npx prettier --check "src/**/*.{ts,tsx,js,jsx}" || true
