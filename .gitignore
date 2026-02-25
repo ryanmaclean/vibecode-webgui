@@ -292,7 +292,7 @@ VibeCode-Unified-*.txt
 /swift/
 
 # Build caches
-tsconfig.tsbuildinfo
+*.tsbuildinfo
 .*.bun-build
 
 # Test outputs

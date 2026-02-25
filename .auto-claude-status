@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "059-add-vector-embedding-similarity-explorer",
+  "spec": "070-start-cleanup-of-repo-there-are-many-file-and-fold",
   "state": "building",
   "subtasks": {
-    "completed": 2,
-    "total": 5,
+    "completed": 12,
+    "total": 19,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Vector Explorer Page",
+    "current": "Create Experiments Documentation",
     "id": null,
-    "total": 1
+    "total": 3
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 4,
-    "started_at": "2026-02-21T20:22:35.382132"
+    "number": 13,
+    "started_at": "2026-02-24T00:16:12.936857"
   },
-  "last_update": "2026-02-21T20:33:01.080723"
+  "last_update": "2026-02-24T00:38:09.316817"
 }
