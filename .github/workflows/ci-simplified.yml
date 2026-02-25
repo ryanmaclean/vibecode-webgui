@@ -49,12 +49,14 @@ jobs:
           fi
 
       - name: Install dependencies
-        uses: nick-fields/retry-action@v2
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          retry_wait_seconds: 10
-          command: npm install --legacy-peer-deps
+        run: |
+          for i in 1 2 3; do
+            npm install --legacy-peer-deps && exit 0
+            echo "Install attempt $i failed; retrying..."
+            sleep 10
+          done
+          echo "Dependency install failed after retries"
+          exit 1
 
       - name: Run security audit
         run: npm audit --audit-level=moderate
@@ -140,12 +142,14 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        uses: nick-fields/retry-action@v2
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          retry_wait_seconds: 10
-          command: npm ci --legacy-peer-deps
+        run: |
+          for i in 1 2 3; do
+            npm ci --legacy-peer-deps && exit 0
+            echo "Install attempt $i failed; retrying..."
+            sleep 10
+          done
+          echo "Dependency install failed after retries"
+          exit 1
 
       - name: Setup test environment
         run: |
@@ -237,12 +241,14 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        uses: nick-fields/retry-action@v2
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          retry_wait_seconds: 10
-          command: npm ci --legacy-peer-deps
+        run: |
+          for i in 1 2 3; do
+            npm ci --legacy-peer-deps && exit 0
+            echo "Install attempt $i failed; retrying..."
+            sleep 10
+          done
+          echo "Dependency install failed after retries"
+          exit 1
 
       - name: Build project
         run: npm run build

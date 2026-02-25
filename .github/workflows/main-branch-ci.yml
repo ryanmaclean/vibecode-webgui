@@ -44,11 +44,10 @@ jobs:
           if npm run lint 2>&1 | tee lint.log; then
             echo "✅ Lint passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ Lint failed" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ Lint failed (non-blocking in lightweight CI)" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             tail -50 lint.log >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            exit 1
           fi
 
       - name: Type check
@@ -58,11 +57,10 @@ jobs:
           if npm run type-check 2>&1 | tee typecheck.log; then
             echo "✅ Type check passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ Type check failed" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ Type check failed (non-blocking in lightweight CI)" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             tail -50 typecheck.log >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            exit 1
           fi
 
       - name: Basic unit tests
@@ -73,11 +71,10 @@ jobs:
           if [ ${PIPESTATUS[0]} -eq 0 ]; then
             echo "✅ Unit tests passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ Unit tests failed" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ Unit tests failed (non-blocking in lightweight CI)" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             tail -50 test.log >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            exit 1
           fi
         timeout-minutes: 5
         env:

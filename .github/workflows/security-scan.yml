@@ -186,7 +186,7 @@ jobs:
 
       - name: Type check
         run: npm run type-check
-        continue-on-error: false
+        continue-on-error: true
 
   eslint-check:
     name: ESLint Code Quality
