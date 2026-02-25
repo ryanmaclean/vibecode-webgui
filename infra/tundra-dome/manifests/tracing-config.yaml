@@ -1,0 +1,37 @@
+# Tundra Dome Tracing Configuration
+# Shared ConfigMap for Datadog APM + Data Streams Monitoring (DSM) env vars.
+# Reference in pod specs via: envFrom: - configMapRef: name: tundra-dome-tracing
+# Complements tundra-dome-config (Kafka + service settings).
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tundra-dome-tracing
+  namespace: tundra-dome
+  labels:
+    app.kubernetes.io/part-of: tundra-dome
+    app.kubernetes.io/component: observability
+data:
+  # Datadog APM
+  DD_TRACE_ENABLED: "true"
+  DD_LOGS_INJECTION: "true"
+  DD_RUNTIME_METRICS_ENABLED: "true"
+  DD_PROFILING_ENABLED: "false"
+
+  # Data Streams Monitoring (DSM)
+  DD_DATA_STREAMS_ENABLED: "true"
+
+  # Service metadata tags applied to all tundra-dome services.
+  # Individual deployments may override DD_SERVICE and DD_VERSION.
+  DD_VERSION: "0.1.0"
+  DD_ENV: "kind"
+  DD_SITE: "datadoghq.com"
+
+  # Agent connectivity (resolves via in-cluster DNS)
+  DD_AGENT_HOST: "datadog-agent.datadog.svc.cluster.local"
+  DD_TRACE_AGENT_PORT: "8126"
+  DD_DOGSTATSD_PORT: "8125"
+
+  # Shared resource tags for all tundra-dome spans/metrics.
+  # Format: key:value,key:value (no spaces)
+  DD_TAGS: "rig:mbp_m1,cluster:tundra-dome,component:kafka-dsm"
