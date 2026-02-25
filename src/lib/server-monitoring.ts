@@ -1,6 +1,6 @@
 /**
  * Server-side monitoring and logging for VibeCode WebGUI
- * Integrates Datadog APM tracing, Winston logging, and custom metrics
+ * Integrates Datadog APM tracing, Pino logging, and custom metrics
  *
  * This module now supports dependency injection for better testability:
  * - Use `setMetricsProvider()` to inject a custom metrics provider
@@ -8,7 +8,7 @@
  * - Default behavior remains unchanged for backward compatibility
  */
 
-import { createLogger, format, transports } from 'winston';
+import { logger as pinoLogger, createLogger as createPinoLogger } from '@/lib/logger';
 import {
   IMetricsProvider,
   MetricTags,
@@ -47,63 +47,13 @@ if (!isTracingDisabled) {
   console.info('Datadog APM tracing disabled via DD_ENABLED=false');
 }
 
-// Custom Winston formatter for structured logging
-// Define different formats for production and development
-const developmentFormat = format.combine(
-  format.colorize(),
-  format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
-  format.printf(({ timestamp, level, message, stack, ...meta }) => {
-    const metaStr = Object.keys(meta).length ? `\n${JSON.stringify(meta, null, 2)}` : '';
-    const stackStr = stack ? `\n${stack}` : '';
-    return `${timestamp} ${level}: ${message}${stackStr}${metaStr}`;
-  })
-);
-
-const productionFormat = format.combine(
-  format.timestamp(),
-  format.errors({ stack: true }),
-  format.json()
-);
-
-// Create logger instance
-const logger = createLogger({
-  level: process.env.LOG_LEVEL || 'info',
-  // Use JSON format in production, and human-readable in development
-  format: process.env.NODE_ENV === 'production' ? productionFormat : developmentFormat,
-  defaultMeta: {
-    service: 'vibecode-webgui',
-    environment: process.env.NODE_ENV || 'development',
-    version: process.env.APP_VERSION || '1.0.0'
-  },
-  transports: [
-    // Console transport is the primary target for containerized environments
-    new transports.Console(),
-
-    // File transports for persistent logging, always in JSON format
-    new transports.File({
-      filename: 'logs/error.log',
-      level: 'error',
-      format: productionFormat,
-      maxsize: 50 * 1024 * 1024, // 50MB
-      maxFiles: 5,
-      tailable: true
-    }),
-
-    new transports.File({
-      filename: 'logs/combined.log',
-      maxsize: 100 * 1024 * 1024, // 100MB
-      maxFiles: 10,
-      tailable: true
-    })
-  ],
-  exceptionHandlers: [
-    new transports.File({ filename: 'logs/exceptions.log' })
-  ],
-  rejectionHandlers: [
-    new transports.File({ filename: 'logs/rejections.log' })
-  ],
-  exitOnError: false
-})
+// Use the centralized Pino logger with server monitoring context
+const logger = createPinoLogger({
+  module: 'server-monitoring',
+  service: 'vibecode-webgui',
+  environment: process.env.NODE_ENV || 'development',
+  version: process.env.APP_VERSION || '1.0.0'
+});
 
 // =============================================================================
 // MetricsCollector with Dependency Injection Support

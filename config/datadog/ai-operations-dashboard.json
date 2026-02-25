@@ -1,0 +1,614 @@
+{
+  "title": "VibeCode AI Operations Monitoring",
+  "description": "Real-time monitoring of AI model usage, token consumption, response latency, error rates, and cost tracking for VibeCode AI operations",
+  "widgets": [
+    {
+      "id": "ai-overview-header",
+      "definition": {
+        "type": "note",
+        "content": "# AI Operations Overview\nMonitor AI model performance, costs, and usage patterns in real-time.",
+        "background_color": "blue",
+        "font_size": "16",
+        "text_align": "center",
+        "vertical_align": "center",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "bottom",
+        "has_padding": true
+      }
+    },
+    {
+      "id": "total-requests-today",
+      "definition": {
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai.operation.count{*}.as_count()",
+            "aggregator": "sum"
+          }
+        ],
+        "title": "Total AI Requests (24h)",
+        "title_size": "16",
+        "title_align": "left",
+        "autoscale": true,
+        "precision": 0
+      }
+    },
+    {
+      "id": "total-cost-today",
+      "definition": {
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai.cost{*}",
+            "aggregator": "sum"
+          }
+        ],
+        "title": "Total AI Cost (24h)",
+        "title_size": "16",
+        "title_align": "left",
+        "custom_unit": "$",
+        "precision": 4
+      }
+    },
+    {
+      "id": "error-rate",
+      "definition": {
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "(sum:vibecode.ai.errors{*}.as_count() / sum:vibecode.ai.operation.count{*}.as_count()) * 100",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 10,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">=",
+                "value": 5,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<",
+                "value": 5,
+                "palette": "white_on_green"
+              }
+            ]
+          }
+        ],
+        "title": "Error Rate (24h)",
+        "title_size": "16",
+        "title_align": "left",
+        "custom_unit": "%",
+        "precision": 2
+      }
+    },
+    {
+      "id": "avg-latency-p95",
+      "definition": {
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "p95:vibecode.ai.operation.duration{*}",
+            "aggregator": "avg"
+          }
+        ],
+        "title": "Response Latency (p95)",
+        "title_size": "16",
+        "title_align": "left",
+        "custom_unit": "ms",
+        "precision": 0
+      }
+    },
+    {
+      "id": "token-usage-timeseries",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai.tokens.total{*} by {model}.rollup(sum, 300)",
+            "display_type": "area",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Token Usage by Model (5min rollup)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value", "sum"],
+        "yaxis": {
+          "label": "Tokens",
+          "scale": "linear"
+        }
+      }
+    },
+    {
+      "id": "latency-histogram",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.ai.operation.duration{*} by {model}",
+            "display_type": "line",
+            "style": {
+              "palette": "cool",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "avg:vibecode.ai.operation.duration{*} by {model}",
+                "alias_name": "Avg Latency"
+              }
+            ]
+          },
+          {
+            "q": "p50:vibecode.ai.operation.duration{*} by {model}",
+            "display_type": "line",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "thin"
+            },
+            "metadata": [
+              {
+                "expression": "p50:vibecode.ai.operation.duration{*} by {model}",
+                "alias_name": "p50"
+              }
+            ]
+          },
+          {
+            "q": "p95:vibecode.ai.operation.duration{*} by {model}",
+            "display_type": "line",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "p95:vibecode.ai.operation.duration{*} by {model}",
+                "alias_name": "p95"
+              }
+            ]
+          },
+          {
+            "q": "p99:vibecode.ai.operation.duration{*} by {model}",
+            "display_type": "line",
+            "style": {
+              "palette": "red",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "p99:vibecode.ai.operation.duration{*} by {model}",
+                "alias_name": "p99"
+              }
+            ]
+          }
+        ],
+        "title": "Response Latency Distribution by Model",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value"],
+        "yaxis": {
+          "label": "Duration (ms)",
+          "scale": "linear"
+        }
+      }
+    },
+    {
+      "id": "cost-breakdown-by-model",
+      "definition": {
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(sum:vibecode.ai.cost{*} by {model}, 10, 'sum', 'desc')",
+            "style": {
+              "palette": "dog_classic"
+            }
+          }
+        ],
+        "title": "Top Models by Cost (24h)",
+        "title_size": "16",
+        "title_align": "left"
+      }
+    },
+    {
+      "id": "cost-breakdown-by-provider",
+      "definition": {
+        "type": "sunburst",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai.cost{*} by {provider,model}.rollup(sum)"
+          }
+        ],
+        "title": "Cost Breakdown: Provider > Model",
+        "title_size": "16",
+        "title_align": "left"
+      }
+    },
+    {
+      "id": "cost-trend-over-time",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai.cost{*} by {provider}.rollup(sum, 3600)",
+            "display_type": "bars",
+            "style": {
+              "palette": "purple",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Hourly AI Cost by Provider",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value", "sum"],
+        "yaxis": {
+          "label": "Cost ($)",
+          "scale": "linear"
+        }
+      }
+    },
+    {
+      "id": "request-volume-heatmap",
+      "definition": {
+        "type": "heatmap",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai.operation.count{*} by {model}.rollup(sum, 300)"
+          }
+        ],
+        "title": "Request Volume Heatmap by Model",
+        "title_size": "16",
+        "title_align": "left",
+        "yaxis": {
+          "label": "Model"
+        }
+      }
+    },
+    {
+      "id": "error-details-by-type",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai.errors{*} by {error_type}.as_count()",
+            "display_type": "bars",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Errors by Type Over Time",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value", "sum"]
+      }
+    },
+    {
+      "id": "error-breakdown-by-model",
+      "definition": {
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(sum:vibecode.ai.errors{*} by {model,provider}.as_count(), 10, 'sum', 'desc')"
+          }
+        ],
+        "title": "Top Error Sources (Model + Provider)",
+        "title_size": "16",
+        "title_align": "left"
+      }
+    },
+    {
+      "id": "tokens-input-vs-output",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai.tokens.input{*}.rollup(sum, 300)",
+            "display_type": "area",
+            "style": {
+              "palette": "blue",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:vibecode.ai.tokens.input{*}.rollup(sum, 300)",
+                "alias_name": "Input Tokens"
+              }
+            ]
+          },
+          {
+            "q": "sum:vibecode.ai.tokens.output{*}.rollup(sum, 300)",
+            "display_type": "area",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:vibecode.ai.tokens.output{*}.rollup(sum, 300)",
+                "alias_name": "Output Tokens"
+              }
+            ]
+          }
+        ],
+        "title": "Token Usage: Input vs Output",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value", "sum"],
+        "yaxis": {
+          "label": "Tokens",
+          "scale": "linear"
+        }
+      }
+    },
+    {
+      "id": "provider-health-status",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.ai.provider.health{*} by {provider}",
+            "display_type": "line",
+            "style": {
+              "palette": "semantic",
+              "line_type": "solid",
+              "line_width": "thick"
+            }
+          }
+        ],
+        "title": "Provider Health Status (1=healthy, 0.5=degraded, 0=down)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value"],
+        "yaxis": {
+          "label": "Health",
+          "scale": "linear",
+          "min": "0",
+          "max": "1"
+        }
+      }
+    },
+    {
+      "id": "rate-limit-utilization",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.ai.rate_limit.utilization{*} by {provider,model}",
+            "display_type": "line",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Rate Limit Utilization by Provider & Model",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value"],
+        "yaxis": {
+          "label": "Utilization (%)",
+          "scale": "linear",
+          "min": "0",
+          "max": "100"
+        }
+      }
+    },
+    {
+      "id": "operations-by-type",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai.operation.count{*} by {operation}.as_count()",
+            "display_type": "bars",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Operations by Type (completion, chat, stream, embedding)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value", "sum"]
+      }
+    },
+    {
+      "id": "success-vs-error-requests",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai.operation.count{status:success}.as_count()",
+            "display_type": "area",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:vibecode.ai.operation.count{status:success}.as_count()",
+                "alias_name": "Successful Requests"
+              }
+            ]
+          },
+          {
+            "q": "sum:vibecode.ai.operation.count{status:error}.as_count()",
+            "display_type": "area",
+            "style": {
+              "palette": "red",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:vibecode.ai.operation.count{status:error}.as_count()",
+                "alias_name": "Failed Requests"
+              }
+            ]
+          }
+        ],
+        "title": "Request Status: Success vs Error",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value", "sum"]
+      }
+    },
+    {
+      "id": "model-usage-distribution",
+      "definition": {
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(sum:vibecode.ai.operation.count{*} by {model}.as_count(), 10, 'sum', 'desc')"
+          }
+        ],
+        "title": "Top Models by Request Volume (24h)",
+        "title_size": "16",
+        "title_align": "left"
+      }
+    },
+    {
+      "id": "provider-usage-distribution",
+      "definition": {
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(sum:vibecode.ai.operation.count{*} by {provider}.as_count(), 10, 'sum', 'desc')"
+          }
+        ],
+        "title": "Top Providers by Request Volume (24h)",
+        "title_size": "16",
+        "title_align": "left"
+      }
+    },
+    {
+      "id": "cost-per-request",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "(sum:vibecode.ai.cost{*} by {model} / sum:vibecode.ai.operation.count{*} by {model}.as_count()) * 1000",
+            "display_type": "line",
+            "style": {
+              "palette": "purple",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Cost per 1000 Requests by Model",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value"],
+        "yaxis": {
+          "label": "Cost ($)",
+          "scale": "linear"
+        }
+      }
+    },
+    {
+      "id": "avg-tokens-per-request",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai.tokens.total{*} by {model} / sum:vibecode.ai.operation.count{*} by {model}.as_count()",
+            "display_type": "line",
+            "style": {
+              "palette": "cool",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Average Tokens per Request by Model",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value"],
+        "yaxis": {
+          "label": "Tokens",
+          "scale": "linear"
+        }
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "env",
+      "default": "*",
+      "prefix": "env",
+      "available_values": []
+    },
+    {
+      "name": "service",
+      "default": "vibecode-webgui",
+      "prefix": "service",
+      "available_values": []
+    },
+    {
+      "name": "provider",
+      "default": "*",
+      "prefix": "provider",
+      "available_values": []
+    },
+    {
+      "name": "model",
+      "default": "*",
+      "prefix": "model",
+      "available_values": []
+    },
+    {
+      "name": "operation",
+      "default": "*",
+      "prefix": "operation",
+      "available_values": []
+    }
+  ],
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "notify_list": [],
+  "reflow_type": "fixed"
+}

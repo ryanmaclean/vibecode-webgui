@@ -22,8 +22,9 @@ if (isBuilding) {
   // Create a mock Prisma client for build time
   prismaClient = {} as PrismaClient
 } else {
-  // Add DBM tags to the database URL
-  const dbUrl = new URL(process.env.DATABASE_URL || 'postgresql://localhost:5432/placeholder');
+  // Add DBM tags to the database URL (Prisma 5+ uses env vars, not constructor datasources)
+  const baseUrl = process.env.DATABASE_URL || 'postgresql://localhost:5432/placeholder'
+  const dbUrl = new URL(baseUrl);
   if (!dbUrl.searchParams.has('application_name')) {
     dbUrl.searchParams.set('application_name', 'vibecode-webgui');
   }
@@ -31,15 +32,13 @@ if (isBuilding) {
     dbUrl.searchParams.set('options', `-c datadog.tags=env:${process.env.NODE_ENV},service:vibecode-webgui,version:1.0.0`);
   }
 
+  // Set DATABASE_URL for Prisma client (Prisma 5+ requires this)
+  process.env.DATABASE_URL = dbUrl.toString()
+
   prismaClient = globalForPrisma.prisma ?? new PrismaClient({
-    log: process.env.NODE_ENV === 'development' 
+    log: process.env.NODE_ENV === 'development'
       ? ['query', 'info', 'warn', 'error']
-      : ['error'],
-    datasources: {
-      db: {
-        url: dbUrl.toString(),
-      },
-    },
+      : ['error']
   })
 }
 
@@ -177,6 +176,38 @@ export async function logAIRequest(data: {
   if (isBuilding) {
     return null
   }
+
+  // Record latency histogram if duration is provided
+  if (data.duration_ms !== undefined) {
+    metrics.histogram('ai.request.duration', data.duration_ms, {
+      service: 'vibecode-webgui',
+      request_type: data.request_type,
+      model: data.model,
+      provider: data.provider,
+      status: data.status
+    })
+  }
+
+  // Record AI request count
+  metrics.increment('ai.request.count', {
+    service: 'vibecode-webgui',
+    request_type: data.request_type,
+    model: data.model,
+    provider: data.provider,
+    status: data.status
+  })
+
+  // Record error details if present
+  if (data.error) {
+    metrics.increment('ai.request.error', {
+      service: 'vibecode-webgui',
+      request_type: data.request_type,
+      model: data.model,
+      provider: data.provider,
+      error_type: data.status === 'failed' ? 'request_failed' : 'unknown_error'
+    })
+  }
+
   return prisma.aIRequest.create({
     data: {
       ...data,
