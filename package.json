@@ -280,7 +280,7 @@
     "@babel/preset-env": "7.29.0",
     "@babel/preset-react": "7.28.5",
     "@babel/preset-typescript": "7.28.5",
-    "@datadog/browser-rum": "6.28.0",
+    "@datadog/browser-rum": "6.28.1",
     "@datadog/datadog-ci": "5.7.0",
     "@eslint/eslintrc": "3.3.4",
     "@opentelemetry/exporter-jaeger": "2.5.1",
