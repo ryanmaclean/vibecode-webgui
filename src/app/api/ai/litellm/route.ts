@@ -1,5 +1,3 @@
-/* eslint-disable no-console, @typescript-eslint/no-explicit-any, no-case-declarations, no-useless-catch */
-
 // LiteLLM API Routes for VibeCode
 // ===============================
 
