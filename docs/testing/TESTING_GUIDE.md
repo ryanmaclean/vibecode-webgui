@@ -551,13 +551,15 @@ Coverage thresholds are configured in `jest.config.js`:
 ```javascript
 coverageThreshold: {
   global: {
-    statements: 70,
-    branches: 65,
-    functions: 70,
-    lines: 70
+    branches: 30,   // Next milestone: 30% target
+    functions: 30,  // Next milestone: 30% target
+    lines: 30,      // Next milestone: 30% target
+    statements: 30, // Next milestone: 30% target
   }
 }
 ```
+
+> **Note**: We're following a progressive roadmap to reach 80% coverage. See [COVERAGE_STRATEGY.md](./COVERAGE_STRATEGY.md) for the complete roadmap and milestones.
 
 ### Generating Coverage Reports
 
