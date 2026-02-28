@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceLogger } from '@/lib/logging';
-import { getDatabaseTraceContext } from '@/lib/monitoring/opentelemetry';
+// import { getDatabaseTraceContext } from '@/lib/monitoring/opentelemetry'; // TODO: Function not implemented yet
 
 const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'health-db' });
 
@@ -60,42 +60,6 @@ interface PoolStatus {
   inUse: number;
   maxSize: number;
   available: number;
-}
-
-/**
- * Database health check endpoint
- * 
- * Returns:
- * - status: "ok" | "error"
- * - message: String message about database status
- * - details: Object with connection details
- * - poolStatus: Connection pool information
- * - latency: Connection latency in ms
- */
-
-interface PgvectorStatus {
-  installed: boolean;
-  version: string | null;
-}
-
-interface EmbeddingsStats {
-  total_embeddings: number;
-  avg_content_size?: number;
-  latest_embedding?: Date;
-  error?: string;
-}
-
-interface DbStats {
-  active_connections: number;
-  transactions_committed: number;
-  transactions_rolled_back: number;
-  blocks_read: number;
-  blocks_hit: number;
-  rows_returned: number;
-  rows_fetched: number;
-  rows_inserted: number;
-  rows_updated: number;
-  rows_deleted: number;
 }
 
 /**
@@ -276,15 +240,16 @@ export async function GET(request: NextRequest) {
     const latency = endTime - startTime;
 
     // Get trace context for correlation
-    const traceContext = getDatabaseTraceContext();
+    // TODO: Re-enable when getDatabaseTraceContext is implemented
+    // const traceContext = getDatabaseTraceContext();
 
     const response = {
       status: 'ok',
       message: 'Database connection healthy',
       latency: `${latency}ms`,
       timestamp: new Date().toISOString(),
-      trace_id: traceContext.trace_id,
-      span_id: traceContext.span_id,
+      // trace_id: traceContext.trace_id,
+      // span_id: traceContext.span_id,
       database: {
         name: dbInfo?.db_name,
         user: dbInfo?.user_name,
