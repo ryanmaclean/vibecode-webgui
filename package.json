@@ -13,6 +13,7 @@
     "start:kiosk": "node chromium-kiosk/launcher.js",
     "start:next": "cross-env NEXT_TELEMETRY_DISABLED=1 next start",
     "postinstall": "cross-env NEXT_TELEMETRY_DISABLED=1 node scripts/ensure-native-binaries.js",
+    "prepare": "npx husky install",
     "setup": "node scripts/setup-development.js",
     "dev": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev",
     "dev:simple": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev",
