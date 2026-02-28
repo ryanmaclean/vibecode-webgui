@@ -2,7 +2,7 @@
 
 > **📌 Canonical Observability Guide**: This is the official and authoritative guide for observability tooling in VibeCode. For all monitoring, tracing, and observability decisions, always refer to this guide.
 
-This guide provides detailed guidance on VibeCode's dual observability approach, documenting when to use OpenTelemetry (@vercel/otel) vs Datadog (dd-trace), how they coexist, and best practices for production monitoring.
+This guide provides detailed guidance on VibeCode's dual observability approach, documenting how OpenTelemetry and Datadog (dd-trace) work together to provide comprehensive observability for both development and production environments.
 
 ## Overview
 
@@ -12,30 +12,55 @@ VibeCode uses a **dual observability approach** that combines vendor-neutral dis
 
 | Tool | Primary Use Case | Activation | Status |
 |------|-----------------|------------|--------|
-| **@vercel/otel** | Distributed tracing, OTLP backends | `OTEL_ENABLED=true` | ✅ Optional |
+| **OpenTelemetry** | Distributed tracing, OTLP backends, Prometheus metrics | `OTEL_ENABLED=true` | ✅ Optional |
 | **dd-trace** | Production APM, custom metrics, LLM observability | `DD_API_KEY` present | ✅ Default |
 
 ---
 
-## OpenTelemetry (@vercel/otel)
+## OpenTelemetry (Manual Packages)
 
-> **When to use:** Development environments, vendor-neutral tracing, OTLP-compatible backends, multi-cloud deployments
+> **When to use:** Development environments, vendor-neutral tracing, OTLP-compatible backends, Prometheus metrics
 
 ### What is OpenTelemetry?
 
 OpenTelemetry is an open-source observability framework for cloud-native software. It provides vendor-neutral APIs, SDKs, and tools to collect distributed traces, metrics, and logs.
 
-### Why @vercel/otel?
+### Implementation Approach
 
-The `@vercel/otel` package is Vercel's official OpenTelemetry integration that provides:
+VibeCode uses **manual OpenTelemetry packages** with selective instrumentations for optimal bundle size and tree-shaking. This approach provides:
 
-- **Vendor Neutrality:** Export traces to any OTLP-compatible backend (Jaeger, Zipkin, Honeycomb, Lightstep, etc.)
+- **Vendor Neutrality:** Export traces to any OTLP-compatible backend (Jaeger, Zipkin, Datadog, etc.)
 - **Standards-Based:** Built on OpenTelemetry standard, ensuring long-term compatibility
-- **Flexible Backends:** Switch observability providers without code changes
-- **Auto-Instrumentation:** Automatically instruments Next.js, HTTP requests, and database queries
-- **Development-Friendly:** Great for local development with Jaeger or similar tools
+- **Optimized Bundle Size:** 40-60% reduction vs auto-instrumentations approach
+- **Selective Instrumentation:** Only include instrumentations you actually need
+- **Tree-Shaking Support:** Next.js optimizePackageImports enabled for smaller bundles
 
-### When to Use @vercel/otel
+### Package Structure
+
+VibeCode uses 8 carefully selected OpenTelemetry packages:
+
+```json
+{
+  "dependencies": {
+    "@opentelemetry/sdk-node": "^0.212.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.212.0",
+    "@opentelemetry/exporter-prometheus": "^0.212.0",
+    "@opentelemetry/instrumentation-http": "^0.212.0",
+    "@opentelemetry/instrumentation-express": "^0.44.0",
+    "@opentelemetry/instrumentation-fs": "^0.15.0",
+    "@opentelemetry/instrumentation-dns": "^0.55.0",
+    "@opentelemetry/instrumentation-net": "^0.56.0"
+  }
+}
+```
+
+**Key Design Decisions:**
+- ❌ **NOT using @vercel/otel** - Manual packages provide better control and tree-shaking
+- ❌ **NOT using auto-instrumentations-node** - Replaced with selective instrumentations (40-60% bundle size reduction)
+- ✅ **Selective instrumentations** - Only HTTP, Express, FS, DNS, Net (the ones actually used)
+- ✅ **Tree-shaking enabled** - Via Next.js experimental.optimizePackageImports
+
+### When to Use OpenTelemetry
 
 Use OpenTelemetry in these scenarios:
 
@@ -53,11 +78,12 @@ Use OpenTelemetry in these scenarios:
    - Using Honeycomb, Lightstep, or New Relic
    - Custom observability platforms
    - Self-hosted Jaeger or Zipkin
+   - Datadog (via OTLP endpoint)
 
-4. **Distributed Tracing Focus**
-   - Tracing requests across multiple services
-   - Service mesh observability
-   - Microservices architecture
+4. **Prometheus Metrics**
+   - Exposing metrics endpoint for Prometheus scraping
+   - Custom metrics collection
+   - Integration with existing Prometheus infrastructure
 
 ### Configuration
 
@@ -74,6 +100,9 @@ OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 # Service Identification
 OTEL_SERVICE_NAME=vibecode-webgui
 OTEL_RESOURCE_ATTRIBUTES="deployment.environment=development"
+
+# Prometheus Metrics (if not using OTLP)
+OTEL_EXPORTER_PROMETHEUS_PORT=9090
 ```
 
 #### Activation
@@ -89,6 +118,40 @@ if (process.env.OTEL_ENABLED === 'true' && process.env.NODE_ENV !== 'test') {
 
 **Note:** OpenTelemetry must be initialized **before** other instrumentation to ensure proper auto-instrumentation of the application.
 
+#### Implementation File
+
+All OpenTelemetry setup is consolidated in `src/lib/monitoring/opentelemetry-setup.ts`, which includes:
+- Selective instrumentations (HTTP, Express, FS, DNS, Net)
+- OTLP trace exporter
+- Prometheus metrics exporter
+- Tail-based sampling
+- Datadog integration
+- Health check functionality
+
+### Tree-Shaking Configuration
+
+Bundle size optimization is enabled in `next.config.mjs`:
+
+```javascript
+experimental: {
+  optimizePackageImports: [
+    // ... other packages
+    // OpenTelemetry packages - enable tree shaking
+    '@opentelemetry/api',
+    '@opentelemetry/core',
+    '@opentelemetry/instrumentation',
+    '@opentelemetry/resources',
+    '@opentelemetry/semantic-conventions',
+    '@opentelemetry/sdk-node',
+    '@opentelemetry/exporter-otlp-http',
+    '@opentelemetry/exporter-prometheus',
+  ],
+}
+```
+
+**Browser Builds:**
+All OpenTelemetry server packages are stubbed for browser builds via webpack aliases in `next.config.mjs`, resulting in 0 KB browser bundle impact.
+
 ### Supported Backends
 
 OpenTelemetry can export traces to any OTLP-compatible backend:
@@ -100,6 +163,8 @@ OpenTelemetry can export traces to any OTLP-compatible backend:
 | **Honeycomb** | Cloud observability | Medium |
 | **Lightstep** | Enterprise tracing | Medium |
 | **New Relic** | Full-stack observability | Medium |
+| **Datadog** | Production APM | Medium |
+| **Prometheus** | Metrics collection | Low |
 | **Custom OTLP** | Self-hosted | High |
 
 ### Local Development with Jaeger
@@ -124,12 +189,21 @@ npm run dev
 # View traces at http://localhost:16686
 ```
 
-### Limitations
+### Prometheus Metrics
 
-- **No Custom Metrics:** OpenTelemetry focuses on traces; metrics support is less mature
-- **Limited APM Features:** No built-in profiling, error tracking, or custom dashboards
-- **Configuration Overhead:** Requires additional setup for production monitoring
-- **LLM Observability:** Does not support LLM-specific observability features
+OpenTelemetry can export metrics in Prometheus format:
+
+```bash
+# Enable OpenTelemetry with Prometheus exporter
+export OTEL_ENABLED=true
+export OTEL_EXPORTER_PROMETHEUS_PORT=9090
+
+# Start your application
+npm run dev
+
+# Metrics available at http://localhost:9090/metrics
+curl http://localhost:9090/metrics
+```
 
 ---
 
@@ -441,8 +515,8 @@ const isMonitoringDisabled = (
 
 Use this matrix to decide which tool to use:
 
-| Scenario | Use @vercel/otel | Use dd-trace | Use Both |
-|----------|-----------------|--------------|----------|
+| Scenario | Use OpenTelemetry | Use dd-trace | Use Both |
+|----------|------------------|--------------|----------|
 | **Local Development** | ✅ (with Jaeger) | ❌ | ❌ |
 | **Integration Tests** | ✅ | ❌ | ❌ |
 | **Staging Environment** | ❌ | ✅ | Optional |
@@ -453,6 +527,7 @@ Use this matrix to decide which tool to use:
 | **Vendor Neutrality** | ✅ | ❌ | ❌ |
 | **Database Monitoring** | ❌ | ✅ | ❌ |
 | **Full APM Suite** | ❌ | ✅ | ❌ |
+| **Prometheus Metrics** | ✅ | ❌ | ❌ |
 
 ---
 
@@ -589,16 +664,18 @@ npm run dev 2>&1 | tee debug.log
 
 **Key Takeaways:**
 
-1. **@vercel/otel** is for development, testing, and vendor-neutral distributed tracing
-2. **dd-trace** is for production APM, custom metrics, and LLM observability
+1. **OpenTelemetry (manual packages)** is used for development, testing, vendor-neutral distributed tracing, and Prometheus metrics
+2. **dd-trace** is used for production APM, custom metrics, and LLM observability
 3. Both tools **can coexist** without conflicts when properly configured
-4. Choose the **right tool for your environment** (local dev, staging, production)
-5. Monitoring is **automatically disabled** during builds and in CI/CD
+4. VibeCode uses **8 selective OpenTelemetry packages** (not @vercel/otel or auto-instrumentations-node)
+5. **Tree-shaking is enabled** via Next.js optimizePackageImports for reduced bundle size (40-60% reduction)
+6. Monitoring is **automatically disabled** during builds and in CI/CD
 
 **Default Recommendation:**
 - **Development:** OpenTelemetry with Jaeger (`OTEL_ENABLED=true`)
 - **Production:** Datadog with full APM (`DD_API_KEY` + profiling enabled)
 - **LLM Applications:** Datadog with LLM Observability enabled
+- **Prometheus Metrics:** OpenTelemetry with Prometheus exporter on port 9090
 
 For questions or issues with observability configuration, refer to:
 - **OpenTelemetry:** https://opentelemetry.io/docs/
