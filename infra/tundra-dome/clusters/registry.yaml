@@ -1,0 +1,35 @@
+# Tundra Dome Cluster Registry
+# Central registry of all managed Kubernetes clusters
+apiVersion: tundra-dome.harness/v1
+kind: ClusterRegistry
+metadata:
+  name: tundra-dome-clusters
+  description: Registry of development and local Kubernetes clusters
+clusters:
+  - name: tundra-dome
+    type: kind
+    environment: local
+    description: Main Tundra Dome cluster with worker node
+    configPath: kind-config.yaml
+    features:
+      - airflow
+      - kafka
+      - postgresql
+
+  - name: gastown
+    type: kind
+    environment: local
+    description: Gastown development cluster
+    configPath: clusters/gastown/kind-config.yaml
+    features:
+      - lightweight
+      - testing
+
+  - name: vibecode-local
+    type: kind
+    environment: local
+    description: Vibecode local development cluster
+    configPath: clusters/vibecode-local/kind-config.yaml
+    features:
+      - development
+      - testing
