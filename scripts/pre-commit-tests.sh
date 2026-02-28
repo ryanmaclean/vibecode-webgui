@@ -4,7 +4,7 @@
 # Comprehensive validation before git commit
 # Staff Engineer Implementation - Ensures production readiness
 
-set -euox
+set -euo pipefail
 
 # Mode configuration
 # Light mode (default for local dev): skips heavy infra checks and audits
