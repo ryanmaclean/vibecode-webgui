@@ -134,6 +134,12 @@ npm run tauri:build
 
 > **📖 New to VibeCode?** See the [Environment Setup Guide](docs/ENVIRONMENT_SETUP_GUIDE.md) for detailed configuration instructions.
 
+### 📚 Installation Documentation
+
+**Choose your path:**
+- 🎯 **[Installation Master Guide](docs/INSTALLATION_MASTER_GUIDE.md)** - Comprehensive installation guide covering all platforms, dependencies, and troubleshooting
+- ✅ **[Quickstart Checklist](docs/QUICKSTART_CHECKLIST.md)** - Step-by-step checklist to get running in under 5 minutes
+
 ### New to VibeCode? Start Here!
 Get up and running in under 5 minutes:
 ```bash
