@@ -26,7 +26,7 @@ let otelSDK: any = null;
 if (!isDockerBuild) {
   try {
     // Dynamic imports to prevent static analysis issues
-    const opentelemetryModule = require('../../../../lib/monitoring/opentelemetry');
+    const opentelemetryModule = require('../../../../lib/monitoring/opentelemetry-setup');
     getOpenTelemetryConfig = opentelemetryModule.getOpenTelemetryConfig;
     otelSDK = opentelemetryModule.otelSDK;
   } catch {

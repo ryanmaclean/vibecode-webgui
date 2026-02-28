@@ -327,3 +327,78 @@ Next Phase: Package Consolidation (subtask-2-1)
 All old packages and files removed. Dependency tree is clean.
 Next: Phase 6 - Update Documentation
 
+
+[2026-02-28 - subtask-6-1] ✅ COMPLETED
+---------------------------------------------------
+Task: Update OBSERVABILITY.md to reflect actual implementation
+Status: ✅ COMPLETED
+
+Changes Made:
+- Replaced @vercel/otel references with manual OpenTelemetry packages approach
+- Documented 8 actual packages used (NOT 13)
+- Added Package Structure section with exact package.json entries
+- Documented tree-shaking configuration in next.config.mjs
+- Added Implementation File section for opentelemetry-setup.ts
+- Updated Decision Matrix table (OpenTelemetry vs dd-trace)
+- Added Prometheus metrics use case and configuration
+- Updated Summary with key design decisions
+
+Key Documentation Updates:
+1. Package Structure: Lists all 8 packages with versions
+2. Key Design Decisions:
+   - ❌ NOT using @vercel/otel
+   - ❌ NOT using auto-instrumentations-node
+   - ✅ Selective instrumentations (HTTP, Express, FS, DNS, Net)
+   - ✅ Tree-shaking enabled via optimizePackageImports
+3. Tree-Shaking Configuration: Documents next.config.mjs setup
+4. Browser Builds: Explains webpack stub aliasing (0 KB impact)
+5. Prometheus Metrics: Added configuration and use cases
+
+Verification: ✅ ALL CRITERIA PASSED
+1. ✅ Documents actual packages used (8 packages listed)
+2. ✅ No mention of @vercel/otel if not used (only states we're NOT using it)
+3. ✅ Tree-shaking configuration documented (next.config.mjs section)
+
+Commit: 3040c8969b
+Lines Changed: +115 insertions, -26 deletions
+
+Next: subtask-6-2 - Update feature audit documentation
+
+
+[2026-02-28 - subtask-6-2] ✅ COMPLETED
+---------------------------------------------------
+Task: Update feature audit documentation
+Status: ✅ COMPLETED
+
+Changes Made:
+- Updated docs/feature-audit/feature-1450-opentelemetry.md to reflect consolidated implementation
+- Removed incorrect reference to @vercel/otel (not used)
+- Removed incorrect reference to src/instrumentation.ts (file doesn't exist)
+- Documented actual implementation using src/instrument.ts and src/lib/monitoring/opentelemetry-setup.ts
+- Listed all 8 OpenTelemetry packages actually in use:
+  * @opentelemetry/sdk-node@0.212.0
+  * @opentelemetry/exporter-trace-otlp-http@0.212.0
+  * @opentelemetry/exporter-prometheus@0.212.0
+  * @opentelemetry/instrumentation-http@0.212.0
+  * @opentelemetry/instrumentation-express@0.44.0
+  * @opentelemetry/instrumentation-fs@0.15.0
+  * @opentelemetry/instrumentation-dns@0.55.0
+  * @opentelemetry/instrumentation-net@0.56.0
+- Documented selective instrumentations replacing auto-instrumentations-node
+- Added Implementation Details section with entry points and activation flags
+- Updated Notes section to reflect optional nature (OTEL_ENABLED=true required)
+- Marked follow-up items as completed
+- Added cross-reference to OBSERVABILITY.md
+
+Verification: ✅ PASSED
+- grep -c '@vercel/otel' returns 0 (expected: 0) ✓
+- Documentation matches actual implementation
+- No outdated references to @vercel/otel or non-existent files
+
+Commit: 9c6e86e0f9
+Lines Changed: +27 insertions, -5 deletions
+
+=== PHASE 6 COMPLETE ===
+All documentation updated to reflect consolidated OpenTelemetry implementation.
+Next: Phase 7 - End-to-End Verification
+
