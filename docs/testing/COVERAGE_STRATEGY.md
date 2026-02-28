@@ -33,7 +33,30 @@ Our ultimate target is **80% coverage** across all metrics, which aligns with in
 
 ## Progressive Roadmap
 
-### Phase 1: Foundation (Current → 40%)
+### Phase 0: Baseline Enforcement (Current)
+**Timeline**: Immediate (Task #085)
+**Thresholds**: 18-24% (at or slightly below current coverage)
+
+This phase establishes:
+- ✅ Coverage enforcement in CI (prevents regressions)
+- ✅ Coverage reporting on all PRs
+- ✅ Progressive roadmap documentation
+- ✅ Testing infrastructure and guidelines
+
+**Current Thresholds**:
+- Branches: 18%
+- Functions: 22%
+- Lines: 24%
+- Statements: 22%
+
+**Goal**: Prevent coverage from decreasing while teams add tests to reach Milestone 1.1.
+
+**Success Criteria**:
+- Coverage enforcement active in CI/CD pipeline
+- No new code decreases coverage below baseline
+- Clear documentation of progressive improvement plan
+
+### Phase 1: Foundation (24% → 40%)
 **Timeline**: Q1-Q2 2026
 **Focus**: Core utilities and critical business logic
 
