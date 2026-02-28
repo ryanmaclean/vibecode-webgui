@@ -172,7 +172,7 @@
     "@kubernetes/client-node": "1.4.0",
     "@langchain/core": "1.1.28",
     "@langchain/openai": "1.2.10",
-    "@modelcontextprotocol/sdk": "1.26.0",
+    "@modelcontextprotocol/sdk": "1.27.1",
     "@monaco-editor/react": "4.7.0",
     "@mui/material": "7.3.8",
     "@octokit/rest": "22.0.1",
