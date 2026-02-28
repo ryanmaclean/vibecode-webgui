@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
-import { checkOpenTelemetryHealth } from '@/lib/monitoring/opentelemetry-config'
+import { checkOpenTelemetryHealth } from '@/lib/monitoring/opentelemetry-setup'
 
 const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - config endpoint
 
