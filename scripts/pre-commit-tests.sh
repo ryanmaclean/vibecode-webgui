@@ -61,18 +61,29 @@ fi
 
 echo "✅ Prerequisites validated"
 
-# Run linting with relaxed rules for production deployment
-echo "📋 Running linting..."
-npx eslint --ext .ts,.tsx,.js,.jsx src/ --rule '{"@typescript-eslint/no-explicit-any": "off", "@typescript-eslint/no-unused-vars": "off", "@typescript-eslint/no-require-imports": "off", "react-hooks/exhaustive-deps": "warn"}' || {
-    echo "⚠️  Linting found issues - continuing with production deployment"
-}
+echo "📋 Running linting on staged files..."
+STAGED_JS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$' || true)
+if [ -n "$STAGED_JS" ]; then
+    echo "$STAGED_JS" | xargs npx eslint || {
+        echo ""
+        echo "⚠️  Linting found issues in staged files (non-blocking)"
+        echo "   → Fix before pushing - CI may fail"
+        echo "   → Run 'npm run lint' to see all issues"
+        echo ""
+    }
+else
+    echo "   No JavaScript/TypeScript files staged"
+fi
 
-# Run type checking on source code only
 echo "🔍 Running type checking..."
-tsc --project tsconfig.precommit.json || {
-    echo "❌ Type checking failed"
-    exit 1
-}
+if ! tsc --project tsconfig.precommit.json 2>&1 | head -20; then
+    echo ""
+    echo "⚠️  Type checking found errors (non-blocking in pre-commit)"
+    echo "   → These will be checked in CI - fix before pushing to avoid CI failures"
+    echo "   → Run 'npm run type-check' to see all errors"
+    echo ""
+fi
+# Continue regardless of type-check result
 
 # Run tests (quick subset in light mode)
 if [ "$LIGHT_MODE" = "true" ]; then
