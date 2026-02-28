@@ -1,0 +1,111 @@
+# Federation Controller - Cross-cluster bead synchronization
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tundra-dome-federation
+  namespace: tundra-dome
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tundra-dome-federation
+rules:
+  - apiGroups: ["tundra.dome"]
+    resources: ["beads"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["tundra.dome"]
+    resources: ["beads/status"]
+    verbs: ["get", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tundra-dome-federation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tundra-dome-federation
+subjects:
+  - kind: ServiceAccount
+    name: tundra-dome-federation
+    namespace: tundra-dome
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bead-sync-controller-code
+  namespace: tundra-dome
+data:
+  package.json: |
+    {
+      "name": "bead-sync-controller",
+      "version": "1.0.0",
+      "description": "Federation controller for cross-cluster bead synchronization",
+      "main": "index.js",
+      "scripts": {
+        "start": "node index.js"
+      },
+      "dependencies": {
+        "@kubernetes/client-node": "^1.0.0"
+      },
+      "engines": {
+        "node": ">=20"
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: federation-controller
+  namespace: tundra-dome
+  labels:
+    app: federation-controller
+    tundra.dome/component: federation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: federation-controller
+  template:
+    metadata:
+      labels:
+        app: federation-controller
+        tundra.dome/component: federation
+    spec:
+      serviceAccountName: tundra-dome-federation
+      containers:
+        - name: controller
+          image: node:20-alpine
+          command: ["sh", "-c", "cp -r /app/* /work/ && cd /work && npm install --production && node index.js"]
+          env:
+            - name: NAMESPACE
+              value: "tundra-dome"
+            - name: CLUSTER_NAME
+              value: "primary"
+            - name: REMOTE_CLUSTERS
+              value: ""
+              # Format: "name:apiServer:token,name2:apiServer2:token2"
+              # Example: "cluster-2:https://cluster2.example.com:cluster2-token"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: code
+              mountPath: /app
+              readOnly: true
+            - name: work
+              mountPath: /work
+      volumes:
+        - name: code
+          configMap:
+            name: bead-sync-controller-code
+            items:
+              - key: package.json
+                path: package.json
+        - name: work
+          emptyDir: {}
