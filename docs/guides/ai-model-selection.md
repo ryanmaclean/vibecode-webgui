@@ -1331,9 +1331,8 @@ if (recommendation.confidence === 'low') {
 ## 📚 Related Documentation
 
 - [API Documentation](../api/README.md) - Complete API reference
-- [AI Chat Guide](./ai-chat-integration.md) - Chat implementation guide
-- [Security Guide](../security/implementation.md) - Security best practices
-- [Rate Limiting](../security/rate-limiting.md) - Rate limit configuration
+- [AI Endpoints Documentation](../api/ai-endpoints.md) - AI chat and completion endpoints
+- [Authentication Strategy](../security/AUTHENTICATION_STRATEGY.md) - Security and authentication best practices
 
 ---
 

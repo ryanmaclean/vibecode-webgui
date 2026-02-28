@@ -1283,7 +1283,7 @@ async function healthCheck() {
 - [API Documentation](../api/README.md) - Complete API reference
 - [AI Model Selection Guide](./ai-model-selection.md) - Choosing the right models
 - [AI Rate Limiting Guide](./ai-rate-limiting.md) - Managing API costs
-- [Security Implementation](../security/implementation.md) - Security best practices
+- [Authentication Strategy](../security/AUTHENTICATION_STRATEGY.md) - Security and authentication best practices
 
 ### External Resources
 

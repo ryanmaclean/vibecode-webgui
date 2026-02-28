@@ -1527,8 +1527,7 @@ function getCustomBackoff(attempt: number): number {
 
 - [AI Model Selection Guide](./ai-model-selection.md) - Model comparison and selection
 - [API Documentation](../api/README.md) - Complete API reference
-- [Security Guide](../security/implementation.md) - Security best practices
-- [Rate Limiting](../security/rate-limiting.md) - Application-level rate limiting
+- [Authentication Strategy](../security/AUTHENTICATION_STRATEGY.md) - Security and authentication best practices
 
 ---
 
