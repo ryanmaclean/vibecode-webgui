@@ -1,0 +1,16 @@
+{
+  "name": "bead-sync-controller",
+  "version": "1.0.0",
+  "description": "Federation controller for cross-cluster bead synchronization",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "@kubernetes/client-node": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
