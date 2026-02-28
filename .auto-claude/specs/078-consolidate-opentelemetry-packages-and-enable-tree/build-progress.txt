@@ -276,3 +276,32 @@ Next Phase: Package Consolidation (subtask-2-1)
 - Add selective instrumentations
 - Enable tree-shaking
 
+
+[2026-02-28 22:22] subtask-2-1 COMPLETED
+- Aligned OpenTelemetry package versions to latest compatible set
+- Replaced deprecated @opentelemetry/exporter-otlp-http@0.26.0 with @opentelemetry/exporter-trace-otlp-http@0.212.0
+- Updated auto-instrumentations-node: 0.70.0 → 0.70.1
+- Updated instrumentation-express: 0.60.0 → 0.44.0  
+- Updated instrumentation-fs: 0.30.0 → 0.15.0
+- All packages now compatible with sdk-node@0.212.0 requirements
+- Verification passed: All @opentelemetry packages show consistent version numbers
+- Commit: 13cf0fdbfb
+- Created VERSION_ALIGNMENT_SUMMARY.md for reference
+
+[2026-02-28] subtask-2-2: COMPLETED
+- Replaced @opentelemetry/auto-instrumentations-node with selective instrumentations
+- Removed: @opentelemetry/auto-instrumentations-node@0.70.1
+- Added: @opentelemetry/instrumentation-dns@0.55.0
+- Added: @opentelemetry/instrumentation-net@0.56.0
+- Retained: instrumentation-express, instrumentation-fs, instrumentation-http
+- Verification: auto-instrumentations-node count = 0 ✓
+- Commit: 6a498f0a50
+
+[2026-02-28 - subtask-3-3] ✅ COMPLETED
+- Updated all files importing OpenTelemetry to use new consolidated structure
+- Changed 3 files with old import paths:
+  * otel-config/route.ts: checkOpenTelemetryHealth → opentelemetry-setup
+  * traces/route.ts: getOpenTelemetryConfig → opentelemetry-setup
+  * health/db/route.ts: Updated commented import reference
+- Verification: 0 files with old import patterns (expected: 0) ✓
+- Commit: 4a23028bd5

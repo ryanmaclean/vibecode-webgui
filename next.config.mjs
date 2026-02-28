@@ -71,6 +71,8 @@ const datadogStubAliases = {
   '@opentelemetry/api': require.resolve('./src/stubs/opentelemetry-api.js'),
   '@opentelemetry/core': require.resolve('./src/stubs/opentelemetry-core.js'),
   '@opentelemetry/instrumentation': require.resolve('./src/stubs/opentelemetry-instrumentation.js'),
+  '@opentelemetry/instrumentation-http': require.resolve('./src/stubs/opentelemetry-instrumentation-http.js'),
+  '@opentelemetry/instrumentation-express': require.resolve('./src/stubs/opentelemetry-instrumentation-express.js'),
 }
 
 const serverExternalPackages = [
