@@ -3,23 +3,23 @@
   "spec": "078-consolidate-opentelemetry-packages-and-enable-tree",
   "state": "building",
   "subtasks": {
-    "completed": 10,
+    "completed": 11,
     "total": 22,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Update Webpack Stub Configuration",
+    "current": "Remove Old Packages and Files",
     "id": null,
-    "total": 2
+    "total": 3
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 12,
+    "number": 13,
     "started_at": "2026-02-28T14:02:32.037995"
   },
-  "last_update": "2026-02-28T14:36:23.645005"
+  "last_update": "2026-02-28T14:37:44.289216"
 }

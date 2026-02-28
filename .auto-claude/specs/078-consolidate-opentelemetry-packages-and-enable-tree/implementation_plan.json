@@ -267,8 +267,9 @@
             "command": "test -f src/stubs/opentelemetry-instrumentation-http.js && test -f src/stubs/opentelemetry-instrumentation-express.js && echo 'OK'",
             "expected": "OK"
           },
-          "status": "pending",
-          "notes": "Create browser stubs for the selective instrumentations we're keeping (http, express) to prevent bundling in client builds"
+          "status": "completed",
+          "notes": "Created stubs for @opentelemetry/instrumentation-http and @opentelemetry/instrumentation-express following the pattern from existing stubs. Updated next.config.mjs to add webpack aliases for both new stubs. Verification passed successfully.",
+          "updated_at": "2026-02-28T22:37:18.356734+00:00"
         }
       ]
     },
@@ -608,6 +609,6 @@
   "qa_signoff": null,
   "status": "in_progress",
   "planStatus": "in_progress",
-  "updated_at": "2026-02-28T22:36:23.585Z",
-  "last_updated": "2026-02-28T22:36:02.220555+00:00"
+  "updated_at": "2026-02-28T22:37:44.235Z",
+  "last_updated": "2026-02-28T22:37:18.356744+00:00"
 }
