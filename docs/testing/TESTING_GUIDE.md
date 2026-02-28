@@ -548,18 +548,26 @@ npm run test:ws
 
 Coverage thresholds are configured in `jest.config.js`:
 
+**Current Phase 0 Baseline** (prevents regressions):
+
 ```javascript
 coverageThreshold: {
   global: {
-    branches: 30,   // Next milestone: 30% target
-    functions: 30,  // Next milestone: 30% target
-    lines: 30,      // Next milestone: 30% target
-    statements: 30, // Next milestone: 30% target
+    branches: 18,    // Phase 0: baseline at current coverage (~19%)
+    functions: 22,   // Phase 0: baseline at current coverage (~22%)
+    lines: 24,       // Phase 0: baseline at current coverage (~25%)
+    statements: 22,  // Phase 0: baseline at current coverage (~23%)
   }
 }
 ```
 
-> **Note**: We're following a progressive roadmap to reach 80% coverage. See [COVERAGE_STRATEGY.md](./COVERAGE_STRATEGY.md) for the complete roadmap and milestones.
+> **Note**: We're following a progressive roadmap to reach 80% coverage:
+> - **Phase 0** (Current): 18-24% baseline - prevents coverage from decreasing
+> - **Milestone 1.1** (Q1-Q2 2026): 30% across all metrics
+> - **Milestone 1.2** (Q2-Q3 2026): 40% across all metrics
+> - **Final Target**: 80% across all metrics
+>
+> See [COVERAGE_STRATEGY.md](./COVERAGE_STRATEGY.md) for the complete roadmap and implementation strategy.
 
 ### Generating Coverage Reports
 

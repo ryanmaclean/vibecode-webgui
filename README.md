@@ -229,10 +229,18 @@ npm run test:watch
 ```
 
 ### Coverage Thresholds
-Current targets: **30%** (branches, functions, lines, statements)
-Progressive milestones: 30% → 50% → 65% → 80%
+
+**Phase 0 Baseline** (Current): 18-24% - prevents regressions while improving coverage
+**Progressive Milestones**: Phase 0 (18-24%) → 30% → 50% → 65% → 80%
+
+Current enforcement in CI:
+- Branches: 18%
+- Functions: 22%
+- Lines: 24%
+- Statements: 22%
 
 📚 **For comprehensive testing patterns, best practices, and detailed guides**, see [Testing Guide](docs/testing/TESTING_GUIDE.md)
+📊 **For coverage roadmap and strategy**, see [Coverage Strategy](docs/testing/COVERAGE_STRATEGY.md)
 
 ## 🔒 Security Considerations
 
