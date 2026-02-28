@@ -158,7 +158,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "3.0.33",
-    "@ai-sdk/react": "3.0.99",
+    "@ai-sdk/react": "3.0.103",
     "@aws-sdk/client-s3": "3.995.0",
     "@aws-sdk/lib-storage": "3.817.0",
     "@azure/cosmos": "4.9.1",
@@ -249,7 +249,7 @@
     "react-dropzone": "15.0.0",
     "react-hook-form": "7.71.2",
     "react-resizable-panels": "4.6.5",
-    "react-router-dom": "7.13.0",
+    "react-router-dom": "7.13.1",
     "react-table": "7.8.0",
     "recharts": "3.7.0",
     "redis": "5.11.0",
