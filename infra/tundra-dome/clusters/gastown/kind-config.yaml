@@ -1,0 +1,25 @@
+# Gastown KIND Cluster Configuration
+# Lightweight testing cluster
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: gastown
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "tundra-dome/role=control-plane,tundra-dome/cluster=gastown"
+    extraPortMappings:
+      # HTTP Service
+      - containerPort: 30080
+        hostPort: 8081
+        protocol: TCP
+      # PostgreSQL
+      - containerPort: 30432
+        hostPort: 5433
+        protocol: TCP
+networking:
+  podSubnet: "10.245.0.0/16"
+  serviceSubnet: "10.97.0.0/12"
