@@ -1,0 +1,604 @@
+{
+  "feature": "Consolidate OpenTelemetry packages and enable tree-shaking",
+  "workflow_type": "refactor",
+  "workflow_rationale": "This is a refactor workflow because we're reorganizing the OpenTelemetry package structure to reduce bundle size while preserving all existing functionality. We follow the refactor pattern: Audit → Add New → Migrate → Remove Old → Cleanup.",
+  "phases": [
+    {
+      "id": "phase-1-audit",
+      "name": "Audit and Analysis",
+      "type": "investigation",
+      "description": "Analyze actual OpenTelemetry usage across the codebase to identify which instrumentations are truly needed",
+      "depends_on": [],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-1-1",
+          "description": "Analyze which OpenTelemetry instrumentations are actively used",
+          "service": "vibecode-webgui",
+          "files_to_modify": [],
+          "files_to_create": [
+            "./.auto-claude/specs/078-consolidate-opentelemetry-packages-and-enable-tree/AUDIT_REPORT.md"
+          ],
+          "patterns_from": [
+            "src/lib/monitoring/opentelemetry.ts",
+            "src/lib/monitoring/opentelemetry-config.ts"
+          ],
+          "verification": {
+            "type": "manual",
+            "instructions": "Review AUDIT_REPORT.md to confirm it lists: (1) actively used instrumentations, (2) unused packages, (3) version conflicts, (4) recommended package list"
+          },
+          "status": "completed",
+          "expected_output": "Document identifying: actively used instrumentations (http, express, fs), unused instrumentations, version alignment needs, and recommended minimal package set",
+          "notes": "Created comprehensive AUDIT_REPORT.md analyzing 13 installed packages, identifying 6 missing packages, documenting version conflicts, listing 4 redundant packages, and providing recommended consolidated package list with migration strategy. Key findings: version conflicts (0.26.x-2.5.x), redundant instrumentations in auto-instrumentations-node, missing packages like @opentelemetry/instrumentation-pg and @opentelemetry/sdk-metrics. Expected benefits: ~500KB bundle reduction, improved tree-shaking.",
+          "updated_at": "2026-02-28T22:11:15.573513+00:00"
+        },
+        {
+          "id": "subtask-1-2",
+          "description": "Calculate current bundle size impact of OpenTelemetry packages",
+          "service": "vibecode-webgui",
+          "files_to_modify": [],
+          "files_to_create": [
+            "./.auto-claude/specs/078-consolidate-opentelemetry-packages-and-enable-tree/BUNDLE_ANALYSIS.md"
+          ],
+          "patterns_from": [
+            "next.config.mjs"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "test -f ./.auto-claude/specs/078-consolidate-opentelemetry-packages-and-enable-tree/BUNDLE_ANALYSIS.md && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "completed",
+          "expected_output": "Document showing current vs potential bundle size with consolidated packages",
+          "notes": "Created comprehensive BUNDLE_ANALYSIS.md with detailed breakdown: Current bundle ~2.5-3.5 MB (server), 13 packages + 30+ transitive deps from auto-instrumentations. Proposed: ~1.0-1.5 MB, 10 packages, 40-60% reduction. Analyzed webpack stub config (browser: 0 KB, fully stubbed), tree-shaking limitations (auto-instrumentations prevents optimization), version conflicts (5 ranges: 0.26-2.5), and redundant packages (~520 KB). Estimated savings: 1.96 MB (64%) by removing auto-instrumentations-node and selective instrumentations. Includes recommendations, risk assessment, and success metrics.",
+          "updated_at": "2026-02-28T22:30:00.000000+00:00"
+        },
+        {
+          "id": "subtask-1-3",
+          "description": "Evaluate @vercel/otel vs manual package approach",
+          "service": "vibecode-webgui",
+          "files_to_modify": [],
+          "files_to_create": [
+            "./.auto-claude/specs/078-consolidate-opentelemetry-packages-and-enable-tree/APPROACH_DECISION.md"
+          ],
+          "patterns_from": [
+            "OBSERVABILITY.md"
+          ],
+          "verification": {
+            "type": "manual",
+            "instructions": "Review APPROACH_DECISION.md to confirm it documents the chosen approach (@vercel/otel or manual packages) with rationale"
+          },
+          "status": "pending",
+          "expected_output": "Decision document: choose @vercel/otel (simpler, smaller) OR manual packages (more control). Include pros/cons and rationale."
+        }
+      ]
+    },
+    {
+      "id": "phase-2-consolidate-packages",
+      "name": "Package Consolidation",
+      "type": "implementation",
+      "description": "Install consolidated/aligned OpenTelemetry packages alongside existing ones",
+      "depends_on": [
+        "phase-1-audit"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-2-1",
+          "description": "Align OpenTelemetry package versions to latest compatible set",
+          "service": "vibecode-webgui",
+          "files_to_modify": [
+            "package.json"
+          ],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "npm ls @opentelemetry/api @opentelemetry/sdk-node @opentelemetry/instrumentation 2>&1 | grep -E '@opentelemetry' | head -5",
+            "expected": "All @opentelemetry packages show consistent version numbers"
+          },
+          "status": "pending",
+          "notes": "Update all @opentelemetry/* packages to use compatible versions from the same release. Based on audit, likely target: 1.x for API, 0.52.x for SDK packages."
+        },
+        {
+          "id": "subtask-2-2",
+          "description": "Replace auto-instrumentations-node with selective instrumentations",
+          "service": "vibecode-webgui",
+          "files_to_modify": [
+            "package.json"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "./.auto-claude/specs/078-consolidate-opentelemetry-packages-and-enable-tree/AUDIT_REPORT.md"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "npm ls --depth=0 2>&1 | grep -c '@opentelemetry/auto-instrumentations-node' || echo '0'",
+            "expected": "0"
+          },
+          "status": "pending",
+          "notes": "Remove auto-instrumentations-node (30+ deps). Keep only: @opentelemetry/instrumentation-http, @opentelemetry/instrumentation-express. Remove unused: instrumentation-fs, instrumentation-dns, etc."
+        },
+        {
+          "id": "subtask-2-3",
+          "description": "Add tree-shaking configuration to next.config.mjs",
+          "service": "vibecode-webgui",
+          "files_to_modify": [
+            "next.config.mjs"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "next.config.mjs"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "grep -c 'optimizePackageImports.*@opentelemetry' next.config.mjs || echo '0'",
+            "expected": "Greater than 0"
+          },
+          "status": "pending",
+          "notes": "Add @opentelemetry packages to experimental.optimizePackageImports to enable tree-shaking"
+        }
+      ]
+    },
+    {
+      "id": "phase-3-consolidate-implementations",
+      "name": "Consolidate Implementation Files",
+      "type": "implementation",
+      "description": "Merge duplicate OpenTelemetry configuration files into single canonical implementation",
+      "depends_on": [
+        "phase-2-consolidate-packages"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-3-1",
+          "description": "Create unified opentelemetry-setup.ts merging best of both implementations",
+          "service": "vibecode-webgui",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/lib/monitoring/opentelemetry-setup.ts"
+          ],
+          "patterns_from": [
+            "src/lib/monitoring/opentelemetry.ts",
+            "src/lib/monitoring/opentelemetry-config.ts"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "test -f src/lib/monitoring/opentelemetry-setup.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "pending",
+          "notes": "Combine opentelemetry.ts and opentelemetry-config.ts into single file. Use selective imports (no auto-instrumentations), preserve OTLP/Prometheus exporters, tail-based sampling."
+        },
+        {
+          "id": "subtask-3-2",
+          "description": "Update src/instrument.ts to use new unified implementation",
+          "service": "vibecode-webgui",
+          "files_to_modify": [
+            "src/instrument.ts"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/lib/monitoring/opentelemetry-setup.ts"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "grep -c 'opentelemetry-setup' src/instrument.ts",
+            "expected": "1"
+          },
+          "status": "pending",
+          "notes": "Update import to use new opentelemetry-setup.ts instead of old files"
+        },
+        {
+          "id": "subtask-3-3",
+          "description": "Update all 23 files importing OpenTelemetry to use new structure",
+          "service": "vibecode-webgui",
+          "files_to_modify": [
+            "src/lib/monitoring/opentelemetry-client.ts",
+            "src/lib/monitoring/trace-context.ts",
+            "src/lib/monitoring/browser-telemetry.ts",
+            "src/lib/monitoring/database-instrumentation.ts"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/lib/monitoring/opentelemetry-setup.ts"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "grep -r \"from.*opentelemetry-config\\|from.*monitoring/opentelemetry'\" src/ | wc -l",
+            "expected": "0"
+          },
+          "status": "pending",
+          "notes": "Update imports across all 23 files to reference new unified implementation. Ensure no files still import old opentelemetry.ts or opentelemetry-config.ts"
+        }
+      ]
+    },
+    {
+      "id": "phase-4-update-webpack-config",
+      "name": "Update Webpack Stub Configuration",
+      "type": "implementation",
+      "description": "Update next.config.mjs stubs to reflect new package structure",
+      "depends_on": [
+        "phase-3-consolidate-implementations"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-4-1",
+          "description": "Remove stubs for unused instrumentation packages",
+          "service": "vibecode-webgui",
+          "files_to_modify": [
+            "next.config.mjs"
+          ],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -c 'auto-instrumentations-node' next.config.mjs || echo '0'",
+            "expected": "0"
+          },
+          "status": "pending",
+          "notes": "Remove webpack alias for @opentelemetry/auto-instrumentations-node since it will no longer be installed"
+        },
+        {
+          "id": "subtask-4-2",
+          "description": "Add stubs for remaining selective instrumentations",
+          "service": "vibecode-webgui",
+          "files_to_modify": [
+            "next.config.mjs",
+            "src/stubs/opentelemetry-instrumentation-http.js",
+            "src/stubs/opentelemetry-instrumentation-express.js"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/stubs/opentelemetry-auto.js"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "test -f src/stubs/opentelemetry-instrumentation-http.js && test -f src/stubs/opentelemetry-instrumentation-express.js && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "pending",
+          "notes": "Create browser stubs for the selective instrumentations we're keeping (http, express) to prevent bundling in client builds"
+        }
+      ]
+    },
+    {
+      "id": "phase-5-remove-old",
+      "name": "Remove Old Packages and Files",
+      "type": "cleanup",
+      "description": "Remove deprecated packages, duplicate implementations, and unused code",
+      "depends_on": [
+        "phase-4-update-webpack-config"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-5-1",
+          "description": "Remove old OpenTelemetry implementation files",
+          "service": "vibecode-webgui",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "test ! -f src/lib/monitoring/opentelemetry.ts && test ! -f src/lib/monitoring/opentelemetry-config.ts && echo 'OK'",
+            "expected": "OK"
+          },
+          "status": "pending",
+          "notes": "Delete src/lib/monitoring/opentelemetry.ts and src/lib/monitoring/opentelemetry-config.ts since functionality is now in opentelemetry-setup.ts. Also remove opentelemetry.stub.ts if unused."
+        },
+        {
+          "id": "subtask-5-2",
+          "description": "Remove unused OpenTelemetry packages from package.json",
+          "service": "vibecode-webgui",
+          "files_to_modify": [
+            "package.json"
+          ],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "npm ls 2>&1 | grep -c '@opentelemetry' | awk '{if($1 <= 8) print \"OK\"; else print \"FAIL\"}'",
+            "expected": "OK"
+          },
+          "status": "pending",
+          "notes": "Remove packages identified as unused in audit: likely exporter-jaeger (dev only), instrumentation-fs, instrumentation-dns, possibly others. Target: reduce from 13 to ~8 packages."
+        },
+        {
+          "id": "subtask-5-3",
+          "description": "Run npm install to clean up dependency tree",
+          "service": "vibecode-webgui",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "npm ls --depth=0 2>&1 | grep -c 'UNMET' || echo '0'",
+            "expected": "0"
+          },
+          "status": "pending",
+          "notes": "Run npm install to ensure package-lock.json is updated and dependency tree is clean"
+        }
+      ]
+    },
+    {
+      "id": "phase-6-update-documentation",
+      "name": "Update Documentation",
+      "type": "implementation",
+      "description": "Update all documentation to reflect new OpenTelemetry package structure",
+      "depends_on": [
+        "phase-5-remove-old"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-6-1",
+          "description": "Update OBSERVABILITY.md to reflect actual implementation",
+          "service": "vibecode-webgui",
+          "files_to_modify": [
+            "OBSERVABILITY.md"
+          ],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "manual",
+            "instructions": "Verify OBSERVABILITY.md documents: (1) actual packages used, (2) no mention of @vercel/otel if not used, (3) tree-shaking configuration"
+          },
+          "status": "pending",
+          "notes": "Update documentation to match reality - either document @vercel/otel if chosen, or document selective manual package approach. Remove outdated info."
+        },
+        {
+          "id": "subtask-6-2",
+          "description": "Update feature audit documentation",
+          "service": "vibecode-webgui",
+          "files_to_modify": [
+            "docs/feature-audit/feature-1450-opentelemetry.md"
+          ],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -c '@vercel/otel' docs/feature-audit/feature-1450-opentelemetry.md || echo '0'",
+            "expected": "Matches actual implementation (0 if not using @vercel/otel)"
+          },
+          "status": "pending",
+          "notes": "Update feature audit to reflect consolidated package approach"
+        }
+      ]
+    },
+    {
+      "id": "phase-7-verification",
+      "name": "End-to-End Verification",
+      "type": "integration",
+      "description": "Verify all OpenTelemetry functionality works with consolidated packages",
+      "depends_on": [
+        "phase-6-update-documentation"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-7-1",
+          "description": "Verify OpenTelemetry initialization and health check",
+          "service": "vibecode-webgui",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "npm run otel:health 2>&1 | grep -E 'healthy|degraded'",
+            "expected": "Returns healthy status"
+          },
+          "status": "pending",
+          "notes": "Start the app and verify OpenTelemetry initializes correctly via health endpoint"
+        },
+        {
+          "id": "subtask-7-2",
+          "description": "Verify OTLP exporter to Datadog works",
+          "service": "vibecode-webgui",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "npm run otel:config 2>&1 | jq -r '.otlp_endpoint'",
+            "expected": "Shows configured OTLP endpoint"
+          },
+          "status": "pending",
+          "notes": "Verify OTLP exporter configuration is present and functional"
+        },
+        {
+          "id": "subtask-7-3",
+          "description": "Verify Prometheus metrics exporter works",
+          "service": "vibecode-webgui",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "npm run otel:metrics 2>&1 | head -20 | grep -c 'TYPE\\|HELP'",
+            "expected": "Greater than 0"
+          },
+          "status": "pending",
+          "notes": "Verify Prometheus metrics endpoint on port 9090 returns metrics"
+        },
+        {
+          "id": "subtask-7-4",
+          "description": "Run OpenTelemetry integration tests",
+          "service": "vibecode-webgui",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "npm test -- --testPathPattern='opentelemetry' --passWithNoTests 2>&1 | grep -E 'PASS|FAIL'",
+            "expected": "All tests pass"
+          },
+          "status": "pending",
+          "notes": "Run tests: tests/integration/opentelemetry-fullstack.test.ts, tests/integration/trace-propagation.test.ts"
+        },
+        {
+          "id": "subtask-7-5",
+          "description": "Verify production build completes successfully",
+          "service": "vibecode-webgui",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "npm run build 2>&1 | grep -E 'Compiled successfully|error' | tail -1",
+            "expected": "Compiled successfully"
+          },
+          "status": "pending",
+          "notes": "Ensure production build works with new package structure and tree-shaking enabled"
+        },
+        {
+          "id": "subtask-7-6",
+          "description": "Measure and document bundle size improvement",
+          "service": "vibecode-webgui",
+          "files_to_modify": [],
+          "files_to_create": [
+            "./.auto-claude/specs/078-consolidate-opentelemetry-packages-and-enable-tree/FINAL_RESULTS.md"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "manual",
+            "instructions": "Review FINAL_RESULTS.md to confirm bundle size reduction is documented (target: 40-60% for OTel packages)"
+          },
+          "status": "pending",
+          "notes": "Compare bundle sizes before/after, document package count reduction, verify tree-shaking is working"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_phases": 7,
+    "total_subtasks": 20,
+    "services_involved": [
+      "vibecode-webgui"
+    ],
+    "parallelism": {
+      "max_parallel_phases": 1,
+      "parallel_groups": [],
+      "recommended_workers": 1,
+      "speedup_estimate": "Sequential execution required due to dependencies"
+    },
+    "estimated_impact": {
+      "package_reduction": "From 13 to ~8 OpenTelemetry packages",
+      "bundle_size_reduction": "40-60% reduction in OpenTelemetry bundle size",
+      "dependency_reduction": "Eliminate 30+ transitive dependencies from auto-instrumentations"
+    }
+  },
+  "verification_strategy": {
+    "risk_level": "medium",
+    "skip_validation": false,
+    "test_creation_phase": "not_required",
+    "test_types_required": [
+      "integration"
+    ],
+    "security_scanning_required": false,
+    "staging_deployment_required": false,
+    "acceptance_criteria": [
+      "All existing OpenTelemetry functionality preserved (OTLP export, Prometheus metrics)",
+      "OpenTelemetry package count reduced from 13 to ~8",
+      "Bundle size for OTel packages reduced by 40-60%",
+      "All existing tests pass",
+      "Production build succeeds",
+      "Documentation updated to reflect actual implementation"
+    ],
+    "verification_steps": [
+      {
+        "name": "OpenTelemetry Health Check",
+        "command": "npm run otel:health",
+        "expected_outcome": "Healthy status",
+        "type": "api",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Integration Tests",
+        "command": "npm test -- --testPathPattern='opentelemetry'",
+        "expected_outcome": "All tests pass",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Production Build",
+        "command": "npm run build",
+        "expected_outcome": "Build succeeds without errors",
+        "type": "build",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Prometheus Metrics",
+        "command": "curl -s http://localhost:9090/metrics | head -20",
+        "expected_outcome": "Metrics endpoint returns data",
+        "type": "api",
+        "required": true,
+        "blocking": false
+      }
+    ],
+    "reasoning": "Medium risk refactor - changes package structure but preserves all functionality. Requires integration testing but not full E2E or security scans."
+  },
+  "qa_acceptance": {
+    "unit_tests": {
+      "required": false,
+      "commands": [],
+      "minimum_coverage": null
+    },
+    "integration_tests": {
+      "required": true,
+      "commands": [
+        "npm test -- --testPathPattern='opentelemetry'"
+      ],
+      "services_to_test": [
+        "vibecode-webgui"
+      ]
+    },
+    "e2e_tests": {
+      "required": false,
+      "commands": [],
+      "flows": []
+    },
+    "browser_verification": {
+      "required": false,
+      "pages": []
+    },
+    "api_verification": {
+      "required": true,
+      "endpoints": [
+        {
+          "url": "http://localhost:3000/api/monitoring/otel-health",
+          "method": "GET",
+          "expected_status": 200,
+          "checks": [
+            "Returns healthy status"
+          ]
+        },
+        {
+          "url": "http://localhost:9090/metrics",
+          "method": "GET",
+          "expected_status": 200,
+          "checks": [
+            "Returns Prometheus metrics"
+          ]
+        }
+      ]
+    },
+    "build_verification": {
+      "required": true,
+      "checks": [
+        "Production build succeeds",
+        "No webpack errors for OpenTelemetry packages",
+        "Tree-shaking is active (check bundle analyzer output)"
+      ]
+    }
+  },
+  "qa_signoff": null,
+  "status": "in_progress",
+  "planStatus": "in_progress",
+  "updated_at": "2026-02-28T22:12:23.352Z",
+  "last_updated": "2026-02-28T22:11:15.573523+00:00"
+}
