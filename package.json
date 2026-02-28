@@ -11,7 +11,6 @@
     "start": "node launcher.js",
     "start:vm": "node launcher.js --vm",
     "start:kiosk": "node chromium-kiosk/launcher.js",
-    "start:electron": "cd electron-vibecode && npm start",
     "start:next": "cross-env NEXT_TELEMETRY_DISABLED=1 next start",
     "postinstall": "cross-env NEXT_TELEMETRY_DISABLED=1 node scripts/ensure-native-binaries.js",
     "setup": "node scripts/setup-development.js",
