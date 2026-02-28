@@ -335,6 +335,12 @@ export function getOpenTelemetryConfig() {
     otlp_endpoint: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || 'http://localhost:4318/v1/traces',
     prometheus_port: process.env.OTEL_PROMETHEUS_PORT || '9090',
     datadog_integration: !!getDatadogApiKey(),
+    database_instrumentation: {
+      enabled: true,
+      enhanced_reporting: true,
+      query_sanitization: true,
+      span_correlation: true,
+    },
   };
 }
 
@@ -405,6 +411,9 @@ export const otelConfig = {
   getSamplingConfig: getSamplingConfig,
   isSamplingEnabled: () => getSamplingConfig().enabled,
 };
+
+// Re-export span creation utilities from trace-context
+export { createCustomSpan } from './trace-context';
 
 // Export SDK instance for testing/debugging
 export { otelSDK };

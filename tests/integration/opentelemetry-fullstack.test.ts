@@ -89,6 +89,7 @@ import {
   extractTraceContext,
   createTraceparentHeader,
   extractAndInjectTraceContext,
+  getTracer,
   AISpanAttributes,
   DBSpanAttributes,
 } from '../../src/lib/monitoring/trace-context'
@@ -101,7 +102,7 @@ import {
 import {
   getOpenTelemetryConfig,
   createCustomSpan,
-} from '../../src/lib/monitoring/opentelemetry'
+} from '../../src/lib/monitoring/opentelemetry-setup'
 
 // Jest environment polyfill: Next's Response.json helper isn't available in Node's WHATWG Response
 const g = globalThis as unknown as { Response: typeof Response & { json?: (body: unknown, init?: ResponseInit) => Response } }
@@ -472,7 +473,7 @@ describe('OpenTelemetry Full-Stack Tracing Integration', () => {
     })
 
     test('should correlate AI request with parent trace', async () => {
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
 
       await tracer.startActiveSpan('api-request', async (apiSpan) => {
         try {
@@ -504,7 +505,7 @@ describe('OpenTelemetry Full-Stack Tracing Integration', () => {
 
   describe('Database Query Tracing', () => {
     test('should create database span with query attributes', async () => {
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
 
       await tracer.startActiveSpan('api-handler', async (apiSpan) => {
         try {
@@ -535,7 +536,7 @@ describe('OpenTelemetry Full-Stack Tracing Integration', () => {
     })
 
     test('should trace PostgreSQL operations with correlation', async () => {
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
 
       await tracer.startActiveSpan('api-handler', async (apiSpan) => {
         try {
@@ -583,7 +584,7 @@ describe('OpenTelemetry Full-Stack Tracing Integration', () => {
 
   describe('Redis/Cache Operation Tracing', () => {
     test('should trace Redis operations with attributes', async () => {
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
 
       await tracer.startActiveSpan('cache-operation', async (span) => {
         try {
@@ -609,7 +610,7 @@ describe('OpenTelemetry Full-Stack Tracing Integration', () => {
     })
 
     test('should correlate Redis operations with parent trace', async () => {
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
 
       await tracer.startActiveSpan('api-request', async (apiSpan) => {
         try {
@@ -740,7 +741,7 @@ describe('OpenTelemetry Full-Stack Tracing Integration', () => {
       expect(traceContext?.trace_id).toBe(traceId)
 
       // Step 3: Process request with API span
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
       await tracer.startActiveSpan('api-handler', async (apiSpan) => {
         try {
           apiSpan.setAttributes({
@@ -778,7 +779,7 @@ describe('OpenTelemetry Full-Stack Tracing Integration', () => {
     })
 
     test('should trace AI-enhanced request flow', async () => {
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
 
       await tracer.startActiveSpan('api-ai-request', async (apiSpan) => {
         try {
@@ -839,7 +840,7 @@ describe('OpenTelemetry Full-Stack Tracing Integration', () => {
     })
 
     test('should maintain trace correlation across nested operations', async () => {
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
 
       await tracer.startActiveSpan('root-operation', async (rootSpan) => {
         try {
@@ -897,7 +898,7 @@ describe('OpenTelemetry Full-Stack Tracing Integration', () => {
 
   describe('Error Handling and Edge Cases', () => {
     test('should handle concurrent requests with different trace IDs', async () => {
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
 
       const requests = [
         { id: 'req1', traceId: '0af7651916cd43dd8448eb211c80319c' },
@@ -950,7 +951,7 @@ describe('OpenTelemetry Full-Stack Tracing Integration', () => {
     })
 
     test('should propagate errors through trace context', async () => {
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
 
       await expect(async () => {
         await tracer.startActiveSpan('error-request', async (span) => {
@@ -988,7 +989,7 @@ describe('OpenTelemetry Full-Stack Tracing Integration', () => {
     })
 
     test('should handle high-frequency span creation', async () => {
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
 
       await tracer.startActiveSpan('high-frequency-test', async (rootSpan) => {
         try {
