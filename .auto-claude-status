@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "068-tech-stack-rationalization-reduce-overlap-and-main",
+  "spec": "078-consolidate-opentelemetry-packages-and-enable-tree",
   "state": "building",
   "subtasks": {
-    "completed": 8,
-    "total": 9,
+    "completed": 3,
+    "total": 22,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Verification and Testing",
+    "current": "Package Consolidation",
     "id": null,
-    "total": 2
+    "total": 3
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 9,
-    "started_at": "2026-02-24T19:45:47.101200"
+    "number": 5,
+    "started_at": "2026-02-28T14:02:32.037995"
   },
-  "last_update": "2026-02-24T20:03:48.431850"
+  "last_update": "2026-02-28T14:20:38.569921"
 }
