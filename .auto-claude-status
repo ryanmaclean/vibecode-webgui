@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "070-start-cleanup-of-repo-there-are-many-file-and-fold",
+  "spec": "083-establish-typescript-strict-mode-and-eslint-config",
   "state": "building",
   "subtasks": {
-    "completed": 12,
-    "total": 19,
+    "completed": 8,
+    "total": 13,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Create Experiments Documentation",
+    "current": "Remove Legacy Configurations",
     "id": null,
-    "total": 3
+    "total": 2
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 13,
-    "started_at": "2026-02-24T00:16:12.936857"
+    "number": 10,
+    "started_at": "2026-02-28T01:09:22.052217"
   },
-  "last_update": "2026-02-24T00:38:09.316817"
+  "last_update": "2026-02-28T01:46:41.084078"
 }
