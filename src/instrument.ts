@@ -89,6 +89,10 @@ function getTracer() {
       getDatadogSite = () => 'datadoghq.com';
     }
 
+    // OpenTelemetry vs dd-trace usage:
+    // - OTel: Vendor-agnostic instrumentation, use for portable/multi-vendor observability
+    // - dd-trace: Datadog-specific features (LLM Observability, DBM, profiling)
+    // Both can coexist: OTel for auto-instrumentation, dd-trace for Datadog-specific capabilities
     // Initialize OpenTelemetry first for auto-instrumentation (if enabled)
     if (process.env.OTEL_ENABLED === 'true' && process.env.NODE_ENV !== 'test') {
       initializeOpenTelemetry();
