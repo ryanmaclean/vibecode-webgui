@@ -4,15 +4,22 @@
 echo "Running pre-commit checks..."
 
 # Run linting
-echo "1/3 Running ESLint..."
+echo "1/4 Running ESLint..."
 npm run lint || exit 1
 
 # Run format check
-echo "2/3 Running Prettier format check..."
+echo "2/4 Running Prettier format check..."
 npm run format:check || exit 1
 
 # Run TypeScript type check
-echo "3/3 Running TypeScript type check..."
+echo "3/4 Running TypeScript type check..."
 npm run type-check || exit 1
+
+# Run optional tests (opt-in)
+# To enable tests: unset SKIP_TESTS or SKIP_TESTS=0 git commit -m "message"
+# To disable tests: SKIP_TESTS=1 git commit -m "message" (default)
+echo "4/4 Checking for optional pre-commit tests..."
+export SKIP_TESTS=${SKIP_TESTS:-1}
+bash "$(dirname "$0")/../scripts/pre-commit-test.sh" || exit 1
 
 echo "✓ All pre-commit checks passed!"
