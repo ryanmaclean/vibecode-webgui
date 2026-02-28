@@ -14,16 +14,6 @@ export async function register() {
   const env = process.env.DD_ENV || process.env.NODE_ENV || 'development';
   const version = process.env.DD_VERSION || process.env.npm_package_version || '1.0.0';
 
-  try {
-    const otel = await import('@vercel/otel');
-    if (typeof otel.registerOTel === 'function') {
-      otel.registerOTel({
-        serviceName: service,
-      });
-    }
-  } catch (error) {
-    console.warn('⚠️ Failed to initialize OpenTelemetry', error);
-  }
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     // Initialize Datadog Trace with unified service tagging
     const ddTrace = require('dd-trace');
