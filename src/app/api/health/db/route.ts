@@ -64,42 +64,6 @@ interface PoolStatus {
 
 /**
  * Database health check endpoint
- * 
- * Returns:
- * - status: "ok" | "error"
- * - message: String message about database status
- * - details: Object with connection details
- * - poolStatus: Connection pool information
- * - latency: Connection latency in ms
- */
-
-interface PgvectorStatus {
-  installed: boolean;
-  version: string | null;
-}
-
-interface EmbeddingsStats {
-  total_embeddings: number;
-  avg_content_size?: number;
-  latest_embedding?: Date;
-  error?: string;
-}
-
-interface DbStats {
-  active_connections: number;
-  transactions_committed: number;
-  transactions_rolled_back: number;
-  blocks_read: number;
-  blocks_hit: number;
-  rows_returned: number;
-  rows_fetched: number;
-  rows_inserted: number;
-  rows_updated: number;
-  rows_deleted: number;
-}
-
-/**
- * Database health check endpoint
  *
  * Returns:
  * - status: "ok" | "error"

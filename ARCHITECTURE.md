@@ -76,7 +76,7 @@ Next.js 16.1.6 with React 19.2.4 serves as the foundation for VibeCode's web-bas
 
 ### Technical Specifications
 
-**Configuration:** `next.config.js`
+**Configuration:** `next.config.mjs`
 - Custom webpack configuration for Monaco Editor
 - Environment variable handling
 - Output configuration for Tauri integration
