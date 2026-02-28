@@ -95,6 +95,41 @@ For comprehensive architecture information including:
 
 **See: [Architecture Documentation](docs/ARCHITECTURE.md)** | **[Architecture Diagrams](docs/ARCHITECTURE_DIAGRAM.md)** | **[Folder Structure](docs/FOLDER_STRUCTURE.md)**
 
+## 🖥️ Canonical Desktop Runtime: Tauri
+
+**Tauri is the official and canonical desktop runtime for VibeCode Studio.** It provides a secure, lightweight, and cross-platform foundation for delivering the VibeCode desktop experience.
+
+### Why Tauri?
+
+- **Cross-Platform Native**: Single codebase for macOS, Windows, and Linux
+- **Small Bundle Size**: ~3-5MB base runtime (vs 100MB+ Electron alternatives)
+- **Security First**: Rust-based backend with granular security permissions
+- **Native Performance**: Direct system API access without overhead
+- **Web Standards**: Leverages platform-native WebView (WebKit on macOS/Linux, WebView2 on Windows)
+- **Modern Stack Integration**: Seamless integration with Next.js 15 and React 19
+
+### Platform Support
+
+- **macOS**: 10.13 (High Sierra) or later (Intel and Apple Silicon)
+- **Windows**: Windows 10 or later (64-bit)
+- **Linux**: Ubuntu 20.04+, Fedora 35+, or equivalent
+
+### Getting Started with Tauri
+
+For detailed platform-specific setup instructions including Rust installation, system dependencies, and comprehensive troubleshooting:
+
+**📖 [Tauri Desktop Setup Guide](docs/setup/TAURI_DESKTOP_SETUP.md)**
+
+### Quick Launch
+
+```bash
+# Development mode with hot reload
+npm run tauri:dev
+
+# Production build
+npm run tauri:build
+```
+
 ## 🚀 Quick Start
 
 > **📖 New to VibeCode?** See the [Environment Setup Guide](docs/ENVIRONMENT_SETUP_GUIDE.md) for detailed configuration instructions.
