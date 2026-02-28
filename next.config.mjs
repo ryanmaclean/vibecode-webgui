@@ -155,6 +155,16 @@ const nextConfig = {
       'lodash-es',
       // Monaco Editor - ensure proper code splitting
       '@monaco-editor/react',
+      // OpenTelemetry packages - enable tree shaking
+      '@opentelemetry/api',
+      '@opentelemetry/core',
+      '@opentelemetry/instrumentation',
+      '@opentelemetry/resources',
+      '@opentelemetry/semantic-conventions',
+      '@opentelemetry/sdk-node',
+      '@opentelemetry/auto-instrumentations-node',
+      '@opentelemetry/exporter-otlp-http',
+      '@opentelemetry/exporter-prometheus',
     ],
   },
   trailingSlash: false,
