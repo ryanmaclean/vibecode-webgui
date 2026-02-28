@@ -1,0 +1,135 @@
+{
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "Add a new API endpoint",
+      "description": "Create a new endpoint at /api/goodbye that uses the createFarewell function",
+      "priority": "medium",
+      "status": "pending",
+      "tags": ["feature", "api", "beginner"],
+      "aiHints": [
+        "Open src/index.ts",
+        "Add a new GET endpoint for /api/goodbye",
+        "Import and use the createFarewell function from src/api/hello.ts",
+        "Return a JSON response similar to the /api/hello endpoint"
+      ],
+      "estimatedTime": "5 minutes"
+    },
+    {
+      "id": "task-2",
+      "title": "Implement name validation",
+      "description": "Complete the isValidName function with proper validation rules",
+      "priority": "high",
+      "status": "pending",
+      "tags": ["validation", "security", "beginner"],
+      "aiHints": [
+        "Open src/api/hello.ts",
+        "Find the isValidName function",
+        "Add checks for: empty strings, valid characters, reasonable length",
+        "Consider using regular expressions for character validation"
+      ],
+      "estimatedTime": "10 minutes"
+    },
+    {
+      "id": "task-3",
+      "title": "Add error handling",
+      "description": "Implement proper error handling for all API endpoints",
+      "priority": "high",
+      "status": "pending",
+      "tags": ["error-handling", "robustness", "intermediate"],
+      "aiHints": [
+        "Add try-catch blocks to endpoints in src/index.ts",
+        "Create a custom error handler middleware",
+        "Return appropriate HTTP status codes for different error types",
+        "Log errors with timestamps"
+      ],
+      "estimatedTime": "15 minutes"
+    },
+    {
+      "id": "task-4",
+      "title": "Implement multi-language greetings",
+      "description": "Complete the createAdvancedGreeting function with support for multiple languages",
+      "priority": "medium",
+      "status": "pending",
+      "tags": ["feature", "i18n", "intermediate"],
+      "aiHints": [
+        "Open src/api/hello.ts",
+        "Find the createAdvancedGreeting function",
+        "Add greeting translations for 'en', 'es', 'fr', 'de'",
+        "Implement formal/informal tone variations",
+        "Add emoji support based on includeEmoji option"
+      ],
+      "estimatedTime": "20 minutes"
+    },
+    {
+      "id": "task-5",
+      "title": "Add TypeScript types for responses",
+      "description": "Create proper TypeScript interfaces for all API responses",
+      "priority": "medium",
+      "status": "pending",
+      "tags": ["typescript", "types", "beginner"],
+      "aiHints": [
+        "Create a new file src/types.ts",
+        "Define interfaces for: ApiInfo, GreetingResponse, HealthCheck",
+        "Use these interfaces in endpoint response types",
+        "Ensure all responses are properly typed"
+      ],
+      "estimatedTime": "10 minutes"
+    },
+    {
+      "id": "task-6",
+      "title": "Write unit tests",
+      "description": "Add unit tests for the greeting functions",
+      "priority": "high",
+      "status": "pending",
+      "tags": ["testing", "quality", "advanced"],
+      "aiHints": [
+        "Install Jest and ts-jest",
+        "Create tests/api/hello.test.ts",
+        "Test createGreeting, createFarewell, isValidName",
+        "Test edge cases: empty strings, special characters, very long names",
+        "Aim for >80% code coverage"
+      ],
+      "estimatedTime": "25 minutes"
+    },
+    {
+      "id": "task-7",
+      "title": "Add request logging middleware",
+      "description": "Implement middleware to log all incoming requests",
+      "priority": "low",
+      "status": "pending",
+      "tags": ["logging", "observability", "intermediate"],
+      "aiHints": [
+        "Create src/middleware/logger.ts",
+        "Log request method, path, timestamp, and response time",
+        "Add the middleware to the Express app",
+        "Consider using a logging library like Winston or Pino"
+      ],
+      "estimatedTime": "15 minutes"
+    },
+    {
+      "id": "task-8",
+      "title": "Implement rate limiting",
+      "description": "Add rate limiting to prevent API abuse",
+      "priority": "medium",
+      "status": "pending",
+      "tags": ["security", "performance", "advanced"],
+      "aiHints": [
+        "Install express-rate-limit package",
+        "Create rate limiting configuration",
+        "Apply to all API endpoints",
+        "Add custom error messages for rate limit exceeded",
+        "Consider different limits for different endpoints"
+      ],
+      "estimatedTime": "20 minutes"
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "created": "2024-01-01T00:00:00.000Z",
+    "description": "Sample tasks to help you get started with VibeCode's AI-powered development",
+    "totalTasks": 8,
+    "estimatedTotalTime": "120 minutes",
+    "difficulty": "beginner-to-advanced"
+  }
+}

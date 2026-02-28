@@ -5,8 +5,8 @@
   "identifier": "com.vibecode.app",
   "build": {
     "beforeDevCommand": "echo 'Next.js dev server should be running on :3000'",
-    "beforeBuildCommand": "cd ../.. && npm run build",
-    "frontendDist": "../../public",
+    "beforeBuildCommand": "cd ../.. && npm run build:tauri",
+    "frontendDist": "../public",
     "devUrl": "http://localhost:3000"
   },
   "bundle": {

@@ -7,20 +7,19 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // Users and Authentication
 model User {
-  id          Int      @id @default(autoincrement())
-  email       String   @unique
-  name        String?
-  role        String   @default("user") // user, admin
-  avatar      String?
-  github_id   String?  @unique
-  google_id   String?  @unique
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  name       String?
+  role       String   @default("user") // user, admin
+  avatar     String?
+  github_id  String?  @unique
+  google_id  String?  @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   // Relations
   sessions         Session[]
@@ -29,9 +28,14 @@ model User {
   files            File[]
   uploads          Upload[]
   ai_requests      AIRequest[]
+  ai_suggestions   AISuggestion[]
   rag_chunks       RAGChunk[]
   conversations    Conversation[]
   session_contexts SessionContext[]
+  codebaseIndexes  CodebaseIndex[]
+  pluginRepositories PluginRepository[]
+  pluginRatings      PluginRating[]
+  pluginDownloads    PluginDownload[]
 
   @@map("users")
 }
@@ -53,15 +57,15 @@ model Session {
 
 // Session Context for persistent conversation state
 model SessionContext {
-  id           Int      @id @default(autoincrement())
-  content      String   // Conversation context text
-  metadata     Json?    // Additional metadata (e.g., message count, token count, conversation summary)
-  session_id   String?  // Session identifier
+  id           Int                          @id @default(autoincrement())
+  content      String // Conversation context text
+  metadata     Json? // Additional metadata (e.g., message count, token count, conversation summary)
+  session_id   String? // Session identifier
   user_id      Int
   workspace_id Int?
   embedding    Unsupported("vector(1536)")? // Vector embedding for semantic search
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  created_at   DateTime                     @default(now())
+  updated_at   DateTime                     @updatedAt
 
   // Relations
   user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -77,25 +81,27 @@ model SessionContext {
 
 // Workspaces and Projects
 model Workspace {
-  id           Int      @id @default(autoincrement())
-  name         String
-  description  String?
-  user_id      Int
-  status       String   @default("active") // active, archived, deleting
-  workspace_id String   @unique // External workspace identifier
-  url          String?  // code-server URL
+  id                 Int       @id @default(autoincrement())
+  name               String
+  description        String?
+  user_id            Int
+  status             String    @default("active") // active, archived, deleting
+  workspace_id       String    @unique // External workspace identifier
+  url                String? // code-server URL
   dbm_last_sample_at DateTime? // Tracks last time DBM sample was recorded
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
 
   // Relations
   user             User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
   projects         Project[]
   files            File[]
   uploads          Upload[]
+  ai_suggestions   AISuggestion[]
   rag_chunks       RAGChunk[]
   conversations    Conversation[]
   session_contexts SessionContext[]
+  codebaseIndexes  CodebaseIndex[]
 
   @@index([user_id])
   @@index([workspace_id])
@@ -111,20 +117,22 @@ model Project {
   description  String?
   user_id      Int
   workspace_id Int?
-  language     String?  // typescript, javascript, python, etc.
-  framework    String?  // react, vue, express, fastapi, etc.
-  template     String?  // Template used to generate project
-  ai_prompt    String?  // Original AI prompt used for generation
+  language     String? // typescript, javascript, python, etc.
+  framework    String? // react, vue, express, fastapi, etc.
+  template     String? // Template used to generate project
+  ai_prompt    String? // Original AI prompt used for generation
   status       String   @default("active") // active, archived, generating
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
   // Relations
-  user        User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  workspace   Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
-  files       File[]
-  ai_requests AIRequest[]
-  rag_chunks  RAGChunk[]
+  user            User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace       Workspace?      @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  files           File[]
+  ai_requests     AIRequest[]
+  rag_chunks      RAGChunk[]
+  ai_suggestions  AISuggestion[]
+  codebaseIndexes CodebaseIndex[]
 
   @@index([user_id])
   @@index([workspace_id])
@@ -141,12 +149,12 @@ model File {
   id           Int      @id @default(autoincrement())
   name         String
   path         String
-  content      String?  // File content for small files
-  size         Int?     // File size in bytes
+  content      String? // File content for small files
+  size         Int? // File size in bytes
   mime_type    String?
-  language     String?  // Detected programming language
-  lines        Int?     // Number of lines
-  checksum     String?  // Content hash
+  language     String? // Detected programming language
+  lines        Int? // Number of lines
+  checksum     String? // Content hash
   user_id      Int
   workspace_id Int?
   project_id   Int?
@@ -154,10 +162,10 @@ model File {
   updated_at   DateTime @updatedAt
 
   // Relations
-  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  workspace  Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
-  project    Project?   @relation(fields: [project_id], references: [id], onDelete: SetNull)
-  chunks     RAGChunk[] // Relation to RAG chunks
+  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  project   Project?   @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  chunks    RAGChunk[] // Relation to RAG chunks
 
   @@index([user_id])
   @@index([workspace_id])
@@ -174,22 +182,22 @@ model File {
 
 // RAG Chunks for vector search (simplified without pgvector)
 model RAGChunk {
-  id          Int      @id @default(autoincrement())
-  content     String   // Chunk text content
-  metadata    Json?    // Additional metadata
-  file_id     Int?
-  user_id     Int
+  id           Int                          @id @default(autoincrement())
+  content      String // Chunk text content
+  metadata     Json? // Additional metadata
+  file_id      Int?
+  user_id      Int
   workspace_id Int?
-  project_id  Int?
-  chunk_index Int?     // Position within file
-  token_count Int?     // Number of tokens
-  start_line  Int?     // Start line in file
-  end_line    Int?     // End line in file
-  tokens      Int?     // Token count (alias for token_count)
-  chunk_id    String?  // External chunk identifier
-  embedding   Unsupported("vector(1536)")?
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  project_id   Int?
+  chunk_index  Int? // Position within file
+  token_count  Int? // Number of tokens
+  start_line   Int? // Start line in file
+  end_line     Int? // End line in file
+  tokens       Int? // Token count (alias for token_count)
+  chunk_id     String? // External chunk identifier
+  embedding    Unsupported("vector(1536)")?
+  created_at   DateTime                     @default(now())
+  updated_at   DateTime                     @updatedAt
 
   // Relations
   file      File?      @relation(fields: [file_id], references: [id], onDelete: Cascade)
@@ -210,26 +218,57 @@ model RAGChunk {
   @@map("rag_chunks")
 }
 
+// Codebase Indexing - Tracks indexed files for semantic search
+model CodebaseIndex {
+  id               Int      @id @default(autoincrement())
+  file_path        String // Path to the indexed file
+  file_hash        String // Content hash for change detection
+  user_id          Int
+  workspace_id     Int?
+  project_id       Int?
+  language         String? // Detected programming language
+  chunk_count      Int      @default(0) // Number of chunks created from this file
+  indexed_at       DateTime @default(now()) // When the file was last indexed
+  last_modified_at DateTime // Last modification time of the file
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  // Relations
+  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  project   Project?   @relation(fields: [project_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([workspace_id])
+  @@index([project_id])
+  @@index([file_path])
+  @@index([file_hash]) // For fast duplicate/change detection
+  @@index([workspace_id, project_id]) // Composite index for workspace-project queries
+  @@index([project_id, indexed_at]) // For sorting by index time within project
+  @@index([workspace_id, indexed_at]) // For sorting by index time within workspace
+  @@map("codebase_index")
+}
+
 model RAGIngestJob {
-  id          String   @id @default(uuid())
-  uploadId    Int?     @map("upload_id")
-  upload      Upload?  @relation(fields: [uploadId], references: [id], onDelete: SetNull)
-  blobName    String   @map("blob_name")
-  storageContainer String @map("storage_container")
-  originalFileName String @map("original_file_name")
-  size        Int
-  status      String   @default("queued")
-  queueName   String?  @map("queue_name")
-  userIdentifier      String? @map("user_identifier")
-  workspaceIdentifier String? @map("workspace_identifier")
-  projectIdentifier   String? @map("project_identifier")
-  chunkCount Int      @default(0) @map("chunk_count")
-  error       String?
-  requestedAt DateTime @default(now()) @map("requested_at")
-  startedAt   DateTime? @map("started_at")
-  completedAt DateTime? @map("completed_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id                  String    @id @default(uuid())
+  uploadId            Int?      @map("upload_id")
+  upload              Upload?   @relation(fields: [uploadId], references: [id], onDelete: SetNull)
+  blobName            String    @map("blob_name")
+  storageContainer    String    @map("storage_container")
+  originalFileName    String    @map("original_file_name")
+  size                Int
+  status              String    @default("queued")
+  queueName           String?   @map("queue_name")
+  userIdentifier      String?   @map("user_identifier")
+  workspaceIdentifier String?   @map("workspace_identifier")
+  projectIdentifier   String?   @map("project_identifier")
+  chunkCount          Int       @default(0) @map("chunk_count")
+  error               String?
+  requestedAt         DateTime  @default(now()) @map("requested_at")
+  startedAt           DateTime? @map("started_at")
+  completedAt         DateTime? @map("completed_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
 
   @@index([status])
   @@index([requestedAt])
@@ -237,22 +276,22 @@ model RAGIngestJob {
 }
 
 model Upload {
-  id           Int      @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   original_name String
-  stored_name  String   @unique
-  path         String
-  size         Int
-  mime_type    String
-  user_id      Int
-  workspace_id Int?
-  status       String   @default("uploaded") // uploaded, processing, processed, error
-  metadata     Json?    // Additional metadata
-  created_at   DateTime @default(now())
+  stored_name   String   @unique
+  path          String
+  size          Int
+  mime_type     String
+  user_id       Int
+  workspace_id  Int?
+  status        String   @default("uploaded") // uploaded, processing, processed, error
+  metadata      Json? // Additional metadata
+  created_at    DateTime @default(now())
 
   // Relations
-  user        User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  workspace   Workspace?     @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
-  ingestJobs  RAGIngestJob[]
+  user       User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace  Workspace?     @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  ingestJobs RAGIngestJob[]
 
   @@index([user_id])
   @@index([workspace_id])
@@ -262,22 +301,22 @@ model Upload {
 
 // AI Integration and Requests
 model AIRequest {
-  id           Int      @id @default(autoincrement())
-  user_id      Int
-  project_id   Int?
-  request_type String   // generate_project, chat, completion, etc.
-  prompt       String
-  model        String   // anthropic/claude-3.5-sonnet, etc.
-  provider     String   // openrouter, anthropic, openai
-  input_tokens Int?
+  id            Int       @id @default(autoincrement())
+  user_id       Int
+  project_id    Int?
+  request_type  String // generate_project, chat, completion, etc.
+  prompt        String
+  model         String // anthropic/claude-3.5-sonnet, etc.
+  provider      String // openrouter, anthropic, openai
+  input_tokens  Int?
   output_tokens Int?
-  cost         Float?   // Cost in USD
-  duration_ms  Int?     // Request duration
-  status       String   @default("pending") // pending, completed, error, cancelled
-  response     Json?    // AI response data
-  error        String?  // Error message if failed
-  created_at   DateTime @default(now())
-  completed_at DateTime?
+  cost          Float? // Cost in USD
+  duration_ms   Int? // Request duration
+  status        String    @default("pending") // pending, completed, error, cancelled
+  response      Json? // AI response data
+  error         String? // Error message if failed
+  created_at    DateTime  @default(now())
+  completed_at  DateTime?
 
   // Relations
   user    User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -296,13 +335,117 @@ model AIRequest {
   @@map("ai_requests")
 }
 
+// AI Suggestions - Enhanced for quality metrics tracking
+model AISuggestion {
+  id                Int       @id @default(autoincrement())
+  model_id          String // AI model identifier (e.g., "anthropic/claude-3.5-sonnet")
+  suggestion        String // Suggested code/content
+  language          String? // Programming language
+  user_id           Int
+  workspace_id      Int?
+  project_id        Int?
+  context           Json? // Context about the suggestion
+  timestamp         DateTime  @default(now())
+  outcome           String    @default("pending") // pending, accepted, rejected
+  final_code        String? // Final code after user edits (if accepted)
+  edit_distance     Int? // Levenshtein distance between suggestion and final code
+  similarity        Float? // Similarity score (0-1) between suggestion and final code
+  time_to_accept    Int? // Time in milliseconds from suggestion to acceptance
+  time_to_reject    Int? // Time in milliseconds from suggestion to rejection
+  rejection_reason  String? // Reason for rejection
+  rating            Int? // User rating (1-5 stars)
+  rating_comment    String? // User feedback comment
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  // Relations
+  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  project   Project?   @relation(fields: [project_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([workspace_id])
+  @@index([project_id])
+  @@index([model_id])
+  @@index([outcome])
+  @@index([language])
+  @@index([model_id, outcome, created_at]) // For model quality queries
+  @@index([user_id, created_at]) // For user suggestion history
+  @@index([workspace_id, outcome, created_at]) // For workspace analytics
+  @@index([project_id, outcome, created_at]) // For project-specific tracking
+  @@index([outcome, created_at]) // For overall outcome trends
+  @@index([rating, model_id]) // For rating analysis by model
+  @@map("ai_suggestions")
+}
+
+// AI Quality Metrics - Aggregated quality metrics over time periods
+model AIQualityMetric {
+  id                    Int      @id @default(autoincrement())
+  model_id              String // AI model identifier (e.g., "anthropic/claude-3.5-sonnet")
+  period                String // Aggregation period: day, week, month
+  start_date            DateTime // Start of the period
+  end_date              DateTime // End of the period
+  total_suggestions     Int      @default(0) // Total suggestions in period
+  accepted_suggestions  Int      @default(0) // Number of accepted suggestions
+  rejected_suggestions  Int      @default(0) // Number of rejected suggestions
+  acceptance_rate       Float? // Acceptance rate (0-1)
+  avg_edit_distance     Float? // Average Levenshtein distance
+  avg_similarity        Float? // Average similarity score (0-1)
+  avg_time_to_accept    Float? // Average time to accept in milliseconds
+  avg_rating            Float? // Average user rating (1-5)
+  trend_slope           Float? // Trend slope for detecting degradation
+  health_status         String   @default("healthy") // healthy, warning, critical
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  @@unique([model_id, period, start_date]) // One metric per model/period/date combination
+  @@index([model_id])
+  @@index([period])
+  @@index([start_date])
+  @@index([health_status])
+  @@index([model_id, period, start_date]) // For time series queries
+  @@index([model_id, health_status]) // For model health monitoring
+  @@index([acceptance_rate, model_id]) // For acceptance rate analysis
+  @@index([created_at]) // For recent metrics queries
+  @@map("ai_quality_metrics")
+}
+
+// AI Quality Alerts - Alert system for quality degradation detection
+model AIQualityAlert {
+  id             Int       @id @default(autoincrement())
+  model_id       String // AI model identifier (e.g., "anthropic/claude-3.5-sonnet")
+  alert_type     String // acceptance_rate_drop, edit_distance_increase, rating_decline, slow_acceptance
+  severity       String // warning, critical
+  message        String // Human-readable alert message
+  threshold      Float // Threshold value that triggered the alert
+  current_value  Float // Current metric value
+  previous_value Float // Previous metric value for comparison
+  detected_at    DateTime  @default(now()) // When the alert was detected
+  resolved_at    DateTime? // When the alert was resolved
+  resolved       Boolean   @default(false) // Whether the alert has been resolved
+  metadata       Json? // Additional alert context
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  @@index([model_id])
+  @@index([alert_type])
+  @@index([severity])
+  @@index([resolved])
+  @@index([detected_at])
+  @@index([model_id, resolved, detected_at]) // For active alerts by model
+  @@index([alert_type, severity, resolved]) // For filtering by type and severity
+  @@index([resolved, detected_at]) // For active alerts time series
+  @@index([model_id, alert_type, resolved]) // For model-specific alert type queries
+  @@map("ai_quality_alerts")
+}
+
 // Monitoring and Analytics
 model Event {
   id         Int      @id @default(autoincrement())
   user_id    Int?
-  event_type String   // page_view, api_call, error, etc.
-  event_name String   // Specific event name
-  properties Json?    // Event properties
+  event_type String // page_view, api_call, error, etc.
+  event_name String // Specific event name
+  properties Json? // Event properties
   session_id String?
   ip_address String?
   user_agent String?
@@ -318,12 +461,12 @@ model Event {
 }
 
 model SystemMetric {
-  id         Int      @id @default(autoincrement())
-  metric_name String  // cpu_usage, memory_usage, disk_usage, etc.
-  value      Float
-  unit       String?  // percentage, bytes, ms, etc.
-  tags       Json?    // Additional tags for filtering
-  created_at DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  metric_name String // cpu_usage, memory_usage, disk_usage, etc.
+  value       Float
+  unit        String? // percentage, bytes, ms, etc.
+  tags        Json? // Additional tags for filtering
+  created_at  DateTime @default(now())
 
   @@index([metric_name])
   @@index([created_at])
@@ -334,31 +477,31 @@ model SystemMetric {
 
 // Configuration and Settings
 model Setting {
-  id         Int      @id @default(autoincrement())
-  key        String   @unique
-  value      String
-  type       String   @default("string") // string, number, boolean, json
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  value       String
+  type        String   @default("string") // string, number, boolean, json
   description String?
-  updated_at DateTime @updatedAt
+  updated_at  DateTime @updatedAt
 
   @@map("settings")
 }
 
 // Chat Conversation Persistence
 model Conversation {
-  id           String   @id @default(cuid())
-  title        String?
-  user_id      Int
-  workspace_id Int?
-  session_id   String?  // Links to ChatSession for session continuity
-  model        String?  // AI model used (e.g., gpt-4, claude-3)
-  status       ConversationStatus @default(ACTIVE)
-  message_count Int     @default(0)
-  total_tokens  Int?    // Total tokens used in conversation
-  metadata     Json?    // Additional metadata (tags, context, etc.)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-  archived_at  DateTime?
+  id            String             @id @default(cuid())
+  title         String?
+  user_id       Int
+  workspace_id  Int?
+  session_id    String? // Links to ChatSession for session continuity
+  model         String? // AI model used (e.g., gpt-4, claude-3)
+  status        ConversationStatus @default(ACTIVE)
+  message_count Int                @default(0)
+  total_tokens  Int? // Total tokens used in conversation
+  metadata      Json? // Additional metadata (tags, context, etc.)
+  created_at    DateTime           @default(now())
+  updated_at    DateTime           @updatedAt
+  archived_at   DateTime?
 
   // Relations
   user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -382,18 +525,18 @@ enum ConversationStatus {
 }
 
 model Message {
-  id              String   @id @default(cuid())
+  id              String      @id @default(cuid())
   conversation_id String
   role            MessageRole
   content         String
-  tokens          Int?     // Token count for this message
-  model           String?  // Model used for assistant responses
-  provider        String?  // AI provider (openai, anthropic, etc.)
-  duration_ms     Int?     // Response generation time
-  files           Json?    // Attached file references
-  metadata        Json?    // Tool calls, function results, etc.
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  tokens          Int? // Token count for this message
+  model           String? // Model used for assistant responses
+  provider        String? // AI provider (openai, anthropic, etc.)
+  duration_ms     Int? // Response generation time
+  files           Json? // Attached file references
+  metadata        Json? // Tool calls, function results, etc.
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
 
   // Relations
   conversation Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
@@ -429,16 +572,16 @@ model ChatSession {
 
 // Experimentation Platform - Data Warehouse Layer
 model Experiment {
-  id          String   @id @default(cuid())
-  key         String   @unique
+  id          String           @id @default(cuid())
+  key         String           @unique
   name        String
   description String?
   status      ExperimentStatus @default(DRAFT)
-  config      Json     // Variants, traffic allocation, targeting rules
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  startedAt   DateTime? @map("started_at")
-  completedAt DateTime? @map("completed_at")
+  config      Json // Variants, traffic allocation, targeting rules
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  startedAt   DateTime?        @map("started_at")
+  completedAt DateTime?        @map("completed_at")
 
   assignments ExperimentAssignment[]
   metrics     ExperimentMetric[]
@@ -458,16 +601,16 @@ enum ExperimentStatus {
 }
 
 model ExperimentAssignment {
-  id           String   @id @default(cuid())
-  experimentId String   @map("experiment_id")
+  id           String     @id @default(cuid())
+  experimentId String     @map("experiment_id")
   experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
 
-  userId       String   @map("user_id")
-  variantKey   String   @map("variant_key")
-  assignedAt   DateTime @default(now()) @map("assigned_at")
-  metadata     Json?    // User properties, targeting context
+  userId     String   @map("user_id")
+  variantKey String   @map("variant_key")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  metadata   Json? // User properties, targeting context
 
-  metrics      ExperimentMetric[]
+  metrics ExperimentMetric[]
 
   @@unique([experimentId, userId], name: "experiment_id_user_id")
   @@index([experimentId, variantKey])
@@ -477,17 +620,17 @@ model ExperimentAssignment {
 }
 
 model ExperimentMetric {
-  id           String   @id @default(cuid())
-  experimentId String   @map("experiment_id")
+  id           String     @id @default(cuid())
+  experimentId String     @map("experiment_id")
   experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
 
-  assignmentId String   @map("assignment_id")
+  assignmentId String               @map("assignment_id")
   assignment   ExperimentAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
 
-  metricName   String   @map("metric_name")
-  metricValue  Float    @map("metric_value")
-  timestamp    DateTime @default(now())
-  metadata     Json?
+  metricName  String   @map("metric_name")
+  metricValue Float    @map("metric_value")
+  timestamp   DateTime @default(now())
+  metadata    Json?
 
   @@index([experimentId, metricName])
   @@index([assignmentId, metricName])
@@ -501,33 +644,33 @@ model ExperimentMetric {
 // ============================================
 
 model AgentMemory {
-  id          String   @id @default(uuid()) @db.Uuid
-  agentId     String   @map("agent_id")
-  projectId   String?  @map("project_id")
-  workspaceId String?  @map("workspace_id")
-  beadId      String?  @map("bead_id")
+  id          String  @id @default(uuid()) @db.Uuid
+  agentId     String  @map("agent_id")
+  projectId   String? @map("project_id")
+  workspaceId String? @map("workspace_id")
+  beadId      String? @map("bead_id")
 
-  tier        String   @default("long_term")
+  tier        String                       @default("long_term")
   content     String
-  contentType String   @map("content_type")
+  contentType String                       @map("content_type")
   embedding   Unsupported("vector(1536)")?
 
   source      String?
-  confidence  Float    @default(1.0)
+  confidence  Float     @default(1.0)
   validatedAt DateTime? @map("validated_at")
-  validatedBy String?  @map("validated_by")
-  usageCount  Int      @default(0) @map("usage_count")
+  validatedBy String?   @map("validated_by")
+  usageCount  Int       @default(0) @map("usage_count")
   lastUsedAt  DateTime? @map("last_used_at")
-  tags        String[] @default([])
-  metadata    Json     @default("{}")
+  tags        String[]  @default([])
+  metadata    Json      @default("{}")
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  expiresAt   DateTime? @map("expires_at")
-  accessedAt  DateTime @default(now()) @map("accessed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  expiresAt  DateTime? @map("expires_at")
+  accessedAt DateTime  @default(now()) @map("accessed_at")
 
-  beliefs     AgentBelief[]
-  accessLogs  AgentMemoryAccessLog[]
+  beliefs    AgentBelief[]
+  accessLogs AgentMemoryAccessLog[]
 
   @@index([agentId])
   @@index([projectId])
@@ -540,23 +683,23 @@ model AgentMemory {
 }
 
 model AgentBelief {
-  id                String   @id @default(uuid()) @db.Uuid
-  agentId           String   @map("agent_id")
-  memoryId          String?  @map("memory_id") @db.Uuid
-  memory            AgentMemory? @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  id       String       @id @default(uuid()) @db.Uuid
+  agentId  String       @map("agent_id")
+  memoryId String?      @map("memory_id") @db.Uuid
+  memory   AgentMemory? @relation(fields: [memoryId], references: [id], onDelete: Cascade)
 
-  statement         String
-  evidence          String[] @default([])
+  statement String
+  evidence  String[] @default([])
 
-  confidence        Float    @default(0.5)
-  confidenceHistory Json     @default("[]") @map("confidence_history")
+  confidence        Float @default(0.5)
+  confidenceHistory Json  @default("[]") @map("confidence_history")
 
-  status            String   @default("pending")
-  validatedAt       DateTime? @map("validated_at")
-  validatedBy       String?  @map("validated_by")
+  status      String    @default("pending")
+  validatedAt DateTime? @map("validated_at")
+  validatedBy String?   @map("validated_by")
 
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([agentId])
   @@index([status])
@@ -565,13 +708,13 @@ model AgentBelief {
 }
 
 model AgentMemoryAccessLog {
-  id         String   @id @default(uuid()) @db.Uuid
-  memoryId   String   @map("memory_id") @db.Uuid
+  id         String      @id @default(uuid()) @db.Uuid
+  memoryId   String      @map("memory_id") @db.Uuid
   memory     AgentMemory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
-  agentId    String   @map("agent_id")
-  accessType String   @map("access_type")
+  agentId    String      @map("agent_id")
+  accessType String      @map("access_type")
   context    Json?
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime    @default(now()) @map("created_at")
 
   @@index([memoryId])
   @@index([agentId])
@@ -580,20 +723,20 @@ model AgentMemoryAccessLog {
 }
 
 model AgentSessionHandoff {
-  id                    String   @id @default(uuid()) @db.Uuid
-  agentId               String   @map("agent_id")
-  sessionId             String   @map("session_id")
+  id        String @id @default(uuid()) @db.Uuid
+  agentId   String @map("agent_id")
+  sessionId String @map("session_id")
 
   workingMemorySnapshot String[] @default([]) @map("working_memory_snapshot")
   ephemeralSummary      String?  @map("ephemeral_summary")
   activeBeadId          String?  @map("active_bead_id")
 
-  status                String   @default("active")
-  resumedAt             DateTime? @map("resumed_at")
-  resumedBySession      String?  @map("resumed_by_session")
+  status           String    @default("active")
+  resumedAt        DateTime? @map("resumed_at")
+  resumedBySession String?   @map("resumed_by_session")
 
-  createdAt             DateTime @default(now()) @map("created_at")
-  expiresAt             DateTime @default(dbgenerated("NOW() + INTERVAL '30 days'")) @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @default(dbgenerated("NOW() + INTERVAL '30 days'")) @map("expires_at")
 
   @@index([agentId])
   @@index([sessionId])
@@ -603,6 +746,235 @@ model AgentSessionHandoff {
   @@map("agent_session_handoffs")
 }
 
+// =====================================
+// Compliance Audit Logging (Issue #046)
+// Immutable audit trail for regulatory compliance
+// ============================================
+
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  timestamp     DateTime @default(now())
+  user_id       Int? // Nullable for system/anonymous actions
+  action        String // Action performed (e.g., "user.login", "file.create", "project.delete")
+  resource      String // Resource type and ID (e.g., "project:123", "file:456")
+  ip_address    String? // Client IP address
+  user_agent    String? // Client user agent string
+  metadata      Json? // Additional context (request params, before/after states, etc.)
+  hash          String // SHA-256 hash of (previous_hash + record_data) for tamper evidence
+  previous_hash String?  @map("previous_hash") // Reference to previous log hash for chain integrity
+
+  // Compliance-specific fields
+  severity   String  @default("info") // info, warning, critical
+  category   String  @default("general") // auth, data_access, admin, system
+  outcome    String  @default("success") // success, failure, error
+  session_id String? @map("session_id") // Links to user session for correlation
+
+  @@index([timestamp])
+  @@index([user_id])
+  @@index([action])
+  @@index([resource])
+  @@index([category])
+  @@index([severity])
+  @@index([user_id, timestamp]) // For user activity timeline
+  @@index([action, timestamp]) // For action-based queries
+  @@index([category, severity, timestamp]) // For compliance reporting
+  @@index([session_id]) // For session correlation
+  @@index([hash]) // For integrity verification
+  @@map("audit_logs")
+}
+
+// Confirmation Requests for Human-in-the-Loop Agent Approval
+model ConfirmationRequest {
+  id          String    @id @default(uuid()) @db.Uuid
+  request_id  String    @unique // External request identifier
+  agent_id    String // Agent that created the request
+  action_type String // Type of destructive operation (e.g., "file.delete", "database.drop", "deploy.production")
+  file_path   String? // File path for file operations
+  status      String    @default("pending") // pending, approved, rejected, expired
+  risk_level  String    @default("medium") // low, medium, high, critical
+  metadata    Json? // Additional context (diff preview, operation details, etc.)
+  created_at  DateTime  @default(now())
+  expires_at  DateTime // Request expiration timestamp
+  approved_at DateTime? // Approval timestamp
+  approved_by Int? // User ID who approved/rejected the request
+
+  // Relations
+  snapshots OperationSnapshot[]
+
+  @@index([status])
+  @@index([agent_id])
+  @@index([approved_by])
+  @@index([created_at])
+  @@index([status, created_at]) // For querying pending requests by age
+  @@index([agent_id, status]) // For agent-specific request queries
+  @@index([risk_level, status]) // For risk-based filtering
+  @@map("confirmation_requests")
+}
+
+// Operation Snapshots for Rollback Capability
+model OperationSnapshot {
+  id                 String              @id @default(uuid()) @db.Uuid
+  confirmation_id    String              @db.Uuid // Reference to confirmation request
+  operation_type     String // Type of operation (e.g., "file.write", "file.delete", "database.update")
+  file_path          String? // File path for file operations
+  original_content   String? // Content before operation (for rollback)
+  modified_content   String? // Content after operation (for verification)
+  rollback_status    String              @default("available") // available, rolled_back, expired
+  rolled_back_at     DateTime? // Timestamp when rollback was performed
+  rolled_back_by     Int? // User ID who triggered rollback
+  metadata           Json? // Additional context (file hash, permissions, etc.)
+  created_at         DateTime            @default(now())
+
+  // Relations
+  confirmation ConfirmationRequest @relation(fields: [confirmation_id], references: [id], onDelete: Cascade)
+
+  @@index([confirmation_id])
+  @@index([operation_type])
+  @@index([file_path])
+  @@index([rollback_status])
+  @@index([created_at])
+  @@index([confirmation_id, created_at]) // For retrieving snapshots chronologically
+  @@index([rollback_status, created_at]) // For finding available snapshots
+  @@map("operation_snapshots")
+}
+
+// Plugin System
+model Plugin {
+  id           String   @id @default(uuid())
+  name         String
+  version      String
+  author       String? // Plugin author/creator
+  status       String   @default("installed") // installed, enabled, disabled
+  manifest     Json // Plugin manifest with capabilities, permissions, config
+  installed_at DateTime @default(now()) @map("installed_at")
+  updated_at   DateTime @updatedAt @map("updated_at")
+
+  @@unique([name, version], name: "plugin_name_version")
+  @@index([name])
+  @@index([status])
+  @@index([installed_at])
+  @@map("plugins")
+}
+
+// Plugin Repository - Community marketplace for plugins
+model PluginRepository {
+  id                Int      @id @default(autoincrement())
+  name              String
+  display_name      String // Friendly display name
+  description       String
+  author_id         Int
+  repository_url    String? // Source code repository URL
+  homepage_url      String? // Plugin homepage/docs
+  icon_url          String? // Plugin icon/logo URL
+  category          String // integration, ai-model, theme, extension, etc.
+  tags              Json? // Array of tags for categorization
+  downloads_count   Int      @default(0)
+  average_rating    Float? // Calculated average rating
+  status            String   @default("published") // published, unpublished, deprecated
+  featured          Boolean  @default(false) // Featured/promoted plugin
+  verified          Boolean  @default(false) // Verified by VibeCode team
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  // Relations
+  author   User            @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  versions PluginVersion[]
+  ratings  PluginRating[]
+  downloads PluginDownload[]
+
+  @@index([author_id])
+  @@index([name])
+  @@index([status])
+  @@index([category])
+  @@index([featured, status]) // For featured plugin queries
+  @@index([verified, status]) // For verified plugin queries
+  @@index([downloads_count, status]) // For sorting by popularity
+  @@index([average_rating, status]) // For sorting by rating
+  @@index([status, created_at]) // For sorting by newest
+  @@index([category, status, downloads_count]) // For category-specific popular plugins
+  @@map("plugin_repository")
+}
+
+// Plugin Versions - Different releases of marketplace plugins
+model PluginVersion {
+  id                  Int      @id @default(autoincrement())
+  plugin_id           Int
+  version             String // Semantic version (e.g., "1.2.3")
+  changelog           String? // Release notes
+  package_url         String // Download URL for plugin package
+  package_checksum    String // SHA-256 checksum for integrity
+  compatible_versions Json? // Compatible VibeCode versions
+  downloads_count     Int      @default(0)
+  status              String   @default("active") // active, deprecated, yanked
+  published_at        DateTime @default(now())
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  // Relations
+  plugin    PluginRepository @relation(fields: [plugin_id], references: [id], onDelete: Cascade)
+  downloads PluginDownload[]
+
+  @@unique([plugin_id, version], name: "plugin_id_version")
+  @@index([plugin_id])
+  @@index([version])
+  @@index([status])
+  @@index([published_at])
+  @@index([plugin_id, status, published_at]) // For plugin version history
+  @@index([downloads_count, status]) // For popular version tracking
+  @@map("plugin_versions")
+}
+
+// Plugin Ratings - User reviews and ratings
+model PluginRating {
+  id            Int      @id @default(autoincrement())
+  plugin_id     Int
+  user_id       Int
+  rating        Int // 1-5 stars
+  title         String? // Review title
+  review        String? // Review text
+  helpful_count Int      @default(0) // Number of "helpful" votes
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  // Relations
+  plugin PluginRepository @relation(fields: [plugin_id], references: [id], onDelete: Cascade)
+  user   User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([plugin_id, user_id], name: "plugin_id_user_id")
+  @@index([plugin_id])
+  @@index([user_id])
+  @@index([rating])
+  @@index([plugin_id, rating]) // For rating distribution queries
+  @@index([helpful_count, plugin_id]) // For sorting reviews by helpfulness
+  @@index([created_at])
+  @@map("plugin_ratings")
+}
+
+// Plugin Downloads - Track plugin download metrics
+model PluginDownload {
+  id         Int      @id @default(autoincrement())
+  plugin_id  Int
+  version_id Int?
+  user_id    Int? // Nullable for anonymous downloads
+  ip_address String?
+  user_agent String?
+  created_at DateTime @default(now())
+
+  // Relations
+  plugin  PluginRepository @relation(fields: [plugin_id], references: [id], onDelete: Cascade)
+  version PluginVersion?   @relation(fields: [version_id], references: [id], onDelete: SetNull)
+  user    User?            @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([plugin_id])
+  @@index([version_id])
+  @@index([user_id])
+  @@index([created_at])
+  @@index([plugin_id, created_at]) // For plugin download time series
+  @@index([version_id, created_at]) // For version download tracking
+  @@index([user_id, created_at]) // For user download history
+  @@map("plugin_downloads")
+}
+
 // ============================================
 // Secret Management and Rotation Tracking
 // Track API keys, tokens, and credentials with
@@ -610,14 +982,14 @@ model AgentSessionHandoff {
 // ============================================
 
 model SecretMetadata {
-  id               Int      @id @default(autoincrement())
-  key_name         String   @unique // Unique identifier for the secret (e.g., "GITHUB_TOKEN", "OPENAI_API_KEY")
-  created_at       DateTime @default(now())
-  expires_at       DateTime? // When the secret expires
-  last_rotated_at  DateTime? // Last successful rotation timestamp
-  rotation_policy  String?  // Policy identifier (e.g., "api_keys_90d", "auth_tokens_30d")
-  status           String   @default("active") // active, expired, rotating, revoked
-  metadata         Json?    // Additional metadata (secret type, owner, tags, etc.)
+  id              Int       @id @default(autoincrement())
+  key_name        String    @unique // Unique identifier for the secret (e.g., "GITHUB_TOKEN", "OPENAI_API_KEY")
+  created_at      DateTime  @default(now())
+  expires_at      DateTime? // When the secret expires
+  last_rotated_at DateTime? // Last successful rotation timestamp
+  rotation_policy String? // Policy identifier (e.g., "api_keys_90d", "auth_tokens_30d")
+  status          String    @default("active") // active, expired, rotating, revoked
+  metadata        Json? // Additional metadata (secret type, owner, tags, etc.)
 
   // Relations
   rotation_history SecretRotationHistory[]
@@ -632,14 +1004,14 @@ model SecretMetadata {
 }
 
 model SecretRotationHistory {
-  id                  Int      @id @default(autoincrement())
+  id                  Int       @id @default(autoincrement())
   secret_id           Int
-  rotated_at          DateTime @default(now())
-  rotated_by          String?  // User identifier or "system" for automated rotations
+  rotated_at          DateTime  @default(now())
+  rotated_by          String? // User identifier or "system" for automated rotations
   previous_expires_at DateTime? // Expiration date before rotation
   new_expires_at      DateTime? // New expiration date after rotation
-  reason              String?  // Reason for rotation (scheduled, manual, compromised, etc.)
-  metadata            Json?    // Additional rotation context
+  reason              String? // Reason for rotation (scheduled, manual, compromised, etc.)
+  metadata            Json? // Additional rotation context
 
   // Relations
   secret SecretMetadata @relation(fields: [secret_id], references: [id], onDelete: Cascade)

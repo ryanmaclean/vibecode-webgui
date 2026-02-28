@@ -51,6 +51,7 @@ import { cn } from '@/lib/utils';
 import { SettingsManager, getSettingsManager } from '@/lib/settings/settings-manager';
 import { TailscaleStatus } from '@/components/TailscaleStatus';
 import { TailscaleSetup } from '@/components/TailscaleSetup';
+import { EnvironmentPermissionsPanel } from '@/components/settings/EnvironmentPermissionsPanel';
 import type {
   AppSettings,
   GeneralSettings,
@@ -58,6 +59,7 @@ import type {
   AISettings,
   AdvancedSettings,
   AgentConfirmationSettings,
+  EnvironmentSettings,
   ThemeMode,
   LogLevel,
   SettingsValidationResult,
@@ -66,6 +68,7 @@ import {
   DEFAULT_APP_SETTINGS,
   DEFAULT_AI_MODELS,
 } from '@/types/settings';
+import { isVimModeEnabled, setVimModeEnabled } from '@/lib/keyboard/vim-bindings';
 
 // ============================================================================
 // Types
@@ -73,7 +76,7 @@ import {
 
 export interface SettingsPanelProps {
   /** Initial tab to display */
-  initialTab?: 'general' | 'services' | 'networking' | 'ai' | 'advanced';
+  initialTab?: 'general' | 'services' | 'networking' | 'ai' | 'advanced' | 'environment';
   /** Callback when settings are saved */
   onSave?: (settings: AppSettings) => void;
   /** Callback when panel is closed */
@@ -264,6 +267,9 @@ export function SettingsPanel({
     anthropic: '',
   });
 
+  // Vim mode state (stored in localStorage separately)
+  const [vimModeEnabled, setVimModeEnabledState] = useState(false);
+
   const settingsManager = useMemo(() => getSettingsManager(), []);
 
   // Load settings on mount
@@ -274,6 +280,8 @@ export function SettingsPanel({
         const loaded = await settingsManager.load();
         setSettings(loaded);
         setOriginalSettings(loaded);
+        // Load vim mode setting from localStorage
+        setVimModeEnabledState(isVimModeEnabled());
       } catch (error) {
         console.error('Failed to load settings:', error);
       } finally {
@@ -355,6 +363,35 @@ export function SettingsPanel({
     setSaveStatus('idle');
   }, []);
 
+  const updateEnvironment = useCallback((updates: Partial<EnvironmentSettings>) => {
+    setSettings((prev) => ({
+      ...prev,
+      environment: {
+        ...prev.environment,
+        ...updates,
+        permissions: updates.permissions
+          ? {
+              ...prev.environment?.permissions,
+              ...updates.permissions,
+              development: {
+                ...prev.environment?.permissions?.development,
+                ...updates.permissions?.development,
+              },
+              staging: {
+                ...prev.environment?.permissions?.staging,
+                ...updates.permissions?.staging,
+              },
+              production: {
+                ...prev.environment?.permissions?.production,
+                ...updates.permissions?.production,
+              },
+            }
+          : prev.environment?.permissions,
+      },
+    }));
+    setSaveStatus('idle');
+  }, []);
+
   const handleSave = useCallback(async () => {
     if (!validation.isValid) return;
 
@@ -393,12 +430,13 @@ export function SettingsPanel({
   }, []);
 
   const handleResetCategory = useCallback(
-    (category: 'general' | 'services' | 'ai' | 'advanced') => {
+    (category: 'general' | 'services' | 'ai' | 'advanced' | 'environment') => {
       const defaults = {
         general: DEFAULT_APP_SETTINGS.general,
         services: DEFAULT_APP_SETTINGS.services,
         ai: DEFAULT_APP_SETTINGS.ai,
         advanced: DEFAULT_APP_SETTINGS.advanced,
+        environment: DEFAULT_APP_SETTINGS.environment,
       };
 
       setSettings((prev) => ({
@@ -406,9 +444,20 @@ export function SettingsPanel({
         [category]: defaults[category],
       }));
       setSaveStatus('idle');
+
+      // Reset vim mode if resetting general settings
+      if (category === 'general') {
+        setVimModeEnabledState(false);
+        setVimModeEnabled(false);
+      }
     },
     []
   );
+
+  const handleVimModeToggle = useCallback((checked: boolean) => {
+    setVimModeEnabledState(checked);
+    setVimModeEnabled(checked);
+  }, []);
 
   // ==========================================================================
   // Render
@@ -472,7 +521,7 @@ export function SettingsPanel({
 
       <CardContent>
         <Tabs defaultValue={initialTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general" className="flex items-center gap-2">
               <Settings className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">General</span>
@@ -484,6 +533,10 @@ export function SettingsPanel({
             <TabsTrigger value="networking" className="flex items-center gap-2">
               <Shield className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">Network</span>
+            </TabsTrigger>
+            <TabsTrigger value="environment" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Environment</span>
             </TabsTrigger>
             <TabsTrigger value="ai" className="flex items-center gap-2">
               <Brain className="h-4 w-4" aria-hidden="true" />
@@ -589,6 +642,19 @@ export function SettingsPanel({
                   updateGeneral({ autoSaveInterval: parseInt(e.target.value, 10) || 0 })
                 }
                 className="w-24"
+              />
+            </SettingRow>
+
+            <SettingRow
+              id="vim-mode"
+              label="Vim Mode"
+              description="Enable vim-style keyboard navigation (j/k for scrolling, etc.)"
+            >
+              <Switch
+                id="vim-mode"
+                checked={vimModeEnabled}
+                onCheckedChange={handleVimModeToggle}
+                aria-label="Enable vim mode"
               />
             </SettingRow>
           </TabsContent>
@@ -801,6 +867,21 @@ export function SettingsPanel({
                 </div>
               </div>
             </div>
+          </TabsContent>
+
+          {/* Environment Settings Tab */}
+          <TabsContent value="environment" className="space-y-4 mt-6">
+            <EnvironmentPermissionsPanel
+              initialSettings={settings.environment}
+              onChange={(envSettings) => {
+                updateEnvironment(envSettings);
+              }}
+              onSave={async (envSettings) => {
+                // Update local state
+                updateEnvironment(envSettings);
+                // Save will be handled by the main save button
+              }}
+            />
           </TabsContent>
 
           {/* AI Settings Tab */}

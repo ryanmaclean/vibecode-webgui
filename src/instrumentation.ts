@@ -1,6 +1,4 @@
-import { registerOTel } from '@vercel/otel'
-
-export function register() {
+export async function register() {
   // Skip instrumentation during production build (page data collection phase)
   // dd-trace's Prisma instrumentation calls new URL() with the raw datasource config
   // object instead of a string, causing ERR_INVALID_URL during build
@@ -16,10 +14,16 @@ export function register() {
   const env = process.env.DD_ENV || process.env.NODE_ENV || 'development';
   const version = process.env.DD_VERSION || process.env.npm_package_version || '1.0.0';
 
-  registerOTel({
-    serviceName: service,
-  })
-
+  try {
+    const otel = await import('@vercel/otel');
+    if (typeof otel.registerOTel === 'function') {
+      otel.registerOTel({
+        serviceName: service,
+      });
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to initialize OpenTelemetry', error);
+  }
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     // Initialize Datadog Trace with unified service tagging
     const ddTrace = require('dd-trace');

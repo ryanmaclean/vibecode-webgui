@@ -22,6 +22,7 @@ import ModelSelector from '@/components/ai/ModelSelector';
 import ModelComparison from '@/components/ai/ModelComparison';
 import ModelDetails from '@/components/ai/ModelDetails';
 import OllamaModelManager from '@/components/ai/OllamaModelManager';
+import { ModelChangeNotification } from '@/components/ai/ModelChangeNotification';
 import type { ModelProfile, TaskType } from '@/types/model-comparison';
 
 // ============================================================================
@@ -196,14 +197,37 @@ export default function AIModelsPage() {
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Brain className="h-8 w-8 text-purple-600" />
-            <h1 className="text-3xl font-bold text-gray-900">AI Models</h1>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <Brain className="h-8 w-8 text-purple-600" />
+              <h1 className="text-3xl font-bold text-gray-900">AI Models</h1>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchModels}
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Refresh
+            </Button>
           </div>
           <p className="text-gray-600">
             Browse, compare, and get recommendations for AI models
           </p>
         </div>
+
+        {/* Model Change Notifications */}
+        <ModelChangeNotification
+          showDetails
+          showRefreshButton
+          onRefresh={fetchModels}
+          className="mb-6"
+        />
 
         {/* Error State */}
         {error && (

@@ -16,6 +16,10 @@ import {
   AlertTriangle,
   BarChart,
   Container,
+  Brain,
+  Radio,
+  Gauge,
+  Sparkles,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -35,6 +39,21 @@ const NAV_ITEMS = [
     icon: Network,
   },
   {
+    title: 'WebSocket',
+    href: '/monitoring/websocket',
+    icon: Radio,
+  },
+  {
+    title: 'Rate Limit',
+    href: '/monitoring/rate-limit',
+    icon: Gauge,
+  },
+  {
+    title: 'AI Usage',
+    href: '/monitoring/ai-usage',
+    icon: Sparkles,
+  },
+  {
     title: 'Database',
     href: '/monitoring/database',
     icon: Database,
@@ -48,6 +67,11 @@ const NAV_ITEMS = [
     title: 'Vector Database',
     href: '/monitoring/vector-db',
     icon: Layers,
+  },
+  {
+    title: 'LLM Operations',
+    href: '/monitoring/llm-ops',
+    icon: Brain,
   },
   {
     title: 'API Performance',

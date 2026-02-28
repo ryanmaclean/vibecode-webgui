@@ -144,6 +144,51 @@ class IntelligentModelSelectionService {
       supportsCode: true,
       supportsFunctionCalling: false
     },
+    {
+      id: 'mistralai/mistral-7b-instruct',
+      name: 'Mistral 7B Instruct',
+      provider: 'openrouter',
+      contextLength: 32768,
+      strengths: ['instruction-following', 'coding', 'reasoning'],
+      costTier: 'low',
+      speedTier: 'fast',
+      qualityTier: 'good',
+      maxTokens: 8192,
+      supportsStreaming: true,
+      supportsImages: false,
+      supportsCode: true,
+      supportsFunctionCalling: false
+    },
+    {
+      id: 'meta-llama/llama-3.1-70b-instruct',
+      name: 'Llama 3.1 70B',
+      provider: 'openrouter',
+      contextLength: 128000,
+      strengths: ['reasoning', 'coding', 'analysis', 'conversational'],
+      costTier: 'medium',
+      speedTier: 'medium',
+      qualityTier: 'excellent',
+      maxTokens: 4096,
+      supportsStreaming: true,
+      supportsImages: false,
+      supportsCode: true,
+      supportsFunctionCalling: false
+    },
+    {
+      id: 'cohere/command-r-plus',
+      name: 'Command R+',
+      provider: 'openrouter',
+      contextLength: 128000,
+      strengths: ['analysis', 'reasoning', 'summarization', 'instruction-following'],
+      costTier: 'medium',
+      speedTier: 'fast',
+      qualityTier: 'excellent',
+      maxTokens: 4096,
+      supportsStreaming: true,
+      supportsImages: false,
+      supportsCode: true,
+      supportsFunctionCalling: true
+    },
     // Hugging Face Models
     {
       id: 'microsoft/DialoGPT-medium',
@@ -188,6 +233,51 @@ class IntelligentModelSelectionService {
       supportsStreaming: false,
       supportsImages: false,
       supportsCode: true,
+      supportsFunctionCalling: false
+    },
+    {
+      id: 'bigcode/starcoder',
+      name: 'StarCoder',
+      provider: 'huggingface',
+      contextLength: 8192,
+      strengths: ['coding', 'instruction-following'],
+      costTier: 'free',
+      speedTier: 'medium',
+      qualityTier: 'good',
+      maxTokens: 2048,
+      supportsStreaming: false,
+      supportsImages: false,
+      supportsCode: true,
+      supportsFunctionCalling: false
+    },
+    {
+      id: 'facebook/bart-large-cnn',
+      name: 'BART Large CNN',
+      provider: 'huggingface',
+      contextLength: 1024,
+      strengths: ['summarization', 'analysis'],
+      costTier: 'free',
+      speedTier: 'fast',
+      qualityTier: 'good',
+      maxTokens: 1024,
+      supportsStreaming: false,
+      supportsImages: false,
+      supportsCode: false,
+      supportsFunctionCalling: false
+    },
+    {
+      id: 'Helsinki-NLP/opus-mt-en-multi',
+      name: 'OPUS MT Translation',
+      provider: 'huggingface',
+      contextLength: 512,
+      strengths: ['translation', 'instruction-following'],
+      costTier: 'free',
+      speedTier: 'fast',
+      qualityTier: 'good',
+      maxTokens: 512,
+      supportsStreaming: false,
+      supportsImages: false,
+      supportsCode: false,
       supportsFunctionCalling: false
     }
   ]

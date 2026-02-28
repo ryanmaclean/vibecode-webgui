@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare, Wand2, FileText, Image, Paperclip, Search, Zap, Globe, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -9,6 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
 import { ContextViewer } from '@/components/ai/ContextViewer'
+import ModelDisplay from '@/components/ai/ModelDisplay'
+import { modelRegistry } from '@/lib/ai/models/model-registry'
+import { StreamTracker, type StreamMetadata } from '@/lib/ai/stream-utils'
+import type { ModelProfile } from '@/types/model-comparison'
 // import { logger } from '@/lib/logger';
 interface Message {
   id: string
@@ -68,20 +72,18 @@ export const EnhancedChatInterface = ({
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [enableWebSearch, setEnableWebSearch] = useState(false)
   const [enableRAG, setEnableRAG] = useState(true)
+  const [streamMetadata, setStreamMetadata] = useState<StreamMetadata | null>(null)
+
+  // Model selector state
+  const [availableModels, setAvailableModels] = useState<ModelProfile[]>([])
+  const [favoriteModelIds, setFavoriteModelIds] = useState<string[]>([])
+  const [recentModelIds, setRecentModelIds] = useState<string[]>([])
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // Available AI models from OpenRouter
-  const availableModels = [
-    { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', context: '200K' },
-    { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku', provider: 'Anthropic', context: '200K' },
-    { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI', context: '128K' },
-    { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI', context: '128K' },
-    { id: 'meta-llama/llama-3.1-405b-instruct', name: 'Llama 3.1 405B', provider: 'Meta', context: '128K' },
-    { id: 'google/gemini-pro-1.5', name: 'Gemini Pro 1.5', provider: 'Google', context: '2M' }
-  ]
+  const streamTrackerRef = useRef<StreamTracker | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     scrollToBottom()
@@ -93,9 +95,73 @@ export const EnhancedChatInterface = ({
     }
   }, [conversationId])
 
+  // Load available models from registry
+  useEffect(() => {
+    const models = modelRegistry.getAllModels()
+    setAvailableModels(models)
+  }, [])
+
+  // Load favorites from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const saved = localStorage.getItem('vibecode-favorite-models')
+      if (saved) setFavoriteModelIds(JSON.parse(saved))
+    } catch {
+      // Ignore parse errors
+    }
+  }, [])
+
+  // Load recent models from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const saved = localStorage.getItem('vibecode-recent-models')
+      if (saved) setRecentModelIds(JSON.parse(saved))
+    } catch {
+      // Ignore parse errors
+    }
+  }, [])
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
+
+  // Handle model selection from ModelSelector
+  const handleModelSelect = useCallback((model: ModelProfile) => {
+    setSelectedModel(model.id)
+
+    // Update recent models
+    if (typeof window !== 'undefined') {
+      setRecentModelIds((prev) => {
+        const updated = [model.id, ...prev.filter((id) => id !== model.id)].slice(0, 10)
+        try {
+          localStorage.setItem('vibecode-recent-models', JSON.stringify(updated))
+        } catch {
+          // Ignore storage errors
+        }
+        return updated
+      })
+    }
+  }, [])
+
+  // Handle favorite toggle
+  const handleFavoriteToggle = useCallback((modelId: string) => {
+    setFavoriteModelIds((prev) => {
+      const updated = prev.includes(modelId)
+        ? prev.filter((id) => id !== modelId)
+        : [...prev, modelId]
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('vibecode-favorite-models', JSON.stringify(updated))
+        } catch {
+          // Ignore storage errors
+        }
+      }
+      return updated
+    })
+  }, [])
 
   const loadConversation = async () => {
     setIsLoadingHistory(true)
@@ -167,6 +233,13 @@ export const EnhancedChatInterface = ({
     setAttachedFiles([])
     setIsStreaming(true)
 
+    // Initialize stream tracker
+    streamTrackerRef.current = new StreamTracker({ model: selectedModel })
+    setStreamMetadata(streamTrackerRef.current.getMetadata())
+
+    // Create abort controller for cancellation
+    abortControllerRef.current = new AbortController()
+
     try {
       // First, upload any attached files
       if (attachedFiles.length > 0) {
@@ -228,7 +301,8 @@ export const EnhancedChatInterface = ({
           files: attachedFiles.map(file => file.name),
           enableWebSearch,
           enableRAG
-        })
+        }),
+        signal: abortControllerRef.current.signal
       })
 
       if (!response.ok) {
@@ -268,6 +342,12 @@ export const EnhancedChatInterface = ({
                   const parsed = JSON.parse(data)
 
                   if (parsed.type === 'content') {
+                    // Update stream tracker with new chunk
+                    if (streamTrackerRef.current) {
+                      const metadata = streamTrackerRef.current.update(parsed.content)
+                      setStreamMetadata(metadata)
+                    }
+
                     setMessages(prev => prev.map((msg, index) =>
                       index === prev.length - 1
                         ? { ...msg, content: msg.content + parsed.content }
@@ -299,7 +379,18 @@ export const EnhancedChatInterface = ({
           reader.releaseLock()
         }
       }
-    } catch (error) {
+
+      // Mark stream as complete
+      if (streamTrackerRef.current) {
+        const finalMetadata = streamTrackerRef.current.complete()
+        setStreamMetadata(finalMetadata)
+      }
+    } catch (error: any) {
+      // Don't show error if user cancelled
+      if (error.name === 'AbortError') {
+        return
+      }
+
       console.error('Failed to send message:', error)
       // Add error message
       const errorMessage: Message = {
@@ -311,7 +402,43 @@ export const EnhancedChatInterface = ({
       setMessages(prev => [...prev, errorMessage])
     } finally {
       setIsStreaming(false)
+      abortControllerRef.current = null
     }
+  }
+
+  const handleCancel = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      setIsStreaming(false)
+      setStreamMetadata(null)
+
+      // Remove the in-progress assistant message
+      setMessages(prev => prev.filter(msg => msg.content !== ''))
+    }
+  }
+
+  const handleRegenerate = async () => {
+    if (messages.length < 2) return
+
+    // Get the last user message
+    const lastUserMessage = [...messages].reverse().find(msg => msg.from === 'user')
+    if (!lastUserMessage) return
+
+    // Remove the last assistant message
+    setMessages(prev => {
+      const filtered = [...prev]
+      const lastAssistantIndex = filtered.map((m, i) => ({ m, i }))
+        .reverse()
+        .find(({ m }) => m.from === 'assistant')?.i
+      if (lastAssistantIndex !== undefined) {
+        filtered.splice(lastAssistantIndex, 1)
+      }
+      return filtered
+    })
+
+    // Re-send the last user message
+    setInput(lastUserMessage.content)
+    setTimeout(() => sendMessage(), 100)
   }
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -329,13 +456,16 @@ export const EnhancedChatInterface = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
+  // Get current model for display
+  const currentModel = availableModels.find((m) => m.id === selectedModel)
+
   return (
     <TooltipProvider>
       <Card className={`flex flex-col h-full ${className}`}>
         {/* Header */}
         <CardContent className="flex-none p-4 border-b">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <MessageSquare className="w-5 h-5 text-blue-500" />
               <span className="font-semibold">Enhanced AI Chat</span>
               {conversationId && (
@@ -343,6 +473,10 @@ export const EnhancedChatInterface = ({
                   {conversationId.slice(-8)}
                 </Badge>
               )}
+              <ModelDisplay
+                model={currentModel}
+                compact
+              />
             </div>
             <div className="flex items-center space-x-2">
               <Select value={selectedModel} onValueChange={setSelectedModel}>
@@ -544,25 +678,29 @@ export const EnhancedChatInterface = ({
                   </div>
                 </div>
               ))}
-              
-              {isStreaming && (
+
+              {(isStreaming || streamMetadata?.isComplete) && (
                 <div className="flex justify-start">
                   <div className="flex items-start space-x-3">
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
                       <Bot className="w-4 h-4 text-white" />
                     </div>
-                    <div className="flex-1">
-                      <div className="inline-block p-3 rounded-lg bg-gray-100 text-gray-900">
-                        <div className="flex items-center space-x-2">
-                          <Sparkles className="w-4 h-4 animate-pulse" />
-                          <span>Thinking...</span>
-                        </div>
-                      </div>
+                    <div className="flex-1 max-w-[80%]">
+                      <AILoadingState
+                        metadata={streamMetadata}
+                        onCancel={isStreaming ? handleCancel : undefined}
+                        onRegenerate={streamMetadata?.isComplete ? handleRegenerate : undefined}
+                        showTokens={true}
+                        showProgress={true}
+                        showPreview={isStreaming}
+                        loadingMessage="AI is generating a response..."
+                        completionMessage="Response complete"
+                      />
                     </div>
                   </div>
                 </div>
               )}
-              
+
               <div ref={messagesEndRef} />
             </div>
           </ScrollArea>

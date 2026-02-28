@@ -1,0 +1,213 @@
+{
+  "nodes": {
+    "dag-lane_health": {
+      "id": "dag-lane_health",
+      "type": "airflow-dag",
+      "name": "lane_health",
+      "path": "dags/lane_health.py"
+    },
+    "dag-sla_monitor": {
+      "id": "dag-sla_monitor",
+      "type": "airflow-dag",
+      "name": "sla_monitor",
+      "path": "dags/sla_monitor.py"
+    },
+    "dag-github_sync": {
+      "id": "dag-github_sync",
+      "type": "airflow-dag",
+      "name": "github_sync",
+      "path": "dags/github_sync.py"
+    },
+    "dag-polecat_scaler": {
+      "id": "dag-polecat_scaler",
+      "type": "airflow-dag",
+      "name": "polecat_scaler",
+      "path": "dags/polecat_scaler.py"
+    },
+    "go-github.com-studio-tundra-dome-cmd-td": {
+      "id": "go-github.com-studio-tundra-dome-cmd-td",
+      "type": "go-module",
+      "name": "github.com/studio/tundra-dome/cmd/td",
+      "path": "cmd/td"
+    },
+    "node-lane-controller": {
+      "id": "node-lane-controller",
+      "type": "node-module",
+      "name": "lane-controller",
+      "path": "controllers/lane-controller",
+      "metadata": {
+        "version": "0.1.0"
+      }
+    },
+    "node-polecat-operator": {
+      "id": "node-polecat-operator",
+      "type": "node-module",
+      "name": "polecat-operator",
+      "path": "controllers/polecat-operator",
+      "metadata": {
+        "version": "1.0.0"
+      }
+    },
+    "node-bead-controller": {
+      "id": "node-bead-controller",
+      "type": "node-module",
+      "name": "bead-controller",
+      "path": "controllers/bead-controller",
+      "metadata": {
+        "version": "1.0.0"
+      }
+    },
+    "node-bead-sync-controller": {
+      "id": "node-bead-sync-controller",
+      "type": "node-module",
+      "name": "bead-sync-controller",
+      "path": "federation/bead-sync-controller",
+      "metadata": {
+        "version": "0.1.0"
+      }
+    },
+    "node-openlineage-bead-bridge": {
+      "id": "node-openlineage-bead-bridge",
+      "type": "node-module",
+      "name": "openlineage-bead-bridge",
+      "path": "bridges/openlineage-bead",
+      "metadata": {
+        "version": "1.0.0"
+      }
+    },
+    "docker-polecat-operator": {
+      "id": "docker-polecat-operator",
+      "type": "dockerfile",
+      "name": "polecat-operator",
+      "path": "controllers/polecat-operator/Dockerfile"
+    },
+    "docker-bead-controller": {
+      "id": "docker-bead-controller",
+      "type": "dockerfile",
+      "name": "bead-controller",
+      "path": "controllers/bead-controller/Dockerfile"
+    },
+    "topic-tundra-metrics-kpi": {
+      "id": "topic-tundra-metrics-kpi",
+      "type": "kafka-topic",
+      "name": "tundra-metrics-kpi"
+    },
+    "topic-tundra-polecat-commands": {
+      "id": "topic-tundra-polecat-commands",
+      "type": "kafka-topic",
+      "name": "tundra-polecat-commands"
+    },
+    "topic-tundra-work-intake": {
+      "id": "topic-tundra-work-intake",
+      "type": "kafka-topic",
+      "name": "tundra-work-intake"
+    },
+    "topic-tundra-beads-completed": {
+      "id": "topic-tundra-beads-completed",
+      "type": "kafka-topic",
+      "name": "tundra-beads-completed"
+    },
+    "topic-tundra-beads-failed": {
+      "id": "topic-tundra-beads-failed",
+      "type": "kafka-topic",
+      "name": "tundra-beads-failed"
+    },
+    "topic-tundra-beads-escalated": {
+      "id": "topic-tundra-beads-escalated",
+      "type": "kafka-topic",
+      "name": "tundra-beads-escalated"
+    },
+    "topic-tundra-mayor-commands": {
+      "id": "topic-tundra-mayor-commands",
+      "type": "kafka-topic",
+      "name": "tundra-mayor-commands"
+    },
+    "topic-\n              kafka-topics.sh --bootstrap-server kafka-service:9092 --list\n\n              echo ": {
+      "id": "topic-\n              kafka-topics.sh --bootstrap-server kafka-service:9092 --list\n\n              echo ",
+      "type": "kafka-topic",
+      "name": "\n              kafka-topics.sh --bootstrap-server kafka-service:9092 --list\n\n              echo "
+    }
+  },
+  "edges": [
+    {
+      "from": "dag-lane_health",
+      "to": "topic-tundra-mayor-commands",
+      "type": "produces"
+    },
+    {
+      "from": "dag-lane_health",
+      "to": "topic-tundra-metrics-kpi",
+      "type": "produces"
+    },
+    {
+      "from": "dag-sla_monitor",
+      "to": "topic-tundra-beads-escalated",
+      "type": "produces"
+    },
+    {
+      "from": "dag-sla_monitor",
+      "to": "topic-tundra-mayor-commands",
+      "type": "produces"
+    },
+    {
+      "from": "dag-github_sync",
+      "to": "topic-tundra-work-intake",
+      "type": "produces"
+    },
+    {
+      "from": "dag-polecat_scaler",
+      "to": "topic-tundra-polecat-commands",
+      "type": "produces"
+    },
+    {
+      "from": "topic-tundra-beads-escalated",
+      "to": "node-lane-controller",
+      "type": "consumed-by"
+    },
+    {
+      "from": "topic-tundra-mayor-commands",
+      "to": "node-lane-controller",
+      "type": "consumed-by"
+    },
+    {
+      "from": "node-lane-controller",
+      "to": "topic-tundra-beads-escalated",
+      "type": "produces"
+    },
+    {
+      "from": "node-lane-controller",
+      "to": "topic-tundra-mayor-commands",
+      "type": "produces"
+    },
+    {
+      "from": "topic-tundra-work-intake",
+      "to": "node-bead-controller",
+      "type": "consumed-by"
+    },
+    {
+      "from": "topic-tundra-beads-completed",
+      "to": "node-bead-controller",
+      "type": "consumed-by"
+    },
+    {
+      "from": "topic-tundra-beads-failed",
+      "to": "node-bead-controller",
+      "type": "consumed-by"
+    },
+    {
+      "from": "node-bead-controller",
+      "to": "topic-tundra-work-intake",
+      "type": "produces"
+    },
+    {
+      "from": "node-bead-controller",
+      "to": "topic-tundra-beads-completed",
+      "type": "produces"
+    },
+    {
+      "from": "node-bead-controller",
+      "to": "topic-tundra-beads-failed",
+      "type": "produces"
+    }
+  ]
+}

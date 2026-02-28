@@ -2,7 +2,8 @@
  * AI Models API Route
  *
  * GET /api/ai/models - List all models with optional filtering
- * POST /api/ai/models/recommend - Get model recommendations
+ * POST /api/ai/models?action=refresh - Manually refresh models from OpenRouter
+ * POST /api/ai/models (action=recommend) - Get model recommendations
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -327,7 +328,9 @@ async function handleOllamaModels() {
 
 /**
  * POST /api/ai/models
- * Get model recommendations based on task requirements
+ * Handle model-related actions:
+ * - action=refresh (query param): Manually refresh models from OpenRouter
+ * - action=recommend (body): Get model recommendations based on task requirements
  */
 export async function POST(request: NextRequest) {
   try {
@@ -348,7 +351,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse and validate request body
+    // Check for query parameter action first
+    const { searchParams } = new URL(request.url);
+    const queryAction = searchParams.get('action');
+
+    // Handle refresh action from query parameter
+    if (queryAction === 'refresh') {
+      try {
+        await modelRegistry.loadFromOpenRouter();
+        return NextResponse.json({
+          success: true,
+          message: 'Model registry refreshed successfully',
+          meta: {
+            totalModels: modelRegistry.getModelCount(),
+            providers: modelRegistry.getProviders().map(p => ({
+              id: p.id,
+              name: p.name,
+              tier: p.tier,
+              available: p.available,
+            })),
+          },
+        });
+      } catch (error) {
+        logger.error('Failed to refresh model registry', { error });
+        return NextResponse.json(
+          {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to refresh model registry',
+          },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Parse and validate request body for other actions
     const body = await request.json();
     const action = body.action;
 
@@ -392,11 +428,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Invalid action. Use "recommend" for recommendations.' },
+      { error: 'Invalid action. Use "refresh" or "recommend".' },
       { status: 400 }
     );
   } catch (error) {
-    console.error('Error processing model request:', error);
+    logger.error('Error processing model request', { error });
     return NextResponse.json(
       {
         success: false,

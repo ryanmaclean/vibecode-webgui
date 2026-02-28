@@ -1,0 +1,55 @@
+{
+  "id": "my-integration",
+  "name": "My Service Integration",
+  "version": "1.0.0",
+  "description": "Integration plugin for connecting VibeCode with external services",
+  "author": {
+    "name": "Your Name",
+    "email": "you@example.com",
+    "url": "https://example.com"
+  },
+  "type": "integration",
+  "main": "index.ts",
+  "permissions": [
+    "integration:register",
+    "network:request",
+    "storage:read",
+    "storage:write"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "vibecode": ">=1.0.0"
+  },
+  "license": "MIT",
+  "keywords": [
+    "integration",
+    "service",
+    "api",
+    "connector"
+  ],
+  "config": {
+    "apiKey": {
+      "type": "string",
+      "description": "API key for the external service",
+      "required": true,
+      "secret": true
+    },
+    "apiUrl": {
+      "type": "string",
+      "description": "Base URL for the API",
+      "required": false,
+      "default": "https://api.example.com"
+    },
+    "webhookUrl": {
+      "type": "string",
+      "description": "Webhook URL for receiving events",
+      "required": false
+    },
+    "syncInterval": {
+      "type": "number",
+      "description": "Sync interval in minutes",
+      "required": false,
+      "default": 30
+    }
+  }
+}

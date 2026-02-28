@@ -2,10 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 import { ModelLeaderboard, ModelComparisonChart } from '@/components/experiments/ModelLeaderboard';
-import { askMultiModel, getModelLeaderboard, MODELS } from '@/lib/experiments/scenarios/multi-model';
-import type { ModelResponse } from '@/lib/experiments/scenarios/multi-model';
 import type { ModelLeaderboardEntry } from '@/components/experiments/ModelLeaderboard';
 import { z } from '@/lib/zod-compat';
+
+interface ModelResponse {
+  selectedModel: string;
+  modelKey: string;
+  answer: string;
+  metrics: {
+    latencyMs: number;
+    costUsd: number;
+    tokensGenerated: number;
+  };
+  reward: number;
+  selectionProbability: number;
+  qualityEvaluation: {
+    score: number;
+    method: string;
+  };
+}
 
 const questionSchema = z.object({
   question: z
@@ -13,6 +28,33 @@ const questionSchema = z.object({
     .trim()
     .min(5, 'Please enter a question with at least 5 characters'),
 });
+
+const MODELS = {
+  gpt4: {
+    key: 'gpt4',
+    name: 'GPT-4 Turbo',
+    description: 'High quality, higher cost',
+    expectedMetrics: { quality: 0.85, costPer1kTokens: 0.03 },
+  },
+  claude: {
+    key: 'claude',
+    name: 'Claude 3.5 Sonnet',
+    description: 'Excellent reasoning, moderate cost',
+    expectedMetrics: { quality: 0.88, costPer1kTokens: 0.015 },
+  },
+  gemini: {
+    key: 'gemini',
+    name: 'Gemini 1.5 Pro',
+    description: 'Good quality, low cost',
+    expectedMetrics: { quality: 0.8, costPer1kTokens: 0.007 },
+  },
+  llama: {
+    key: 'llama',
+    name: 'Llama 3.1 70B',
+    description: 'Decent quality, very low cost',
+    expectedMetrics: { quality: 0.75, costPer1kTokens: 0.0015 },
+  },
+} as const;
 
 /**
  * Multi-Model AI Selection Experiment Demo Page
@@ -46,7 +88,12 @@ export default function ModelComparisonPage() {
    */
   const loadLeaderboard = async () => {
     try {
-      const data = await getModelLeaderboard();
+      const res = await fetch('/api/experiments/demos/model-comparison/leaderboard');
+      if (!res.ok) {
+        throw new Error('Failed to load leaderboard');
+      }
+      const payload = await res.json();
+      const data = payload.data;
       setLeaderboard(data);
     } catch (err) {
       console.error('Failed to load leaderboard:', err);
@@ -76,12 +123,16 @@ export default function ModelComparisonPage() {
     try {
       // Generate random user ID for demo
       const userId = `demo_user_${Math.random().toString(36).substr(2, 9)}`;
-
-      // Ask multi-model
-      const result = await askMultiModel({
-        userId,
-        question: cleanedQuestion
+      const res = await fetch('/api/experiments/demos/model-comparison/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, question: cleanedQuestion }),
       });
+      if (!res.ok) {
+        throw new Error('Failed to get model response');
+      }
+      const payload = await res.json();
+      const result = payload.data as ModelResponse;
 
       setResponse(result);
 

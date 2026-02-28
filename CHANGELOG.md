@@ -25,6 +25,16 @@ This changelog covers 45 releases from the project's inception through the curre
 ### Changed
 - Update .monaco-version-lock
 
+### Experiments
+- **microVM Development** - Experimental lightweight VM implementation for ARM64 macOS
+  - Status: Active exploration in `experiments/microvm/` directory
+  - Purpose: Create ultra-lightweight development environments with minimal overhead
+  - Key learnings: Alpine Linux + Firecracker architecture, 32-40MB kernel with networking
+  - Documentation: Available at `/docs/experiments` page
+- **Benchmarking Framework** - Performance testing suite for VM boot times and resource usage
+  - Scripts available in `experiments/microvm/scripts/`
+  - Tracks VM performance metrics and system resource utilization
+
 ### Other
 - docs: update handoff with link to comprehensive walkthrough
 - docs: add comprehensive step-by-step implementation walkthrough

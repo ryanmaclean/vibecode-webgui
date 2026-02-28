@@ -262,6 +262,8 @@ const nextConfig = {
         '@opentelemetry/api': require.resolve('./src/stubs/opentelemetry-api.js'),
         '@opentelemetry/core': require.resolve('./src/stubs/opentelemetry-core.js'),
         '@opentelemetry/instrumentation': require.resolve('./src/stubs/opentelemetry-instrumentation.js'),
+        '@prisma/client': false,
+        '.prisma/client/index-browser': false,
         pg: false,
         redis: false,
       }
@@ -320,6 +322,31 @@ const nextConfig = {
 
     // Let Next.js handle minification defaults
     // Do not override config.optimization.minimize
+
+    // Monaco Editor optimization - split into separate chunks for lazy loading
+    if (!isServer) {
+      config.optimization = config.optimization || {}
+      config.optimization.splitChunks = {
+        ...config.optimization.splitChunks,
+        cacheGroups: {
+          ...(config.optimization.splitChunks?.cacheGroups || {}),
+          // Isolate Monaco Editor core into separate chunk
+          monaco: {
+            test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
+            name: 'monaco-editor',
+            priority: 30,
+            reuseExistingChunk: true,
+          },
+          // Isolate Monaco Editor React wrapper
+          monacoReact: {
+            test: /[\\/]node_modules[\\/]@monaco-editor[\\/]react[\\/]/,
+            name: 'monaco-react',
+            priority: 25,
+            reuseExistingChunk: true,
+          },
+        },
+      }
+    }
 
     // Drop all Moment.js locales if Moment is used anywhere
     const hasMomentLocaleDrop = config.plugins.some(

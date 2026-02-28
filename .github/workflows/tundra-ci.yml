@@ -6,8 +6,15 @@ on:
   pull_request:
     branches: ["**"]
 
+concurrency:
+  group: tundra-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   topics-check:
+    if: |
+      !startsWith(github.ref_name, 'auto-claude/') &&
+      (github.event_name != 'pull_request' || !startsWith(github.head_ref, 'auto-claude/'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

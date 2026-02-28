@@ -41,7 +41,7 @@ const AIChatInterfaceContent = ({
   const [isStreaming, setIsStreaming] = useState(false)
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [historyError, setHistoryError] = useState<string | null>(null)
-  const [selectedModel, setSelectedModel] = useState('anthropic/claude-3-sonnet')
+  const [selectedModel, setSelectedModel] = useState('anthropic/claude-3.5-sonnet')
   const [contextFiles, setContextFiles] = useState<string[]>(initialContext)
   const [pinnedFiles, setPinnedFiles] = useState<string[]>([])
   const [showSettings, setShowSettings] = useState(false)
@@ -49,18 +49,44 @@ const AIChatInterfaceContent = ({
   // const [showPromptTemplates, setShowPromptTemplates] = useState(false)
   // const [showPromptEnhancer, setShowPromptEnhancer] = useState(false)
 
+  // Model selector state
+  const [availableModels, setAvailableModels] = useState<ModelProfile[]>([])
+  const [favoriteModelIds, setFavoriteModelIds] = useState<string[]>([])
+  const [recentModelIds, setRecentModelIds] = useState<string[]>([])
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const streamTrackerRef = useRef<StreamTracker | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Available AI models from OpenRouter
-  const availableModels = [
-    { id: 'anthropic/claude-3-sonnet', name: 'Claude 3 Sonnet', provider: 'Anthropic', icon: '🧠' },
-    { id: 'openai/gpt-4', name: 'GPT-4', provider: 'OpenAI', icon: '⚡' },
-    { id: 'meta-llama/llama-3-70b', name: 'Llama 3 70B', provider: 'Meta', icon: '🦙' },
-    { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku', provider: 'Anthropic', icon: '💨' },
-    { id: 'openai/gpt-3.5-turbo', name: 'GPT-3.5 Turbo', provider: 'OpenAI', icon: '🚀' },
-  ]
+  // Load available models from registry
+  useEffect(() => {
+    const models = modelRegistry.getAllModels()
+    setAvailableModels(models)
+  }, [])
+
+  // Load favorites from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const saved = localStorage.getItem('vibecode-favorite-models')
+      if (saved) setFavoriteModelIds(JSON.parse(saved))
+    } catch {
+      // Ignore parse errors
+    }
+  }, [])
+
+  // Load recent models from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const saved = localStorage.getItem('vibecode-recent-models')
+      if (saved) setRecentModelIds(JSON.parse(saved))
+    } catch {
+      // Ignore parse errors
+    }
+  }, [])
 
   // Auto-resize textarea
   useEffect(() => {
@@ -134,6 +160,13 @@ const AIChatInterfaceContent = ({
     setInput('')
     setIsStreaming(true)
 
+    // Initialize stream tracker
+    streamTrackerRef.current = new StreamTracker({ model: selectedModel })
+    setStreamMetadata(streamTrackerRef.current.getMetadata())
+
+    // Create abort controller for cancellation
+    abortControllerRef.current = new AbortController()
+
     try {
       // Create assistant message placeholder
       const assistantMessage: Message = {
@@ -162,7 +195,8 @@ const AIChatInterfaceContent = ({
             pinnedFiles: pinnedFiles,
             previousMessages: messages
           }
-        })
+        }),
+        signal: abortControllerRef.current.signal
       })
 
       if (!response.body) {
@@ -177,20 +211,40 @@ const AIChatInterfaceContent = ({
       while (!done) {
         const { value, done: readerDone } = await reader.read()
         done = readerDone
-        const chunk = decoder.decode(value, { stream: true })
-        accumulatedContent += chunk
 
-        setMessages(prev => prev.map(msg => 
-          msg.id === assistantMessage.id 
-            ? { ...msg, content: accumulatedContent } 
-            : msg
-        ))
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true })
+          accumulatedContent += chunk
+
+          // Update stream tracker with new chunk
+          if (streamTrackerRef.current) {
+            const metadata = streamTrackerRef.current.update(chunk)
+            setStreamMetadata(metadata)
+          }
+
+          setMessages(prev => prev.map(msg =>
+            msg.id === assistantMessage.id
+              ? { ...msg, content: accumulatedContent }
+              : msg
+          ))
+        }
+      }
+
+      // Mark stream as complete
+      if (streamTrackerRef.current) {
+        const finalMetadata = streamTrackerRef.current.complete()
+        setStreamMetadata(finalMetadata)
       }
 
       const finalMessages = [...messages, userMessage, { ...assistantMessage, content: accumulatedContent }]
       saveConversation(finalMessages)
 
-    } catch (error) {
+    } catch (error: any) {
+      // Don't show error if user cancelled
+      if (error.name === 'AbortError') {
+        return
+      }
+
       console.error('Error streaming AI response:', error)
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
@@ -202,6 +256,7 @@ const AIChatInterfaceContent = ({
       setMessages(prev => [...prev.slice(0, -1), errorMessage])
     } finally {
       setIsStreaming(false)
+      abortControllerRef.current = null
     }
   }
 
@@ -216,6 +271,42 @@ const AIChatInterfaceContent = ({
       console.error('Failed to save conversation:', error)
     }
   }
+
+  // Handle model selection from ModelSelector
+  const handleModelSelect = React.useCallback((model: ModelProfile) => {
+    setSelectedModel(model.id)
+
+    // Update recent models
+    if (typeof window !== 'undefined') {
+      setRecentModelIds((prev) => {
+        const updated = [model.id, ...prev.filter((id) => id !== model.id)].slice(0, 10)
+        try {
+          localStorage.setItem('vibecode-recent-models', JSON.stringify(updated))
+        } catch {
+          // Ignore storage errors
+        }
+        return updated
+      })
+    }
+  }, [])
+
+  // Handle favorite toggle
+  const handleFavoriteToggle = React.useCallback((modelId: string) => {
+    setFavoriteModelIds((prev) => {
+      const updated = prev.includes(modelId)
+        ? prev.filter((id) => id !== modelId)
+        : [...prev, modelId]
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('vibecode-favorite-models', JSON.stringify(updated))
+        } catch {
+          // Ignore storage errors
+        }
+      }
+      return updated
+    })
+  }, [])
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -275,16 +366,20 @@ const AIChatInterfaceContent = ({
   */
 
   const currentModel = availableModels.find(m => m.id === selectedModel)
+  const currentModelName = currentModel?.name || 'AI Model'
 
   return (
     <div className={`flex flex-col h-full bg-white dark:bg-gray-900 ${className}`} role="region" aria-label="AI Chat Interface">
       {/* Header */}
       <header className="border-b border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <Bot className="w-6 h-6 text-blue-600" aria-hidden="true" />
             <h2 className="font-semibold text-lg" id="chat-heading">AI Assistant</h2>
-            <Badge variant="outline" aria-label={`Current model: ${currentModel?.name}`}>{currentModel?.name}</Badge>
+            <ModelDisplay
+              model={currentModel}
+              compact
+            />
           </div>
           <div className="flex items-center space-x-1" role="toolbar" aria-label="Chat controls">
             <Button
@@ -353,20 +448,16 @@ const AIChatInterfaceContent = ({
           aria-labelledby="settings-heading"
         >
           <h3 id="settings-heading" className="sr-only">Chat Settings</h3>
-          <label htmlFor="model-select" className="block text-sm font-medium mb-2">Select AI Model:</label>
-          <select
-            id="model-select"
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
-            className="w-full p-2 border rounded-md bg-white dark:bg-gray-900"
-            aria-label="AI model selection"
-          >
-            {availableModels.map(model => (
-              <option key={model.id} value={model.id}>
-                {model.icon} {model.name} ({model.provider})
-              </option>
-            ))}
-          </select>
+          <ModelSelector
+            selectedModelId={selectedModel}
+            onModelSelect={handleModelSelect}
+            models={availableModels}
+            recentModelIds={recentModelIds}
+            favoriteModelIds={favoriteModelIds}
+            onFavoriteToggle={handleFavoriteToggle}
+            label="Select AI Model"
+            showDetails={true}
+          />
         </div>
       )}
 
@@ -439,7 +530,7 @@ const AIChatInterfaceContent = ({
                     <div className="flex items-center justify-between mt-2 text-xs opacity-70">
                       <span>{formatTimestamp(message.timestamp)}</span>
                       {message.metadata?.model && (
-                        <span>{currentModel?.icon}</span>
+                        <span>{message.metadata.model}</span>
                       )}
                     </div>
                   </CardContent>
@@ -456,12 +547,18 @@ const AIChatInterfaceContent = ({
             </div>
           ))}
 
-          {isStreaming && (
-            <div className="flex items-center space-x-2 text-gray-500">
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-              <span className="text-sm">AI is thinking...</span>
+          {(isStreaming || streamMetadata?.isComplete) && (
+            <div className="max-w-[80%]">
+              <AILoadingState
+                metadata={streamMetadata}
+                onCancel={isStreaming ? handleCancel : undefined}
+                onRegenerate={streamMetadata?.isComplete ? handleRegenerate : undefined}
+                showTokens={true}
+                showProgress={true}
+                showPreview={isStreaming}
+                loadingMessage="AI is generating a response..."
+                completionMessage="Response complete"
+              />
             </div>
           )}
         </div>
@@ -511,9 +608,13 @@ const AIChatInterfaceContent = ({
               onClick={handleSendMessage}
               disabled={!input.trim() || isStreaming}
               size="sm"
-              aria-label="Send"
+              aria-label="Send message"
+              className="group relative"
             >
               <Send className="w-4 h-4" />
+              <span className="ml-2 hidden sm:inline-flex items-center">
+                <KeyboardHint keys={['⌘', 'Enter']} size="sm" variant="muted" />
+              </span>
             </Button>
           </div>
         </div>

@@ -15,6 +15,7 @@ import {
   Clock,
   Zap,
   TrendingUp,
+  Network,
 } from 'lucide-react'
 
 const overviewCards = [
@@ -65,6 +66,14 @@ const overviewCards = [
     description: 'View past conversations',
     href: '/ai/conversations',
     gradient: 'from-rose-500 to-rose-700',
+  },
+  {
+    title: 'Vector Explorer',
+    icon: Network,
+    stat: 'Explore Embeddings',
+    description: 'Visualize vector similarities',
+    href: '/ai/vector-explorer',
+    gradient: 'from-teal-500 to-teal-700',
   },
 ]
 

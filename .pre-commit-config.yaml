@@ -78,6 +78,13 @@ repos:
         types: [file]
         files: \.(js|jsx|ts|tsx)$
 
+      - id: prettier
+        name: Prettier
+        entry: npx prettier --write
+        language: node
+        types: [file]
+        files: \.(js|jsx|ts|tsx|json|css|scss|md)$
+
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.18.4
     hooks:

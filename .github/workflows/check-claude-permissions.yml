@@ -1,0 +1,401 @@
+name: Claude Permissions Check
+
+on:
+  pull_request:
+    paths:
+      - '.claude_settings.json'
+      - '.auto-claude-security.json'
+      - 'scripts/security/generate_claude_permissions.py'
+  push:
+    # TEMP queue-pressure reduction: avoid running on every main/develop push.
+    branches:
+      - main
+      - develop
+    paths:
+      - '.claude_settings.json'
+      - '.auto-claude-security.json'
+      - 'scripts/security/generate_claude_permissions.py'
+
+env:
+  DD_SERVICE: ${{ github.event.repository.name }}
+  DD_ENV: ci
+  DD_VERSION: ${{ github.sha }}
+  DD_TAGS: team:platform,component:ci
+
+concurrency:
+  group: claude-permissions-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-permissions:
+    name: Validate Claude Permissions
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event.pull_request.draft == false || github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+
+      # Check 1: Validate JSON syntax
+      - name: Validate JSON syntax
+        id: json-syntax
+        run: |
+          echo "## JSON Syntax Validation" >> $GITHUB_STEP_SUMMARY
+
+          JSON_VALID=true
+
+          # Check .claude_settings.json
+          if ! python -m json.tool .claude_settings.json > /dev/null 2>&1; then
+            echo "❌ .claude_settings.json has invalid JSON syntax" >> $GITHUB_STEP_SUMMARY
+            JSON_VALID=false
+          else
+            echo "✅ .claude_settings.json syntax valid" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Check .auto-claude-security.json
+          if ! python -m json.tool .auto-claude-security.json > /dev/null 2>&1; then
+            echo "❌ .auto-claude-security.json has invalid JSON syntax" >> $GITHUB_STEP_SUMMARY
+            JSON_VALID=false
+          else
+            echo "✅ .auto-claude-security.json syntax valid" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "$JSON_VALID" = false ]; then
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          echo "status=passed" >> $GITHUB_OUTPUT
+
+      # Check 2: Count permissions in both files
+      - name: Count permissions
+        id: count-permissions
+        run: |
+          echo "## Permission Count Check" >> $GITHUB_STEP_SUMMARY
+
+          # Count commands in security manifest
+          MANIFEST_COUNT=$(python -c "
+          import json
+          with open('.auto-claude-security.json') as f:
+              data = json.load(f)
+              total = len(data.get('base_commands', [])) + len(data.get('stack_commands', []))
+              print(total)
+          ")
+
+          # Count Bash permissions in Claude settings
+          SETTINGS_COUNT=$(python -c "
+          import json
+          with open('.claude_settings.json') as f:
+              data = json.load(f)
+              perms = data.get('permissions', {}).get('allow', [])
+              bash_perms = [p for p in perms if p.startswith('Bash(') and p != 'Bash(*)']
+              print(len(bash_perms))
+          ")
+
+          echo "📊 **Command Counts:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Security manifest: $MANIFEST_COUNT commands" >> $GITHUB_STEP_SUMMARY
+          echo "- Claude settings: $SETTINGS_COUNT Bash permissions" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$MANIFEST_COUNT" -eq "$SETTINGS_COUNT" ]; then
+            echo "✅ Permission counts match ($MANIFEST_COUNT)" >> $GITHUB_STEP_SUMMARY
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Permission count mismatch (manifest: $MANIFEST_COUNT, settings: $SETTINGS_COUNT)" >> $GITHUB_STEP_SUMMARY
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      # Check 3: Check for dangerous wildcard permissions
+      - name: Check for wildcards
+        id: wildcard-check
+        run: |
+          echo "## Wildcard Permission Check" >> $GITHUB_STEP_SUMMARY
+
+          # Check for Bash(*) wildcard and shell interpreters that bypass granular controls
+          if grep -Eq '"Bash\((\*|bash|sh|zsh)\)"' .claude_settings.json; then
+            echo "❌ Dangerous wildcard/interpreter permission found (Bash(*), Bash(bash), Bash(sh), or Bash(zsh))!" >> $GITHUB_STEP_SUMMARY
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "✅ No wildcard or interpreter-bypass Bash permissions detected" >> $GITHUB_STEP_SUMMARY
+            echo "status=passed" >> $GITHUB_OUTPUT
+          fi
+
+      # Check 4: Regenerate and compare
+      - name: Regenerate permissions and compare
+        id: regenerate-compare
+        run: |
+          echo "## Permission Drift Check" >> $GITHUB_STEP_SUMMARY
+
+          # Generate fresh permissions
+          python scripts/security/generate_claude_permissions.py --output .claude_settings.test.json
+
+          # Extract just the Bash permissions for comparison
+          python -c "
+          import json
+
+          # Load generated file
+          with open('.claude_settings.test.json') as f:
+              generated = json.load(f)
+
+          # Load committed file
+          with open('.claude_settings.json') as f:
+              committed = json.load(f)
+
+          # Extract Bash permissions
+          gen_perms = sorted([p for p in generated['permissions']['allow'] if p.startswith('Bash(')])
+          com_perms = sorted([p for p in committed['permissions']['allow'] if p.startswith('Bash(')])
+
+          # Compare
+          if gen_perms == com_perms:
+              print('✅ MATCH: Permissions are synchronized')
+          else:
+              print('❌ DRIFT DETECTED: Permissions are out of sync')
+
+              # Find differences
+              gen_set = set(gen_perms)
+              com_set = set(com_perms)
+
+              missing = gen_set - com_set
+              extra = com_set - gen_set
+
+              if missing:
+                  print(f'\n⚠️ Missing from .claude_settings.json ({len(missing)}):')
+                  for p in sorted(missing)[:5]:  # Show first 5
+                      print(f'  - {p}')
+                  if len(missing) > 5:
+                      print(f'  ... and {len(missing) - 5} more')
+
+              if extra:
+                  print(f'\n⚠️ Extra in .claude_settings.json ({len(extra)}):')
+                  for p in sorted(extra)[:5]:  # Show first 5
+                      print(f'  - {p}')
+                  if len(extra) > 5:
+                      print(f'  ... and {len(extra) - 5} more')
+          " > drift_check.txt
+
+          cat drift_check.txt >> $GITHUB_STEP_SUMMARY
+
+          if grep -q "DRIFT DETECTED" drift_check.txt; then
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🔧 How to Fix" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "python scripts/security/generate_claude_permissions.py" >> $GITHUB_STEP_SUMMARY
+            echo "git add .claude_settings.json" >> $GITHUB_STEP_SUMMARY
+            echo "git commit -m \"fix: regenerate Claude permissions to match manifest\"" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "status=passed" >> $GITHUB_OUTPUT
+          fi
+
+      # Check 5: Run permission test suite
+      - name: Run permission tests
+        id: test-permissions
+        run: |
+          echo "## Permission Test Suite" >> $GITHUB_STEP_SUMMARY
+
+          # Run the permission validation tests
+          if python scripts/security/tests/test_claude_permissions.py --config .claude_settings.json; then
+            echo "✅ All permission tests passed" >> $GITHUB_STEP_SUMMARY
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Permission tests failed" >> $GITHUB_STEP_SUMMARY
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      # Check 6: Verify expected command count
+      - name: Verify expected total
+        id: verify-total
+        run: |
+          echo "## Total Permission Verification" >> $GITHUB_STEP_SUMMARY
+
+          EXPECTED_TOTAL=$(python -c "
+          import json
+          with open('.auto-claude-security.json') as f:
+              data = json.load(f)
+              print(len(data.get('base_commands', [])) + len(data.get('stack_commands', [])))
+          ")
+
+          ACTUAL_TOTAL=$(python -c "
+          import json
+          with open('.claude_settings.json') as f:
+              data = json.load(f)
+              perms = data.get('permissions', {}).get('allow', [])
+              bash_perms = [p for p in perms if p.startswith('Bash(') and p != 'Bash(*)']
+              print(len(bash_perms))
+          ")
+
+          echo "📈 **Total Permissions:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Expected: $EXPECTED_TOTAL" >> $GITHUB_STEP_SUMMARY
+          echo "- Actual: $ACTUAL_TOTAL" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$ACTUAL_TOTAL" -eq "$EXPECTED_TOTAL" ]; then
+            echo "✅ Permission count matches manifest ($ACTUAL_TOTAL == $EXPECTED_TOTAL)" >> $GITHUB_STEP_SUMMARY
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Permission count mismatch ($ACTUAL_TOTAL != $EXPECTED_TOTAL)" >> $GITHUB_STEP_SUMMARY
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      # Generate summary report
+      - name: Generate security report
+        if: always()
+        run: |
+          echo "# 🔒 Claude Permissions Security Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # JSON syntax
+          if [ "${{ steps.json-syntax.outputs.status }}" == "passed" ]; then
+            echo "✅ **JSON Syntax**: Valid" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **JSON Syntax**: Invalid" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Permission count
+          if [ "${{ steps.count-permissions.outputs.status }}" == "passed" ]; then
+            echo "✅ **Permission Count**: Match" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Permission Count**: Mismatch" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Wildcard check
+          if [ "${{ steps.wildcard-check.outputs.status }}" == "passed" ]; then
+            echo "✅ **Wildcard Check**: No Bash(*) detected" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Wildcard Check**: Dangerous wildcard found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Drift check
+          if [ "${{ steps.regenerate-compare.outputs.status }}" == "passed" ]; then
+            echo "✅ **Drift Check**: Synchronized" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Drift Check**: Out of sync" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Test suite
+          if [ "${{ steps.test-permissions.outputs.status }}" == "passed" ]; then
+            echo "✅ **Test Suite**: All tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Test Suite**: Tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Total verification
+          if [ "${{ steps.verify-total.outputs.status }}" == "passed" ]; then
+            echo "✅ **Total Count**: Acceptable" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Total Count**: Below expected" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "📚 **Documentation**: [Claude Permissions Guide](docs/security/claude-permissions.md)" >> $GITHUB_STEP_SUMMARY
+
+      # Comment on PR with results
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const checks = {
+              'JSON Syntax': '${{ steps.json-syntax.outputs.status }}',
+              'Permission Count': '${{ steps.count-permissions.outputs.status }}',
+              'Wildcard Check': '${{ steps.wildcard-check.outputs.status }}',
+              'Drift Check': '${{ steps.regenerate-compare.outputs.status }}',
+              'Test Suite': '${{ steps.test-permissions.outputs.status }}',
+              'Total Count': '${{ steps.verify-total.outputs.status }}'
+            };
+
+            let comment = '## 🔒 Claude Permissions Security Check\n\n';
+
+            let allPassed = true;
+            for (const [name, status] of Object.entries(checks)) {
+              const icon = status === 'passed' ? '✅' : '❌';
+              comment += `${icon} **${name}**: ${status === 'passed' ? 'Passed' : 'Failed'}\n`;
+              if (status !== 'passed') allPassed = false;
+            }
+
+            comment += '\n';
+
+            if (allPassed) {
+              comment += '✅ **All checks passed!** Permissions are properly synchronized.\n';
+            } else {
+              comment += '❌ **Some checks failed.** Please review the workflow results.\n\n';
+              comment += '### How to Fix\n';
+              comment += '```bash\n';
+              comment += 'python scripts/security/generate_claude_permissions.py\n';
+              comment += 'git add .claude_settings.json\n';
+              comment += 'git commit -m "fix: regenerate Claude permissions to match manifest"\n';
+              comment += '```\n';
+            }
+
+            comment += '\n---\n';
+            comment += `📊 **View full results**: [Workflow Run](${context.payload.repository.html_url}/actions/runs/${context.runId})\n`;
+            comment += '📚 **Documentation**: [Claude Permissions Guide](docs/security/claude-permissions.md)\n';
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Claude Permissions Security Check')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+
+      # Fail job if critical issues found
+      - name: Fail on critical issues
+        if: |
+          always() && (
+          steps.json-syntax.outputs.status == 'failed' ||
+          steps.wildcard-check.outputs.status == 'failed' ||
+          steps.regenerate-compare.outputs.status == 'failed' ||
+          steps.test-permissions.outputs.status == 'failed'
+          )
+        run: |
+          echo "❌ Critical permission security issues detected"
+          exit 1
