@@ -227,7 +227,7 @@
     "lightningcss": "1.31.1",
     "lucide-react": "0.575.0",
     "marked": "17.0.3",
-    "minimatch": "10.2.2",
+    "minimatch": "10.2.4",
     "monaco-editor": "0.55.1",
     "monacopilot": "1.2.12",
     "mongodb": "7.1.0",
