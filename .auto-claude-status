@@ -1,15 +1,15 @@
 {
   "active": true,
-  "spec": "070-start-cleanup-of-repo-there-are-many-file-and-fold",
+  "spec": "029-testing-infrastructure-setup",
   "state": "building",
   "subtasks": {
-    "completed": 12,
+    "completed": 6,
     "total": 19,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Create Experiments Documentation",
+    "current": "Infrastructure Management Tests",
     "id": null,
     "total": 3
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 13,
-    "started_at": "2026-02-24T00:16:12.936857"
+    "number": 8,
+    "started_at": "2026-02-27T22:38:34.758376"
   },
-  "last_update": "2026-02-24T00:38:09.316817"
+  "last_update": "2026-02-27T23:13:41.045691"
 }
