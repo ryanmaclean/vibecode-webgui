@@ -1,5 +1,7 @@
 # Tauri Desktop Setup Guide
 
+> **📌 Canonical Guide**: This is the official and canonical guide for Tauri desktop development setup. For all desktop development with Tauri, always refer to this guide as the authoritative source.
+
 This guide provides detailed platform-specific instructions for setting up a Tauri desktop development environment, including Rust installation, npm configuration, and comprehensive build troubleshooting.
 
 ## Prerequisites
