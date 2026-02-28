@@ -262,6 +262,8 @@ const nextConfig = {
         '@opentelemetry/api': require.resolve('./src/stubs/opentelemetry-api.js'),
         '@opentelemetry/core': require.resolve('./src/stubs/opentelemetry-core.js'),
         '@opentelemetry/instrumentation': require.resolve('./src/stubs/opentelemetry-instrumentation.js'),
+        '@prisma/client': false,
+        '.prisma/client/index-browser': false,
         pg: false,
         redis: false,
       }
