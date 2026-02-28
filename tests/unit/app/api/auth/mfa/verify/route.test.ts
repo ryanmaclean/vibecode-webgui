@@ -8,11 +8,28 @@
  */
 
 import { NextRequest } from 'next/server';
-import { POST, PUT, GET, DELETE } from '@/app/api/auth/mfa/verify/route';
 
-// Mock dependencies
+// Mock dependencies with mutable variables (must be before route import)
+let mockSession: any = {
+  user: { id: 'user-123', email: 'test@example.com' }
+};
+
+let mockApiRateLimitResult = {
+  success: true,
+  limit: 10,
+  remaining: 9,
+  reset: Date.now() + 60000,
+  retryAfter: undefined as number | undefined
+};
+
+let mockLegacyRateLimitResult = {
+  allowed: true,
+  remaining: 5,
+  reset: Date.now() + 300000
+};
+
 jest.mock('next-auth', () => ({
-  getServerSession: jest.fn()
+  getServerSession: jest.fn(async () => mockSession)
 }));
 
 jest.mock('@/lib/auth', () => ({
@@ -29,11 +46,13 @@ jest.mock('@/lib/auth/mfa-provider', () => ({
 }));
 
 jest.mock('@/lib/rate-limiting', () => ({
-  createAPIRateLimit: jest.fn(() => jest.fn())
+  createAPIRateLimit: jest.fn(() => {
+    return jest.fn(async () => mockApiRateLimitResult);
+  })
 }));
 
 jest.mock('@/lib/rate-limiter', () => ({
-  checkRateLimit: jest.fn(),
+  checkRateLimit: jest.fn(async () => mockLegacyRateLimitResult),
   createRateLimitedResponse: jest.fn(),
   applyRateLimitHeaders: jest.fn((response) => response),
   RateLimitPresets: {
@@ -43,6 +62,9 @@ jest.mock('@/lib/rate-limiter', () => ({
     }
   }
 }));
+
+// Import route handlers AFTER mocks are defined
+import { POST, PUT, GET, DELETE } from '@/app/api/auth/mfa/verify/route';
 
 // Helper function to create a mock NextRequest
 function createMockRequest(
@@ -65,37 +87,31 @@ function createMockRequest(
 }
 
 describe('/api/auth/mfa/verify', () => {
-  let mockApiRateLimit: jest.Mock;
-
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.NODE_ENV = 'test';
 
-    // Setup default mocks
-    const { getServerSession } = require('next-auth');
-    const { mfaProvider } = require('@/lib/auth/mfa-provider');
-    const { checkRateLimit, applyRateLimitHeaders } = require('@/lib/rate-limiter');
-    const { createAPIRateLimit } = require('@/lib/rate-limiting');
-
-    getServerSession.mockResolvedValue({
+    // Reset mutable mock variables to default success state
+    mockSession = {
       user: { id: 'user-123', email: 'test@example.com' }
-    });
+    };
 
-    mockApiRateLimit = jest.fn().mockResolvedValue({
+    mockApiRateLimitResult = {
       success: true,
       limit: 10,
       remaining: 9,
-      reset: Date.now() + 60000
-    });
-    createAPIRateLimit.mockReturnValue(mockApiRateLimit);
+      reset: Date.now() + 60000,
+      retryAfter: undefined
+    };
 
-    checkRateLimit.mockResolvedValue({
+    mockLegacyRateLimitResult = {
       allowed: true,
       remaining: 5,
       reset: Date.now() + 300000
-    });
+    };
 
-    applyRateLimitHeaders.mockImplementation((response) => response);
+    // Setup mfaProvider mocks
+    const { mfaProvider } = require('@/lib/auth/mfa-provider');
 
     mfaProvider.createChallenge.mockResolvedValue({
       challengeId: 'challenge-123',
@@ -143,13 +159,14 @@ describe('/api/auth/mfa/verify', () => {
     });
 
     it('should handle API rate limiting', async () => {
-      mockApiRateLimit.mockResolvedValueOnce({
+      // Modify mutable variable to simulate rate limit failure
+      mockApiRateLimitResult = {
         success: false,
         limit: 10,
         remaining: 0,
         reset: Date.now() + 60000,
         retryAfter: 60
-      });
+      };
 
       const request = createMockRequest('POST', {});
       const response = await POST(request);
@@ -162,13 +179,14 @@ describe('/api/auth/mfa/verify', () => {
     });
 
     it('should handle legacy rate limiting', async () => {
-      const { checkRateLimit, createRateLimitedResponse } = require('@/lib/rate-limiter');
+      const { createRateLimitedResponse } = require('@/lib/rate-limiter');
 
-      checkRateLimit.mockResolvedValueOnce({
+      // Modify mutable variable to simulate legacy rate limit failure
+      mockLegacyRateLimitResult = {
         allowed: false,
         remaining: 0,
         reset: Date.now() + 300000
-      });
+      };
 
       createRateLimitedResponse.mockReturnValueOnce(
         new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
@@ -183,8 +201,8 @@ describe('/api/auth/mfa/verify', () => {
     });
 
     it('should require authentication', async () => {
-      const { getServerSession } = require('next-auth');
-      getServerSession.mockResolvedValueOnce(null);
+      // Modify mutable variable to simulate no session
+      mockSession = null;
 
       const request = createMockRequest('POST', {});
       const response = await POST(request);
@@ -297,13 +315,14 @@ describe('/api/auth/mfa/verify', () => {
     });
 
     it('should handle rate limiting', async () => {
-      const { checkRateLimit, createRateLimitedResponse } = require('@/lib/rate-limiter');
+      const { createRateLimitedResponse } = require('@/lib/rate-limiter');
 
-      checkRateLimit.mockResolvedValueOnce({
+      // Modify mutable variable to simulate rate limit failure
+      mockLegacyRateLimitResult = {
         allowed: false,
         remaining: 0,
         reset: Date.now() + 300000
-      });
+      };
 
       createRateLimitedResponse.mockReturnValueOnce(
         new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
@@ -421,8 +440,8 @@ describe('/api/auth/mfa/verify', () => {
     });
 
     it('should require authentication', async () => {
-      const { getServerSession } = require('next-auth');
-      getServerSession.mockResolvedValueOnce(null);
+      // Modify mutable variable to simulate no session
+      mockSession = null;
 
       const request = createMockRequest('GET');
       const response = await GET(request);
@@ -542,8 +561,8 @@ describe('/api/auth/mfa/verify', () => {
     });
 
     it('should require authentication', async () => {
-      const { getServerSession } = require('next-auth');
-      getServerSession.mockResolvedValueOnce(null);
+      // Modify mutable variable to simulate no session
+      mockSession = null;
 
       const request = createMockRequest(
         'DELETE',
