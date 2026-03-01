@@ -334,6 +334,13 @@ const nextConfig = {
         ...config.optimization.splitChunks,
         cacheGroups: {
           ...(config.optimization.splitChunks?.cacheGroups || {}),
+          // Isolate Monaco workers into separate chunks for optimal lazy loading
+          monacoWorkers: {
+            test: /[\\/]node_modules[\\/]monaco-editor[\\/].*\.worker\.js$/,
+            name: 'monaco-workers',
+            priority: 35,
+            reuseExistingChunk: true,
+          },
           // Isolate Monaco Editor core into separate chunk
           monaco: {
             test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
