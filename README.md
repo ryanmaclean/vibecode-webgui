@@ -85,6 +85,12 @@
   - [Attack Vectors](#attack-vectors)
   - [For True Security Isolation](#for-true-security-isolation)
   - [Recommendation](#recommendation)
+- [🤝 Contributing & Community](#-contributing--community)
+  - [Contributing](#contributing)
+  - [Getting Help](#getting-help)
+  - [Community Channels](#community-channels)
+  - [Reporting Issues](#reporting-issues)
+  - [License](#license)
 
 ---
 
@@ -931,3 +937,87 @@ To protect against determined attackers:
 
 For production systems, implement defense-in-depth with infrastructure, network,
 identity, and application-level security controls.
+
+---
+
+## 🤝 Contributing & Community
+
+We welcome contributions from the community! Whether you're fixing bugs, adding features, improving documentation, or helping others, your contributions make VibeCode better for everyone.
+
+### Contributing
+
+Ready to contribute? Here's how to get started:
+
+- **📖 [Contributing Guide](CONTRIBUTING.md)** - Comprehensive guide covering:
+  - Development environment setup
+  - Code style and conventions
+  - Testing requirements
+  - Pull request workflow
+  - Commit message guidelines
+  - Architecture decision records (ADRs)
+
+- **🐛 Found a bug?** Open an issue with details on how to reproduce it
+- **💡 Have an idea?** Start a discussion to get feedback from the community
+- **📝 Improve docs?** Documentation improvements are always welcome!
+- **🧪 Add tests?** Help us increase code coverage
+
+### Getting Help
+
+Need assistance or have questions?
+
+- **📖 [Documentation](docs/)** - Start with our comprehensive docs:
+  - [Quick Start Guide](docs/QUICK_START.md)
+  - [Environment Setup](docs/ENVIRONMENT_SETUP_GUIDE.md)
+  - [Architecture Overview](docs/ARCHITECTURE.md)
+  - [Tauri Desktop Setup](docs/setup/TAURI_DESKTOP_SETUP.md)
+
+- **💬 [GitHub Discussions](https://github.com/yourusername/vibecode/discussions)** - Ask questions, share ideas, and connect with the community
+- **🔍 [Troubleshooting Guide](#-troubleshooting)** - Solutions to common problems
+
+### Community Channels
+
+Join our growing community:
+
+- **GitHub Discussions**: General questions, feature requests, and community chat
+- **Issue Tracker**: Bug reports and tracked feature development
+- **Pull Requests**: Code review and collaboration
+
+> **Note**: We're building this community from the ground up. If you'd like to help establish additional community channels (Discord, Slack, etc.), please open a discussion!
+
+### Reporting Issues
+
+Found a bug or have a feature request?
+
+- **🐛 [Report a Bug](https://github.com/yourusername/vibecode/issues/new?template=bug_report.md)**
+- **✨ [Request a Feature](https://github.com/yourusername/vibecode/issues/new?template=feature_request.md)**
+- **📖 [Browse Issues](https://github.com/yourusername/vibecode/issues)**
+
+When reporting issues, please include:
+- Your operating system and version
+- Node.js and npm versions
+- Steps to reproduce the problem
+- Expected vs actual behavior
+- Error messages and stack traces
+- Screenshots (if applicable)
+
+### License
+
+VibeCode is open source software licensed under the [MIT License](LICENSE).
+
+This means you can:
+- ✅ Use it commercially
+- ✅ Modify and distribute
+- ✅ Use privately
+- ✅ Use it for research
+
+See the [LICENSE](LICENSE) file for full details.
+
+---
+
+<div align="center">
+
+**Built with ❤️ by the VibeCode community**
+
+[⭐ Star us on GitHub](https://github.com/yourusername/vibecode) | [🐛 Report an Issue](https://github.com/yourusername/vibecode/issues) | [💬 Join Discussions](https://github.com/yourusername/vibecode/discussions)
+
+</div>
