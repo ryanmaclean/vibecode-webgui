@@ -330,6 +330,11 @@ const nextConfig = {
     // Monaco Editor optimization - split into separate chunks for lazy loading
     if (!isServer) {
       config.optimization = config.optimization || {}
+
+      // Enable tree-shaking to exclude unused Monaco features
+      config.optimization.usedExports = true
+      config.optimization.sideEffects = true
+
       config.optimization.splitChunks = {
         ...config.optimization.splitChunks,
         cacheGroups: {
