@@ -8,7 +8,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { AgentMonacoEditor, useAgentAPI } from '@/components/editor/AgentMonacoEditor'
+import dynamic from 'next/dynamic'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,6 +23,21 @@ Select,
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Zap, Code, FileCode, Terminal } from 'lucide-react'
 // import { logger } from '@/lib/logger';
+
+const AgentMonacoEditor = dynamic(
+  () => import('@/components/editor/AgentMonacoEditor').then((mod) => ({ default: mod.AgentMonacoEditor })),
+  {
+    ssr: true,
+    loading: () => (
+      <div className="h-full w-full flex items-center justify-center bg-background" style={{ minHeight: '600px' }}>
+        <div className="space-y-4 text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-muted border-t-primary" />
+          <p className="text-sm text-muted-foreground">Loading editor…</p>
+        </div>
+      </div>
+    ),
+  }
+)
 
 const SAMPLE_CODE = {
   typescript: `import React, { useState, useEffect } from 'react'
