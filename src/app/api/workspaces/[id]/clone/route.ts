@@ -17,6 +17,7 @@ import {
 } from '@/lib/logging'
 import { cacheDelete } from '@/lib/cache/cache-utils'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,7 +34,7 @@ const CloneWorkspaceRequestSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const startTime = Date.now()
   const requestContext = apiLogger.logRequest(request)
@@ -71,7 +72,8 @@ export async function POST(
       return response
     }
 
-    const workspaceId = params.id
+    const { id } = await params
+    const workspaceId = id
 
     log.info('Workspace clone API called', {
       requestId: requestContext.requestId,
@@ -112,8 +114,20 @@ export async function POST(
     // Initialize workspace provisioning service
     const workspaceService = new WorkspaceProvisioningService()
 
-    // Get the source workspace to clone
-    const sourceWorkspace = await workspaceService.getWorkspaceStatus(workspaceId)
+    // Fetch source workspace from database to get configuration
+    const sourceWorkspace = await prisma.workspace.findUnique({
+      where: { workspace_id: workspaceId },
+      include: {
+        projects: {
+          select: {
+            name: true,
+            framework: true,
+            language: true,
+            template: true
+          }
+        }
+      }
+    })
 
     if (!sourceWorkspace) {
       log.warn('Source workspace not found', {
@@ -128,17 +142,20 @@ export async function POST(
       return response
     }
 
+    // Extract configuration from source workspace
+    // Framework and language are stored in the database
+    // Files, dependencies, and environment are not stored in DB (only exist in K8s workspace)
+    const sourceFramework = sourceWorkspace.projects[0]?.framework || 'react'
+
     // Create cloned workspace with same configuration
-    // In a real implementation, this would copy the workspace configuration
-    // For now, we create a new workspace with a similar pattern
     const clonedWorkspace = await workspaceService.createWorkspace({
       projectId: `${workspaceId}-clone-${Date.now()}`,
       projectName: validatedRequest.name,
-      framework: 'clone', // Would be copied from source workspace
+      framework: sourceFramework,
       userId: session.user.id,
-      files: {}, // Would be copied from source workspace
-      dependencies: [], // Would be copied from source workspace
-      environment: {} // Would be copied from source workspace
+      files: {}, // Not stored in database - would need to fetch from K8s workspace
+      dependencies: [], // Not stored in database - would need to fetch from K8s workspace
+      environment: {} // Not stored in database - would need to fetch from K8s workspace
     })
 
     const duration = timer.stop({
