@@ -42,6 +42,16 @@
   - [Platform Support](#platform-support)
   - [Getting Started with Tauri](#getting-started-with-tauri)
   - [Quick Launch](#quick-launch)
+- [📋 Prerequisites and System Requirements](#-prerequisites-and-system-requirements)
+  - [Required Software](#required-software)
+  - [Operating System Requirements](#operating-system-requirements)
+  - [Database Requirements](#database-requirements)
+  - [Optional Dependencies](#optional-dependencies)
+  - [Hardware Requirements](#hardware-requirements)
+  - [Development Tools (Optional)](#development-tools-optional)
+  - [API Keys and Services](#api-keys-and-services)
+  - [Network Requirements](#network-requirements)
+  - [Browser Support (Web Mode)](#browser-support-web-mode)
 - [🚀 Quick Start](#-quick-start)
   - [New to VibeCode? Start Here!](#new-to-vibecode-start-here)
   - [1. Install Dependencies](#1-install-dependencies)
@@ -238,6 +248,141 @@ npm run tauri:dev
 # Production build
 npm run tauri:build
 ```
+
+## 📋 Prerequisites and System Requirements
+
+Before getting started with VibeCode, ensure your system meets the following requirements:
+
+### Required Software
+
+#### Node.js and npm
+- **Node.js**: `>=18.18.0 <25.0.0`
+- **npm**: `>=9.0.0`
+
+```bash
+# Check your versions
+node --version
+npm --version
+```
+
+> **Note**: We recommend using [nvm](https://github.com/nvm-sh/nvm) (Node Version Manager) to manage Node.js versions.
+
+#### Python
+- **Python**: `>=3.8`
+- **pip**: Latest version
+
+```bash
+# Check your version
+python3 --version
+pip --version
+```
+
+### Operating System Requirements
+
+VibeCode supports the following operating systems:
+
+| OS | Minimum Version | Recommended | Architecture |
+|---|---|---|---|
+| **macOS** | 10.13 (High Sierra) | 12.0+ (Monterey) | Intel & Apple Silicon |
+| **Linux** | Ubuntu 20.04+ | Ubuntu 22.04+ | x86_64, ARM64 |
+| | Fedora 35+ | Fedora 38+ | x86_64, ARM64 |
+| **Windows** | Windows 10 (64-bit) | Windows 11 | x86_64 |
+
+### Database Requirements
+
+#### Required
+- **PostgreSQL**: `16.x`
+- **pgvector extension**: Latest version (for semantic search)
+
+#### Optional
+- **Redis**: `>=6.0` or **Valkey** (for caching and collaboration features)
+
+### Optional Dependencies
+
+Depending on your deployment mode, you may need:
+
+#### Desktop Application (Tauri)
+- **Rust**: `>=1.70`
+- **Cargo**: Latest version
+- **Platform-specific WebView**:
+  - macOS: Built-in WebKit
+  - Linux: webkit2gtk
+  - Windows: WebView2
+
+See [Tauri Desktop Setup Guide](docs/setup/TAURI_DESKTOP_SETUP.md) for detailed installation.
+
+#### Native macOS Virtualization
+- **macOS**: 26+ (for ASIF support)
+- **vfkit**: Latest version
+  ```bash
+  brew install vfkit
+  ```
+
+#### Container Deployment
+- **Docker**: `>=20.10`
+- **Docker Compose**: `>=2.0`
+
+#### Production Deployment
+- **Kubernetes**: `>=1.24`
+- **kubectl**: Matching cluster version
+- **Helm**: `>=3.0` (optional, for chart deployment)
+
+#### Monitoring (Optional)
+- **Datadog Agent**: Latest version (for production monitoring)
+
+### Hardware Requirements
+
+#### Minimum
+- **CPU**: 2 cores
+- **RAM**: 4GB
+- **Storage**: 10GB free space
+
+#### Recommended
+- **CPU**: 4+ cores
+- **RAM**: 8GB+
+- **Storage**: 20GB+ SSD
+- **Network**: Stable internet connection for AI model access
+
+#### For Production Deployment
+- **CPU**: 8+ cores
+- **RAM**: 16GB+
+- **Storage**: 100GB+ SSD
+- **Network**: Low-latency connection to AI providers
+
+### Development Tools (Optional)
+
+- **Git**: `>=2.30` (for version control)
+- **VS Code**: Latest version (for development)
+- **Swift**: Latest version (for macOS menubar app)
+
+### API Keys and Services
+
+VibeCode can work with various AI providers. You'll need at least one of:
+
+- **OpenRouter**: API key for multi-provider access (321+ models)
+- **OpenAI**: API key for direct access
+- **Anthropic**: API key for Claude models
+- **Google AI**: API key for Gemini models
+- **Groq**: API key for ultra-fast inference
+- **DeepSeek**: API key for specialized models
+- **Ollama**: For local, offline AI models (no API key needed)
+
+> **Privacy Note**: VibeCode can run completely offline using Ollama for local LLM inference.
+
+### Network Requirements
+
+- **Outbound HTTPS (443)**: For AI provider APIs
+- **PostgreSQL (5432)**: For database connections
+- **Redis (6379)**: For caching (if using Redis)
+- **WebSocket**: For real-time collaboration features
+
+### Browser Support (Web Mode)
+
+- **Chrome/Edge**: Latest 2 versions
+- **Firefox**: Latest 2 versions
+- **Safari**: 14+
+
+---
 
 ## 🚀 Quick Start
 
