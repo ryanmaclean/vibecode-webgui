@@ -57,6 +57,17 @@
   - [1. Install Dependencies](#1-install-dependencies)
   - [2. Launch Backend (Ubuntu VM)](#2-launch-backend-ubuntu-vm)
   - [3. Launch Studio](#3-launch-studio)
+- [🔧 Troubleshooting](#-troubleshooting)
+  - [Node.js Version Issues](#nodejs-version-issues)
+  - [vfkit Installation (macOS)](#vfkit-installation-macos)
+  - [Port Conflicts](#port-conflicts)
+  - [Database Connection Issues](#database-connection-issues)
+  - [Docker Setup Problems](#docker-setup-problems)
+  - [Tauri Build Failures](#tauri-build-failures)
+  - [Python/pip Issues](#pythonpip-issues)
+  - [AI Provider API Errors](#ai-provider-api-errors)
+  - [Platform-Specific Issues](#platform-specific-issues)
+  - [Still Having Issues?](#still-having-issues)
 - [🛠️ CLI Tool](#️-cli-tool)
 - [🖥️ Menubar App](#️-menubar-app)
 - [🔄 Ralph Loop](#-ralph-loop)
@@ -424,6 +435,379 @@ python3 scripts/launch_ubuntu_vm.py
 ```bash
 npm run tauri:dev
 ```
+
+## 🔧 Troubleshooting
+
+Encountering issues during setup or runtime? Here are solutions to common problems:
+
+### Node.js Version Issues
+
+**Problem**: `npm install` fails or shows warnings about Node.js version incompatibility.
+
+**Solution**:
+```bash
+# Check your current Node.js version
+node --version
+
+# If outside the supported range (>=18.18.0 <25.0.0), use nvm to switch:
+nvm install 22
+nvm use 22
+
+# Verify the version
+node --version  # Should show v22.x.x
+
+# Reinstall dependencies
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**Prevention**: Use [nvm](https://github.com/nvm-sh/nvm) to manage Node.js versions and create a `.nvmrc` file:
+```bash
+echo "22" > .nvmrc
+nvm use
+```
+
+### vfkit Installation (macOS)
+
+**Problem**: `vfkit` command not found or VM fails to start.
+
+**Solution**:
+```bash
+# Install vfkit via Homebrew
+brew install vfkit
+
+# Verify installation
+vfkit --version
+
+# If Homebrew install fails, try manual installation:
+# Download from: https://github.com/crc-org/vfkit/releases
+# Extract and move to PATH:
+sudo mv vfkit /usr/local/bin/
+sudo chmod +x /usr/local/bin/vfkit
+```
+
+**macOS Permission Issues**:
+```bash
+# Grant necessary permissions in System Settings > Privacy & Security
+# If prompted, allow "vfkit" in the security panel
+```
+
+**Minimum Requirements**:
+- macOS 10.13+ (High Sierra or later)
+- For ASIF support: macOS 26+
+
+### Port Conflicts
+
+**Problem**: "Address already in use" errors when starting services.
+
+**Solution**:
+```bash
+# Check which process is using a port (e.g., port 3000)
+lsof -i :3000
+
+# Kill the process
+kill -9 <PID>
+
+# Common VibeCode ports:
+# - 3000: Next.js dev server
+# - 18789: OpenClaw Gateway
+# - 5432: PostgreSQL
+# - 6379: Redis/Valkey
+# - WebSocket ports for collaboration
+
+# To find and kill all conflicting processes:
+lsof -ti :3000 | xargs kill -9
+```
+
+**Alternative**: Configure custom ports in `.env.local`:
+```env
+PORT=3001
+OPENCLAW_PORT=18790
+```
+
+### Database Connection Issues
+
+**Problem**: "Connection refused" or "database does not exist" errors.
+
+**Solution**:
+```bash
+# 1. Check if PostgreSQL is running
+pg_isready
+
+# 2. Start PostgreSQL if not running (macOS with Homebrew)
+brew services start postgresql@16
+
+# 3. Create the database
+createdb vibecode_dev
+
+# 4. Install pgvector extension
+psql vibecode_dev -c 'CREATE EXTENSION IF NOT EXISTS vector;'
+
+# 5. Verify connection
+psql -U postgres -d vibecode_dev -c '\l'
+```
+
+**Connection String**: Ensure your `.env.local` has correct credentials:
+```env
+DATABASE_URL="postgresql://username:password@localhost:5432/vibecode_dev"
+```
+
+**Docker PostgreSQL**:
+```bash
+# Start PostgreSQL in Docker
+docker run -d \
+  --name vibecode-postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=vibecode_dev \
+  -p 5432:5432 \
+  pgvector/pgvector:pg16
+```
+
+### Docker Setup Problems
+
+**Problem**: Docker containers fail to start or build.
+
+**Solution**:
+```bash
+# 1. Clean up existing containers and images
+docker compose down -v
+docker system prune -a
+
+# 2. Rebuild from scratch
+docker compose build --no-cache
+docker compose up -d
+
+# 3. Check container logs
+docker compose logs -f
+
+# 4. Verify Docker is running
+docker ps
+```
+
+**Common Docker Issues**:
+- **Out of disk space**: Run `docker system prune -a --volumes`
+- **Port conflicts**: See [Port Conflicts](#port-conflicts) section
+- **Permission denied**: Add user to docker group (Linux):
+  ```bash
+  sudo usermod -aG docker $USER
+  newgrp docker
+  ```
+
+### Tauri Build Failures
+
+**Problem**: `npm run tauri:build` or `npm run tauri:dev` fails.
+
+**Solution**:
+```bash
+# 1. Ensure Rust is installed
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source $HOME/.cargo/env
+
+# 2. Update Rust to latest version
+rustup update
+
+# 3. Install platform-specific dependencies
+
+# macOS:
+xcode-select --install
+
+# Linux (Ubuntu/Debian):
+sudo apt update
+sudo apt install -y \
+  libwebkit2gtk-4.1-dev \
+  build-essential \
+  curl \
+  wget \
+  file \
+  libssl-dev \
+  libayatana-appindicator3-dev \
+  librsvg2-dev
+
+# Linux (Fedora):
+sudo dnf install \
+  webkit2gtk4.1-devel \
+  openssl-devel \
+  curl \
+  wget \
+  file \
+  libappindicator-gtk3-devel \
+  librsvg2-devel
+
+# 4. Clear Tauri cache
+rm -rf src-tauri/target
+
+# 5. Rebuild
+npm run tauri:build
+```
+
+**See detailed guide**: [Tauri Desktop Setup Guide](docs/setup/TAURI_DESKTOP_SETUP.md)
+
+### Python/pip Issues
+
+**Problem**: `pip install -r scripts/requirements.txt` fails.
+
+**Solution**:
+```bash
+# 1. Ensure Python 3.8+ is installed
+python3 --version
+
+# 2. Upgrade pip
+python3 -m pip install --upgrade pip
+
+# 3. Use virtual environment (recommended)
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# 4. Install requirements
+pip install -r scripts/requirements.txt
+
+# 5. If specific package fails (e.g., psycopg2):
+# Install system dependencies first
+
+# macOS:
+brew install postgresql
+
+# Linux (Ubuntu/Debian):
+sudo apt install python3-dev libpq-dev
+
+# Then retry:
+pip install -r scripts/requirements.txt
+```
+
+### AI Provider API Errors
+
+**Problem**: "API key invalid" or "Rate limit exceeded" errors.
+
+**Solution**:
+```bash
+# 1. Verify API keys are set in .env.local
+cat .env.local | grep API_KEY
+
+# 2. Required format:
+OPENROUTER_API_KEY="sk-or-v1-..."
+OPENAI_API_KEY="sk-..."
+ANTHROPIC_API_KEY="sk-ant-..."
+GROQ_API_KEY="gsk_..."
+```
+
+**Rate Limiting**:
+- Use OpenRouter for multi-provider access with shared rate limits
+- Implement exponential backoff in your code
+- Consider upgrading to paid tiers for higher limits
+
+**Offline Mode**: Use Ollama for local LLMs without API keys:
+```bash
+# Install Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull a model
+ollama pull llama3.1
+
+# Configure VibeCode to use Ollama
+# Add to .env.local:
+OLLAMA_BASE_URL="http://localhost:11434"
+```
+
+### Platform-Specific Issues
+
+#### macOS
+
+**Problem**: "Operation not permitted" when running scripts.
+
+**Solution**:
+```bash
+# Grant Terminal full disk access:
+# System Settings > Privacy & Security > Full Disk Access > Add Terminal
+
+# Or run with sudo (not recommended for dev):
+sudo python3 scripts/launch_ubuntu_vm.py
+```
+
+#### Linux
+
+**Problem**: Permission errors or missing dependencies.
+
+**Solution**:
+```bash
+# Ensure all dev dependencies are installed
+# Ubuntu/Debian:
+sudo apt update && sudo apt install -y \
+  build-essential \
+  pkg-config \
+  libssl-dev \
+  libpq-dev \
+  python3-dev
+
+# Fedora:
+sudo dnf groupinstall "Development Tools"
+sudo dnf install openssl-devel postgresql-devel python3-devel
+
+# Fix npm global package permissions:
+mkdir -p ~/.npm-global
+npm config set prefix '~/.npm-global'
+echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
+```
+
+#### Windows
+
+**Problem**: Scripts fail or dependencies missing.
+
+**Solution**:
+```powershell
+# Run PowerShell as Administrator
+
+# Install Chocolatey (package manager)
+Set-ExecutionPolicy Bypass -Scope Process -Force
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# Install dependencies
+choco install -y nodejs-lts python postgresql docker-desktop
+
+# For Tauri development:
+choco install -y visualstudio2022-workload-vctools
+```
+
+**WSL2 Recommended**: For best experience, use Windows Subsystem for Linux 2:
+```bash
+wsl --install
+wsl --set-default-version 2
+```
+
+### Still Having Issues?
+
+If you're still experiencing problems after trying these solutions:
+
+1. **Check the logs**:
+   ```bash
+   # Application logs
+   tail -f logs/vibecode.log
+
+   # Docker logs
+   docker compose logs -f
+
+   # Tauri logs (in dev console)
+   ```
+
+2. **Search existing issues**: [GitHub Issues](https://github.com/yourusername/vibecode/issues)
+
+3. **Ask for help**:
+   - Create a [new issue](https://github.com/yourusername/vibecode/issues/new) with:
+     - Your OS and version
+     - Node.js and npm versions
+     - Full error message and stack trace
+     - Steps to reproduce
+
+4. **Community support**:
+   - Check our [Discussions](https://github.com/yourusername/vibecode/discussions)
+   - Join our community chat (if available)
+
+5. **Review documentation**:
+   - [Environment Setup Guide](docs/ENVIRONMENT_SETUP_GUIDE.md)
+   - [Quick Start Guide](docs/QUICK_START.md)
+   - [Tauri Desktop Setup](docs/setup/TAURI_DESKTOP_SETUP.md)
+   - [Architecture Documentation](docs/ARCHITECTURE.md)
 
 ## 🛠️ CLI Tool
 Manage the VM environment with the unified CLI:
