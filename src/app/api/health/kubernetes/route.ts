@@ -23,7 +23,7 @@ import { promisify } from 'util';
 import { createServiceLogger } from '@/lib/logging';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 import type { KubernetesHealthResult, KubernetesClusterHealth, KubernetesPodHealth } from '@/types/unified-status';
-import type { ServiceHealthStatus } from '@/types/health';
+import type { ServiceHealthStatus, AggregatedHealthStatus } from '@/types/health';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +39,7 @@ const apiRateLimit = createAPIRateLimit(60); // 60 requests per minute
 /**
  * Parse pod status to health status
  */
-function parsePodStatus(phase: string, readyContainers: number, totalContainers: number): ServiceHealthStatus {
+function parsePodStatus(phase: string, readyContainers: number, totalContainers: number): AggregatedHealthStatus {
   if (phase === 'Running' && readyContainers === totalContainers) {
     return 'healthy';
   }
@@ -236,7 +236,7 @@ export async function GET(request: NextRequest) {
     const unhealthyPods = pods.filter((p) => p.status === 'unhealthy').length;
 
     // Determine overall status
-    let overallStatus: ServiceHealthStatus = 'healthy';
+    let overallStatus: AggregatedHealthStatus = 'healthy';
     if (cluster.status === 'unhealthy') {
       overallStatus = 'unhealthy';
     } else if (cluster.status === 'degraded' || unhealthyPods > 0) {

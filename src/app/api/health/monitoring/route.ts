@@ -123,7 +123,7 @@ async function getDatadogHealth(): Promise<DatadogHealthResult> {
   const lastChecked = new Date().toISOString();
 
   // Determine status
-  let status: ServiceHealthStatus = 'unknown';
+  let status: AggregatedHealthStatus = 'unhealthy';
   if (agentRunning && apiConnected && metricsActive) {
     status = 'healthy';
   } else if (agentRunning) {
@@ -227,7 +227,7 @@ async function getOpenTelemetryHealth(): Promise<OpenTelemetryHealthResult> {
   const lastChecked = new Date().toISOString();
 
   // Determine status
-  let status: ServiceHealthStatus = 'unknown';
+  let status: AggregatedHealthStatus = 'unhealthy';
   if (collectorRunning && otlpEndpointReachable && receiversActive && exportersActive) {
     status = 'healthy';
   } else if (collectorRunning) {

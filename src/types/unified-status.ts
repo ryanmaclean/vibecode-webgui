@@ -47,7 +47,7 @@ export interface KubernetesClusterHealth {
   /** Cluster name (e.g., 'kind-harness') */
   clusterName: string;
   /** Cluster health status */
-  status: ServiceHealthStatus;
+  status: AggregatedHealthStatus;
   /** Kubernetes version */
   version?: string;
   /** Number of nodes */
@@ -69,7 +69,7 @@ export interface KubernetesPodHealth {
   /** Pod namespace */
   namespace: string;
   /** Pod status */
-  status: ServiceHealthStatus;
+  status: AggregatedHealthStatus;
   /** Pod phase (Running, Pending, Failed, etc.) */
   phase?: string;
   /** Number of ready containers */
@@ -167,7 +167,7 @@ export interface DatadogHealthResult {
   /** Service name */
   name: 'datadog';
   /** Overall Datadog health status */
-  status: ServiceHealthStatus;
+  status: AggregatedHealthStatus;
   /** Agent running */
   agentRunning: boolean;
   /** Agent version */
@@ -195,7 +195,7 @@ export interface OpenTelemetryHealthResult {
   /** Service name */
   name: 'opentelemetry';
   /** Overall OTEL health status */
-  status: ServiceHealthStatus;
+  status: AggregatedHealthStatus;
   /** Collector running */
   collectorRunning: boolean;
   /** Collector version */
