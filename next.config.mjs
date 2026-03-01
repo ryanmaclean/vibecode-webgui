@@ -262,6 +262,9 @@ const nextConfig = {
         '@opentelemetry/api': require.resolve('./src/stubs/opentelemetry-api.js'),
         '@opentelemetry/core': require.resolve('./src/stubs/opentelemetry-core.js'),
         '@opentelemetry/instrumentation': require.resolve('./src/stubs/opentelemetry-instrumentation.js'),
+        // Browser OTel packages are NOT disabled - they're needed for browser-telemetry.ts
+        // when NEXT_PUBLIC_OTEL_ENABLED is true. The browser-telemetry.ts module handles
+        // its own conditional loading based on that env var.
         '@prisma/client': false,
         '.prisma/client/index-browser': false,
         pg: false,

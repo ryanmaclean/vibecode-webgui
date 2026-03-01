@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "070-start-cleanup-of-repo-there-are-many-file-and-fold",
+  "spec": "071-add-model-usage-history-component-following-costda",
   "state": "building",
   "subtasks": {
-    "completed": 12,
-    "total": 19,
+    "completed": 3,
+    "total": 6,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Create Experiments Documentation",
+    "current": "Component Implementation",
     "id": null,
-    "total": 3
+    "total": 6
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 13,
-    "started_at": "2026-02-24T00:16:12.936857"
+    "number": 5,
+    "started_at": "2026-03-01T09:59:48.776680"
   },
-  "last_update": "2026-02-24T00:38:09.316817"
+  "last_update": "2026-03-01T10:14:06.149007"
 }

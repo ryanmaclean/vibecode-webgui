@@ -74,25 +74,27 @@ function findChromium() {
     return null;
 }
 
-// Check if Electron is available
-function findElectron() {
-    log.debug('Detecting Electron...');
-    const electronPath = path.join(__dirname, '..', 'node_modules', '.bin', 'electron');
-    
-    if (fs.existsSync(electronPath)) {
-        log.info(`Found Electron: ${electronPath}`);
-        return electronPath;
-    }
-    
-    try {
-        require('child_process').execSync('which electron', { stdio: 'ignore' });
-        log.info('Found Electron: global');
-        return 'electron';
-    } catch (e) {
-        log.warn('No Electron found');
-        return null;
-    }
-}
+// DEPRECATED: Electron support removed - Tauri is the canonical desktop runtime
+// Electron references removed because electron-vibecode/ directory does not exist
+// For desktop builds, use: npm run tauri:dev or npm run tauri:build
+// function findElectron() {
+//     log.debug('Detecting Electron...');
+//     const electronPath = path.join(__dirname, '..', 'node_modules', '.bin', 'electron');
+//
+//     if (fs.existsSync(electronPath)) {
+//         log.info(`Found Electron: ${electronPath}`);
+//         return electronPath;
+//     }
+//
+//     try {
+//         require('child_process').execSync('which electron', { stdio: 'ignore' });
+//         log.info('Found Electron: global');
+//         return 'electron';
+//     } catch (e) {
+//         log.warn('No Electron found');
+//         return null;
+//     }
+// }
 
 // Detect OpenVSCode Server (preferred - lighter)
 function findOpenVSCodeServer() {
@@ -433,43 +435,45 @@ function launchChromiumKiosk(chromiumPath, editorPort, editorName) {
     return chromium;
 }
 
-// Launch Electron (fallback)
-function launchElectron(electronPath, editorPort, editorName) {
-    log.info(`📦 Using Electron (fallback)`);
-    log.info(`   Editor: ${editorName} on port ${editorPort}`);
-    
-    const mainJs = path.join(__dirname, '..', 'electron-vibecode', 'main.js');
-    
-    if (!fs.existsSync(mainJs)) {
-        log.error('Electron main.js not found');
-        return null;
-    }
-    
-    log.info(`Launching Electron: ${electronPath}`);
-    const electron = spawn(electronPath, [mainJs], {
-        stdio: ['ignore', 'pipe', 'pipe'],
-        cwd: path.join(__dirname, '..'),
-        env: {
-            ...process.env,
-            CODE_SERVER_PORT: editorPort.toString(),
-        }
-    });
-    
-    electron.stdout.on('data', (data) => {
-        log.debug(`[Electron] ${data.toString().trim()}`);
-    });
-    
-    electron.stderr.on('data', (data) => {
-        log.debug(`[Electron] ${data.toString().trim()}`);
-    });
-    
-    electron.on('exit', (code) => {
-        log.info(`Electron closed (exit code: ${code})`);
-        process.exit(0);
-    });
-    
-    return electron;
-}
+// DEPRECATED: Electron support removed - Tauri is the canonical desktop runtime
+// Electron references removed because electron-vibecode/main.js does not exist
+// For desktop builds, use: npm run tauri:dev or npm run tauri:build
+// function launchElectron(electronPath, editorPort, editorName) {
+//     log.info(`📦 Using Electron (fallback)`);
+//     log.info(`   Editor: ${editorName} on port ${editorPort}`);
+//
+//     const mainJs = path.join(__dirname, '..', 'electron-vibecode', 'main.js');
+//
+//     if (!fs.existsSync(mainJs)) {
+//         log.error('Electron main.js not found');
+//         return null;
+//     }
+//
+//     log.info(`Launching Electron: ${electronPath}`);
+//     const electron = spawn(electronPath, [mainJs], {
+//         stdio: ['ignore', 'pipe', 'pipe'],
+//         cwd: path.join(__dirname, '..'),
+//         env: {
+//             ...process.env,
+//             CODE_SERVER_PORT: editorPort.toString(),
+//         }
+//     });
+//
+//     electron.stdout.on('data', (data) => {
+//         log.debug(`[Electron] ${data.toString().trim()}`);
+//     });
+//
+//     electron.stderr.on('data', (data) => {
+//         log.debug(`[Electron] ${data.toString().trim()}`);
+//     });
+//
+//     electron.on('exit', (code) => {
+//         log.info(`Electron closed (exit code: ${code})`);
+//         process.exit(0);
+//     });
+//
+//     return electron;
+// }
 
 // Main launcher
 async function main() {
@@ -485,21 +489,20 @@ async function main() {
     // Detect available components
     log.info('Detecting available components...');
     const chromiumPath = findChromium();
-    const electronPath = findElectron();
     const openvscodePath = findOpenVSCodeServer();
     const codeServerPath = findCodeServer();
     const vmOption = findVMOption();
-    
+
     console.log('\n📊 Detection Results:');
     console.log(`   Chromium: ${chromiumPath ? '✅' : '❌'}`);
-    console.log(`   Electron: ${electronPath ? '✅' : '❌'}`);
     console.log(`   OpenVSCode Server: ${openvscodePath ? '✅' : '❌'} (preferred - lighter)`);
     console.log(`   code-server: ${codeServerPath ? '✅' : '❌'} (fallback)`);
     console.log(`   Lightweight VM: ${vmOption ? '✅' : '❌'} (super lightweight)\n`);
     
-    if (!chromiumPath && !electronPath) {
-        log.error('No browser found!');
-        log.error('Please install Chrome, Chromium, Edge, or Electron');
+    if (!chromiumPath) {
+        log.error('No Chromium-based browser found!');
+        log.error('Please install Chrome, Chromium, or Microsoft Edge');
+        log.error('For desktop builds, use Tauri: npm run tauri:dev');
         process.exit(1);
     }
     
@@ -549,21 +552,12 @@ async function main() {
     const startupTime = ((Date.now() - startTime) / 1000).toFixed(2);
     log.success(`Startup complete in ${startupTime}s\n`);
     
-    // Launch browser (prefer Chromium Kiosk)
-    let browser;
-    if (chromiumPath) {
-        console.log('⚡ Performance Mode: Chromium Kiosk');
-        console.log(`   Startup: ${startupTime}s`);
-        console.log(`   Memory: ~30-40MB (vs 70-80MB Electron)`);
-        console.log(`   Speed: 3-4x faster than Electron\n`);
-        browser = launchChromiumKiosk(chromiumPath, editorPort, editorName);
-    } else if (electronPath) {
-        console.log('📦 Fallback Mode: Electron');
-        console.log(`   Startup: ${startupTime}s`);
-        console.log(`   Memory: ~70-80MB\n`);
-        browser = launchElectron(electronPath, editorPort, editorName);
-    }
-    
+    // Launch browser (Chromium Kiosk mode)
+    console.log('⚡ Performance Mode: Chromium Kiosk');
+    console.log(`   Startup: ${startupTime}s`);
+    console.log(`   Memory: ~30-40MB\n`);
+    const browser = launchChromiumKiosk(chromiumPath, editorPort, editorName);
+
     if (!browser) {
         log.error('Failed to launch browser');
         process.exit(1);
@@ -575,7 +569,7 @@ async function main() {
     if (backend) {
         log.success(`Backend: http://localhost:${BACKEND_PORT}`);
     }
-    log.success(`Browser: ${chromiumPath ? 'Chromium Kiosk ⚡' : 'Electron 📦'}`);
+    log.success(`Browser: Chromium Kiosk ⚡`);
     console.log('');
     
     // Cleanup on exit
