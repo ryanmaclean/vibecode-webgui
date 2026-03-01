@@ -1,0 +1,501 @@
+{
+  "feature": "Implement dynamic imports for Monaco Editor with code splitting",
+  "workflow_type": "simple",
+  "workflow_rationale": "This is a single-service frontend optimization task focused on improving bundle size and initial page load. No multi-service coordination or complex migration needed - just targeted webpack and import optimizations.",
+  "phases": [
+    {
+      "id": "phase-1-audit",
+      "name": "Audit Current Monaco Imports",
+      "type": "investigation",
+      "description": "Analyze all Monaco Editor imports to identify optimization opportunities and measure baseline bundle size",
+      "depends_on": [],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-1-1",
+          "description": "Search for all Monaco imports and verify no top-level imports exist",
+          "service": "frontend",
+          "files_to_modify": [],
+          "files_to_create": [
+            ".auto-claude/specs/076-implement-dynamic-imports-for-monaco-editor-with-c/audit-report.md"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "grep -r \"import.*monaco\" --include=\"*.ts\" --include=\"*.tsx\" src/ | grep -v \"type.*monaco\" | wc -l",
+            "expected": "Should document all non-type Monaco imports"
+          },
+          "status": "completed"
+        },
+        {
+          "id": "subtask-1-2",
+          "description": "Analyze current bundle size with webpack-bundle-analyzer",
+          "service": "frontend",
+          "files_to_modify": [
+            "package.json"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "package.json"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "npm run build && npm run analyze",
+            "expected": "Bundle analyzer runs successfully and generates report"
+          },
+          "status": "completed",
+          "notes": "Successfully configured webpack-bundle-analyzer. Added package to devDependencies, created 'analyze' script, and integrated BundleAnalyzerPlugin into next.config.mjs. Verified by running analyze script - reports generated at .next/analyze/client.html (1.4M) and .next/analyze/server.html (293K). Bundle analyzer now provides detailed visualization of bundle composition for optimization analysis.",
+          "updated_at": "2026-03-01T06:42:18.252220+00:00"
+        },
+        {
+          "id": "subtask-1-3",
+          "description": "Document baseline metrics: initial bundle size, Monaco chunk sizes, and load time",
+          "service": "frontend",
+          "files_to_modify": [],
+          "files_to_create": [
+            ".auto-claude/specs/076-implement-dynamic-imports-for-monaco-editor-with-c/baseline-metrics.json"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "manual",
+            "instructions": "Review baseline-metrics.json for documented bundle sizes"
+          },
+          "status": "completed",
+          "notes": "Successfully documented comprehensive baseline metrics including: total bundle size (11M/6M chunks), 344 JS files, main page (27K, no Monaco), editor page (70K + 24K Monaco wrappers). Confirmed Monaco already uses dynamic imports with SSR disabled. Identified optimization opportunities: worker splitting (~1-2MB), language pack splitting, and route preloading. Metrics saved to baseline-metrics.json for post-optimization comparison.",
+          "updated_at": "2026-02-28T23:00:00.000000+00:00"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-worker-optimization",
+      "name": "Optimize Monaco Worker Loading",
+      "type": "implementation",
+      "description": "Configure Monaco to lazy-load language workers and syntax highlighters only when needed",
+      "depends_on": [
+        "phase-1-audit"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-2-1",
+          "description": "Create MonacoEnvironment configuration to lazy-load workers",
+          "service": "frontend",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/lib/monaco/monaco-worker-config.ts"
+          ],
+          "patterns_from": [
+            "src/lib/editor/monaco-agentapi.ts"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "grep -q \"MonacoEnvironment\" src/lib/monaco/monaco-worker-config.ts && echo 'OK' || echo 'FAIL'",
+            "expected": "OK"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-2-2",
+          "description": "Update next.config.mjs to split Monaco workers into separate chunks",
+          "service": "frontend",
+          "files_to_modify": [
+            "next.config.mjs"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "next.config.mjs"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "grep -q \"monaco.*worker\" next.config.mjs && echo 'OK' || echo 'FAIL'",
+            "expected": "OK"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-2-3",
+          "description": "Integrate worker config into Monaco components",
+          "service": "frontend",
+          "files_to_modify": [
+            "src/components/editor/AgentMonacoEditor.tsx",
+            "src/components/editors/monaco.tsx",
+            "src/components/editor/VisualDiff.tsx"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/components/editor/AgentMonacoEditor.tsx"
+          ],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/editor",
+            "checks": [
+              "Editor renders",
+              "Workers load lazily",
+              "No console errors"
+            ]
+          },
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-3-route-splitting",
+      "name": "Implement Route-Level Code Splitting",
+      "type": "implementation",
+      "description": "Ensure Monaco Editor is only loaded on routes that actually use it, not on the main landing page",
+      "depends_on": [
+        "phase-1-audit"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-3-1",
+          "description": "Verify main page (/) doesn't import Monaco components",
+          "service": "frontend",
+          "files_to_modify": [
+            "src/app/page.tsx"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/app/page.tsx"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "grep -q \"Monaco\\|AgentMonacoEditor\" src/app/page.tsx && echo 'FAIL' || echo 'OK'",
+            "expected": "OK (no Monaco imports on main page)"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-3-2",
+          "description": "Ensure editor pages use dynamic imports at route level",
+          "service": "frontend",
+          "files_to_modify": [
+            "src/app/editor/page.tsx",
+            "src/app/tools/codeium/page.tsx"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/app/page.tsx"
+          ],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/",
+            "checks": [
+              "Main page loads without Monaco chunk",
+              "No monaco files in network tab"
+            ]
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-3-3",
+          "description": "Add preload hints for Monaco on editor routes",
+          "service": "frontend",
+          "files_to_modify": [
+            "src/app/editor/page.tsx"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/app/page.tsx"
+          ],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/editor",
+            "checks": [
+              "Monaco loads quickly",
+              "Preload hints in head"
+            ]
+          },
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-4-webpack-optimization",
+      "name": "Enhanced Webpack Code Splitting",
+      "type": "implementation",
+      "description": "Configure webpack to create optimal Monaco chunks with minimal duplication",
+      "depends_on": [
+        "phase-2-worker-optimization"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-4-1",
+          "description": "Split Monaco language packs into separate chunks by language",
+          "service": "frontend",
+          "files_to_modify": [
+            "next.config.mjs"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "next.config.mjs"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "npm run build && ls .next/static/chunks/ | grep -q monaco && echo 'OK' || echo 'FAIL'",
+            "expected": "OK (Monaco chunks exist)"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-4-2",
+          "description": "Configure tree-shaking to exclude unused Monaco features",
+          "service": "frontend",
+          "files_to_modify": [
+            "next.config.mjs"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "next.config.mjs"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "npm run build",
+            "expected": "Build completes without errors"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-4-3",
+          "description": "Add bundle size limits for Monaco chunks",
+          "service": "frontend",
+          "files_to_modify": [
+            "next.config.mjs"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "next.config.mjs"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "npm run build",
+            "expected": "Build warns if Monaco chunks exceed size limits"
+          },
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-5-verification",
+      "name": "Performance Verification",
+      "type": "integration",
+      "description": "Measure improvements in bundle size and page load performance",
+      "depends_on": [
+        "phase-3-route-splitting",
+        "phase-4-webpack-optimization"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-5-1",
+          "description": "Generate updated bundle analysis and compare with baseline",
+          "service": "frontend",
+          "files_to_modify": [],
+          "files_to_create": [
+            ".auto-claude/specs/076-implement-dynamic-imports-for-monaco-editor-with-c/final-metrics.json"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "npm run build && npm run analyze",
+            "expected": "Bundle analyzer shows Monaco chunks are smaller and lazy-loaded"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-5-2",
+          "description": "Test main page load without Monaco overhead",
+          "service": "frontend",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/",
+            "checks": [
+              "Page loads without Monaco chunks",
+              "Initial bundle size reduced",
+              "No Monaco-related network requests"
+            ]
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-5-3",
+          "description": "Test editor page Monaco lazy loading",
+          "service": "frontend",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "browser",
+            "url": "http://localhost:3000/editor",
+            "checks": [
+              "Monaco loads on demand",
+              "Loading skeleton appears",
+              "Editor renders correctly",
+              "All Monaco features work"
+            ]
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-5-4",
+          "description": "Run Lighthouse performance audit and document improvements",
+          "service": "frontend",
+          "files_to_modify": [],
+          "files_to_create": [
+            ".auto-claude/specs/076-implement-dynamic-imports-for-monaco-editor-with-c/lighthouse-report.json"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "npm run test:performance:lighthouse",
+            "expected": "Lighthouse shows improved performance scores"
+          },
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_phases": 5,
+    "total_subtasks": 15,
+    "services_involved": [
+      "frontend"
+    ],
+    "parallelism": {
+      "max_parallel_phases": 2,
+      "parallel_groups": [
+        {
+          "phases": [
+            "phase-2-worker-optimization",
+            "phase-3-route-splitting"
+          ],
+          "reason": "Both depend only on phase-1-audit and work on different aspects (workers vs routes)"
+        }
+      ],
+      "recommended_workers": 1,
+      "speedup_estimate": "1.3x faster than sequential (phases 2 and 3 can run in parallel)"
+    },
+    "startup_command": "npm run dev"
+  },
+  "verification_strategy": {
+    "risk_level": "medium",
+    "skip_validation": false,
+    "test_creation_phase": "post_implementation",
+    "test_types_required": [
+      "integration",
+      "browser"
+    ],
+    "security_scanning_required": false,
+    "staging_deployment_required": false,
+    "acceptance_criteria": [
+      "Main page (/) does not load Monaco Editor chunks",
+      "Monaco chunks are lazy-loaded only on editor routes",
+      "Initial bundle size reduced by at least 2MB",
+      "All Monaco features continue to work correctly",
+      "No performance regressions on editor pages",
+      "Lighthouse performance score improves"
+    ],
+    "verification_steps": [
+      {
+        "name": "Build Verification",
+        "command": "npm run build",
+        "expected_outcome": "Build completes successfully with Monaco chunks",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Bundle Analysis",
+        "command": "npm run analyze",
+        "expected_outcome": "Monaco chunks are separate and lazy-loaded",
+        "type": "test",
+        "required": true,
+        "blocking": false
+      },
+      {
+        "name": "Browser Testing",
+        "command": "npm run dev",
+        "expected_outcome": "Main page loads without Monaco, editor pages work correctly",
+        "type": "manual",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Performance Testing",
+        "command": "npm run test:performance:lighthouse",
+        "expected_outcome": "Performance scores improve",
+        "type": "test",
+        "required": true,
+        "blocking": false
+      }
+    ],
+    "reasoning": "Medium risk - changes affect core editor functionality and build configuration, requiring thorough browser testing and bundle analysis"
+  },
+  "qa_acceptance": {
+    "unit_tests": {
+      "required": false,
+      "commands": [],
+      "minimum_coverage": null
+    },
+    "integration_tests": {
+      "required": true,
+      "commands": [
+        "npm run build"
+      ],
+      "services_to_test": [
+        "frontend"
+      ]
+    },
+    "e2e_tests": {
+      "required": false,
+      "commands": [],
+      "flows": []
+    },
+    "browser_verification": {
+      "required": true,
+      "pages": [
+        {
+          "url": "http://localhost:3000/",
+          "checks": [
+            "renders",
+            "no-monaco-chunks",
+            "no-console-errors"
+          ]
+        },
+        {
+          "url": "http://localhost:3000/editor",
+          "checks": [
+            "monaco-loads",
+            "editor-functional",
+            "no-console-errors"
+          ]
+        },
+        {
+          "url": "http://localhost:3000/demo/visual-diff",
+          "checks": [
+            "diff-editor-loads",
+            "no-console-errors"
+          ]
+        }
+      ]
+    },
+    "bundle_verification": {
+      "required": true,
+      "checks": [
+        "monaco-chunks-exist",
+        "monaco-not-in-main-bundle",
+        "bundle-size-reduced"
+      ]
+    }
+  },
+  "qa_signoff": null,
+  "status": "in_progress",
+  "planStatus": "in_progress",
+  "updated_at": "2026-03-01T06:42:39.118Z",
+  "last_updated": "2026-03-01T06:42:18.252229+00:00"
+}
