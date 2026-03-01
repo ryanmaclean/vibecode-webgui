@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceLogger } from '@/lib/logging';
-// import { getDatabaseTraceContext } from '@/lib/monitoring/opentelemetry'; // TODO: Function not implemented yet
+// import { getDatabaseTraceContext } from '@/lib/monitoring/database-instrumentation'; // TODO: Function not implemented yet
 
 const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'health-db' });
 

@@ -1742,30 +1742,29 @@ if (window.DD_RUM) {
 **Log Aggregation**:
 ```typescript
 // src/lib/logger.ts
-import { createLogger, format, transports } from 'winston';
+import pino from 'pino';
 
-export const logger = createLogger({
-  level: 'info',
-  format: format.combine(
-    format.timestamp(),
-    format.errors({ stack: true }),
-    format.json()
-  ),
-  defaultMeta: {
-    service: 'vibecode',
-    env: process.env.DD_ENV
+export const logger = pino({
+  level: process.env.LOG_LEVEL || 'info',
+  formatters: {
+    level: (label) => {
+      return { level: label };
+    },
   },
-  transports: [
-    new transports.Console(),
-    // Datadog transport via HTTP
-    new transports.Http({
-      host: 'http-intake.logs.datadoghq.com',
-      path: '/api/v2/logs',
-      headers: {
-        'DD-API-KEY': process.env.DD_API_KEY
-      }
-    })
-  ]
+  base: {
+    service: 'vibecode',
+    env: process.env.DD_ENV || 'development',
+  },
+  timestamp: pino.stdTimeFunctions.isoTime,
+  // Datadog integration via stdout
+  transport: process.env.NODE_ENV === 'production' ? undefined : {
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+      translateTime: 'HH:MM:ss Z',
+      ignore: 'pid,hostname',
+    },
+  },
 });
 ```
 

@@ -81,22 +81,34 @@ export const DBSpanAttributes = {
  */
 export function getTracer(name: string = 'vibecode-webgui') {
   if (!isServer || isDockerBuild || !trace) {
+    // Generate mock trace and span IDs for testing
+    const generateId = (len: number) =>
+      Array.from({ length: len }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+
     // Return mock tracer for client-side or Docker build
     return {
-      startSpan: () => ({
-        setAttribute: () => {},
-        setAttributes: () => {},
-        setStatus: () => {},
-        recordException: () => {},
-        end: () => {},
-      }),
+      startSpan: () => {
+        const traceId = generateId(32);
+        const spanId = generateId(16);
+        return {
+          setAttribute: () => {},
+          setAttributes: () => {},
+          setStatus: () => {},
+          recordException: () => {},
+          end: () => {},
+          spanContext: () => ({ traceId, spanId }),
+        };
+      },
       startActiveSpan: (name: string, fn: Function) => {
+        const traceId = generateId(32);
+        const spanId = generateId(16);
         return fn({
           setAttribute: () => {},
           setAttributes: () => {},
           setStatus: () => {},
           recordException: () => {},
           end: () => {},
+          spanContext: () => ({ traceId, spanId }),
         });
       },
     };
@@ -201,6 +213,55 @@ export function createDBSpan<T>(
       // Mark span as successful and record query time
       span.setStatus({ code: SpanStatusCode.OK });
       span.setAttribute(DBSpanAttributes.DB_QUERY_TIME_MS, Date.now() - startTime);
+
+      return result;
+    } catch (error) {
+      // Record error in span
+      span.setStatus({
+        code: SpanStatusCode.ERROR,
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+
+      span.recordException(error as Error);
+
+      throw error;
+    } finally {
+      span.end();
+    }
+  });
+}
+
+/**
+ * Create a custom span for generic operations
+ */
+export function createCustomSpan<T>(
+  spanName: string,
+  attributes: Record<string, any>,
+  fn: (span: any) => Promise<T>
+): Promise<T> {
+  if (!isServer || isDockerBuild || !trace || !context || !SpanStatusCode) {
+    // Execute function without tracing in Docker build or client-side
+    return fn({
+      setAttribute: () => {},
+      setAttributes: () => {},
+      setStatus: () => {},
+      recordException: () => {},
+      end: () => {},
+    });
+  }
+
+  const tracer = getTracer();
+
+  return tracer.startActiveSpan(spanName, async (span: any) => {
+    try {
+      // Set initial attributes
+      span.setAttributes(attributes);
+
+      // Execute the function
+      const result = await fn(span);
+
+      // Mark span as successful
+      span.setStatus({ code: SpanStatusCode.OK });
 
       return result;
     } catch (error) {

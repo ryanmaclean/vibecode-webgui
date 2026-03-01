@@ -3,8 +3,9 @@
 import type { editor } from 'monaco-editor';
 import dynamic from 'next/dynamic';
 import { useTheme } from 'next-themes';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { getOptimizedEditorOptions } from '@/lib/editor/large-file-optimizer';
+import { configureMonacoWorkers } from '@/lib/monaco/monaco-worker-config';
 
 interface MonacoEditorProps {
   language: string;
@@ -46,6 +47,13 @@ export function Monaco({
   enableOptimizations = true
 }: MonacoEditorProps) {
   const { theme } = useTheme();
+
+  // Configure Monaco workers before editor loads
+  useEffect(() => {
+    configureMonacoWorkers({
+      debug: process.env.NODE_ENV === 'development',
+    });
+  }, []);
 
   // Calculate optimized editor options based on file size
   const editorOptions = useMemo(() => {

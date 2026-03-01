@@ -58,7 +58,7 @@ function getTracer() {
     let initializeOpenTelemetry, getServiceEnvVersion, getDatadogSite;
     
     try {
-      const opentelemetryModule = require('./lib/monitoring/opentelemetry');
+      const opentelemetryModule = require('./lib/monitoring/opentelemetry-setup');
       initializeOpenTelemetry = opentelemetryModule.initializeOpenTelemetry;
     } catch (e) {
       console.log('⚠️ OpenTelemetry module not available');

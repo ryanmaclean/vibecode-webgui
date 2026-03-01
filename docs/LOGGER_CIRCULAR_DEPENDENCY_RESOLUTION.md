@@ -10,12 +10,16 @@
 ## 🔍 ROOT CAUSE ANALYSIS
 
 ### The Problem
-The logger module (`src/lib/logger.ts`) uses **top-level `await`** which creates circular dependencies:
+The logger module (`src/lib/logger.ts`) previously used top-level `await` for dynamic imports which created circular dependencies:
 
 ```typescript
-// src/lib/logger.ts - PROBLEMATIC CODE
-const logger = await import('winston') // ❌ Top-level await
+// src/lib/logger.ts - PROBLEMATIC CODE (REMOVED)
+const logger = await import('some-logging-library') // ❌ Top-level await
 ```
+
+**Original Issue**: The project initially used Winston logger with top-level await, which created circular dependency chains across 335+ files.
+
+**Solution**: Migrated to Pino logger which has no circular dependency issues, better performance, and native async support.
 
 ### Why This Breaks Everything
 1. **Circular Dependencies**: Module A imports logger → logger imports Winston → Winston imports module A
