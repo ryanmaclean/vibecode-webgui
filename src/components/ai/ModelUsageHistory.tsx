@@ -26,6 +26,17 @@ import {
   Zap,
 } from 'lucide-react';
 import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+} from 'recharts';
+import {
   UsageHistory,
   UsageDataPoint,
   SessionUsage,
@@ -95,6 +106,73 @@ function formatCost(cost: number): string {
 // Sub-Components
 // ============================================================================
 
+interface UsageChartProps {
+  data: UsageDataPoint[];
+  period: TimePeriod;
+  metric: 'tokens' | 'requests';
+}
+
+function UsageChart({ data, period, metric }: UsageChartProps) {
+  const chartData = useMemo(() => {
+    return data.map((point) => ({
+      timestamp: formatTimestamp(point.timestamp, period),
+      tokens: point.tokens,
+      requests: point.requests,
+    }));
+  }, [data, period]);
+
+  if (chartData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
+        <p>No usage data for this period</p>
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <AreaChart data={chartData}>
+        <defs>
+          <linearGradient id="colorTokens" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+        <XAxis
+          dataKey="timestamp"
+          tick={{ fontSize: 12 }}
+          className="text-muted-foreground"
+        />
+        <YAxis
+          tick={{ fontSize: 12 }}
+          className="text-muted-foreground"
+          tickFormatter={(value) =>
+            metric === 'tokens' ? formatTokens(value) : value.toString()
+          }
+        />
+        <Tooltip
+          formatter={(value: number) =>
+            metric === 'tokens' ? formatTokens(value) : value.toString()
+          }
+          contentStyle={{
+            backgroundColor: 'hsl(var(--card))',
+            border: '1px solid hsl(var(--border))',
+            borderRadius: '8px',
+          }}
+        />
+        <Area
+          type="monotone"
+          dataKey={metric}
+          stroke="#3B82F6"
+          fillOpacity={1}
+          fill="url(#colorTokens)"
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
 interface StatCardProps {
   title: string;
   value: string;
@@ -143,6 +221,7 @@ export default function ModelUsageHistory({
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('daily');
+  const [selectedMetric, setSelectedMetric] = useState<'tokens' | 'requests'>('tokens');
   const [lastUpdate, setLastUpdate] = useState<string>(new Date().toISOString());
 
   // ============================================================================
@@ -262,6 +341,10 @@ export default function ModelUsageHistory({
     setSelectedPeriod(value as TimePeriod);
   }, []);
 
+  const handleMetricChange = useCallback((value: string) => {
+    setSelectedMetric(value as 'tokens' | 'requests');
+  }, []);
+
   // ============================================================================
   // Render
   // ============================================================================
@@ -366,6 +449,41 @@ export default function ModelUsageHistory({
           testId="most-used-model"
         />
       </div>
+
+      {/* Usage Trends Chart */}
+      {currentPeriodData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Usage Trends
+                </CardTitle>
+                <CardDescription>
+                  {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)} usage patterns over time
+                </CardDescription>
+              </div>
+              <Select value={selectedMetric} onValueChange={handleMetricChange}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tokens">Tokens</SelectItem>
+                  <SelectItem value="requests">Requests</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <UsageChart
+              data={currentPeriodData}
+              period={selectedPeriod}
+              metric={selectedMetric}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Model Breakdown */}
       {modelBreakdown.length > 0 && (
