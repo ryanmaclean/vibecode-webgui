@@ -1,9 +1,9 @@
 # VibeCode System Architecture
 **Complete System Architecture with Mermaid Diagrams**
 
-**Version:** 1.0
-**Date:** October 28, 2025
-**Status:** Phase 2 Complete, Phases 3-4 In Progress
+**Version:** 2.0
+**Date:** February 28, 2026
+**Status:** Production-Ready with Agent Orchestration
 
 ---
 
@@ -11,11 +11,12 @@
 
 1. [High-Level Architecture](#high-level-architecture)
 2. [Component Architecture](#component-architecture)
-3. [Authentication Flow](#authentication-flow)
-4. [Data Flow](#data-flow)
-5. [Deployment Models](#deployment-models)
-6. [Technology Stack](#technology-stack)
-7. [Integration Points](#integration-points)
+3. [Agent Orchestration System](#agent-orchestration-system)
+4. [Authentication Flow](#authentication-flow)
+5. [Data Flow](#data-flow)
+6. [Deployment Models](#deployment-models)
+7. [Technology Stack](#technology-stack)
+8. [Integration Points](#integration-points)
 
 ---
 
@@ -135,6 +136,216 @@ graph TD
     style VFKIT fill:#FFB347
     style KEYCHAIN fill:#50C878
 ```
+
+---
+
+## Agent Orchestration System
+
+### Multi-Agent Framework Overview
+
+```mermaid
+graph TB
+    subgraph "Agent Orchestration Layer"
+        COORD[.agents/ Coordinator<br/>Multi-Agent Planning]
+        AUTOCL[.auto-claude/<br/>Task Automation]
+        KAFKA[Kafka Event Bus<br/>Agent Communication]
+    end
+
+    subgraph "Agent Framework"
+        BASE[Base Agent Class<br/>TypeScript Core]
+        MEMORY[Agent Memory<br/>PostgreSQL + pgvector]
+        TOOLS[Tool Registry<br/>Unified Tools]
+    end
+
+    subgraph "Execution Environment"
+        WORKERS[Worker Pool<br/>Parallel Execution]
+        WORKTREE[Git Worktrees<br/>Isolated Branches]
+        SANDBOX[Sandbox Runtime<br/>Security Isolation]
+    end
+
+    subgraph "Communication Layer"
+        EVENTS[Event System<br/>Kafka Topics]
+        MESSAGES[Message Queue<br/>Inter-Agent]
+        API[Agent API<br/>REST + WebSocket]
+    end
+
+    subgraph "Storage Layer"
+        PG[(PostgreSQL<br/>Memory + State)]
+        REDIS[(Redis/Valkey<br/>Cache)]
+        FS[File System<br/>Artifacts]
+    end
+
+    COORD --> BASE
+    AUTOCL --> WORKERS
+    KAFKA --> EVENTS
+    BASE --> MEMORY
+    BASE --> TOOLS
+    WORKERS --> WORKTREE
+    WORKERS --> SANDBOX
+    EVENTS --> MESSAGES
+    MESSAGES --> API
+    MEMORY --> PG
+    TOOLS --> REDIS
+    WORKTREE --> FS
+
+    style COORD fill:#E94E77
+    style AUTOCL fill:#50C878
+    style KAFKA fill:#FFB347
+    style BASE fill:#4A90E2
+```
+
+### Agent Coordination Workflow
+
+```mermaid
+sequenceDiagram
+    participant PM as Project Manager
+    participant COORD as Coordination Agent
+    participant A1 as Agent 1
+    participant A2 as Agent 2
+    participant A3 as Agent 3
+    participant GIT as Git Repository
+    participant KAFKA as Kafka Bus
+
+    PM->>COORD: Define project goals
+    COORD->>COORD: Decompose into tasks
+    COORD->>COORD: Analyze dependencies
+    COORD->>COORD: Create .agents/COORDINATION.md
+
+    COORD->>KAFKA: Publish task assignments
+    KAFKA->>A1: Task 1 (no dependencies)
+    KAFKA->>A2: Task 2 (no dependencies)
+
+    par Phase 1: Parallel Execution
+        A1->>A1: Execute in isolated worktree
+        A1->>GIT: Commit to branch
+        A1->>KAFKA: Publish completion
+        and
+        A2->>A2: Execute in isolated worktree
+        A2->>GIT: Commit to branch
+        A2->>KAFKA: Publish completion
+    end
+
+    KAFKA->>COORD: Tasks 1 & 2 complete
+    COORD->>A3: Task 3 (depends on 1 & 2)
+    A3->>A3: Execute task
+    A3->>GIT: Commit results
+    A3->>KAFKA: Publish completion
+
+    KAFKA->>COORD: All tasks complete
+    COORD->>PM: Project complete
+```
+
+### Auto-Claude Task Execution
+
+```mermaid
+graph TB
+    subgraph "Task Specification"
+        SPEC[spec.md<br/>Task description]
+        PLAN[implementation_plan.json<br/>Phases & subtasks]
+        CONTEXT[context.json<br/>Code analysis]
+    end
+
+    subgraph "Execution Engine"
+        WORKER[Claude Code Worker<br/>AI Agent]
+        SUBTASK[Subtask Executor<br/>Isolated execution]
+        VERIFY[Verification Engine<br/>Test runner]
+    end
+
+    subgraph "State Management"
+        PROGRESS[build-progress.txt<br/>Real-time status]
+        MEMORY[Memory System<br/>Discoveries & gotchas]
+        LOGS[task_logs.json<br/>Execution logs]
+    end
+
+    subgraph "Git Integration"
+        WORKTREE[Git Worktree<br/>Isolated branch]
+        COMMIT[Atomic Commits<br/>Per subtask]
+        PR[Pull Request<br/>GitHub integration]
+    end
+
+    SPEC --> PLAN
+    PLAN --> WORKER
+    CONTEXT --> WORKER
+    WORKER --> SUBTASK
+    SUBTASK --> VERIFY
+    VERIFY --> PROGRESS
+    WORKER --> MEMORY
+    SUBTASK --> LOGS
+    WORKER --> WORKTREE
+    VERIFY --> COMMIT
+    COMMIT --> PR
+
+    style WORKER fill:#4A90E2
+    style PLAN fill:#E94E77
+    style MEMORY fill:#50C878
+    style WORKTREE fill:#FFB347
+```
+
+### Agent Communication via Kafka
+
+```mermaid
+graph LR
+    subgraph "Producers"
+        TD[td CLI<br/>Go]
+        RIG[rig Service<br/>Node.js]
+        BRIDGE[Gitea Bridge<br/>Webhooks]
+    end
+
+    subgraph "Kafka Topics"
+        CREATED[tundra-beads-created]
+        WORK[tundra-beads-work]
+        PROGRESS[tundra-beads-in-progress]
+        COMPLETE[tundra-beads-completed]
+        NUDGES[tundra-nudges]
+    end
+
+    subgraph "Consumers"
+        AIRFLOW[Airflow DAG<br/>Workflow triggers]
+        AGENTS[Agent Pool<br/>Task workers]
+        DSM[Data Stream Manager<br/>Event processing]
+    end
+
+    TD --> CREATED
+    TD --> WORK
+    TD --> PROGRESS
+    TD --> COMPLETE
+    TD --> NUDGES
+    RIG --> CREATED
+    BRIDGE --> CREATED
+
+    CREATED --> AIRFLOW
+    CREATED --> AGENTS
+    WORK --> AGENTS
+    PROGRESS --> DSM
+    COMPLETE --> AIRFLOW
+    COMPLETE --> AGENTS
+
+    style CREATED fill:#4A90E2
+    style AIRFLOW fill:#E94E77
+    style AGENTS fill:#50C878
+```
+
+**Key Agent Features:**
+
+- **Multi-Agent Coordination** - `.agents/` directory for parallel task execution
+- **Auto-Claude Orchestration** - `.auto-claude/` for automated task workflows
+- **Event-Driven Communication** - Kafka topics for agent messaging
+- **Memory Persistence** - PostgreSQL with pgvector for agent memory
+- **Tool Framework** - Unified tool system with RBAC permissions
+- **Isolation & Security** - Git worktrees, sandbox execution, audit logging
+
+**Agent Specialization Types:**
+
+| Agent Type | Domain | Example Tasks |
+|------------|--------|---------------|
+| quality-engineer | Testing & QA | Test migration, coverage analysis |
+| security-engineer | Security | Security hardening, auth flows |
+| technical-writer | Documentation | API docs, guides, tutorials |
+| devops-architect | Infrastructure | Docker, Kubernetes, CI/CD |
+| frontend-architect | UI/UX | React components, styling |
+| performance-engineer | Optimization | Profiling, performance tuning |
+
+For detailed agent orchestration architecture, see [Agent Orchestration Architecture](./architecture/AGENT_ORCHESTRATION.md).
 
 ---
 
@@ -513,12 +724,18 @@ graph TB
     subgraph "Storage"
         KEYCHAIN[macOS Keychain<br/>Tokens + Secrets]
         FS[File System<br/>Workspaces]
-        POSTGRES[(PostgreSQL<br/>Session Metadata)]
+        POSTGRES[(PostgreSQL 16<br/>Session + Agent Memory)]
+        PGVECTOR[pgvector<br/>Embeddings]
+    end
+
+    subgraph "Messaging & Cache"
+        KAFKA[Kafka<br/>Event Bus]
+        REDIS[(Redis/Valkey<br/>Cache)]
     end
 
     subgraph "Monitoring"
-        DATADOG[Datadog<br/>Metrics + Logs]
-        SENTRY[Sentry<br/>Error Tracking]
+        DATADOG[Datadog<br/>Metrics + Logs + APM]
+        OTEL[OpenTelemetry<br/>Distributed Tracing]
     end
 
     subgraph "AI Services"
@@ -529,14 +746,18 @@ graph TB
 
     KEYCHAIN --> |Secure Storage| POSTGRES
     FS --> |File Metadata| POSTGRES
+    POSTGRES --> PGVECTOR
     POSTGRES --> |Metrics| DATADOG
-    POSTGRES --> |Errors| SENTRY
+    POSTGRES --> |Traces| OTEL
+    KAFKA --> REDIS
+    KAFKA --> DATADOG
     OPENROUTER --> ANTHROPIC
     OPENROUTER --> OPENAI
 
-    style KEYCHAIN fill:#50C878
     style POSTGRES fill:#336791
+    style KAFKA fill:#FFB347
     style DATADOG fill:#632CA6
+    style PGVECTOR fill:#50C878
 ```
 
 ---
@@ -749,25 +970,31 @@ graph TB
 
 VibeCode's architecture is designed around:
 
-1. **Native macOS Integration** - Swift 5 + Virtualization.framework
-2. **Hybrid Authentication** - Swift auth + Caddy proxy + JWT
-3. **VM Flexibility** - Support for vfkit, QEMU, Lima
-4. **Lightweight Frontend** - React + Zustand (<200KB bundle)
-5. **OpenVSCode Server** - Rust CLI + Node.js runtime
-6. **Modular Design** - Clear separation of concerns
-7. **Security First** - TLS 1.3, JWT, biometric auth
-8. **Scalable** - Desktop → VM → Fleet deployment
+1. **Multi-Agent Orchestration** - `.agents/` and `.auto-claude/` frameworks for parallel task execution
+2. **Native macOS Integration** - Swift 5 + Virtualization.framework
+3. **Hybrid Authentication** - Swift auth + Caddy proxy + JWT
+4. **VM Flexibility** - Support for vfkit, QEMU, Lima
+5. **Event-Driven Architecture** - Kafka message bus for agent communication
+6. **AI-Powered Memory** - PostgreSQL + pgvector for agent memory and embeddings
+7. **Lightweight Frontend** - React + Zustand (<200KB bundle)
+8. **OpenVSCode Server** - Rust CLI + Node.js runtime
+9. **Modular Design** - Clear separation of concerns
+10. **Security First** - TLS 1.3, JWT, biometric auth, sandbox execution
+11. **Observability** - Datadog APM + OpenTelemetry distributed tracing
+12. **Scalable** - Desktop → VM → Fleet → Multi-Agent deployment
 
 ---
 
 **Next Steps:**
+- [Agent Orchestration Architecture](./architecture/AGENT_ORCHESTRATION.md) - Multi-agent system details
+- [Integration Architecture](./architecture/INTEGRATION_ARCHITECTURE.md) - Service integration patterns
+- [Deployment Architecture](./architecture/DEPLOYMENT_ARCHITECTURE.md) - Kubernetes and Docker deployment
+- [Enterprise Architecture](./architecture/ENTERPRISE_ARCHITECTURE.md) - Security and compliance
 - [Implementation Roadmap](./IMPLEMENTATION_ROADMAP.md) - Development plan
 - [Quick Start Guide](./QUICKSTART.md) - Get started in 5 minutes
-- [Authentication Strategy](../security/AUTHENTICATION_STRATEGY.md) - Security details
-- [Dashboard Design](./DASHBOARD_DESIGN.md) - UI specifications
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** October 28, 2025
-**Maintained By:** Architecture Team
+**Document Version:** 2.0
+**Last Updated:** February 28, 2026
+**Maintained By:** Platform Architecture Team

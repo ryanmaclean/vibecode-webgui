@@ -9,6 +9,12 @@ Welcome to the comprehensive API documentation for VibeCode WebGUI. This documen
 - **[Endpoint Mapping](./ROUTE_MAPPING.md)** - Complete list of all API routes with descriptions
 - **[Endpoints Overview](./ENDPOINTS.md)** - High-level endpoint categorization
 
+### AI Model Integration
+- **[AI Models Integration Guide](./ai-models-integration.md)** - OpenRouter integration, 15+ models across 5 providers, model registry
+- **[AI Model Selection Guide](../guides/ai-model-selection.md)** - Model filtering, recommendations, comparison, and dynamic switching
+- **[AI Rate Limiting & Cost Optimization](../guides/ai-rate-limiting.md)** - Rate limiting, retry logic, cost optimization strategies
+- **[RAG & Multi-Agent Implementation](../guides/ai-rag-implementation.md)** - Vector embeddings, semantic search, and multi-agent workflows
+
 ### Security Documentation
 - **[Security Implementation Guide](../security/implementation.md)** - Comprehensive security overview
 - **[CSRF Protection Guide](../security/csrf-protection.md)** - Detailed CSRF implementation and usage
@@ -108,6 +114,12 @@ async function apiCall(endpoint: string, options: RequestInit) {
 - `/api/ai/function-call` - AI function calling
 - `/api/ai/web-search` - AI-powered web search
 - `/api/ai/generate-project` - AI project generation
+
+**See [AI Model Integration](#ai-model-integration) section for comprehensive documentation on:**
+- 15+ AI models across 5 providers (Anthropic, OpenAI, Google, Meta, Mistral)
+- Model selection, filtering, and dynamic switching
+- Rate limiting, cost optimization, and retry strategies
+- RAG implementation with vector embeddings and semantic search
 
 ### Workspace Management
 - `/api/workspaces` - Workspace CRUD operations

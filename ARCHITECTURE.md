@@ -12,6 +12,7 @@ This document provides comprehensive architectural guidance for VibeCode Studio,
 - [Web-Dashboard Status](#web-dashboard-status)
 - [Infrastructure Stack](#infrastructure-stack)
 - [Development Environment](#development-environment)
+- [Detailed Architecture Documentation](#detailed-architecture-documentation)
 - [Architecture Decision Records](#architecture-decision-records)
 
 ---
@@ -354,7 +355,91 @@ NODE_ENV=development|production|test
 
 ---
 
+## Detailed Architecture Documentation
+
+This section provides links to comprehensive architecture documentation covering various aspects of the VibeCode platform. Each document includes detailed technical specifications, diagrams, and implementation guidance.
+
+### Core System Architecture
+
+- **[Agent Orchestration Architecture](docs/architecture/AGENT_ORCHESTRATION.md)**
+  - Multi-agent framework and coordination patterns
+  - `.agents/` and `.auto-claude/` orchestration systems
+  - Task management, memory systems, and tool capabilities
+  - Agent communication patterns and security architecture
+  - Includes 12+ Mermaid diagrams covering agent workflows and coordination
+
+- **[Deployment Architecture](docs/architecture/DEPLOYMENT_ARCHITECTURE.md)**
+  - Kubernetes, KIND, and Docker Compose deployment models
+  - Infrastructure as Code with Helm charts
+  - Scaling strategies and security configurations
+  - Monitoring, logging, and troubleshooting guides
+  - Platform-specific deployment instructions
+
+- **[Integration Architecture](docs/architecture/INTEGRATION_ARCHITECTURE.md)**
+  - Component integration patterns and data flow
+  - Service communication protocols (REST, WebSocket, gRPC)
+  - Platform integration (Next.js, Tauri, web-dashboard)
+  - Infrastructure integration (databases, message queues, observability)
+  - Error handling and failure mode patterns
+
+- **[Enterprise Architecture](docs/architecture/ENTERPRISE_ARCHITECTURE.md)**
+  - Security architecture and compliance frameworks (GDPR, SOC 2, HIPAA)
+  - Enterprise deployment models (SaaS, VPC, on-premises, air-gapped)
+  - Data governance, encryption, and retention policies
+  - Identity and access management (SSO, MFA, RBAC)
+  - Business continuity and disaster recovery
+  - Vendor risk assessment and integration patterns
+
+### Infrastructure & Cloud
+
+- **[Azure Kubernetes Service (AKS) Architecture](docs/architecture/AKS_ARCHITECTURE.md)**
+  - AKS-specific deployment and configuration
+  - Azure integration and networking
+  - Security and compliance in Azure environments
+
+- **[WebGUI-AI-Datadog-Azure Stack](docs/architecture/WEBGUI-AI-DATADOG-AZURE-STACK.md)**
+  - Full-stack integration on Azure
+  - AI service integration patterns
+  - Datadog monitoring in Azure deployments
+
+### Data Architecture
+
+- **[Memory Tier Architecture](docs/architecture/MEMORY_TIER_ARCHITECTURE.md)**
+  - Multi-tier memory system design
+  - Caching strategies and data locality
+  - Performance optimization patterns
+
+- **[Database Consolidation Plan](docs/architecture/DATABASE_CONSOLIDATION_PLAN.md)**
+  - Database architecture and consolidation strategy
+  - PostgreSQL with pgvector optimization
+  - Migration paths and data governance
+
+### Strategic Decisions
+
+- **[Native Editor Decision Matrix](docs/architecture/native-editor-decision-matrix.md)**
+  - Evaluation framework for native editor options
+  - Technology comparison and trade-offs
+  - Decision rationale and future considerations
+
+- **[Lapce Fork Strategy](docs/architecture/lapce-fork-strategy.md)**
+  - Lapce integration and fork strategy
+  - Customization approach and maintenance plan
+  - Long-term roadmap considerations
+
+### Related Documentation
+
+For complementary architectural information, see:
+
+- **[Architecture Diagrams](docs/ARCHITECTURE_DIAGRAM.md)** - Visual system diagrams with Mermaid
+- **[Service Dependencies](SERVICE_DEPENDENCIES.md)** - Service dependency mapping and analysis
+- **[Folder Structure](docs/FOLDER_STRUCTURE.md)** - Project organization and code layout
+- **[Observability](OBSERVABILITY.md)** - Monitoring and tracing guidance
+
+---
+
 ## Architecture Decision Records
+
+> **📚 For detailed implementation guidance**, see the [Detailed Architecture Documentation](#detailed-architecture-documentation) section above, which provides comprehensive technical specifications, diagrams, and patterns for each architectural component.
 
 ### ADR-001: Adopt Next.js as Canonical Frontend
 
@@ -479,6 +564,6 @@ For questions about architectural decisions or to propose changes, please refer 
 
 ---
 
-**Last Updated:** February 2026
+**Last Updated:** February 28, 2026
 **Maintained By:** VibeCode Architecture Team
 **Review Cycle:** Quarterly or when major technology decisions are made
