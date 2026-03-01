@@ -199,11 +199,7 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-switch": "1.2.6",
     "@radix-ui/react-tabs": "1.1.13",
-<<<<<<< HEAD
     "@tanstack/react-virtual": "3.13.19",
-=======
-    "@tanstack/react-virtual": "3.13.18",
->>>>>>> 2becf5e00a (auto-claude: subtask-1-1 - Install @tanstack/react-virtual package and verify)
     "@types/js-yaml": "4.0.9",
     "@types/mongodb": "4.0.7",
     "@types/qrcode": "1.5.6",
