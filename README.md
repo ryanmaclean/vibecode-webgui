@@ -2,8 +2,52 @@
 
 > **🚨 Emergency Release (Feb 2026)** - The "Ruthless" Edition
 
-VibeCode is the AI-native IDE and Agent Orchestrator.
-**Current Backend:** Ubuntu 24.04 via `vfkit` (Fast, Stable).
+## 🎯 What is VibeCode?
+
+**VibeCode is a next-generation AI-native IDE** that brings the power of 321+ AI models directly into your development workflow. Unlike traditional IDEs with AI bolt-ons, VibeCode is built from the ground up for AI-assisted development, combining the flexibility of VS Code with unprecedented AI model access and semantic code intelligence.
+
+### Why VibeCode?
+
+**For Solo Developers:**
+- 🤖 **Access 321+ AI Models** - OpenAI, Anthropic, Gemini, Groq, DeepSeek, and more from one interface
+- 🔍 **Semantic Code Search** - Find code by meaning, not just keywords, powered by pgvector
+- ✨ **Real-time AI Completion** - Context-aware suggestions powered by Monaco Editor and Monacopilot
+- 🏠 **Run Anywhere** - Cloud, self-hosted, or fully offline with local LLMs via Ollama
+
+**For Teams:**
+- 👥 **Real-time Collaboration** - WebSocket-based collaborative editing with shared AI context
+- 🔒 **Self-Hosted Option** - Full data control with on-premise deployment
+- 🎯 **Unified AI Stack** - One platform for all team AI needs, no vendor lock-in
+- 📊 **Shared Knowledge** - Team-wide semantic search across all codebases
+
+### vs. Cursor / GitHub Copilot / VS Code
+
+| Feature | VibeCode | Cursor | GitHub Copilot | VS Code |
+|---------|----------|--------|----------------|---------|
+| **AI Models** | 321+ providers | 4 models | 1 model | Via extensions |
+| **Self-Hosted** | ✅ Full control | ❌ Cloud only | ❌ Cloud only | ✅ Local only |
+| **Semantic Search** | ✅ Vector DB (pgvector) | ⚠️ Basic | ❌ None | ⚠️ Keyword only |
+| **Real-time Collab** | ✅ Built-in | ❌ None | ❌ None | ⚠️ Live Share |
+| **Open Source** | ✅ MIT License | ❌ Proprietary | ❌ Proprietary | ✅ MIT License |
+| **Local LLMs** | ✅ Ollama integration | ❌ Cloud only | ❌ Cloud only | ⚠️ Manual setup |
+| **Multi-Provider** | ✅ OpenRouter + Direct | ⚠️ Limited | ❌ Single | ⚠️ Extension-dependent |
+| **Agent Orchestration** | ✅ MCP Support | ⚠️ Limited | ❌ None | ❌ None |
+
+**Key Differentiators:**
+- ✅ **Model Choice Freedom** - Not locked to a single AI provider
+- ✅ **Privacy First** - Self-host everything or run local LLMs offline
+- ✅ **Semantic Intelligence** - Vector search understands code context
+- ✅ **Transparent & Open** - MIT licensed with full source access
+- ✅ **Enterprise Ready** - Kubernetes deployment, Datadog monitoring, PostgreSQL 16
+
+### Who Should Use VibeCode?
+
+- **🧑‍💻 Developers** seeking AI-powered assistance with flexibility to choose the best model for each task
+- **👥 Teams** requiring collaborative development environments with integrated AI capabilities
+- **🏢 Organizations** needing self-hosted AI development platforms with full data sovereignty
+- **🔓 OSS Contributors** wanting to extend, customize, and understand their IDE architecture
+- **🔬 AI Researchers** experimenting with multiple LLMs in real development workflows
+- **🛡️ Security-Conscious** users requiring on-premise AI without data leaving their network
 
 ## ✨ Features
 
