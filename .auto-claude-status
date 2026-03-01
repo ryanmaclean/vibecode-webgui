@@ -1,10 +1,10 @@
 {
   "active": true,
   "spec": "072-add-workspace-templates-and-cloning-feature",
-  "state": "planning",
+  "state": "building",
   "subtasks": {
-    "completed": 0,
-    "total": 0,
+    "completed": 1,
+    "total": 10,
     "in_progress": 1,
     "failed": 0
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 2,
+    "number": 3,
     "started_at": "2026-03-01T00:06:35.125398"
   },
-  "last_update": "2026-03-01T00:10:13.310664"
+  "last_update": "2026-03-01T00:12:25.536991"
 }
