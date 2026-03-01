@@ -397,6 +397,22 @@ const nextConfig = {
           },
         },
       }
+
+      // Set bundle size limits for Monaco Editor chunks
+      config.performance = {
+        ...config.performance,
+        hints: 'warning', // Warn but don't fail the build
+        maxAssetSize: 500000, // 500KB default limit for individual assets
+        maxEntrypointSize: 500000, // 500KB default limit for entrypoints
+        assetFilter: (assetFilename) => {
+          // Apply size limits to Monaco chunks
+          if (assetFilename.includes('monaco')) {
+            return true
+          }
+          // Apply limits to JavaScript and CSS files
+          return /\.(js|css)$/.test(assetFilename)
+        },
+      }
     }
 
     // Drop all Moment.js locales if Moment is used anywhere
