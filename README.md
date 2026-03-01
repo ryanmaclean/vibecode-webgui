@@ -26,6 +26,47 @@
 
 ---
 
+## 📋 Table of Contents
+
+- [🎯 What is VibeCode?](#-what-is-vibecode)
+  - [Why VibeCode?](#why-vibecode)
+  - [vs. Cursor / GitHub Copilot / VS Code](#vs-cursor--github-copilot--vs-code)
+  - [Who Should Use VibeCode?](#who-should-use-vibecode)
+- [✨ Features](#-features)
+- [🏗️ Architecture Overview](#️-architecture-overview)
+  - [System Architecture](#system-architecture)
+  - [Key Architecture Components](#key-architecture-components)
+  - [Detailed Documentation](#detailed-documentation)
+- [🖥️ Canonical Desktop Runtime: Tauri](#️-canonical-desktop-runtime-tauri)
+  - [Why Tauri?](#why-tauri)
+  - [Platform Support](#platform-support)
+  - [Getting Started with Tauri](#getting-started-with-tauri)
+  - [Quick Launch](#quick-launch)
+- [🚀 Quick Start](#-quick-start)
+  - [New to VibeCode? Start Here!](#new-to-vibecode-start-here)
+  - [1. Install Dependencies](#1-install-dependencies)
+  - [2. Launch Backend (Ubuntu VM)](#2-launch-backend-ubuntu-vm)
+  - [3. Launch Studio](#3-launch-studio)
+- [🛠️ CLI Tool](#️-cli-tool)
+- [🖥️ Menubar App](#️-menubar-app)
+- [🔄 Ralph Loop](#-ralph-loop)
+- [📦 Legacy & Migration](#-legacy--migration)
+- [🍎 Native macOS Virtualization](#-native-macos-virtualization)
+- [🐳 Docker Option (Lightweight)](#-docker-option-lightweight)
+- [GitHub Actions Cost Optimization](#github-actions-cost-optimization)
+  - [Main Branch (Lightweight)](#main-branch-lightweight)
+  - [Release Branches (Comprehensive)](#release-branches-comprehensive)
+  - [Creating Release Branches](#creating-release-branches)
+- [🔒 Security Considerations](#-security-considerations)
+  - [Environment Isolation](#environment-isolation)
+  - [✅ What It Protects Against](#-what-it-protects-against)
+  - [❌ What It Does NOT Protect Against](#-what-it-does-not-protect-against)
+  - [Attack Vectors](#attack-vectors)
+  - [For True Security Isolation](#for-true-security-isolation)
+  - [Recommendation](#recommendation)
+
+---
+
 ## 🎯 What is VibeCode?
 
 **VibeCode is a next-generation AI-native IDE** that brings the power of 321+ AI models directly into your development workflow. Unlike traditional IDEs with AI bolt-ons, VibeCode is built from the ground up for AI-assisted development, combining the flexibility of VS Code with unprecedented AI model access and semantic code intelligence.
