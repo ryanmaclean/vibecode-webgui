@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "068-tech-stack-rationalization-reduce-overlap-and-main",
+  "spec": "076-implement-dynamic-imports-for-monaco-editor-with-c",
   "state": "building",
   "subtasks": {
-    "completed": 8,
-    "total": 9,
+    "completed": 6,
+    "total": 16,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Verification and Testing",
+    "current": "Implement Route-Level Code Splitting",
     "id": null,
-    "total": 2
+    "total": 3
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 9,
-    "started_at": "2026-02-24T19:45:47.101200"
+    "number": 8,
+    "started_at": "2026-02-28T22:31:23.578420"
   },
-  "last_update": "2026-02-24T20:03:48.431850"
+  "last_update": "2026-02-28T22:53:49.439604"
 }
