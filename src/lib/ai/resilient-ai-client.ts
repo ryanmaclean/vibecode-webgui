@@ -8,6 +8,7 @@
  * - Comprehensive logging and metrics
  * - Provider-specific configuration
  * - Datadog integration for monitoring
+ * - LLM response caching for repeated queries
  */
 
 import {
@@ -23,6 +24,8 @@ import {
 } from './circuit-breaker'
 import { datadogMetrics } from '@/lib/monitoring/datadog-metrics'
 import type { AIProviderName } from '@/types/circuit-breaker'
+import { CacheManager, CacheKeys, CacheTTL } from '@/lib/cache/unified-cache-client'
+import { createHash } from 'crypto'
 
 /**
  * Configuration for a provider in the resilient client
@@ -50,6 +53,12 @@ export interface ResilientOperationOptions<T> extends ExecuteOptions<T> {
   maxFallbackAttempts?: number
   /** Custom operation name for logging */
   operationName?: string
+  /** Cache key for this operation (if not provided, caching is disabled) */
+  cacheKey?: string
+  /** Cache TTL in seconds (defaults to CacheTTL.MEDIUM = 5 minutes) */
+  cacheTTL?: number
+  /** Bypass cache and force fresh execution */
+  bypassCache?: boolean
 }
 
 /**
@@ -62,6 +71,8 @@ export interface ResilientOperationResult<T> extends CircuitBreakerResult<T> {
   failedProviders: AIProviderName[]
   /** Total latency including fallback attempts */
   totalLatencyMs: number
+  /** Whether the result was served from cache */
+  cacheHit?: boolean
 }
 
 /**
@@ -78,6 +89,14 @@ export interface ResilientClientMetrics {
   fallbackExecutions: number
   /** Number of complete failures (all providers failed) */
   completeFailures: number
+  /** Number of cache hits */
+  cacheHits: number
+  /** Number of cache misses */
+  cacheMisses: number
+  /** Cache hit rate (0-1) */
+  cacheHitRate: number
+  /** Number of cache invalidations */
+  cacheInvalidations: number
 }
 
 /**
@@ -180,22 +199,31 @@ const DEFAULT_PROVIDER_CONFIGS: ProviderConfig[] = [
 export class ResilientAIClient {
   private readonly circuitBreakerManager: AICircuitBreakerManager
   private readonly providerConfigs: Map<AIProviderName, ProviderConfig>
+  private readonly cacheManager: CacheManager
   private metrics: {
     totalRequests: number
     fallbackExecutions: number
     completeFailures: number
+    cacheHits: number
+    cacheMisses: number
+    cacheInvalidations: number
   }
 
   constructor(
     providerConfigs: ProviderConfig[] = DEFAULT_PROVIDER_CONFIGS,
-    circuitBreakerManager?: AICircuitBreakerManager
+    circuitBreakerManager?: AICircuitBreakerManager,
+    cacheManager?: CacheManager
   ) {
     this.circuitBreakerManager = circuitBreakerManager ?? aiCircuitBreakerManager
+    this.cacheManager = cacheManager ?? new CacheManager()
     this.providerConfigs = new Map()
     this.metrics = {
       totalRequests: 0,
       fallbackExecutions: 0,
-      completeFailures: 0
+      completeFailures: 0,
+      cacheHits: 0,
+      cacheMisses: 0,
+      cacheInvalidations: 0
     }
 
     // Initialize provider configs
@@ -224,6 +252,11 @@ export class ResilientAIClient {
             `[ResilientAIClient] Circuit state change: ${event.provider} ${event.previousState} -> ${event.currentState}`
           )
           this.recordStateChangeMetric(event)
+
+          // Invalidate cached responses when circuit opens
+          if (event.currentState === CircuitState.OPEN) {
+            this.invalidateCachedResponsesForProvider(event.provider)
+          }
           break
 
         case 'failure':
@@ -242,6 +275,41 @@ export class ResilientAIClient {
           break
       }
     })
+  }
+
+  /**
+   * Invalidate all cached responses for a specific provider
+   * Called when circuit breaker opens to prevent serving stale/invalid cached data
+   */
+  private async invalidateCachedResponsesForProvider(provider: AIProviderName): Promise<void> {
+    try {
+      // Use pattern matching to find all AI response cache keys
+      const pattern = `${CacheKeys.aiResponse('*')}`
+      const keys = await this.cacheManager.keys(pattern)
+
+      if (keys.length > 0) {
+        await this.cacheManager.del(keys)
+        this.metrics.cacheInvalidations += keys.length
+
+        console.warn(
+          `[ResilientAIClient] Invalidated ${keys.length} cached responses for ${provider} due to circuit open`
+        )
+
+        // Record bulk invalidation metric
+        datadogMetrics.increment('resilient_ai.cache.bulk_invalidation', keys.length, {
+          tags: {
+            component: 'resilient_ai_client',
+            provider,
+            reason: 'circuit_open'
+          }
+        })
+      }
+    } catch (error) {
+      console.debug(
+        `[ResilientAIClient] Failed to invalidate cached responses for ${provider}:`,
+        (error as Error).message
+      )
+    }
   }
 
   /**
@@ -323,6 +391,9 @@ export class ResilientAIClient {
       preferredProvider,
       maxFallbackAttempts = 3,
       operationName = 'ai_operation',
+      cacheKey,
+      cacheTTL = CacheTTL.MEDIUM,
+      bypassCache = false,
       ...executeOptions
     } = options
 
@@ -331,6 +402,39 @@ export class ResilientAIClient {
 
     if (!currentProvider) {
       throw new Error('No AI providers are available')
+    }
+
+    // Check cache if caching is enabled
+    if (cacheKey && !bypassCache) {
+      try {
+        const cached = await this.cacheManager.get<T>(cacheKey)
+        if (cached !== null) {
+          this.metrics.cacheHits++
+          this.recordCacheMetrics(operationName, true)
+
+          console.log(`[ResilientAIClient] Cache hit for operation: ${operationName}`)
+
+          return {
+            success: true,
+            data: cached,
+            durationMs: Date.now() - startTime,
+            usedFallback: false,
+            circuitState: CircuitState.CLOSED,
+            provider: currentProvider,
+            failedProviders: [],
+            totalLatencyMs: Date.now() - startTime,
+            cacheHit: true
+          }
+        }
+        this.metrics.cacheMisses++
+        this.recordCacheMetrics(operationName, false)
+      } catch (error) {
+        console.warn(
+          `[ResilientAIClient] Cache lookup failed for ${operationName}:`,
+          (error as Error).message
+        )
+        // Continue with normal execution on cache error
+      }
     }
 
     // Try the preferred provider first
@@ -355,6 +459,20 @@ export class ResilientAIClient {
         })
 
         if (result.success) {
+          // Store successful result in cache if caching is enabled
+          if (cacheKey && !bypassCache && result.data !== undefined) {
+            try {
+              await this.cacheManager.set(cacheKey, result.data, cacheTTL)
+              console.log(`[ResilientAIClient] Cached result for operation: ${operationName}`)
+            } catch (error) {
+              console.warn(
+                `[ResilientAIClient] Failed to cache result for ${operationName}:`,
+                (error as Error).message
+              )
+              // Don't fail the operation if caching fails
+            }
+          }
+
           this.recordOperationMetrics(
             operationName,
             currentProvider,
@@ -367,18 +485,39 @@ export class ResilientAIClient {
             ...result,
             provider: currentProvider,
             failedProviders,
-            totalLatencyMs: Date.now() - startTime
+            totalLatencyMs: Date.now() - startTime,
+            cacheHit: false
           }
         }
 
         // Operation failed but we can try fallback
         failedProviders.push(currentProvider)
+
+        // Invalidate cache on provider failure
+        if (cacheKey) {
+          await this.invalidateCacheWithReason(
+            cacheKey,
+            'provider_failure',
+            operationName,
+            currentProvider
+          )
+        }
       } catch (error) {
         failedProviders.push(currentProvider)
         console.warn(
           `[ResilientAIClient] Provider ${currentProvider} failed:`,
           (error as Error).message
         )
+
+        // Invalidate cache on provider exception
+        if (cacheKey) {
+          await this.invalidateCacheWithReason(
+            cacheKey,
+            'provider_failure',
+            operationName,
+            currentProvider
+          )
+        }
       }
 
       // Get next provider in fallback chain
@@ -480,6 +619,78 @@ export class ResilientAIClient {
   }
 
   /**
+   * Record cache metrics to Datadog
+   */
+  private recordCacheMetrics(operationName: string, hit: boolean): void {
+    try {
+      // Record hit/miss specific metrics
+      if (hit) {
+        datadogMetrics.increment('resilient_ai.cache.hit', 1, {
+          tags: {
+            component: 'resilient_ai_client',
+            operation: operationName
+          }
+        })
+      } else {
+        datadogMetrics.increment('resilient_ai.cache.miss', 1, {
+          tags: {
+            component: 'resilient_ai_client',
+            operation: operationName
+          }
+        })
+      }
+
+      // Record general cache operations metric with result tag
+      datadogMetrics.increment('resilient_ai.cache_operations', 1, {
+        tags: {
+          component: 'resilient_ai_client',
+          operation: operationName,
+          result: hit ? 'hit' : 'miss'
+        }
+      })
+    } catch (error) {
+      console.debug('[ResilientAIClient] Failed to record cache metrics:', error)
+    }
+  }
+
+  /**
+   * Invalidate cache for a given key with reason tracking
+   * Called on provider failures or stale response detection
+   */
+  private async invalidateCacheWithReason(
+    cacheKey: string,
+    reason: 'provider_failure' | 'stale_response' | 'circuit_open',
+    operationName: string,
+    provider?: AIProviderName
+  ): Promise<void> {
+    try {
+      const deleted = await this.cacheManager.del(cacheKey)
+      if (deleted) {
+        this.metrics.cacheInvalidations++
+        console.warn(
+          `[ResilientAIClient] Invalidated cache for ${operationName} due to ${reason}`,
+          provider ? { provider } : {}
+        )
+
+        // Record invalidation metrics
+        datadogMetrics.increment('resilient_ai.cache.invalidation', 1, {
+          tags: {
+            component: 'resilient_ai_client',
+            operation: operationName,
+            reason,
+            ...(provider && { provider })
+          }
+        })
+      }
+    } catch (error) {
+      console.debug(
+        `[ResilientAIClient] Failed to invalidate cache for ${operationName}:`,
+        (error as Error).message
+      )
+    }
+  }
+
+  /**
    * Get health status for all providers
    */
   getProviderHealth(): Map<AIProviderName, CircuitBreakerHealthStatus> {
@@ -510,12 +721,19 @@ export class ResilientAIClient {
    * Get all metrics
    */
   getMetrics(): ResilientClientMetrics {
+    const totalCacheOperations = this.metrics.cacheHits + this.metrics.cacheMisses
+    const cacheHitRate = totalCacheOperations > 0 ? this.metrics.cacheHits / totalCacheOperations : 0
+
     return {
       providerHealth: this.getProviderHealth(),
       fallbackChain: this.getFallbackChain(),
       totalRequests: this.metrics.totalRequests,
       fallbackExecutions: this.metrics.fallbackExecutions,
-      completeFailures: this.metrics.completeFailures
+      completeFailures: this.metrics.completeFailures,
+      cacheHits: this.metrics.cacheHits,
+      cacheMisses: this.metrics.cacheMisses,
+      cacheHitRate,
+      cacheInvalidations: this.metrics.cacheInvalidations
     }
   }
 
@@ -535,7 +753,10 @@ export class ResilientAIClient {
     this.metrics = {
       totalRequests: 0,
       fallbackExecutions: 0,
-      completeFailures: 0
+      completeFailures: 0,
+      cacheHits: 0,
+      cacheMisses: 0,
+      cacheInvalidations: 0
     }
     console.log('[ResilientAIClient] Reset all circuit breakers and metrics')
   }
@@ -583,6 +804,32 @@ export class ResilientAIClient {
     const breaker = this.circuitBreakerManager.getCircuitBreaker(provider)
     breaker.forceState(state)
     console.warn(`[ResilientAIClient] Forced ${provider} to state: ${state}`)
+  }
+
+  /**
+   * Generate a cache key from request content
+   * Uses SHA-256 hash of the stringified content
+   */
+  static generateCacheKey(content: unknown, prefix = 'ai:response'): string {
+    const contentString = typeof content === 'string' ? content : JSON.stringify(content)
+    const hash = createHash('sha256').update(contentString).digest('hex')
+    return `${prefix}:${hash}`
+  }
+
+  /**
+   * Invalidate cache for a specific key
+   */
+  async invalidateCache(cacheKey: string): Promise<boolean> {
+    try {
+      const deleted = await this.cacheManager.del(cacheKey)
+      if (deleted) {
+        this.metrics.cacheInvalidations++
+      }
+      return deleted
+    } catch (error) {
+      console.warn(`[ResilientAIClient] Failed to invalidate cache for ${cacheKey}:`, (error as Error).message)
+      return false
+    }
   }
 
   /**
