@@ -7,6 +7,7 @@ process.env.NEXT_TELEMETRY_DISABLED = process.env.NEXT_TELEMETRY_DISABLED || '1'
 
 const require = createRequire(import.meta.url)
 const webpack = require('webpack')
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -358,6 +359,17 @@ const nextConfig = {
     if (!hasMomentLocaleDrop) {
       // Fix: Remove duplicate backslash in character class - use [\\/] instead of [\\/\\]
       config.plugins.push(new webpack.ContextReplacementPlugin(/moment[\\/]locale$/, /^$/))
+    }
+
+    // Bundle analyzer - enabled when ANALYZE=true environment variable is set
+    if (process.env.ANALYZE === 'true') {
+      config.plugins.push(
+        new BundleAnalyzerPlugin({
+          analyzerMode: 'static',
+          reportFilename: isServer ? '../analyze/server.html' : './analyze/client.html',
+          openAnalyzer: true,
+        })
+      )
     }
 
     // null-loader rules removed - caused 'hash' null reference in webpack 5
