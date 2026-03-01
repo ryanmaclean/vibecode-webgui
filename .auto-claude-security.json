@@ -298,9 +298,9 @@
       "postgresql"
     ],
     "infrastructure": [
-      "docker",
       "kubernetes",
-      "terraform"
+      "terraform",
+      "docker"
     ],
     "cloud_providers": [],
     "code_quality_tools": [],
@@ -482,7 +482,7 @@
     ]
   },
   "project_dir": "/Users/studio/Documents/harness",
-  "created_at": "2026-02-24T19:13:31.348206",
-  "project_hash": "01d47d3fbe0c4719a2078e5e188cd64e",
+  "created_at": "2026-02-27T23:22:43.277685",
+  "project_hash": "c9fa10f8516d02e0f1f55d43dc7f7228",
   "inherited_from": "/Users/studio/Documents/harness"
 }
