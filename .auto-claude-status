@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "068-tech-stack-rationalization-reduce-overlap-and-main",
+  "spec": "071-add-model-usage-history-component-following-costda",
   "state": "building",
   "subtasks": {
-    "completed": 8,
-    "total": 9,
+    "completed": 3,
+    "total": 6,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Verification and Testing",
+    "current": "Component Implementation",
     "id": null,
-    "total": 2
+    "total": 6
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 9,
-    "started_at": "2026-02-24T19:45:47.101200"
+    "number": 5,
+    "started_at": "2026-03-01T09:59:48.776680"
   },
-  "last_update": "2026-02-24T20:03:48.431850"
+  "last_update": "2026-03-01T10:14:06.149007"
 }
