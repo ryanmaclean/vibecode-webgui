@@ -24,6 +24,7 @@ import {
   RefreshCw,
   BarChart3,
   Zap,
+  PieChart,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -35,6 +36,12 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+  Legend,
+  BarChart,
+  Bar,
 } from 'recharts';
 import {
   UsageHistory,
@@ -45,7 +52,7 @@ import {
   CostEvent,
   UsageStats,
 } from '@/types/cost-estimation';
-import { getCostTracker, CostTracker } from '@/lib/ai/cost/cost-tracker';
+import { getCostTracker, CostTracker, MODEL_PRICING } from '@/lib/ai/cost/cost-tracker';
 
 // ============================================================================
 // Types
@@ -68,6 +75,35 @@ interface DashboardData {
   history: UsageHistory;
   session: SessionUsage;
 }
+
+// ============================================================================
+// Chart Colors
+// ============================================================================
+
+const CHART_COLORS = [
+  '#3B82F6', // blue
+  '#10B981', // emerald
+  '#F59E0B', // amber
+  '#EF4444', // red
+  '#8B5CF6', // violet
+  '#EC4899', // pink
+  '#06B6D4', // cyan
+  '#84CC16', // lime
+];
+
+const PROVIDER_COLORS: Record<string, string> = {
+  openai: '#10A37F',
+  anthropic: '#D4A373',
+  google: '#4285F4',
+  meta: '#0668E1',
+  mistral: '#F97316',
+  cohere: '#7C3AED',
+  deepseek: '#06B6D4',
+  alibaba: '#FF6A00',
+  xai: '#1DA1F2',
+  perplexity: '#3B82F6',
+  unknown: '#6B7280',
+};
 
 // ============================================================================
 // Utility Functions
@@ -202,6 +238,114 @@ function StatCard({ title, value, description, icon, testId }: StatCardProps) {
   );
 }
 
+interface ModelBreakdownChartProps {
+  data: Record<string, UsageStats>;
+  chartType: 'pie' | 'bar';
+}
+
+function ModelBreakdownChart({ data, chartType }: ModelBreakdownChartProps) {
+  const chartData = useMemo(() => {
+    return Object.entries(data)
+      .map(([modelId, stats]) => {
+        const pricing = MODEL_PRICING[modelId];
+        return {
+          name: pricing?.displayName || modelId,
+          modelId,
+          requests: stats.requests,
+          tokens: stats.promptTokens + stats.completionTokens,
+          cost: stats.totalCost,
+          provider: pricing?.provider || 'unknown',
+        };
+      })
+      .sort((a, b) => b.requests - a.requests)
+      .slice(0, 8);
+  }, [data]);
+
+  if (chartData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
+        <p>No model usage data yet</p>
+      </div>
+    );
+  }
+
+  if (chartType === 'pie') {
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <RechartsPieChart>
+          <Pie
+            data={chartData}
+            cx="50%"
+            cy="50%"
+            innerRadius={60}
+            outerRadius={100}
+            paddingAngle={2}
+            dataKey="requests"
+            nameKey="name"
+            label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
+          >
+            {chartData.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={PROVIDER_COLORS[entry.provider] || CHART_COLORS[index % CHART_COLORS.length]}
+              />
+            ))}
+          </Pie>
+          <Tooltip
+            formatter={(value: number, name: string) => [
+              `${value} requests`,
+              name,
+            ]}
+            contentStyle={{
+              backgroundColor: 'hsl(var(--card))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '8px',
+            }}
+          />
+          <Legend />
+        </RechartsPieChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart data={chartData}>
+        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+        <XAxis
+          dataKey="name"
+          tick={{ fontSize: 12 }}
+          className="text-muted-foreground"
+          angle={-45}
+          textAnchor="end"
+          height={80}
+        />
+        <YAxis
+          tick={{ fontSize: 12 }}
+          className="text-muted-foreground"
+          label={{ value: 'Requests', angle: -90, position: 'insideLeft' }}
+        />
+        <Tooltip
+          formatter={(value: number) => [`${value} requests`, 'Requests']}
+          contentStyle={{
+            backgroundColor: 'hsl(var(--card))',
+            border: '1px solid hsl(var(--border))',
+            borderRadius: '8px',
+          }}
+        />
+        <Bar dataKey="requests" radius={[8, 8, 0, 0]}>
+          {chartData.map((entry, index) => (
+            <Cell
+              key={`cell-${index}`}
+              fill={PROVIDER_COLORS[entry.provider] || CHART_COLORS[index % CHART_COLORS.length]}
+            />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -222,6 +366,7 @@ export default function ModelUsageHistory({
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('daily');
   const [selectedMetric, setSelectedMetric] = useState<'tokens' | 'requests'>('tokens');
+  const [chartType, setChartType] = useState<'pie' | 'bar'>('pie');
   const [lastUpdate, setLastUpdate] = useState<string>(new Date().toISOString());
 
   // ============================================================================
@@ -343,6 +488,10 @@ export default function ModelUsageHistory({
 
   const handleMetricChange = useCallback((value: string) => {
     setSelectedMetric(value as 'tokens' | 'requests');
+  }, []);
+
+  const handleChartTypeToggle = useCallback(() => {
+    setChartType((prev) => (prev === 'pie' ? 'bar' : 'pie'));
   }, []);
 
   // ============================================================================
@@ -487,38 +636,82 @@ export default function ModelUsageHistory({
 
       {/* Model Breakdown */}
       {modelBreakdown.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Model Usage Breakdown</CardTitle>
-            <CardDescription>
-              Usage distribution across different AI models
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {modelBreakdown.map((model: ModelUsageBreakdown) => (
-                <div key={model.modelId} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{model.displayName}</span>
-                    <span className="text-muted-foreground">
-                      {model.requests} requests ({model.percentage.toFixed(1)}%)
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span>Tokens: {formatTokens(model.promptTokens + model.completionTokens)}</span>
-                    <span>Cost: {formatCost(model.totalCost)}</span>
-                  </div>
-                  <div className="w-full bg-secondary rounded-full h-2">
-                    <div
-                      className="bg-primary rounded-full h-2 transition-all"
-                      style={{ width: `${model.percentage}%` }}
-                    />
-                  </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Model Usage Breakdown</CardTitle>
+                  <CardDescription>
+                    Usage distribution across different AI models
+                  </CardDescription>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleChartTypeToggle}
+                  data-testid="chart-type-toggle"
+                >
+                  {chartType === 'pie' ? (
+                    <BarChart3 className="h-4 w-4" />
+                  ) : (
+                    <PieChart className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent data-testid="model-breakdown-chart">
+              <ModelBreakdownChart data={data.session.byModel} chartType={chartType} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Model Details</CardTitle>
+              <CardDescription>
+                Detailed statistics for each model used
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {modelBreakdown.map((model: ModelUsageBreakdown) => {
+                  const pricing = MODEL_PRICING[model.modelId];
+                  const provider = pricing?.provider || 'unknown';
+
+                  return (
+                    <div key={model.modelId} className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: PROVIDER_COLORS[provider] }}
+                          />
+                          <span className="font-medium">{model.displayName}</span>
+                        </div>
+                        <span className="text-muted-foreground">
+                          {model.requests} requests ({model.percentage.toFixed(1)}%)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>Tokens: {formatTokens(model.promptTokens + model.completionTokens)}</span>
+                        <span>Cost: {formatCost(model.totalCost)}</span>
+                      </div>
+                      <div className="w-full bg-secondary rounded-full h-2">
+                        <div
+                          className="rounded-full h-2 transition-all"
+                          style={{
+                            width: `${model.percentage}%`,
+                            backgroundColor: PROVIDER_COLORS[provider]
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* All-Time Stats */}
