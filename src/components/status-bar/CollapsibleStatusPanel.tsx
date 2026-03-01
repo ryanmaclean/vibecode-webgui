@@ -52,17 +52,30 @@ export interface CollapsibleStatusPanelProps {
 }
 
 /**
- * Get overall status icon component
+ * Get overall status icon component with accessibility
  */
 function getStatusIcon(status: AggregatedHealthStatus) {
+  const getStatusLabel = () => {
+    switch (status) {
+      case 'healthy':
+        return 'All systems operational';
+      case 'degraded':
+        return 'Some systems degraded';
+      case 'unhealthy':
+        return 'System issues detected';
+      default:
+        return 'Status unknown';
+    }
+  };
+
   switch (status) {
     case 'healthy':
-      return <CheckCircle className="w-5 h-5 text-green-500" />;
+      return <CheckCircle className="w-5 h-5 text-green-600" aria-label={getStatusLabel()} />;
     case 'degraded':
-      return <AlertCircle className="w-5 h-5 text-yellow-500" />;
+      return <AlertCircle className="w-5 h-5 text-yellow-600" aria-label={getStatusLabel()} />;
     case 'unhealthy':
     default:
-      return <AlertCircle className="w-5 h-5 text-red-500" />;
+      return <AlertCircle className="w-5 h-5 text-red-600" aria-label={getStatusLabel()} />;
   }
 }
 
@@ -154,36 +167,53 @@ const CategorySection = React.memo(function CategorySection({
   const healthyCount = category.services.filter((s) => s.status === 'healthy').length;
   const totalCount = category.services.length;
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setIsExpanded(!isExpanded);
+    }
+  };
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" role="region" aria-label={`${category.categoryName} services`}>
       <Button
         variant="ghost"
-        className="w-full justify-between px-3 py-2 h-auto"
+        className="w-full justify-between px-2 sm:px-3 py-2 h-auto focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         onClick={() => setIsExpanded(!isExpanded)}
+        onKeyDown={handleKeyDown}
+        aria-expanded={isExpanded}
+        aria-label={`${category.categoryName}: ${healthyCount} of ${totalCount} services healthy. ${isExpanded ? 'Collapse' : 'Expand'} to ${isExpanded ? 'hide' : 'show'} details.`}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
           {isExpanded ? (
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
           ) : (
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
           )}
-          <span className="font-semibold text-sm">{category.categoryName}</span>
+          <span className="font-semibold text-xs sm:text-sm truncate">{category.categoryName}</span>
           <Badge
             variant={getStatusBadgeVariant(category.status)}
             className={cn(
-              'text-xs',
-              category.status === 'healthy' && 'bg-green-500 text-white hover:bg-green-600',
-              category.status === 'degraded' && 'bg-yellow-500 text-white hover:bg-yellow-600'
+              'text-xs flex-shrink-0',
+              category.status === 'healthy' && 'bg-green-600 text-white hover:bg-green-700',
+              category.status === 'degraded' && 'bg-yellow-600 text-white hover:bg-yellow-700'
             )}
+            aria-label={`${healthyCount} healthy out of ${totalCount} total`}
           >
             {healthyCount}/{totalCount}
           </Badge>
         </div>
-        {getStatusIcon(category.status)}
+        <div className="flex-shrink-0" aria-hidden="true">
+          {getStatusIcon(category.status)}
+        </div>
       </Button>
 
       {isExpanded && category.services.length > 0 && (
-        <div className="ml-6 space-y-2">
+        <div
+          className="ml-4 sm:ml-6 space-y-2"
+          role="list"
+          aria-label={`${category.categoryName} service details`}
+        >
           {category.services.map((service) => {
             const serviceName = getServiceName(service);
             const status = getServiceStatus(service);
@@ -192,18 +222,19 @@ const CategorySection = React.memo(function CategorySection({
             const error = getServiceError(service);
 
             return (
-              <ServiceStatusIndicator
-                key={serviceName}
-                serviceName={serviceName}
-                status={status}
-                latencyMs={latency}
-                lastChecked={lastChecked}
-                error={error}
-                showLatency={showDetailedMetrics}
-                compact={false}
-                onClick={onServiceClick ? () => onServiceClick(serviceName) : undefined}
-                className="border-l-2 border-border pl-3"
-              />
+              <div key={serviceName} role="listitem">
+                <ServiceStatusIndicator
+                  serviceName={serviceName}
+                  status={status}
+                  latencyMs={latency}
+                  lastChecked={lastChecked}
+                  error={error}
+                  showLatency={showDetailedMetrics}
+                  compact={false}
+                  onClick={onServiceClick ? () => onServiceClick(serviceName) : undefined}
+                  className="border-l-2 border-border pl-2 sm:pl-3"
+                />
+              </div>
             );
           })}
         </div>
@@ -263,10 +294,10 @@ export const CollapsibleStatusPanel = React.memo(
 
     if (!healthData) {
       return (
-        <Card ref={ref} className={cn('w-full', className)}>
-          <CardContent className="p-4">
+        <Card ref={ref} className={cn('w-full', className)} role="status" aria-live="polite">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-center gap-2 text-muted-foreground">
-              <Activity className="w-4 h-4 animate-pulse" />
+              <Activity className="w-4 h-4 animate-pulse" aria-hidden="true" />
               <span className="text-sm">Loading health data...</span>
             </div>
           </CardContent>
@@ -275,14 +306,22 @@ export const CollapsibleStatusPanel = React.memo(
     }
 
     return (
-      <Card ref={ref} className={cn('w-full transition-all', className)}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {getStatusIcon(healthData.status)}
-              <div>
-                <CardTitle className="text-lg">Service Health</CardTitle>
+      <Card
+        ref={ref}
+        className={cn('w-full transition-all', className)}
+        role="region"
+        aria-label="Detailed service health panel"
+      >
+        <CardHeader className="pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <div className="flex-shrink-0" aria-hidden="true">
+                {getStatusIcon(healthData.status)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-base sm:text-lg truncate">Service Health</CardTitle>
                 <p className="text-xs text-muted-foreground mt-1">
+                  <span className="sr-only">Overall status: </span>
                   {healthData.summary.healthyServices} of {healthData.summary.totalServices} services
                   healthy
                   {healthData.fromCache && ' (cached)'}
@@ -292,14 +331,21 @@ export const CollapsibleStatusPanel = React.memo(
             <Button
               variant="ghost"
               size="sm"
+              className="flex-shrink-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               onClick={handleToggle}
-              aria-label={expanded ? 'Collapse panel' : 'Expand panel'}
+              onKeyDown={(e: React.KeyboardEvent) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleToggle();
+                }
+              }}
+              aria-label={`${expanded ? 'Collapse' : 'Expand'} detailed service health panel`}
               aria-expanded={expanded}
             >
               {expanded ? (
-                <ChevronDown className="w-5 h-5" />
+                <ChevronDown className="w-5 h-5" aria-hidden="true" />
               ) : (
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-5 h-5" aria-hidden="true" />
               )}
             </Button>
           </div>
@@ -308,22 +354,27 @@ export const CollapsibleStatusPanel = React.memo(
         {expanded && (
           <>
             <Separator />
-            <CardContent className="p-4">
-              <ScrollArea style={{ maxHeight }} className="pr-4">
-                <div className="space-y-4">
+            <CardContent className="p-3 sm:p-4 md:p-6">
+              <ScrollArea style={{ maxHeight }} className="pr-2 sm:pr-4">
+                <div className="space-y-3 sm:space-y-4" role="region" aria-label="Service categories">
                   {healthData.categories.length === 0 ? (
-                    <div className="text-center text-sm text-muted-foreground py-8">
+                    <div
+                      className="text-center text-sm text-muted-foreground py-8"
+                      role="status"
+                    >
                       No service health data available
                     </div>
                   ) : (
-                    healthData.categories.map((category) => (
+                    healthData.categories.map((category, index) => (
                       <React.Fragment key={category.category}>
                         <CategorySection
                           category={category}
                           showDetailedMetrics={showDetailedMetrics}
                           onServiceClick={handleServiceClick}
                         />
-                        <Separator className="my-2" />
+                        {index < healthData.categories.length - 1 && (
+                          <Separator className="my-2" aria-hidden="true" />
+                        )}
                       </React.Fragment>
                     ))
                   )}
@@ -331,12 +382,18 @@ export const CollapsibleStatusPanel = React.memo(
               </ScrollArea>
 
               {/* Summary footer */}
-              <div className="mt-4 pt-3 border-t">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="mt-4 pt-3 border-t" role="contentinfo" aria-label="Health check summary">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-2 text-xs text-muted-foreground">
                   <span>
-                    Last updated: {new Date(healthData.timestamp).toLocaleTimeString()}
+                    <span className="sr-only">Last updated: </span>
+                    <span className="hidden sm:inline">Last updated: </span>
+                    {new Date(healthData.timestamp).toLocaleTimeString()}
                   </span>
-                  <span>Check time: {healthData.totalCheckTimeMs}ms</span>
+                  <span aria-label={`Total check time: ${healthData.totalCheckTimeMs} milliseconds`}>
+                    <span className="hidden sm:inline">Check time: </span>
+                    <span className="sm:hidden">Total: </span>
+                    {healthData.totalCheckTimeMs}ms
+                  </span>
                 </div>
               </div>
             </CardContent>

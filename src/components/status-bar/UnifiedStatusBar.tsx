@@ -71,68 +71,84 @@ export interface UnifiedStatusBarProps {
 }
 
 /**
- * Get status icon component
+ * Get status icon component with accessibility
  */
 function getOverallStatusIcon(status: AggregatedHealthStatus) {
+  const getStatusLabel = () => {
+    switch (status) {
+      case 'healthy':
+        return 'All systems operational';
+      case 'degraded':
+        return 'Some systems degraded';
+      case 'unhealthy':
+        return 'System issues detected';
+      default:
+        return 'Status unknown';
+    }
+  };
+
   switch (status) {
     case 'healthy':
-      return <CheckCircle className="w-4 h-4 text-green-500" />;
+      return <CheckCircle className="w-4 h-4 text-green-600" aria-label={getStatusLabel()} />;
     case 'degraded':
-      return <AlertCircle className="w-4 h-4 text-yellow-500" />;
+      return <AlertCircle className="w-4 h-4 text-yellow-600" aria-label={getStatusLabel()} />;
     case 'unhealthy':
-      return <AlertCircle className="w-4 h-4 text-red-500" />;
+      return <AlertCircle className="w-4 h-4 text-red-600" aria-label={getStatusLabel()} />;
     default:
-      return <Activity className="w-4 h-4 text-muted-foreground animate-pulse" />;
+      return <Activity className="w-4 h-4 text-muted-foreground animate-pulse" aria-label={getStatusLabel()} />;
   }
 }
 
 /**
- * Get status badge variant
+ * Get status badge variant with WCAG AA compliant colors
  */
 function getStatusBadgeColor(status: AggregatedHealthStatus): string {
   switch (status) {
     case 'healthy':
-      return 'bg-green-500 text-white hover:bg-green-600';
+      return 'bg-green-600 text-white hover:bg-green-700';
     case 'degraded':
-      return 'bg-yellow-500 text-white hover:bg-yellow-600';
+      return 'bg-yellow-600 text-white hover:bg-yellow-700';
     case 'unhealthy':
-      return 'bg-red-500 text-white hover:bg-red-600';
+      return 'bg-red-600 text-white hover:bg-red-700';
     default:
-      return 'bg-gray-400 text-white';
+      return 'bg-gray-500 text-white';
   }
 }
 
 /**
- * Get connection status indicator
+ * Get connection status indicator with accessibility
  */
 function ConnectionStatusIndicator({ status }: { status: WsConnectionStatus }) {
   const isConnected = status === 'connected';
   const isReconnecting = status === 'reconnecting';
 
+  const getStatusText = () => {
+    if (isConnected) return 'Live updates enabled';
+    if (isReconnecting) return 'Reconnecting to live updates';
+    return 'Using polling for updates';
+  };
+
   return (
-    <Tooltip
-      content={
-        isConnected
-          ? 'Live updates enabled'
-          : isReconnecting
-          ? 'Reconnecting...'
-          : 'Using polling'
-      }
-    >
-      <div className="flex items-center gap-1.5">
+    <Tooltip content={getStatusText()}>
+      <div
+        className="flex items-center gap-1.5"
+        role="status"
+        aria-live="polite"
+        aria-label={getStatusText()}
+      >
         {isConnected ? (
-          <Wifi className="w-3.5 h-3.5 text-green-500" />
+          <Wifi className="w-3.5 h-3.5 text-green-600" aria-hidden="true" />
         ) : (
-          <WifiOff className="w-3.5 h-3.5 text-muted-foreground" />
+          <WifiOff className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
         )}
         <div
           className={cn(
             'w-2 h-2 rounded-full',
-            isConnected && 'bg-green-500 animate-pulse',
-            isReconnecting && 'bg-yellow-500 animate-pulse',
-            !isConnected && !isReconnecting && 'bg-gray-400'
+            isConnected && 'bg-green-600 animate-pulse',
+            isReconnecting && 'bg-yellow-600 animate-pulse',
+            !isConnected && !isReconnecting && 'bg-gray-500'
           )}
-          aria-label={`Connection status: ${status}`}
+          aria-hidden="true"
         />
       </div>
     </Tooltip>
@@ -368,68 +384,77 @@ export const UnifiedStatusBar = React.memo(function UnifiedStatusBar({
     <div
       className={cn(
         'fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300',
-        isExpanded ? 'h-auto max-h-[70vh]' : 'h-12',
+        isExpanded ? 'h-auto max-h-[70vh] sm:max-h-[60vh]' : 'h-12 sm:h-14',
         className
       )}
       role="region"
       aria-label="Service health status bar"
+      aria-live="polite"
     >
       {/* Compact status bar header */}
       <div
         className={cn(
-          'flex items-center justify-between px-4 h-12 cursor-pointer hover:bg-accent/50 transition-colors',
+          'flex items-center justify-between px-3 sm:px-4 md:px-6 h-12 sm:h-14 cursor-pointer hover:bg-accent/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           isExpanded && 'border-b'
         )}
         onClick={handleToggle}
         role="button"
         tabIndex={0}
         aria-expanded={isExpanded}
-        aria-label={isExpanded ? 'Collapse status bar' : 'Expand status bar'}
+        aria-label={`Status bar: ${isExpanded ? 'Collapse' : 'Expand'} to ${isExpanded ? 'hide' : 'show'} details. Press Ctrl+Shift+H to toggle. Current status: ${healthData?.summary.healthyServices || 0} of ${healthData?.summary.totalServices || 0} services healthy.`}
         onKeyDown={(e: React.KeyboardEvent) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             handleToggle();
           }
+          // Escape key to collapse
+          if (e.key === 'Escape' && isExpanded) {
+            e.preventDefault();
+            setIsExpanded(false);
+          }
         }}
       >
         {/* Left section: Overall status */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0"
+            className="h-7 w-7 sm:h-8 sm:w-8 p-0 flex-shrink-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
               handleToggle();
             }}
-            aria-label={isExpanded ? 'Collapse' : 'Expand'}
+            aria-label={isExpanded ? 'Collapse status bar' : 'Expand status bar'}
           >
             {isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="h-4 w-4" aria-hidden="true" />
             ) : (
-              <ChevronUp className="h-4 w-4" />
+              <ChevronUp className="h-4 w-4" aria-hidden="true" />
             )}
           </Button>
 
-          {getOverallStatusIcon(healthData?.status || 'healthy')}
+          <div className="flex-shrink-0" aria-hidden="true">
+            {getOverallStatusIcon(healthData?.status || 'healthy')}
+          </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Service Health</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <span className="text-xs sm:text-sm font-medium truncate">Service Health</span>
             {healthData && (
               <Badge
                 className={cn(
-                  'text-xs font-semibold',
+                  'text-xs font-semibold flex-shrink-0',
                   getStatusBadgeColor(healthData.status)
                 )}
+                aria-label={`${healthData.summary.healthyServices} healthy services out of ${healthData.summary.totalServices} total`}
               >
                 {healthData.summary.healthyServices}/{healthData.summary.totalServices}
               </Badge>
             )}
           </div>
 
-          {/* Compact service indicators */}
+          {/* Compact service indicators - hidden on mobile, visible on tablet+ */}
           {!isExpanded && topServices.length > 0 && (
-            <div className="hidden md:flex items-center gap-1 ml-4">
+            <div className="hidden lg:flex items-center gap-1 ml-2 xl:ml-4">
               {topServices.map((service: { name: string; status: AggregatedHealthStatus }) => (
                 <ServiceStatusIndicator
                   key={service.name}
@@ -443,30 +468,41 @@ export const UnifiedStatusBar = React.memo(function UnifiedStatusBar({
         </div>
 
         {/* Right section: Connection status and metadata */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-shrink-0">
           {error && (
             <Tooltip content={error}>
-              <AlertCircle className="w-4 h-4 text-destructive" />
+              <div role="alert" aria-live="assertive">
+                <AlertCircle className="w-4 h-4 text-destructive" aria-label={`Error: ${error}`} />
+              </div>
             </Tooltip>
           )}
 
           {!disableWebSocket && <ConnectionStatusIndicator status={wsStatus} />}
 
           {healthData && (
-            <span className="text-xs text-muted-foreground hidden sm:block">
-              Updated {new Date(healthData.timestamp).toLocaleTimeString()}
+            <span className="text-xs text-muted-foreground hidden sm:block" aria-live="off">
+              <span className="sr-only">Last updated: </span>
+              {new Date(healthData.timestamp).toLocaleTimeString()}
             </span>
           )}
 
           {loading && (
-            <Activity className="w-4 h-4 text-muted-foreground animate-pulse" />
+            <div role="status" aria-label="Loading health status">
+              <Activity className="w-4 h-4 text-muted-foreground animate-pulse" aria-hidden="true" />
+              <span className="sr-only">Loading...</span>
+            </div>
           )}
         </div>
       </div>
 
       {/* Expanded panel */}
       {isExpanded && (
-        <div className="overflow-y-auto px-4 py-3" style={{ maxHeight: 'calc(70vh - 3rem)' }}>
+        <div
+          className="overflow-y-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4"
+          style={{ maxHeight: 'calc(70vh - 3rem)' }}
+          role="region"
+          aria-label="Detailed service health information"
+        >
           <CollapsibleStatusPanel
             healthData={healthData}
             isExpanded={true}
