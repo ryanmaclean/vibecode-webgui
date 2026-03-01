@@ -25,7 +25,24 @@ Before you begin, ensure you have:
 - **Tauri CLI** (for desktop builds): `npm install -g @tauri-apps/cli`
 - **Rust**: If building Tauri for production
 
+> **📚 Comprehensive Setup Guide**: For detailed platform-specific installation instructions and version requirements, see [docs/setup/PREREQUISITES.md](docs/setup/PREREQUISITES.md).
+>
+> **✅ Automated Validation**: Run `bash scripts/validate-prerequisites.sh` to check if your system meets all requirements.
+
 ## Getting Started
+
+> **🚀 Quick Setup**: Want to get started quickly? Use the interactive setup wizard:
+> ```bash
+> bash scripts/setup-wizard.sh
+> ```
+> The wizard will guide you through choosing the right deployment mode for your needs.
+>
+> **📖 Comprehensive Guide**: For detailed installation instructions, see:
+> - [Installation Master Guide](docs/INSTALLATION_MASTER_GUIDE.md) - Complete installation guide covering all deployment modes
+> - [Quick Start Checklist](docs/QUICKSTART_CHECKLIST.md) - Get running in under 5 minutes
+> - [Deployment Decision Tree](docs/setup/DEPLOYMENT_DECISION_TREE.md) - Choose the right deployment mode
+
+### Manual Setup Steps
 
 ### 1. Clone the Repository
 ```bash
@@ -58,6 +75,22 @@ npm test -- --maxWorkers=2
 npm run build
 npm start
 ```
+
+### Automated Setup Options
+
+For faster setup, use one of our automated scripts:
+
+- **Docker Compose** (recommended for most developers):
+  ```bash
+  bash scripts/quick-setup-docker-compose.sh
+  ```
+
+- **Kubernetes (KIND)** (for testing Kubernetes deployments):
+  ```bash
+  bash scripts/quick-setup-kind.sh
+  ```
+
+All scripts support `--dry-run` to preview changes before executing.
 
 ## Project Structure
 
@@ -119,6 +152,148 @@ Follow the naming convention: `feature/`, `bugfix/`, `refactor/`, or `docs/` pre
 4. Ensure all CI checks pass
 5. Request review from team members
 6. Address feedback and re-request review
+
+## Pre-Commit Hooks
+
+VibeCode uses Husky to run automated quality checks before each commit. These hooks catch issues locally before they reach CI, providing fast feedback and reducing failed builds.
+
+### How Pre-Commit Hooks Work
+
+Pre-commit hooks are automatically installed when you run `npm install` via the `prepare` script in `package.json`. Once installed, they run automatically on every commit attempt.
+
+**Two hooks are configured:**
+
+1. **commit-msg**: Validates commit messages against conventional commits format
+2. **pre-commit**: Runs quality checks on staged files
+
+### What Checks Run Locally
+
+When you commit code, the following checks run automatically:
+
+#### Commit Message Validation (commit-msg hook)
+- **Check**: Conventional commits format using commitlint
+- **Examples**:
+  - ✅ Valid: `feat: add user authentication`, `fix: resolve memory leak`
+  - ❌ Invalid: `fixed bug`, `updated code`, `WIP`
+- **Format**: `type(scope?): description`
+  - **Types**: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert
+  - **Scope**: Optional, e.g., `feat(api): add new endpoint`
+
+#### Pre-Commit Quality Gates (pre-commit hook)
+The pre-commit hook runs these checks on staged files:
+
+1. **Secret Scanning**: Detects accidentally committed secrets (API keys, tokens, passwords) using gitleaks
+2. **Linting**: ESLint checks on staged JavaScript/TypeScript files
+3. **Type Checking**: TypeScript compiler checks (`npm run type-check`)
+4. **Format Checking**: Prettier format validation on staged files
+5. **Quick Tests**: Fast unit tests related to changed files (not full test suite)
+
+**Performance**: Hooks are optimized to run in < 30 seconds for typical changes by only checking staged files and running quick tests.
+
+### Local vs CI Checks
+
+**Local Pre-Commit (Fast Feedback)**:
+- Lint staged files only
+- Type-check entire codebase
+- Run quick unit tests
+- Format check staged files
+- Secret scanning
+
+**CI (Comprehensive Validation)**:
+- Full test suite (unit, integration, e2e)
+- Full build verification
+- Cross-platform testing
+- Docker/Kubernetes deployment tests
+- Security audit
+- Coverage reporting
+
+The pre-commit hooks are intentionally lightweight to provide fast feedback. CI runs more comprehensive checks that take longer.
+
+### Running Hooks Manually
+
+You can run the pre-commit checks manually without committing:
+
+```bash
+# Run the full pre-commit script
+bash scripts/pre-commit-tests.sh
+
+# Run individual checks
+npm run lint                    # ESLint
+npm run type-check              # TypeScript
+npm run format:check            # Prettier
+npm test -- --maxWorkers=2      # Tests
+npx gitleaks detect --no-git    # Secret scanning
+
+# Validate a commit message
+echo "feat: my commit message" | npx commitlint
+```
+
+### Bypassing Hooks (Emergency Use Only)
+
+In rare cases where you need to bypass the hooks (e.g., emergency hotfix, WIP commit to save work), use the `--no-verify` flag:
+
+```bash
+git commit -m "wip: save work in progress" --no-verify
+```
+
+**⚠️ WARNING**: Use `--no-verify` sparingly and only when absolutely necessary:
+- Your code will still need to pass CI checks before merging
+- Bypassing hooks can introduce issues that would have been caught locally
+- Team reviewers may request fixes before approving your PR
+
+**When it's acceptable**:
+- Emergency hotfixes where speed is critical (still must pass CI)
+- Saving WIP commits to avoid losing work (don't push to shared branches)
+- Resolving git conflicts that temporarily break checks
+
+**When it's NOT acceptable**:
+- Avoiding legitimate linting or type errors (fix them instead)
+- Skipping tests to save time (fix failing tests)
+- Committing secrets or sensitive data (never commit secrets)
+
+### Troubleshooting Hooks
+
+#### Hooks Not Running
+If hooks don't run automatically:
+```bash
+# Reinstall hooks
+npm run prepare
+
+# Verify installation
+ls -la .husky/_/husky.sh  # Should exist
+```
+
+#### Hook Failures
+If pre-commit hooks fail:
+1. Read the error message carefully - it tells you what check failed
+2. Fix the reported issues in your code
+3. Stage the fixes: `git add <files>`
+4. Try committing again
+
+Common issues:
+- **Lint errors**: Run `npm run lint` and fix reported issues
+- **Type errors**: Run `npm run type-check` and resolve type issues
+- **Format issues**: Run `npm run format` to auto-fix formatting
+- **Test failures**: Run `npm test` to see which tests are failing
+- **Secret detected**: Remove the secret from your code (check gitleaks output)
+
+#### Commit Message Rejected
+If your commit message is rejected:
+```bash
+# Bad format
+git commit -m "fixed bug"  # ❌ No type prefix
+
+# Good format
+git commit -m "fix: resolve authentication bug"  # ✅ Conventional format
+```
+
+### Benefits of Pre-Commit Hooks
+
+- **Fast Feedback**: Catch issues in seconds, not minutes (vs waiting for CI)
+- **Prevent Bad Commits**: Stop problems before they reach the shared repository
+- **Consistent Code Quality**: Enforce standards automatically
+- **Save CI Resources**: Fewer failed CI builds means faster feedback for everyone
+- **Better Commit History**: Conventional commits make history readable and enable automated changelog generation
 
 ## Testing
 
@@ -335,6 +510,10 @@ export function MyComponent({ title, onAction }: MyComponentProps) {
 
 ## Troubleshooting
 
+> **🔧 Installation Issues**: For comprehensive installation and setup troubleshooting, see:
+> - [Installation Troubleshooting Guide](docs/setup/INSTALLATION_TROUBLESHOOTING.md) - Flowcharts and solutions for common setup issues
+> - Run `bash scripts/diagnose-setup-issues.sh` to automatically detect and report common problems
+
 ### Memory Issues During Tests
 If you encounter out-of-memory errors:
 ```bash
@@ -403,6 +582,11 @@ npx eslint --fix src/app/api/agents ...
 ## Getting Help
 
 - **Documentation**: Check `docs/` directory for detailed guides
+  - [Installation Master Guide](docs/INSTALLATION_MASTER_GUIDE.md) - Complete setup instructions
+  - [Quick Start Checklist](docs/QUICKSTART_CHECKLIST.md) - Fast setup guide
+  - [Installation Troubleshooting](docs/setup/INSTALLATION_TROUBLESHOOTING.md) - Common problems and solutions
+  - [Prerequisites Guide](docs/setup/PREREQUISITES.md) - Detailed dependency information
+- **Diagnostic Tools**: Run `bash scripts/diagnose-setup-issues.sh` to identify common setup problems
 - **Issues**: Search existing GitHub issues or create a new one
 - **Discussions**: Use GitHub Discussions for questions
 - **Team**: Reach out to maintainers in Slack
