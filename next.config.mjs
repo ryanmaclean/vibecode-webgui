@@ -7,6 +7,7 @@ process.env.NEXT_TELEMETRY_DISABLED = process.env.NEXT_TELEMETRY_DISABLED || '1'
 
 const require = createRequire(import.meta.url)
 const webpack = require('webpack')
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -338,10 +339,57 @@ const nextConfig = {
     // Monaco Editor optimization - split into separate chunks for lazy loading
     if (!isServer) {
       config.optimization = config.optimization || {}
+
+      // Enable tree-shaking to exclude unused Monaco features
+      config.optimization.usedExports = true
+      config.optimization.sideEffects = true
+
       config.optimization.splitChunks = {
         ...config.optimization.splitChunks,
         cacheGroups: {
           ...(config.optimization.splitChunks?.cacheGroups || {}),
+          // Isolate Monaco workers into separate chunks for optimal lazy loading
+          monacoWorkers: {
+            test: /[\\/]node_modules[\\/]monaco-editor[\\/].*\.worker\.js$/,
+            name: 'monaco-workers',
+            priority: 35,
+            reuseExistingChunk: true,
+          },
+          // Split TypeScript/JavaScript language support into separate chunk
+          monacoLanguageTypescript: {
+            test: /[\\/]node_modules[\\/]monaco-editor[\\/]esm[\\/]vs[\\/]language[\\/]typescript[\\/]/,
+            name: 'monaco-language-typescript',
+            priority: 34,
+            reuseExistingChunk: true,
+          },
+          // Split JSON language support into separate chunk
+          monacoLanguageJson: {
+            test: /[\\/]node_modules[\\/]monaco-editor[\\/]esm[\\/]vs[\\/]language[\\/]json[\\/]/,
+            name: 'monaco-language-json',
+            priority: 33,
+            reuseExistingChunk: true,
+          },
+          // Split CSS language support into separate chunk
+          monacoLanguageCss: {
+            test: /[\\/]node_modules[\\/]monaco-editor[\\/]esm[\\/]vs[\\/]language[\\/]css[\\/]/,
+            name: 'monaco-language-css',
+            priority: 32,
+            reuseExistingChunk: true,
+          },
+          // Split HTML language support into separate chunk
+          monacoLanguageHtml: {
+            test: /[\\/]node_modules[\\/]monaco-editor[\\/]esm[\\/]vs[\\/]language[\\/]html[\\/]/,
+            name: 'monaco-language-html',
+            priority: 32,
+            reuseExistingChunk: true,
+          },
+          // Split basic languages (markdown, yaml, etc.) into separate chunk
+          monacoBasicLanguages: {
+            test: /[\\/]node_modules[\\/]monaco-editor[\\/]esm[\\/]vs[\\/]basic-languages[\\/]/,
+            name: 'monaco-basic-languages',
+            priority: 31,
+            reuseExistingChunk: true,
+          },
           // Isolate Monaco Editor core into separate chunk
           monaco: {
             test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
@@ -358,6 +406,22 @@ const nextConfig = {
           },
         },
       }
+
+      // Set bundle size limits for Monaco Editor chunks
+      config.performance = {
+        ...config.performance,
+        hints: 'warning', // Warn but don't fail the build
+        maxAssetSize: 500000, // 500KB default limit for individual assets
+        maxEntrypointSize: 500000, // 500KB default limit for entrypoints
+        assetFilter: (assetFilename) => {
+          // Apply size limits to Monaco chunks
+          if (assetFilename.includes('monaco')) {
+            return true
+          }
+          // Apply limits to JavaScript and CSS files
+          return /\.(js|css)$/.test(assetFilename)
+        },
+      }
     }
 
     // Drop all Moment.js locales if Moment is used anywhere
@@ -367,6 +431,17 @@ const nextConfig = {
     if (!hasMomentLocaleDrop) {
       // Fix: Remove duplicate backslash in character class - use [\\/] instead of [\\/\\]
       config.plugins.push(new webpack.ContextReplacementPlugin(/moment[\\/]locale$/, /^$/))
+    }
+
+    // Bundle analyzer - enabled when ANALYZE=true environment variable is set
+    if (process.env.ANALYZE === 'true') {
+      config.plugins.push(
+        new BundleAnalyzerPlugin({
+          analyzerMode: 'static',
+          reportFilename: isServer ? '../analyze/server.html' : './analyze/client.html',
+          openAnalyzer: true,
+        })
+      )
     }
 
     // null-loader rules removed - caused 'hash' null reference in webpack 5

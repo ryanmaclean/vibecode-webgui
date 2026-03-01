@@ -23,6 +23,7 @@ import { MonacoAgentAPI, registerMonacoAgentProviders } from '@/lib/editor/monac
 import { getOptimizedEditorOptions } from '@/lib/editor/large-file-optimizer'
 import { MemoryMonitor } from '@/lib/performance/memory-monitor'
 import { editorPerformanceTracker } from '@/lib/performance/editor-performance'
+import { configureMonacoWorkers } from '@/lib/monaco/monaco-worker-config'
 import { cn } from '@/lib/utils'
 // import { logger } from '@/lib/logger';
 
@@ -136,6 +137,20 @@ export function AgentMonacoEditor({
     diagnosticsEnabled: false,
     latency: 0,
   })
+
+  // ==========================================================================
+  // Monaco Worker Configuration
+  // ==========================================================================
+
+  /**
+   * Configure Monaco workers before editor loads
+   * This ensures workers are lazy-loaded on demand
+   */
+  useEffect(() => {
+    configureMonacoWorkers({
+      debug: process.env.NODE_ENV === 'development',
+    })
+  }, [])
 
   // ==========================================================================
   // Performance Optimizations
