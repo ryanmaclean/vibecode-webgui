@@ -29,6 +29,23 @@ jest.mock('@/lib/vector-stores/enhanced-vector-store', () => ({
   }
 }));
 
+// Mock rate limiting
+let mockApiRateLimitResult = {
+  success: true,
+  limit: 30,
+  remaining: 29,
+  reset: Date.now() + 60000
+};
+
+jest.mock('@/lib/rate-limiting', () => ({
+  createAPIRateLimit: jest.fn(() => {
+    return jest.fn(async () => mockApiRateLimitResult);
+  }),
+  checkRateLimit: jest.fn(async () => ({ success: true })),
+  createRateLimitedResponse: jest.fn(),
+  applyRateLimitHeaders: jest.fn((response) => response)
+}));
+
 // Get reference to the mocked vector store for test assertions
 const mockVectorStore = require('@/lib/vector-stores/enhanced-vector-store').enhancedVectorStore;
 
@@ -60,6 +77,14 @@ describe('/api/vector-store', () => {
     jest.clearAllMocks();
     const { getServerSession } = require('next-auth');
     getServerSession.mockResolvedValue(mockSession);
+
+    // Reset rate limit mock to success state
+    mockApiRateLimitResult = {
+      success: true,
+      limit: 30,
+      remaining: 29,
+      reset: Date.now() + 60000
+    };
   });
 
   afterEach(() => {

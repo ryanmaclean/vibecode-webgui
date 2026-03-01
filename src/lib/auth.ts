@@ -233,6 +233,13 @@ export const authOptions: NextAuthOptions = {
         session.user.email = (token.email as string) ?? ''
         session.user.name = (token.name as string) ?? ''
         logger.info('Session updated with token:', { id: session.user.id, role: session.user.role })
+      } else {
+        // Set defaults when token is undefined/null
+        session.user.id = session.user.id || ''
+        session.user.role = session.user.role || 'user'
+        session.user.email = session.user.email || ''
+        session.user.name = session.user.name || ''
+        logger.info('Session updated with defaults (no token):', { id: session.user.id, role: session.user.role })
       }
       return session
     },
