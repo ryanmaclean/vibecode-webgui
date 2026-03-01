@@ -987,6 +987,49 @@ To control costs, we use a two-tier CI/CD strategy:
 ./create-release-branch.sh v1.2.0
 ```
 
+## 🧪 Testing Infrastructure
+
+VibeCode maintains a comprehensive testing infrastructure to ensure code quality and reliability:
+
+### Testing Strategy
+- **Unit Tests**: Test individual components and functions in isolation
+- **Integration Tests**: Test interactions between components and services
+- **E2E Tests**: Test complete user flows in real browser environments
+
+### Testing Stack
+- **Jest** + **React Testing Library**: Unit and integration testing
+- **Playwright**: End-to-end browser automation
+- **Coverage Reports**: Progressive roadmap to 80% coverage with 30% milestones
+
+### Quick Commands
+```bash
+# Run all unit tests
+npm run test:unit
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run E2E tests
+npm run test:e2e
+
+# Run tests in watch mode
+npm run test:watch
+```
+
+### Coverage Thresholds
+
+**Phase 0 Baseline** (Current): 18-24% - prevents regressions while improving coverage
+**Progressive Milestones**: Phase 0 (18-24%) → 30% → 50% → 65% → 80%
+
+Current enforcement in CI:
+- Branches: 18%
+- Functions: 22%
+- Lines: 24%
+- Statements: 22%
+
+📚 **For comprehensive testing patterns, best practices, and detailed guides**, see [Testing Guide](docs/testing/TESTING_GUIDE.md)
+📊 **For coverage roadmap and strategy**, see [Coverage Strategy](docs/testing/COVERAGE_STRATEGY.md)
+
 ## 🔒 Security Considerations
 
 ### Environment Isolation

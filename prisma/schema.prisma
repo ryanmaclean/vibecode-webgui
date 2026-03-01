@@ -24,6 +24,7 @@ model User {
   // Relations
   sessions         Session[]
   workspaces       Workspace[]
+  workspace_templates WorkspaceTemplate[]
   projects         Project[]
   files            File[]
   uploads          Upload[]
@@ -142,6 +143,33 @@ model Project {
   @@index([framework, status]) // For filtering projects by framework and status
   @@index([user_id, status, created_at]) // For sorting user projects by creation date
   @@map("projects")
+}
+
+model WorkspaceTemplate {
+  id               Int      @id @default(autoincrement())
+  name             String
+  description      String?
+  user_id          Int
+  workspace_config Json // Workspace configuration data
+  is_public        Boolean  @default(false)
+  tags             String? // Comma-separated tags
+  framework        String? // Framework identifier (e.g., react, vue, express)
+  language         String? // Language identifier (e.g., typescript, javascript, python)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([is_public])
+  @@index([framework])
+  @@index([language])
+  @@index([user_id, is_public]) // For querying user's private templates and public templates
+  @@index([is_public, framework]) // For filtering public templates by framework
+  @@index([is_public, language]) // For filtering public templates by language
+  @@index([user_id, created_at]) // For sorting user templates by creation date
+  @@map("workspace_templates")
 }
 
 // Files and RAG System (simplified without vector embeddings)
