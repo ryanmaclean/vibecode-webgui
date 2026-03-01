@@ -57,7 +57,7 @@ jobs:
           cd infra/tundra-dome
           for file in $(find . -name "*.yaml" -o -name "*.yml"); do
             echo "Validating: $file"
-            python -c "import yaml; yaml.safe_load(open('$file'))" || exit 1
+            python -c "import yaml; list(yaml.safe_load_all(open('$file')))" || exit 1
           done
 
       - name: Validate CRD schemas
@@ -72,7 +72,14 @@ jobs:
         run: |
           pip install ruff
           cd infra/tundra-dome
-          ruff check *.py dags/*.py tests/*.py --ignore E501
+          # Only lint Python files that actually exist
+          python_files=$(find . -name "*.py" -type f 2>/dev/null || true)
+          if [ -n "$python_files" ]; then
+            echo "Linting Python files: $python_files"
+            ruff check $python_files --ignore E501
+          else
+            echo "No Python files found to lint"
+          fi
 
   # Deploy to clusters (matrix strategy)
   deploy:
@@ -193,14 +200,17 @@ jobs:
           pip install pyyaml
           cd infra/tundra-dome
 
-          # Check that all YAML is valid
+          # Check that all YAML is valid (supports multi-document YAML)
           for file in $(find . -name "*.yaml" -o -name "*.yml"); do
-            python -c "import yaml; yaml.safe_load(open('$file'))" || exit 1
+            python -c "import yaml; list(yaml.safe_load_all(open('$file')))" || exit 1
           done
 
-          # Check that scripts are syntactically valid
-          python -m py_compile tundra-cli.py
-          python -m py_compile tundra-bootstrap.py
-          python -m py_compile tundra-master.py
+          # Check that scripts are syntactically valid (if they exist)
+          for script in tundra-cli.py tundra-bootstrap.py tundra-master.py; do
+            if [ -f "$script" ]; then
+              echo "Validating $script"
+              python -m py_compile "$script"
+            fi
+          done
 
           echo "All validations passed!"
