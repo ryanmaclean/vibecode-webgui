@@ -4,7 +4,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-5.1.0--beta-blue.svg)](https://github.com/yourusername/vibecode/releases)
+[![Version](https://img.shields.io/badge/version-5.1.0--beta-blue.svg)](#)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.18.0%20%3C25.0.0-brightgreen.svg)](https://nodejs.org/)
 [![npm](https://img.shields.io/badge/npm-%3E%3D9.0.0-red.svg)](https://www.npmjs.com/)
@@ -16,7 +16,7 @@
 [![Tauri](https://img.shields.io/badge/Tauri-2.10.0-FFC131.svg?logo=tauri&logoColor=white)](https://tauri.app/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
-[![AI Models](https://img.shields.io/badge/AI%20Models-321%2B-purple.svg)](docs/AI_MODELS.md)
+[![AI Models](https://img.shields.io/badge/AI%20Models-321%2B-purple.svg)](docs/ARCHITECTURE.md#ai-services)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-326ce5.svg?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
 [![Docker](https://img.shields.io/badge/Docker-Supported-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red.svg)](https://opensource.org/)
@@ -162,11 +162,11 @@
 
 VibeCode provides **unprecedented access to 321+ AI models** from multiple providers, giving you the freedom to choose the best model for each task. Whether you need cutting-edge reasoning, fast completions, or specialized capabilities, VibeCode has you covered.
 
-### 🌐 Multi-Provider AI Access
+### Multi-Provider AI Access
 
 Access the latest and most powerful AI models through multiple integration paths:
 
-#### **OpenRouter (321+ Models)**
+#### OpenRouter (321+ Models)
 The primary AI gateway providing unified access to models from:
 - **OpenAI**: GPT-4, GPT-4 Turbo, GPT-3.5, o1, o1-mini
 - **Anthropic**: Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku
@@ -178,14 +178,15 @@ The primary AI gateway providing unified access to models from:
 - **Groq**: Lightning-fast inference for Llama, Mixtral models
 - **And 300+ more models** - including specialized models for code, reasoning, and vision tasks
 
-#### **Direct Provider APIs**
+#### Direct Provider APIs
+
 For organizations with existing contracts or specific requirements:
 - Direct OpenAI API integration
 - Direct Anthropic API integration
 - Direct Google AI (Gemini) integration
 - Custom API endpoint support
 
-#### **Local & Offline AI (Ollama)**
+#### Local & Offline AI (Ollama)
 Run models entirely on your own hardware for:
 - **Complete Privacy**: No data leaves your machine
 - **Offline Development**: Work without internet connectivity
@@ -252,8 +253,7 @@ Choose the right model for each task:
 
 ### 📚 Learn More
 
-- **[AI Architecture](docs/ARCHITECTURE.md#ai-services)** - Technical deep dive into AI implementation
-- **[AI Models Documentation](docs/AI_MODELS.md)** - Complete list of supported models
+- **[AI Architecture](docs/ARCHITECTURE.md#ai-services)** - Technical deep dive into AI implementation and supported models
 - **[MCP Integration Guide](examples/mcp-servers/README.md)** - Extend AI capabilities with MCP
 
 ## 🏗️ Architecture Overview
@@ -432,7 +432,7 @@ Depending on your deployment mode, you may need:
 See [Tauri Desktop Setup Guide](docs/setup/TAURI_DESKTOP_SETUP.md) for detailed installation.
 
 #### Native macOS Virtualization
-- **macOS**: 26+ (for ASIF support)
+- **macOS**: 13.0+ (Ventura or later, for ASIF support)
 - **vfkit**: Latest version
   ```bash
   brew install vfkit
@@ -603,7 +603,7 @@ sudo chmod +x /usr/local/bin/vfkit
 
 **Minimum Requirements**:
 - macOS 10.13+ (High Sierra or later)
-- For ASIF support: macOS 26+
+- For ASIF support: macOS 13.0+ (Ventura or later)
 
 ### Port Conflicts
 
@@ -899,17 +899,17 @@ If you're still experiencing problems after trying these solutions:
    # Tauri logs (in dev console)
    ```
 
-2. **Search existing issues**: [GitHub Issues](https://github.com/yourusername/vibecode/issues)
+2. **Search existing issues**: Check GitHub Issues for similar problems
 
 3. **Ask for help**:
-   - Create a [new issue](https://github.com/yourusername/vibecode/issues/new) with:
+   - Create a new GitHub issue with:
      - Your OS and version
      - Node.js and npm versions
      - Full error message and stack trace
      - Steps to reproduce
 
 4. **Community support**:
-   - Check our [Discussions](https://github.com/yourusername/vibecode/discussions)
+   - Check our GitHub Discussions
    - Join our community chat (if available)
 
 5. **Review documentation**:
@@ -948,7 +948,7 @@ python3 scripts/ralph_loop.py
 
 VibeCode supports **Apple Virtualization Framework** for native macOS VM performance:
 - **Native Speed**: Direct hardware virtualization without Docker overhead
-- **ASIF Support**: Apple Sparse Image Format on macOS 26+ (2-3x faster I/O)
+- **ASIF Support**: Apple Sparse Image Format on macOS 13.0+ (2-3x faster I/O)
 - **Full VM Control**: Start, stop, suspend, resume operations
 - **Linux GUI VMs**: Graphics support with VirtIO GPU
 
@@ -1074,7 +1074,7 @@ Need assistance or have questions?
   - [Architecture Overview](docs/ARCHITECTURE.md)
   - [Tauri Desktop Setup](docs/setup/TAURI_DESKTOP_SETUP.md)
 
-- **💬 [GitHub Discussions](https://github.com/yourusername/vibecode/discussions)** - Ask questions, share ideas, and connect with the community
+- **💬 GitHub Discussions** - Ask questions, share ideas, and connect with the community
 - **🔍 [Troubleshooting Guide](#-troubleshooting)** - Solutions to common problems
 
 ### Community Channels
@@ -1091,9 +1091,9 @@ Join our growing community:
 
 Found a bug or have a feature request?
 
-- **🐛 [Report a Bug](https://github.com/yourusername/vibecode/issues/new?template=bug_report.md)**
-- **✨ [Request a Feature](https://github.com/yourusername/vibecode/issues/new?template=feature_request.md)**
-- **📖 [Browse Issues](https://github.com/yourusername/vibecode/issues)**
+- **🐛 Report a Bug** - Use GitHub Issues to report bugs
+- **✨ Request a Feature** - Submit feature requests via GitHub Issues
+- **📖 Browse Issues** - Check existing issues on GitHub
 
 When reporting issues, please include:
 - Your operating system and version
@@ -1121,6 +1121,6 @@ See the [LICENSE](LICENSE) file for full details.
 
 **Built with ❤️ by the VibeCode community**
 
-[⭐ Star us on GitHub](https://github.com/yourusername/vibecode) | [🐛 Report an Issue](https://github.com/yourusername/vibecode/issues) | [💬 Join Discussions](https://github.com/yourusername/vibecode/discussions)
+⭐ Star us on GitHub | 🐛 Report an Issue | 💬 Join Discussions
 
 </div>
