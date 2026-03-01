@@ -2,6 +2,30 @@
 
 > **🚨 Emergency Release (Feb 2026)** - The "Ruthless" Edition
 
+<div align="center">
+
+[![Version](https://img.shields.io/badge/version-5.1.0--beta-blue.svg)](https://github.com/yourusername/vibecode/releases)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D18.18.0%20%3C25.0.0-brightgreen.svg)](https://nodejs.org/)
+[![npm](https://img.shields.io/badge/npm-%3E%3D9.0.0-red.svg)](https://www.npmjs.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-blue.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+
+[![Next.js](https://img.shields.io/badge/Next.js-16.1.6-black.svg?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2.4-61dafb.svg?logo=react&logoColor=white)](https://reactjs.org/)
+[![Monaco Editor](https://img.shields.io/badge/Monaco%20Editor-0.55.1-0078d7.svg)](https://microsoft.github.io/monaco-editor/)
+[![Tauri](https://img.shields.io/badge/Tauri-2.10.0-FFC131.svg?logo=tauri&logoColor=white)](https://tauri.app/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+
+[![AI Models](https://img.shields.io/badge/AI%20Models-321%2B-purple.svg)](docs/AI_MODELS.md)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-326ce5.svg?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
+[![Docker](https://img.shields.io/badge/Docker-Supported-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red.svg)](https://opensource.org/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+</div>
+
+---
+
 ## 🎯 What is VibeCode?
 
 **VibeCode is a next-generation AI-native IDE** that brings the power of 321+ AI models directly into your development workflow. Unlike traditional IDEs with AI bolt-ons, VibeCode is built from the ground up for AI-assisted development, combining the flexibility of VS Code with unprecedented AI model access and semantic code intelligence.
