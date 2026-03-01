@@ -3,7 +3,10 @@ import typescript from "@typescript-eslint/eslint-plugin";
 import typescriptParser from "@typescript-eslint/parser";
 
 export default [
-  ...nextConfig,
+  // TODO: Re-enable Next.js config when scopeManager compatibility is resolved
+  // The ...nextConfig spread causes "scopeManager.addGlobals is not a function" error with ESLint 10.0.2
+  // Issue: eslint-config-next@16.1.6 + ESLint@10.0.2 incompatibility
+  // ...nextConfig,
   {
     ignores: [
       "*.js",
@@ -25,6 +28,8 @@ export default [
       "src-tauri/**",
       "go/**",
       "bin/**",
+      ".claude/**",
+      ".auto-claude/**",
     ],
   },
   {
@@ -52,28 +57,59 @@ export default [
       parserOptions: {
         ecmaVersion: "latest",
         sourceType: "module",
+        ecmaFeatures: {
+          jsx: true,
+        },
       },
     },
     plugins: {
       "@typescript-eslint": typescript,
     },
     rules: {
+      // Strict type safety rules
+      "@typescript-eslint/no-explicit-any": "error",
+
+      // Prevent common errors
       "@typescript-eslint/no-unused-vars": [
-        "warn",
+        "error",
         {
           argsIgnorePattern: "^_",
           varsIgnorePattern: "^_",
           ignoreRestSiblings: true,
         },
       ],
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-non-null-assertion": "error",
+
+      // Code quality
+      "@typescript-eslint/explicit-function-return-type": [
+        "error",
+        {
+          allowExpressions: true,
+          allowTypedFunctionExpressions: true,
+          allowHigherOrderFunctions: true,
+        },
+      ],
+      "@typescript-eslint/explicit-module-boundary-types": "error",
+
+      // Disable base ESLint rules that are handled by TypeScript
       "no-unused-vars": "off",
+      "no-undef": "off",
     },
   },
   {
-    files: ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**/*.ts", "**/__tests__/**/*.tsx"],
+    // Test files get relaxed rules for type safety
+    files: [
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/__tests__/**/*.ts",
+      "**/__tests__/**/*.tsx",
+      "**/*.spec.ts",
+      "**/*.spec.tsx",
+    ],
     rules: {
-      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/explicit-module-boundary-types": "off",
       "no-console": "off",
     },
   },

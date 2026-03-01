@@ -31,12 +31,20 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
-      - name: Run ESLint
-        run: npm run lint
+      # Strict TypeScript type checking - enforces strict mode with all compiler flags
+      # Note: continue-on-error is temporary during incremental migration (currently ~1,564 errors in root)
+      # Target: Remove continue-on-error once root project errors drop to 0
+      # See: ./docs/TYPESCRIPT_ESLINT_STANDARDS.md for migration strategy
+      - name: Run TypeScript check (strict mode)
+        run: npm run type-check
         continue-on-error: true
 
-      - name: Run TypeScript check
-        run: npm run type-check
+      # Strict ESLint with zero tolerance for warnings - enforces type safety rules
+      # Note: continue-on-error is temporary during incremental migration (currently ~8,388 total errors)
+      # Target: Remove continue-on-error once total errors drop below 100
+      # See: ./docs/TYPESCRIPT_ESLINT_STANDARDS.md for migration strategy
+      - name: Run ESLint (strict mode, zero warnings)
+        run: npm run lint -- --max-warnings 0
         continue-on-error: true
 
       - name: Check formatting (Prettier)

@@ -38,7 +38,7 @@ class LLMObservability {
     const { service, env } = getServiceEnvVersion()
 
     // Parse boolean flags correctly - support both 'true' and '1'
-    const parseFlag = (value: string | undefined, defaultValue = false) => {
+    const parseFlag = (value: string | undefined, defaultValue = false): boolean => {
       if (!value) return defaultValue;
       const normalized = value.toLowerCase().trim();
       return normalized === 'true' || normalized === '1' || normalized === 'yes';
