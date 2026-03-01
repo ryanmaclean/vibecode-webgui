@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "071-add-model-usage-history-component-following-costda",
+  "spec": "072-add-workspace-templates-and-cloning-feature",
   "state": "building",
   "subtasks": {
-    "completed": 3,
-    "total": 6,
+    "completed": 9,
+    "total": 10,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Component Implementation",
+    "current": "Integration Testing",
     "id": null,
-    "total": 6
+    "total": 1
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 5,
-    "started_at": "2026-03-01T09:59:48.776680"
+    "number": 11,
+    "started_at": "2026-03-01T00:06:35.125398"
   },
-  "last_update": "2026-03-01T10:14:06.149007"
+  "last_update": "2026-03-01T00:33:59.945240"
 }
