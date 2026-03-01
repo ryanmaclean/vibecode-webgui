@@ -341,6 +341,41 @@ const nextConfig = {
             priority: 35,
             reuseExistingChunk: true,
           },
+          // Split TypeScript/JavaScript language support into separate chunk
+          monacoLanguageTypescript: {
+            test: /[\\/]node_modules[\\/]monaco-editor[\\/]esm[\\/]vs[\\/]language[\\/]typescript[\\/]/,
+            name: 'monaco-language-typescript',
+            priority: 34,
+            reuseExistingChunk: true,
+          },
+          // Split JSON language support into separate chunk
+          monacoLanguageJson: {
+            test: /[\\/]node_modules[\\/]monaco-editor[\\/]esm[\\/]vs[\\/]language[\\/]json[\\/]/,
+            name: 'monaco-language-json',
+            priority: 33,
+            reuseExistingChunk: true,
+          },
+          // Split CSS language support into separate chunk
+          monacoLanguageCss: {
+            test: /[\\/]node_modules[\\/]monaco-editor[\\/]esm[\\/]vs[\\/]language[\\/]css[\\/]/,
+            name: 'monaco-language-css',
+            priority: 32,
+            reuseExistingChunk: true,
+          },
+          // Split HTML language support into separate chunk
+          monacoLanguageHtml: {
+            test: /[\\/]node_modules[\\/]monaco-editor[\\/]esm[\\/]vs[\\/]language[\\/]html[\\/]/,
+            name: 'monaco-language-html',
+            priority: 32,
+            reuseExistingChunk: true,
+          },
+          // Split basic languages (markdown, yaml, etc.) into separate chunk
+          monacoBasicLanguages: {
+            test: /[\\/]node_modules[\\/]monaco-editor[\\/]esm[\\/]vs[\\/]basic-languages[\\/]/,
+            name: 'monaco-basic-languages',
+            priority: 31,
+            reuseExistingChunk: true,
+          },
           // Isolate Monaco Editor core into separate chunk
           monaco: {
             test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
