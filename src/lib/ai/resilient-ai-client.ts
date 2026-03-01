@@ -559,6 +559,24 @@ export class ResilientAIClient {
    */
   private recordCacheMetrics(operationName: string, hit: boolean): void {
     try {
+      // Record hit/miss specific metrics
+      if (hit) {
+        datadogMetrics.increment('resilient_ai.cache.hit', 1, {
+          tags: {
+            component: 'resilient_ai_client',
+            operation: operationName
+          }
+        })
+      } else {
+        datadogMetrics.increment('resilient_ai.cache.miss', 1, {
+          tags: {
+            component: 'resilient_ai_client',
+            operation: operationName
+          }
+        })
+      }
+
+      // Record general cache operations metric with result tag
       datadogMetrics.increment('resilient_ai.cache_operations', 1, {
         tags: {
           component: 'resilient_ai_client',
