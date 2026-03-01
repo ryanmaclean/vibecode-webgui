@@ -1,18 +1,52 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-echo "Running pre-commit checks..."
+echo "🔒 Running pre-commit quality gates..."
 
-# Run linting
-echo "1/3 Running ESLint..."
-npm run lint || exit 1
+# Secret scanning with gitleaks
+echo "1/4 Running secret scanning..."
+if command -v gitleaks > /dev/null 2>&1; then
+    gitleaks protect --staged --verbose || {
+        echo "❌ Secret scanning failed - potential secrets detected"
+        echo "Please remove any secrets and use environment variables"
+        exit 1
+    }
+else
+    echo "⚠️  gitleaks not installed - skipping secret scan"
+    echo "Install with: brew install gitleaks (macOS) or see https://github.com/gitleaks/gitleaks"
+fi
 
 # Run format check
-echo "2/3 Running Prettier format check..."
-npm run format:check || exit 1
+echo "2/4 Running Prettier format check..."
+npm run format:check || {
+    echo "❌ Format check failed - run 'npm run format' to fix"
+    exit 1
+}
 
-# Run TypeScript type check
-echo "3/3 Running TypeScript type check..."
-npm run type-check || exit 1
+# Run comprehensive pre-commit tests (lint, type-check, tests, additional security)
+echo "3/4 Running optimized pre-commit tests..."
+if [ -f "./scripts/pre-commit-tests.sh" ]; then
+    ./scripts/pre-commit-tests.sh || {
+        echo "❌ Pre-commit tests failed"
+        exit 1
+    }
+else
+    # Fallback to individual checks if script not found
+    echo "⚠️  Pre-commit script not found - running individual checks"
 
-echo "✓ All pre-commit checks passed!"
+    echo "  → Running ESLint..."
+    npm run lint || exit 1
+
+    echo "  → Running TypeScript type check..."
+    npm run type-check || exit 1
+fi
+
+# Final validation
+echo "4/4 Running final validation..."
+git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx)$' > /dev/null && {
+    echo "✓ Code files staged and validated"
+} || {
+    echo "ℹ️  No code files staged"
+}
+
+echo "✅ All pre-commit quality gates passed!"

@@ -11,7 +11,7 @@
   "phase": {
     "current": "Plugins & API Tests",
     "id": null,
-    "total": 3
+    "total": 6
   },
   "workers": {
     "active": 0,
