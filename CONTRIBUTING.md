@@ -25,7 +25,24 @@ Before you begin, ensure you have:
 - **Tauri CLI** (for desktop builds): `npm install -g @tauri-apps/cli`
 - **Rust**: If building Tauri for production
 
+> **📚 Comprehensive Setup Guide**: For detailed platform-specific installation instructions and version requirements, see [docs/setup/PREREQUISITES.md](docs/setup/PREREQUISITES.md).
+>
+> **✅ Automated Validation**: Run `bash scripts/validate-prerequisites.sh` to check if your system meets all requirements.
+
 ## Getting Started
+
+> **🚀 Quick Setup**: Want to get started quickly? Use the interactive setup wizard:
+> ```bash
+> bash scripts/setup-wizard.sh
+> ```
+> The wizard will guide you through choosing the right deployment mode for your needs.
+>
+> **📖 Comprehensive Guide**: For detailed installation instructions, see:
+> - [Installation Master Guide](docs/INSTALLATION_MASTER_GUIDE.md) - Complete installation guide covering all deployment modes
+> - [Quick Start Checklist](docs/QUICKSTART_CHECKLIST.md) - Get running in under 5 minutes
+> - [Deployment Decision Tree](docs/setup/DEPLOYMENT_DECISION_TREE.md) - Choose the right deployment mode
+
+### Manual Setup Steps
 
 ### 1. Clone the Repository
 ```bash
@@ -58,6 +75,22 @@ npm test -- --maxWorkers=2
 npm run build
 npm start
 ```
+
+### Automated Setup Options
+
+For faster setup, use one of our automated scripts:
+
+- **Docker Compose** (recommended for most developers):
+  ```bash
+  bash scripts/quick-setup-docker-compose.sh
+  ```
+
+- **Kubernetes (KIND)** (for testing Kubernetes deployments):
+  ```bash
+  bash scripts/quick-setup-kind.sh
+  ```
+
+All scripts support `--dry-run` to preview changes before executing.
 
 ## Project Structure
 
@@ -335,6 +368,10 @@ export function MyComponent({ title, onAction }: MyComponentProps) {
 
 ## Troubleshooting
 
+> **🔧 Installation Issues**: For comprehensive installation and setup troubleshooting, see:
+> - [Installation Troubleshooting Guide](docs/setup/INSTALLATION_TROUBLESHOOTING.md) - Flowcharts and solutions for common setup issues
+> - Run `bash scripts/diagnose-setup-issues.sh` to automatically detect and report common problems
+
 ### Memory Issues During Tests
 If you encounter out-of-memory errors:
 ```bash
@@ -403,6 +440,11 @@ npx eslint --fix src/app/api/agents ...
 ## Getting Help
 
 - **Documentation**: Check `docs/` directory for detailed guides
+  - [Installation Master Guide](docs/INSTALLATION_MASTER_GUIDE.md) - Complete setup instructions
+  - [Quick Start Checklist](docs/QUICKSTART_CHECKLIST.md) - Fast setup guide
+  - [Installation Troubleshooting](docs/setup/INSTALLATION_TROUBLESHOOTING.md) - Common problems and solutions
+  - [Prerequisites Guide](docs/setup/PREREQUISITES.md) - Detailed dependency information
+- **Diagnostic Tools**: Run `bash scripts/diagnose-setup-issues.sh` to identify common setup problems
 - **Issues**: Search existing GitHub issues or create a new one
 - **Discussions**: Use GitHub Discussions for questions
 - **Team**: Reach out to maintainers in Slack
