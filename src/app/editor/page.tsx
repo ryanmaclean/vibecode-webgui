@@ -180,6 +180,38 @@ export default function EditorPage() {
     codeActions: 0,
   })
 
+  // Add preload hints for Monaco Editor resources
+  useEffect(() => {
+    // Preload Monaco Editor core chunks
+    const preloadLinks = [
+      { href: '/_next/static/chunks/monaco-editor.js', as: 'script' },
+      { href: '/_next/static/chunks/AgentMonacoEditor.js', as: 'script' },
+    ]
+
+    const links: HTMLLinkElement[] = []
+
+    preloadLinks.forEach(({ href, as }) => {
+      const existingLink = document.querySelector(`link[href="${href}"]`)
+      if (!existingLink) {
+        const link = document.createElement('link')
+        link.rel = 'modulepreload'
+        link.href = href
+        link.as = as
+        document.head.appendChild(link)
+        links.push(link)
+      }
+    })
+
+    // Cleanup on unmount
+    return () => {
+      links.forEach(link => {
+        if (link.parentNode === document.head) {
+          document.head.removeChild(link)
+        }
+      })
+    }
+  }, [])
+
 
   // Type guard for theme values
   const isValidTheme = (value: string): value is "vs-dark" | "vs-light" => {
