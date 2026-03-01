@@ -16,6 +16,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Activity,
@@ -611,6 +612,7 @@ export default function ModelUsageHistory({
   const tracker = useMemo(() => costTracker || getCostTracker(), [costTracker]);
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('daily');
   const [selectedMetric, setSelectedMetric] = useState<'tokens' | 'requests'>('tokens');
   const [chartType, setChartType] = useState<'pie' | 'bar'>('pie');
@@ -795,7 +797,7 @@ export default function ModelUsageHistory({
       {/* Header */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5" />
@@ -805,7 +807,7 @@ export default function ModelUsageHistory({
                 Track AI model usage, token consumption, and patterns over time
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
@@ -830,299 +832,459 @@ export default function ModelUsageHistory({
         </CardHeader>
       </Card>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Tokens"
-          value={formatTokens(totalTokensUsed)}
-          description="Current session"
-          icon={<Zap className="h-6 w-6 text-primary" />}
-          testId="total-tokens"
-        />
-        <StatCard
-          title="Total Requests"
-          value={totalRequests.toString()}
-          description="API calls made"
-          icon={<Activity className="h-6 w-6 text-primary" />}
-          testId="total-requests"
-        />
-        <StatCard
-          title="Avg Tokens/Request"
-          value={formatTokens(averageTokensPerRequest)}
-          description="Average per call"
-          icon={<TrendingUp className="h-6 w-6 text-primary" />}
-          testId="avg-tokens"
-        />
-        <StatCard
-          title="Most Used Model"
-          value={mostUsedModel}
-          description="Top choice"
-          icon={<BarChart3 className="h-6 w-6 text-primary" />}
-          testId="most-used-model"
-        />
-      </div>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 gap-1">
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            <span className="hidden sm:inline">Overview</span>
+            <span className="sm:hidden">Stats</span>
+          </TabsTrigger>
+          <TabsTrigger value="trends" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            <span className="hidden sm:inline">Usage Trends</span>
+            <span className="sm:hidden">Trends</span>
+          </TabsTrigger>
+          <TabsTrigger value="models" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            <span className="hidden sm:inline">Model Breakdown</span>
+            <span className="sm:hidden">Models</span>
+          </TabsTrigger>
+          <TabsTrigger value="details" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            <span className="hidden sm:inline">Details</span>
+            <span className="sm:hidden">More</span>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Token Consumption Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardContent className="p-6">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">Prompt Tokens</p>
-                <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                  <Zap className="h-5 w-5 text-green-500" />
-                </div>
-              </div>
-              <p data-testid="prompt-tokens" className="text-2xl font-bold">
-                {formatTokens(totalPromptTokens)}
-              </p>
-              <div className="flex items-center gap-2">
-                <div className="w-full bg-secondary rounded-full h-2">
-                  <div
-                    className="rounded-full h-2 bg-green-500 transition-all"
-                    style={{
-                      width: `${totalTokensUsed > 0 ? (totalPromptTokens / totalTokensUsed) * 100 : 0}%`,
-                    }}
-                  />
-                </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {totalTokensUsed > 0 ? ((totalPromptTokens / totalTokensUsed) * 100).toFixed(0) : 0}%
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">Completion Tokens</p>
-                <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                  <Zap className="h-5 w-5 text-blue-500" />
-                </div>
-              </div>
-              <p data-testid="completion-tokens" className="text-2xl font-bold">
-                {formatTokens(totalCompletionTokens)}
-              </p>
-              <div className="flex items-center gap-2">
-                <div className="w-full bg-secondary rounded-full h-2">
-                  <div
-                    className="rounded-full h-2 bg-blue-500 transition-all"
-                    style={{
-                      width: `${totalTokensUsed > 0 ? (totalCompletionTokens / totalTokensUsed) * 100 : 0}%`,
-                    }}
-                  />
-                </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {totalTokensUsed > 0 ? ((totalCompletionTokens / totalTokensUsed) * 100).toFixed(0) : 0}%
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">Token Ratio</p>
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                </div>
-              </div>
-              <p data-testid="token-ratio" className="text-2xl font-bold">
-                {totalPromptTokens > 0
-                  ? (totalCompletionTokens / totalPromptTokens).toFixed(2)
-                  : '0.00'}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Completion/Prompt ratio
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Token Consumption Chart */}
-      {currentPeriodData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="h-5 w-5" />
-                  Token Consumption
-                </CardTitle>
-                <CardDescription>
-                  Prompt vs completion token usage over time
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent data-testid="token-consumption-chart">
-            <TokenConsumptionChart
-              data={currentPeriodData}
-              period={selectedPeriod}
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6 mt-6">
+          {/* Stats Grid */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title="Total Tokens"
+              value={formatTokens(totalTokensUsed)}
+              description="Current session"
+              icon={<Zap className="h-6 w-6 text-primary" />}
+              testId="total-tokens"
             />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Usage Trends Chart */}
-      {currentPeriodData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Usage Trends
-                </CardTitle>
-                <CardDescription>
-                  {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)} usage patterns over time
-                </CardDescription>
-              </div>
-              <Select value={selectedMetric} onValueChange={handleMetricChange}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tokens">Tokens</SelectItem>
-                  <SelectItem value="requests">Requests</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <UsageChart
-              data={currentPeriodData}
-              period={selectedPeriod}
-              metric={selectedMetric}
+            <StatCard
+              title="Total Requests"
+              value={totalRequests.toString()}
+              description="API calls made"
+              icon={<Activity className="h-6 w-6 text-primary" />}
+              testId="total-requests"
             />
-          </CardContent>
-        </Card>
-      )}
+            <StatCard
+              title="Avg Tokens/Request"
+              value={formatTokens(averageTokensPerRequest)}
+              description="Average per call"
+              icon={<TrendingUp className="h-6 w-6 text-primary" />}
+              testId="avg-tokens"
+            />
+            <StatCard
+              title="Most Used Model"
+              value={mostUsedModel}
+              description="Top choice"
+              icon={<BarChart3 className="h-6 w-6 text-primary" />}
+              testId="most-used-model"
+            />
+          </div>
 
-      {/* Model Breakdown */}
-      {modelBreakdown.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Model Usage Breakdown</CardTitle>
+          {/* Token Consumption Stats */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardContent className="p-6">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-muted-foreground">Prompt Tokens</p>
+                    <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                      <Zap className="h-5 w-5 text-green-500" />
+                    </div>
+                  </div>
+                  <p data-testid="prompt-tokens" className="text-2xl font-bold">
+                    {formatTokens(totalPromptTokens)}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-full bg-secondary rounded-full h-2">
+                      <div
+                        className="rounded-full h-2 bg-green-500 transition-all"
+                        style={{
+                          width: `${totalTokensUsed > 0 ? (totalPromptTokens / totalTokensUsed) * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {totalTokensUsed > 0 ? ((totalPromptTokens / totalTokensUsed) * 100).toFixed(0) : 0}%
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-muted-foreground">Completion Tokens</p>
+                    <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                      <Zap className="h-5 w-5 text-blue-500" />
+                    </div>
+                  </div>
+                  <p data-testid="completion-tokens" className="text-2xl font-bold">
+                    {formatTokens(totalCompletionTokens)}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-full bg-secondary rounded-full h-2">
+                      <div
+                        className="rounded-full h-2 bg-blue-500 transition-all"
+                        style={{
+                          width: `${totalTokensUsed > 0 ? (totalCompletionTokens / totalTokensUsed) * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {totalTokensUsed > 0 ? ((totalCompletionTokens / totalTokensUsed) * 100).toFixed(0) : 0}%
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-muted-foreground">Token Ratio</p>
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <BarChart3 className="h-5 w-5 text-primary" />
+                    </div>
+                  </div>
+                  <p data-testid="token-ratio" className="text-2xl font-bold">
+                    {totalPromptTokens > 0
+                      ? (totalCompletionTokens / totalPromptTokens).toFixed(2)
+                      : '0.00'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Completion/Prompt ratio
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* All-Time Stats in Overview */}
+          {showAllTime && data.history.allTime && (
+            <Card>
+              <CardHeader>
+                <CardTitle>All-Time Statistics</CardTitle>
+                <CardDescription>
+                  Lifetime usage metrics since {new Date(data.history.allTime.firstUsageDate || Date.now()).toLocaleDateString()}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">Total Tokens</p>
+                    <p className="text-2xl font-bold">{formatTokens(data.history.allTime.totalTokens)}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">Total Requests</p>
+                    <p className="text-2xl font-bold">{data.history.allTime.totalRequests.toLocaleString()}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">Total Cost</p>
+                    <p className="text-2xl font-bold">{formatCost(data.history.allTime.totalCost)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Usage Trends Tab */}
+        <TabsContent value="trends" className="space-y-6 mt-6">
+          {/* Token Consumption Chart */}
+          {currentPeriodData.length > 0 ? (
+            <>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Zap className="h-5 w-5" />
+                        Token Consumption
+                      </CardTitle>
+                      <CardDescription>
+                        Prompt vs completion token usage over time
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent data-testid="token-consumption-chart">
+                  <TokenConsumptionChart
+                    data={currentPeriodData}
+                    period={selectedPeriod}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Usage Trends Chart */}
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5" />
+                        Usage Trends
+                      </CardTitle>
+                      <CardDescription>
+                        {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)} usage patterns over time
+                      </CardDescription>
+                    </div>
+                    <Select value={selectedMetric} onValueChange={handleMetricChange}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="tokens">Tokens</SelectItem>
+                        <SelectItem value="requests">Requests</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <UsageChart
+                    data={currentPeriodData}
+                    period={selectedPeriod}
+                    metric={selectedMetric}
+                  />
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-lg font-medium mb-2">No Trend Data</p>
+                <p className="text-sm text-muted-foreground">
+                  No usage data available for the selected {selectedPeriod} period
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Model Breakdown Tab */}
+        <TabsContent value="models" className="space-y-6 mt-6">
+          {modelBreakdown.length > 0 ? (
+            <>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Model Usage Breakdown</CardTitle>
+                        <CardDescription>
+                          Usage distribution across different AI models
+                        </CardDescription>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleChartTypeToggle}
+                        data-testid="chart-type-toggle"
+                      >
+                        {chartType === 'pie' ? (
+                          <BarChart3 className="h-4 w-4" />
+                        ) : (
+                          <PieChart className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent data-testid="model-breakdown-chart">
+                    <ModelBreakdownChart data={data.session.byModel} chartType={chartType} />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Model Usage Details</CardTitle>
+                    <CardDescription>
+                      Detailed statistics for each model used (click headers to sort)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent data-testid="model-usage-table">
+                    <ModelUsageTable data={modelBreakdown} />
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Top Models Summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top Models Summary</CardTitle>
                   <CardDescription>
-                    Usage distribution across different AI models
+                    Quick overview of most frequently used models
                   </CardDescription>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleChartTypeToggle}
-                  data-testid="chart-type-toggle"
-                >
-                  {chartType === 'pie' ? (
-                    <BarChart3 className="h-4 w-4" />
-                  ) : (
-                    <PieChart className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent data-testid="model-breakdown-chart">
-              <ModelBreakdownChart data={data.session.byModel} chartType={chartType} />
-            </CardContent>
-          </Card>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {modelBreakdown.slice(0, 3).map((model, index) => {
+                      const pricing = MODEL_PRICING[model.modelId];
+                      const provider = pricing?.provider || 'unknown';
+                      const totalTokens = model.promptTokens + model.completionTokens;
 
+                      return (
+                        <Card key={model.modelId}>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: PROVIDER_COLORS[provider] }}
+                              />
+                              <p className="font-medium text-sm truncate">{model.displayName}</p>
+                            </div>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Requests:</span>
+                                <span className="font-medium">{model.requests}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Tokens:</span>
+                                <span className="font-medium">{formatTokens(totalTokens)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Share:</span>
+                                <Badge variant="secondary" className="text-xs">
+                                  {model.percentage.toFixed(1)}%
+                                </Badge>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-lg font-medium mb-2">No Model Data</p>
+                <p className="text-sm text-muted-foreground">
+                  No AI models have been used yet
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Details Tab */}
+        <TabsContent value="details" className="space-y-6 mt-6">
+          {/* Period Data Summary */}
+          {currentPeriodData.length > 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Recent {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)} Activity
+                </CardTitle>
+                <CardDescription>
+                  Last 5 data points from {currentPeriodData.length} total
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {currentPeriodData.slice(-5).reverse().map((dataPoint: UsageDataPoint, index: number) => (
+                    <div key={index} className="flex items-center justify-between py-3 px-4 rounded-lg hover:bg-muted/50 transition-colors border">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">
+                          {formatTimestamp(dataPoint.timestamp, selectedPeriod)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {dataPoint.requests} requests
+                        </p>
+                      </div>
+                      <div className="text-right space-y-1">
+                        <p className="text-sm font-medium">
+                          {formatTokens(dataPoint.tokens)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatCost(dataPoint.cost)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-lg font-medium mb-2">No Activity Data</p>
+                <p className="text-sm text-muted-foreground">
+                  No recent activity in the selected {selectedPeriod} period
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Session Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Model Usage Details</CardTitle>
+              <CardTitle>Session Information</CardTitle>
               <CardDescription>
-                Detailed statistics for each model used (click headers to sort)
+                Current usage session details
               </CardDescription>
             </CardHeader>
-            <CardContent data-testid="model-usage-table">
-              <ModelUsageTable data={modelBreakdown} />
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* All-Time Stats */}
-      {showAllTime && data.history.allTime && (
-        <Card>
-          <CardHeader>
-            <CardTitle>All-Time Statistics</CardTitle>
-            <CardDescription>
-              Lifetime usage metrics since {new Date(data.history.allTime.firstUsageDate || Date.now()).toLocaleDateString()}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Total Tokens</p>
-                <p className="text-2xl font-bold">{formatTokens(data.history.allTime.totalTokens)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Total Requests</p>
-                <p className="text-2xl font-bold">{data.history.allTime.totalRequests.toLocaleString()}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Total Cost</p>
-                <p className="text-2xl font-bold">{formatCost(data.history.allTime.totalCost)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Period Data Summary */}
-      {currentPeriodData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)} Usage
-            </CardTitle>
-            <CardDescription>
-              {currentPeriodData.length} data points
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {currentPeriodData.slice(-5).reverse().map((dataPoint: UsageDataPoint, index: number) => (
-                <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">
-                      {formatTimestamp(dataPoint.timestamp, selectedPeriod)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {dataPoint.requests} requests
-                    </p>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Session Start:</span>
+                    <span className="text-sm font-medium">
+                      {data.session.sessionStart
+                        ? new Date(data.session.sessionStart).toLocaleString()
+                        : 'N/A'}
+                    </span>
                   </div>
-                  <div className="text-right space-y-1">
-                    <p className="text-sm font-medium">
-                      {formatTokens(dataPoint.tokens)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatCost(dataPoint.cost)}
-                    </p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Last Updated:</span>
+                    <span className="text-sm font-medium">
+                      {new Date(lastUpdate).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total Requests:</span>
+                    <Badge variant="secondary">{totalRequests}</Badge>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Last Update Info */}
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>Last updated: {new Date(lastUpdate).toLocaleString()}</span>
-        <Badge variant="outline" className="text-xs">
-          {currentPeriodData.length} {selectedPeriod} data points
-        </Badge>
-      </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total Tokens:</span>
+                    <Badge variant="secondary">{formatTokens(totalTokensUsed)}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Models Used:</span>
+                    <Badge variant="secondary">{modelBreakdown.length}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Data Points:</span>
+                    <Badge variant="secondary">
+                      {currentPeriodData.length} {selectedPeriod}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
