@@ -209,6 +209,86 @@ function UsageChart({ data, period, metric }: UsageChartProps) {
   );
 }
 
+interface TokenConsumptionChartProps {
+  data: UsageDataPoint[];
+  period: TimePeriod;
+}
+
+function TokenConsumptionChart({ data, period }: TokenConsumptionChartProps) {
+  const chartData = useMemo(() => {
+    return data.map((point) => ({
+      timestamp: formatTimestamp(point.timestamp, period),
+      prompt: point.promptTokens || 0,
+      completion: point.completionTokens || 0,
+      total: point.tokens,
+    }));
+  }, [data, period]);
+
+  if (chartData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
+        <p>No token consumption data for this period</p>
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <AreaChart data={chartData}>
+        <defs>
+          <linearGradient id="colorPrompt" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
+            <stop offset="95%" stopColor="#10B981" stopOpacity={0.1} />
+          </linearGradient>
+          <linearGradient id="colorCompletion" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
+            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+        <XAxis
+          dataKey="timestamp"
+          tick={{ fontSize: 12 }}
+          className="text-muted-foreground"
+        />
+        <YAxis
+          tick={{ fontSize: 12 }}
+          className="text-muted-foreground"
+          tickFormatter={(value) => formatTokens(value)}
+        />
+        <Tooltip
+          formatter={(value: number, name: string) => [
+            formatTokens(value),
+            name === 'prompt' ? 'Prompt Tokens' : 'Completion Tokens',
+          ]}
+          contentStyle={{
+            backgroundColor: 'hsl(var(--card))',
+            border: '1px solid hsl(var(--border))',
+            borderRadius: '8px',
+          }}
+        />
+        <Legend />
+        <Area
+          type="monotone"
+          dataKey="prompt"
+          stackId="1"
+          stroke="#10B981"
+          fill="url(#colorPrompt)"
+          name="Prompt"
+        />
+        <Area
+          type="monotone"
+          dataKey="completion"
+          stackId="1"
+          stroke="#3B82F6"
+          fill="url(#colorCompletion)"
+          name="Completion"
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
 interface StatCardProps {
   title: string;
   value: string;
@@ -346,6 +426,173 @@ function ModelBreakdownChart({ data, chartType }: ModelBreakdownChartProps) {
   );
 }
 
+type SortField = 'model' | 'requests' | 'tokens' | 'promptTokens' | 'completionTokens' | 'cost';
+type SortDirection = 'asc' | 'desc';
+
+interface ModelUsageTableProps {
+  data: ModelUsageBreakdown[];
+}
+
+function ModelUsageTable({ data }: ModelUsageTableProps) {
+  const [sortField, setSortField] = useState<SortField>('requests');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  const handleSort = useCallback((field: SortField) => {
+    setSortDirection((prev) => {
+      if (sortField === field) {
+        return prev === 'asc' ? 'desc' : 'asc';
+      }
+      return 'desc';
+    });
+    setSortField(field);
+  }, [sortField]);
+
+  const sortedData = useMemo(() => {
+    const sorted = [...data].sort((a, b) => {
+      let aValue: number | string;
+      let bValue: number | string;
+
+      switch (sortField) {
+        case 'model':
+          aValue = a.displayName;
+          bValue = b.displayName;
+          break;
+        case 'requests':
+          aValue = a.requests;
+          bValue = b.requests;
+          break;
+        case 'tokens':
+          aValue = a.promptTokens + a.completionTokens;
+          bValue = b.promptTokens + b.completionTokens;
+          break;
+        case 'promptTokens':
+          aValue = a.promptTokens;
+          bValue = b.promptTokens;
+          break;
+        case 'completionTokens':
+          aValue = a.completionTokens;
+          bValue = b.completionTokens;
+          break;
+        case 'cost':
+          aValue = a.totalCost;
+          bValue = b.totalCost;
+          break;
+        default:
+          aValue = a.requests;
+          bValue = b.requests;
+      }
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      return sortDirection === 'asc'
+        ? (aValue as number) - (bValue as number)
+        : (bValue as number) - (aValue as number);
+    });
+
+    return sorted;
+  }, [data, sortField, sortDirection]);
+
+  const SortIndicator = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return <span className="text-muted-foreground ml-1">⇅</span>;
+    }
+    return <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
+  };
+
+  if (data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-32 text-muted-foreground">
+        <p>No model usage data yet</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b">
+            <th
+              className="text-left py-3 px-2 font-medium cursor-pointer hover:bg-muted/50"
+              onClick={() => handleSort('model')}
+            >
+              Model <SortIndicator field="model" />
+            </th>
+            <th
+              className="text-right py-3 px-2 font-medium cursor-pointer hover:bg-muted/50"
+              onClick={() => handleSort('requests')}
+            >
+              Requests <SortIndicator field="requests" />
+            </th>
+            <th
+              className="text-right py-3 px-2 font-medium cursor-pointer hover:bg-muted/50"
+              onClick={() => handleSort('promptTokens')}
+            >
+              Prompt <SortIndicator field="promptTokens" />
+            </th>
+            <th
+              className="text-right py-3 px-2 font-medium cursor-pointer hover:bg-muted/50"
+              onClick={() => handleSort('completionTokens')}
+            >
+              Completion <SortIndicator field="completionTokens" />
+            </th>
+            <th
+              className="text-right py-3 px-2 font-medium cursor-pointer hover:bg-muted/50"
+              onClick={() => handleSort('tokens')}
+            >
+              Total <SortIndicator field="tokens" />
+            </th>
+            <th
+              className="text-right py-3 px-2 font-medium cursor-pointer hover:bg-muted/50"
+              onClick={() => handleSort('cost')}
+            >
+              Cost <SortIndicator field="cost" />
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedData.map((model) => {
+            const pricing = MODEL_PRICING[model.modelId];
+            const provider = pricing?.provider || 'unknown';
+            const totalTokens = model.promptTokens + model.completionTokens;
+
+            return (
+              <tr key={model.modelId} className="border-b hover:bg-muted/50">
+                <td className="py-3 px-2">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: PROVIDER_COLORS[provider] }}
+                    />
+                    <span className="font-medium">{model.displayName}</span>
+                  </div>
+                </td>
+                <td className="text-right py-3 px-2">{model.requests}</td>
+                <td className="text-right py-3 px-2 text-muted-foreground">
+                  {formatTokens(model.promptTokens)}
+                </td>
+                <td className="text-right py-3 px-2 text-muted-foreground">
+                  {formatTokens(model.completionTokens)}
+                </td>
+                <td className="text-right py-3 px-2 font-medium">
+                  {formatTokens(totalTokens)}
+                </td>
+                <td className="text-right py-3 px-2 font-medium">
+                  {formatCost(model.totalCost)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -437,6 +684,22 @@ export default function ModelUsageHistory({
   const totalTokensUsed = useMemo(() => {
     if (!data) return 0;
     return data.session.totalTokens || 0;
+  }, [data]);
+
+  const totalPromptTokens = useMemo(() => {
+    if (!data || !data.session.byModel) return 0;
+    return Object.values(data.session.byModel).reduce(
+      (sum: number, model: UsageStats) => sum + (model.promptTokens || 0),
+      0
+    );
+  }, [data]);
+
+  const totalCompletionTokens = useMemo(() => {
+    if (!data || !data.session.byModel) return 0;
+    return Object.values(data.session.byModel).reduce(
+      (sum: number, model: UsageStats) => sum + (model.completionTokens || 0),
+      0
+    );
   }, [data]);
 
   const totalRequests = useMemo(() => {
@@ -599,6 +862,113 @@ export default function ModelUsageHistory({
         />
       </div>
 
+      {/* Token Consumption Stats */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">Prompt Tokens</p>
+                <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <Zap className="h-5 w-5 text-green-500" />
+                </div>
+              </div>
+              <p data-testid="prompt-tokens" className="text-2xl font-bold">
+                {formatTokens(totalPromptTokens)}
+              </p>
+              <div className="flex items-center gap-2">
+                <div className="w-full bg-secondary rounded-full h-2">
+                  <div
+                    className="rounded-full h-2 bg-green-500 transition-all"
+                    style={{
+                      width: `${totalTokensUsed > 0 ? (totalPromptTokens / totalTokensUsed) * 100 : 0}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {totalTokensUsed > 0 ? ((totalPromptTokens / totalTokensUsed) * 100).toFixed(0) : 0}%
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">Completion Tokens</p>
+                <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                  <Zap className="h-5 w-5 text-blue-500" />
+                </div>
+              </div>
+              <p data-testid="completion-tokens" className="text-2xl font-bold">
+                {formatTokens(totalCompletionTokens)}
+              </p>
+              <div className="flex items-center gap-2">
+                <div className="w-full bg-secondary rounded-full h-2">
+                  <div
+                    className="rounded-full h-2 bg-blue-500 transition-all"
+                    style={{
+                      width: `${totalTokensUsed > 0 ? (totalCompletionTokens / totalTokensUsed) * 100 : 0}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {totalTokensUsed > 0 ? ((totalCompletionTokens / totalTokensUsed) * 100).toFixed(0) : 0}%
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">Token Ratio</p>
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+              <p data-testid="token-ratio" className="text-2xl font-bold">
+                {totalPromptTokens > 0
+                  ? (totalCompletionTokens / totalPromptTokens).toFixed(2)
+                  : '0.00'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Completion/Prompt ratio
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Token Consumption Chart */}
+      {currentPeriodData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5" />
+                  Token Consumption
+                </CardTitle>
+                <CardDescription>
+                  Prompt vs completion token usage over time
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent data-testid="token-consumption-chart">
+            <TokenConsumptionChart
+              data={currentPeriodData}
+              period={selectedPeriod}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Usage Trends Chart */}
       {currentPeriodData.length > 0 && (
         <Card>
@@ -667,48 +1037,13 @@ export default function ModelUsageHistory({
 
           <Card>
             <CardHeader>
-              <CardTitle>Model Details</CardTitle>
+              <CardTitle>Model Usage Details</CardTitle>
               <CardDescription>
-                Detailed statistics for each model used
+                Detailed statistics for each model used (click headers to sort)
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {modelBreakdown.map((model: ModelUsageBreakdown) => {
-                  const pricing = MODEL_PRICING[model.modelId];
-                  const provider = pricing?.provider || 'unknown';
-
-                  return (
-                    <div key={model.modelId} className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: PROVIDER_COLORS[provider] }}
-                          />
-                          <span className="font-medium">{model.displayName}</span>
-                        </div>
-                        <span className="text-muted-foreground">
-                          {model.requests} requests ({model.percentage.toFixed(1)}%)
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>Tokens: {formatTokens(model.promptTokens + model.completionTokens)}</span>
-                        <span>Cost: {formatCost(model.totalCost)}</span>
-                      </div>
-                      <div className="w-full bg-secondary rounded-full h-2">
-                        <div
-                          className="rounded-full h-2 transition-all"
-                          style={{
-                            width: `${model.percentage}%`,
-                            backgroundColor: PROVIDER_COLORS[provider]
-                          }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            <CardContent data-testid="model-usage-table">
+              <ModelUsageTable data={modelBreakdown} />
             </CardContent>
           </Card>
         </div>
