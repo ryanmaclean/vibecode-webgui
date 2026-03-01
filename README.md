@@ -33,6 +33,11 @@
   - [vs. Cursor / GitHub Copilot / VS Code](#vs-cursor--github-copilot--vs-code)
   - [Who Should Use VibeCode?](#who-should-use-vibecode)
 - [✨ Features](#-features)
+- [🤖 AI-Powered Development](#-ai-powered-development)
+  - [Multi-Provider AI Access](#-multi-provider-ai-access)
+  - [Key AI Features](#-key-ai-features)
+  - [Getting Started with AI](#-getting-started-with-ai)
+  - [Learn More](#-learn-more)
 - [🏗️ Architecture Overview](#️-architecture-overview)
   - [System Architecture](#system-architecture)
   - [Key Architecture Components](#key-architecture-components)
@@ -152,6 +157,104 @@
 - **🧩 Extension Marketplace**: 53+ VS Code extensions support
 - **🔌 MCP Server**: Model Context Protocol for AI integrations
 - **🧪 Offline Testing**: Comprehensive cloud infrastructure testing without cloud resources
+
+## 🤖 AI-Powered Development
+
+VibeCode provides **unprecedented access to 321+ AI models** from multiple providers, giving you the freedom to choose the best model for each task. Whether you need cutting-edge reasoning, fast completions, or specialized capabilities, VibeCode has you covered.
+
+### 🌐 Multi-Provider AI Access
+
+Access the latest and most powerful AI models through multiple integration paths:
+
+#### **OpenRouter (321+ Models)**
+The primary AI gateway providing unified access to models from:
+- **OpenAI**: GPT-4, GPT-4 Turbo, GPT-3.5, o1, o1-mini
+- **Anthropic**: Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku
+- **Google**: Gemini Pro, Gemini 1.5 Flash, Gemini Ultra
+- **Meta**: Llama 3.1 (405B, 70B, 8B), Llama 3
+- **Mistral AI**: Mistral Large, Mistral Medium, Mistral Small
+- **Cohere**: Command R+, Command R
+- **DeepSeek**: DeepSeek-V2, DeepSeek Coder
+- **Groq**: Lightning-fast inference for Llama, Mixtral models
+- **And 300+ more models** - including specialized models for code, reasoning, and vision tasks
+
+#### **Direct Provider APIs**
+For organizations with existing contracts or specific requirements:
+- Direct OpenAI API integration
+- Direct Anthropic API integration
+- Direct Google AI (Gemini) integration
+- Custom API endpoint support
+
+#### **Local & Offline AI (Ollama)**
+Run models entirely on your own hardware for:
+- **Complete Privacy**: No data leaves your machine
+- **Offline Development**: Work without internet connectivity
+- **Cost Savings**: No API usage fees
+- **Custom Models**: Use fine-tuned or specialized models
+
+Popular Ollama models supported:
+- CodeLlama, StarCoder, WizardCoder (specialized for code)
+- Llama 3.1, Llama 3, Mistral, Mixtral (general purpose)
+- Phi-3, Gemma (lightweight, fast inference)
+
+### ✨ Key AI Features
+
+#### **🔍 Semantic Code Search**
+Powered by PostgreSQL 16 with pgvector extension:
+- **HNSW Indexing**: Fast approximate nearest neighbor search
+- **Code Embeddings**: Understand code meaning, not just syntax
+- **Natural Language Queries**: "Find authentication logic" → relevant code
+- **Cross-Repository Search**: Search across all your projects simultaneously
+
+#### **💬 AI Chat & Completion**
+- **Streaming Responses**: See AI output in real-time
+- **Context-Aware**: Automatically includes relevant code context
+- **Multi-Turn Conversations**: Maintain conversation history
+- **Code Suggestions**: Inline completions via Monacopilot integration
+
+#### **🔌 Model Context Protocol (MCP)**
+VibeCode implements the Model Context Protocol for advanced AI integrations:
+- **Tool Use**: AI can interact with external tools and APIs
+- **Agent Orchestration**: Multi-step AI workflows
+- **Custom Integrations**: Extend AI capabilities with MCP servers
+- **Standardized Interface**: Compatible with MCP-enabled tools
+
+#### **🎯 Smart Model Selection**
+Choose the right model for each task:
+- **Code Generation**: DeepSeek Coder, GPT-4, Claude 3.5 Sonnet
+- **Fast Completions**: Groq-hosted Llama, GPT-3.5 Turbo
+- **Complex Reasoning**: Claude 3 Opus, GPT-4, o1
+- **Cost Optimization**: Smaller models for simple tasks, larger for complex
+
+### 🚀 Getting Started with AI
+
+1. **Set up API keys** in your environment:
+   ```bash
+   # OpenRouter (easiest - access to 321+ models)
+   export OPENROUTER_API_KEY=sk-or-...
+
+   # Or direct provider APIs
+   export OPENAI_API_KEY=sk-...
+   export ANTHROPIC_API_KEY=sk-ant-...
+   ```
+
+2. **Or use Ollama for offline AI** (no API key needed):
+   ```bash
+   # Install Ollama
+   curl -fsSL https://ollama.com/install.sh | sh
+
+   # Pull a model
+   ollama pull codellama
+   ollama pull llama3.1
+   ```
+
+3. **Start coding with AI assistance!** - VibeCode automatically detects available providers and models.
+
+### 📚 Learn More
+
+- **[AI Architecture](docs/ARCHITECTURE.md#ai-services)** - Technical deep dive into AI implementation
+- **[AI Models Documentation](docs/AI_MODELS.md)** - Complete list of supported models
+- **[MCP Integration Guide](examples/mcp-servers/README.md)** - Extend AI capabilities with MCP
 
 ## 🏗️ Architecture Overview
 
