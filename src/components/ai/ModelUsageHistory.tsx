@@ -72,8 +72,13 @@ interface ModelUsageHistoryProps {
   showAllTime?: boolean;
 }
 
+/**
+ * Internal dashboard data structure
+ */
 interface DashboardData {
+  /** Complete usage history across all time periods */
   history: UsageHistory;
+  /** Current session usage statistics */
   session: SessionUsage;
 }
 
@@ -110,12 +115,23 @@ const PROVIDER_COLORS: Record<string, string> = {
 // Utility Functions
 // ============================================================================
 
+/**
+ * Format token count for display with K/M suffixes
+ * @param tokens - Number of tokens
+ * @returns Formatted token string (e.g., "1.5K", "2.3M")
+ */
 function formatTokens(tokens: number): string {
   if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(1)}M`;
   if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}K`;
   return tokens.toString();
 }
 
+/**
+ * Format timestamp according to time period granularity
+ * @param timestamp - ISO timestamp string
+ * @param period - Time period for formatting context
+ * @returns Formatted timestamp string
+ */
 function formatTimestamp(timestamp: string, period: TimePeriod): string {
   const date = new Date(timestamp);
   switch (period) {
@@ -132,6 +148,11 @@ function formatTimestamp(timestamp: string, period: TimePeriod): string {
   }
 }
 
+/**
+ * Format cost value for display with appropriate precision
+ * @param cost - Cost value in USD
+ * @returns Formatted cost string with dollar sign
+ */
 function formatCost(cost: number): string {
   if (cost === 0) return '$0.00';
   if (cost < 0.01) return `$${cost.toFixed(6)}`;
@@ -143,9 +164,15 @@ function formatCost(cost: number): string {
 // Sub-Components
 // ============================================================================
 
+/**
+ * Props for the usage trend chart component
+ */
 interface UsageChartProps {
+  /** Array of usage data points to visualize */
   data: UsageDataPoint[];
+  /** Time period for x-axis formatting */
   period: TimePeriod;
+  /** Metric to display (tokens or request count) */
   metric: 'tokens' | 'requests';
 }
 
@@ -210,8 +237,13 @@ function UsageChart({ data, period, metric }: UsageChartProps) {
   );
 }
 
+/**
+ * Props for the token consumption breakdown chart
+ */
 interface TokenConsumptionChartProps {
+  /** Array of usage data points with prompt/completion token breakdown */
   data: UsageDataPoint[];
+  /** Time period for x-axis formatting */
   period: TimePeriod;
 }
 
@@ -290,11 +322,19 @@ function TokenConsumptionChart({ data, period }: TokenConsumptionChartProps) {
   );
 }
 
+/**
+ * Props for the statistics card component
+ */
 interface StatCardProps {
+  /** Card title/label */
   title: string;
+  /** Primary value to display */
   value: string;
+  /** Optional description text */
   description?: string;
+  /** Icon element to display */
   icon: React.ReactNode;
+  /** Optional test ID for testing */
   testId?: string;
 }
 
@@ -319,8 +359,13 @@ function StatCard({ title, value, description, icon, testId }: StatCardProps) {
   );
 }
 
+/**
+ * Props for the model usage breakdown chart
+ */
 interface ModelBreakdownChartProps {
+  /** Usage statistics keyed by model ID */
   data: Record<string, UsageStats>;
+  /** Type of chart to display */
   chartType: 'pie' | 'bar';
 }
 
@@ -427,10 +472,17 @@ function ModelBreakdownChart({ data, chartType }: ModelBreakdownChartProps) {
   );
 }
 
+/** Available sort fields for the model usage table */
 type SortField = 'model' | 'requests' | 'tokens' | 'promptTokens' | 'completionTokens' | 'cost';
+
+/** Sort direction (ascending or descending) */
 type SortDirection = 'asc' | 'desc';
 
+/**
+ * Props for the model usage table component
+ */
 interface ModelUsageTableProps {
+  /** Array of model usage statistics to display */
   data: ModelUsageBreakdown[];
 }
 
