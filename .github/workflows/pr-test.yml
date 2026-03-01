@@ -119,6 +119,26 @@ jobs:
           CI: true
         continue-on-error: true
 
+      - name: Enforce coverage thresholds
+        id: coverage
+        run: |
+          echo "## Coverage Enforcement" >> $GITHUB_STEP_SUMMARY
+          npm run test:coverage 2>&1 | tee coverage.log
+          if [ ${PIPESTATUS[0]} -eq 0 ]; then
+            echo "✅ Coverage thresholds met" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            grep -A 10 "Coverage summary" coverage.log >> $GITHUB_STEP_SUMMARY || true
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Coverage thresholds not met" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            tail -50 coverage.log >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+        env:
+          CI: true
+
       - name: Upload test results to Datadog
         if: always()
         env:

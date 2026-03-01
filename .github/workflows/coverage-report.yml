@@ -1,0 +1,106 @@
+name: Coverage Report
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: coverage-report-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DD_SERVICE: ${{ github.event.repository.name }}
+  DD_ENV: ci
+  DD_VERSION: ${{ github.sha }}
+  DD_TAGS: team:platform,component:coverage
+
+jobs:
+  coverage:
+    name: Generate Coverage Report
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+        continue-on-error: false
+
+      - name: Generate coverage report
+        id: coverage
+        run: |
+          echo "## Coverage Report" >> $GITHUB_STEP_SUMMARY
+          npm run test:coverage 2>&1 | tee coverage.log
+          if [ ${PIPESTATUS[0]} -eq 0 ]; then
+            echo "✅ Coverage generation completed" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            grep -A 10 "Coverage summary" coverage.log >> $GITHUB_STEP_SUMMARY || true
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Coverage generation failed" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            tail -50 coverage.log >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+        env:
+          CI: true
+        continue-on-error: false
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.sha }}
+          path: |
+            coverage/
+            coverage.log
+          retention-days: 30
+
+      - name: Upload coverage to Datadog
+        if: always()
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: datadoghq.com
+          DD_ENV: ${{ env.DD_ENV }}
+          DD_SERVICE: ${{ env.DD_SERVICE }}
+        run: |
+          # Install Datadog CI CLI
+          npm install -g @datadog/datadog-ci
+
+          # Upload coverage data if available
+          if [ -f "coverage/lcov.info" ]; then
+            echo "Uploading coverage data to Datadog..."
+            datadog-ci junit upload \
+              --service $DD_SERVICE \
+              --env $DD_ENV \
+              --tags "coverage:report,ci.workflow:${{ github.workflow }},branch:${{ github.ref_name }}" \
+              test-results/*.xml || echo "No test results to upload"
+          else
+            echo "No coverage data found to upload"
+          fi
+        continue-on-error: true
+
+      - name: Generate coverage summary
+        if: always()
+        run: |
+          echo "# Coverage Report Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "Run completed at $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 Coverage artifacts uploaded for 30 days" >> $GITHUB_STEP_SUMMARY
