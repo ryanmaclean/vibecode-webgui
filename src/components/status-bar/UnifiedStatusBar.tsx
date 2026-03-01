@@ -42,8 +42,9 @@ import type {
   UnifiedHealthResponse,
   StatusBarPreferences,
   DEFAULT_STATUS_BAR_PREFERENCES,
+  CategorizedServiceHealth,
 } from '@/types/unified-status';
-import type { AggregatedHealthStatus } from '@/types/health';
+import type { AggregatedHealthStatus, ServiceHealthStatus } from '@/types/health';
 import type { StatusMessage } from '@/types/status-events';
 
 const POLL_INTERVAL_MS = 30000; // 30 seconds for unified health
@@ -364,10 +365,10 @@ export const UnifiedStatusBar = React.memo(function UnifiedStatusBar({
     if (!healthData || healthData.categories.length === 0) return [];
 
     // Show up to 5 services in compact view
-    const services: Array<{ name: string; status: AggregatedHealthStatus }> = [];
+    const services: Array<{ name: string; status: AggregatedHealthStatus | ServiceHealthStatus }> = [];
 
-    healthData.categories.forEach((category: { services: Array<{ name?: string; status: AggregatedHealthStatus }> }) => {
-      category.services.slice(0, 2).forEach((service: { name?: string; status: AggregatedHealthStatus }) => {
+    healthData.categories.forEach((category: CategorizedServiceHealth) => {
+      category.services.slice(0, 2).forEach((service) => {
         if ('name' in service && service.name && services.length < 5) {
           services.push({
             name: service.name,
@@ -455,7 +456,7 @@ export const UnifiedStatusBar = React.memo(function UnifiedStatusBar({
           {/* Compact service indicators - hidden on mobile, visible on tablet+ */}
           {!isExpanded && topServices.length > 0 && (
             <div className="hidden lg:flex items-center gap-1 ml-2 xl:ml-4">
-              {topServices.map((service: { name: string; status: AggregatedHealthStatus }) => (
+              {topServices.map((service) => (
                 <ServiceStatusIndicator
                   key={service.name}
                   serviceName={service.name}
