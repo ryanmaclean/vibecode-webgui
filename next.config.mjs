@@ -65,7 +65,6 @@ const datadogStubAliases = {
   './instrument': require.resolve('./src/stubs/instrument-browser.js'),
   './instrument.ts': require.resolve('./src/stubs/instrument-browser.js'),
   '@opentelemetry/sdk-node': require.resolve('./src/stubs/opentelemetry-sdk-node.js'),
-  '@opentelemetry/auto-instrumentations-node': require.resolve('./src/stubs/opentelemetry-auto.js'),
   '@opentelemetry/exporter-otlp-http': require.resolve('./src/stubs/opentelemetry-exporter-otlp-http.js'),
   '@opentelemetry/exporter-prometheus': require.resolve('./src/stubs/opentelemetry-exporter-prometheus.js'),
   '@opentelemetry/resources': require.resolve('./src/stubs/opentelemetry-resources.js'),
@@ -73,6 +72,8 @@ const datadogStubAliases = {
   '@opentelemetry/api': require.resolve('./src/stubs/opentelemetry-api.js'),
   '@opentelemetry/core': require.resolve('./src/stubs/opentelemetry-core.js'),
   '@opentelemetry/instrumentation': require.resolve('./src/stubs/opentelemetry-instrumentation.js'),
+  '@opentelemetry/instrumentation-http': require.resolve('./src/stubs/opentelemetry-instrumentation-http.js'),
+  '@opentelemetry/instrumentation-express': require.resolve('./src/stubs/opentelemetry-instrumentation-express.js'),
 }
 
 const serverExternalPackages = [
@@ -156,6 +157,15 @@ const nextConfig = {
       'lodash-es',
       // Monaco Editor - ensure proper code splitting
       '@monaco-editor/react',
+      // OpenTelemetry packages - enable tree shaking
+      '@opentelemetry/api',
+      '@opentelemetry/core',
+      '@opentelemetry/instrumentation',
+      '@opentelemetry/resources',
+      '@opentelemetry/semantic-conventions',
+      '@opentelemetry/sdk-node',
+      '@opentelemetry/exporter-otlp-http',
+      '@opentelemetry/exporter-prometheus',
     ],
   },
   trailingSlash: false,
@@ -306,7 +316,6 @@ const nextConfig = {
         'ansi-color',
         '@opentelemetry/exporter-jaeger',
         '@opentelemetry/sdk-node',
-        '@opentelemetry/auto-instrumentations-node',
         '@opentelemetry/exporter-otlp-http',
         '@opentelemetry/exporter-prometheus',
         '@opentelemetry/resources',

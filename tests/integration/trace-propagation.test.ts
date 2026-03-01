@@ -21,11 +21,7 @@ jest.mock('@opentelemetry/sdk-node', () => ({
   }))
 }))
 
-jest.mock('@opentelemetry/auto-instrumentations-node', () => ({
-  getNodeAutoInstrumentations: jest.fn(() => [])
-}))
-
-jest.mock('@opentelemetry/exporter-otlp-http', () => ({
+jest.mock('@opentelemetry/exporter-trace-otlp-http', () => ({
   OTLPTraceExporter: jest.fn().mockImplementation(() => ({
     export: jest.fn((spans: any[], callback: Function) => {
       // Store exported spans for verification
@@ -55,19 +51,13 @@ jest.mock('@opentelemetry/semantic-conventions', () => ({
   ATTR_SERVICE_VERSION: 'service.version'
 }))
 
-jest.mock('@opentelemetry/instrumentation-pg', () => ({
-  PgInstrumentation: jest.fn().mockImplementation(() => ({
-    enable: jest.fn(),
-    disable: jest.fn()
-  }))
-}))
-
 // Import OpenTelemetry API for real
 import { trace, SpanStatusCode } from '@opentelemetry/api'
 import {
   extractTraceContext,
   createTraceparentHeader,
-  extractAndInjectTraceContext
+  extractAndInjectTraceContext,
+  getTracer
 } from '../../src/lib/monitoring/trace-context'
 import {
   getDatabaseTraceContext,
@@ -177,7 +167,7 @@ describe('End-to-End Trace Propagation', () => {
   describe('API to Database Trace Propagation', () => {
     test('should propagate trace context to database queries', async () => {
       // Create a root span to establish trace context
-      const tracer = trace.getTracer('test-tracer')
+      const tracer = getTracer('test-tracer')
 
       await tracer.startActiveSpan('test-api-request', async (span) => {
         try {
@@ -199,7 +189,7 @@ describe('End-to-End Trace Propagation', () => {
     })
 
     test('should create database span with trace correlation', async () => {
-      const tracer = trace.getTracer('test-tracer')
+      const tracer = getTracer('test-tracer')
 
       await tracer.startActiveSpan('test-api-request', async (parentSpan) => {
         try {
@@ -227,7 +217,7 @@ describe('End-to-End Trace Propagation', () => {
     })
 
     test('should handle database errors with trace context', async () => {
-      const tracer = trace.getTracer('test-tracer')
+      const tracer = getTracer('test-tracer')
 
       await expect(async () => {
         await tracer.startActiveSpan('test-api-request', async (parentSpan) => {
@@ -267,7 +257,7 @@ describe('End-to-End Trace Propagation', () => {
       expect(traceContext?.trace_id).toBe(traceId)
 
       // Step 3: Create API span
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
 
       await tracer.startActiveSpan('api-handler', async (apiSpan) => {
         try {
@@ -305,7 +295,7 @@ describe('End-to-End Trace Propagation', () => {
     })
 
     test('should maintain trace context across multiple database operations', async () => {
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
 
       await tracer.startActiveSpan('api-handler', async (apiSpan) => {
         try {
@@ -341,7 +331,7 @@ describe('End-to-End Trace Propagation', () => {
     })
 
     test('should propagate trace context through nested operations', async () => {
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
 
       await tracer.startActiveSpan('api-request', async (apiSpan) => {
         try {
@@ -446,7 +436,7 @@ describe('End-to-End Trace Propagation', () => {
 
   describe('Performance and Concurrency', () => {
     test('should handle concurrent requests with different trace contexts', async () => {
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
 
       const requests = [
         { traceId: '0af7651916cd43dd8448eb211c80319c', spanId: 'b7ad6b7169203331' },
@@ -476,7 +466,7 @@ describe('End-to-End Trace Propagation', () => {
     })
 
     test('should not leak trace context between sequential requests', async () => {
-      const tracer = trace.getTracer('vibecode-webgui')
+      const tracer = getTracer('vibecode-webgui')
 
       let firstTraceId: string | null = null
       let secondTraceId: string | null = null

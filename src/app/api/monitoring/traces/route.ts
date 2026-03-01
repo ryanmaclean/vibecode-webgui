@@ -9,7 +9,7 @@ import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { checkMonitoringAuth, getUnauthorizedResponse } from '@/lib/monitoring/auth'
 import { cache, CacheTTL } from '@/lib/cache/unified-cache-client'
 import { getCurrentTraceContext, extractTraceContext } from '@/lib/monitoring/trace-context'
-import { getOpenTelemetryConfig } from '@/lib/monitoring/opentelemetry'
+import { getOpenTelemetryConfig } from '@/lib/monitoring/opentelemetry-setup'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
