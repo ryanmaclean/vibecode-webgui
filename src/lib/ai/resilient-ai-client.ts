@@ -8,6 +8,7 @@
  * - Comprehensive logging and metrics
  * - Provider-specific configuration
  * - Datadog integration for monitoring
+ * - LLM response caching for repeated queries
  */
 
 import {
@@ -23,6 +24,8 @@ import {
 } from './circuit-breaker'
 import { datadogMetrics } from '@/lib/monitoring/datadog-metrics'
 import type { AIProviderName } from '@/types/circuit-breaker'
+import { CacheManager, CacheKeys, CacheTTL } from '@/lib/cache/unified-cache-client'
+import { createHash } from 'crypto'
 
 /**
  * Configuration for a provider in the resilient client
@@ -50,6 +53,12 @@ export interface ResilientOperationOptions<T> extends ExecuteOptions<T> {
   maxFallbackAttempts?: number
   /** Custom operation name for logging */
   operationName?: string
+  /** Cache key for this operation (if not provided, caching is disabled) */
+  cacheKey?: string
+  /** Cache TTL in seconds (defaults to CacheTTL.MEDIUM = 5 minutes) */
+  cacheTTL?: number
+  /** Bypass cache and force fresh execution */
+  bypassCache?: boolean
 }
 
 /**
@@ -62,6 +71,8 @@ export interface ResilientOperationResult<T> extends CircuitBreakerResult<T> {
   failedProviders: AIProviderName[]
   /** Total latency including fallback attempts */
   totalLatencyMs: number
+  /** Whether the result was served from cache */
+  cacheHit?: boolean
 }
 
 /**
@@ -78,6 +89,12 @@ export interface ResilientClientMetrics {
   fallbackExecutions: number
   /** Number of complete failures (all providers failed) */
   completeFailures: number
+  /** Number of cache hits */
+  cacheHits: number
+  /** Number of cache misses */
+  cacheMisses: number
+  /** Cache hit rate (0-1) */
+  cacheHitRate: number
 }
 
 /**
@@ -180,22 +197,29 @@ const DEFAULT_PROVIDER_CONFIGS: ProviderConfig[] = [
 export class ResilientAIClient {
   private readonly circuitBreakerManager: AICircuitBreakerManager
   private readonly providerConfigs: Map<AIProviderName, ProviderConfig>
+  private readonly cacheManager: CacheManager
   private metrics: {
     totalRequests: number
     fallbackExecutions: number
     completeFailures: number
+    cacheHits: number
+    cacheMisses: number
   }
 
   constructor(
     providerConfigs: ProviderConfig[] = DEFAULT_PROVIDER_CONFIGS,
-    circuitBreakerManager?: AICircuitBreakerManager
+    circuitBreakerManager?: AICircuitBreakerManager,
+    cacheManager?: CacheManager
   ) {
     this.circuitBreakerManager = circuitBreakerManager ?? aiCircuitBreakerManager
+    this.cacheManager = cacheManager ?? new CacheManager()
     this.providerConfigs = new Map()
     this.metrics = {
       totalRequests: 0,
       fallbackExecutions: 0,
-      completeFailures: 0
+      completeFailures: 0,
+      cacheHits: 0,
+      cacheMisses: 0
     }
 
     // Initialize provider configs
@@ -323,6 +347,9 @@ export class ResilientAIClient {
       preferredProvider,
       maxFallbackAttempts = 3,
       operationName = 'ai_operation',
+      cacheKey,
+      cacheTTL = CacheTTL.MEDIUM,
+      bypassCache = false,
       ...executeOptions
     } = options
 
@@ -331,6 +358,39 @@ export class ResilientAIClient {
 
     if (!currentProvider) {
       throw new Error('No AI providers are available')
+    }
+
+    // Check cache if caching is enabled
+    if (cacheKey && !bypassCache) {
+      try {
+        const cached = await this.cacheManager.get<T>(cacheKey)
+        if (cached !== null) {
+          this.metrics.cacheHits++
+          this.recordCacheMetrics(operationName, true)
+
+          console.log(`[ResilientAIClient] Cache hit for operation: ${operationName}`)
+
+          return {
+            success: true,
+            data: cached,
+            durationMs: Date.now() - startTime,
+            usedFallback: false,
+            circuitState: CircuitState.CLOSED,
+            provider: currentProvider,
+            failedProviders: [],
+            totalLatencyMs: Date.now() - startTime,
+            cacheHit: true
+          }
+        }
+        this.metrics.cacheMisses++
+        this.recordCacheMetrics(operationName, false)
+      } catch (error) {
+        console.warn(
+          `[ResilientAIClient] Cache lookup failed for ${operationName}:`,
+          (error as Error).message
+        )
+        // Continue with normal execution on cache error
+      }
     }
 
     // Try the preferred provider first
@@ -355,6 +415,20 @@ export class ResilientAIClient {
         })
 
         if (result.success) {
+          // Store successful result in cache if caching is enabled
+          if (cacheKey && !bypassCache && result.data !== undefined) {
+            try {
+              await this.cacheManager.set(cacheKey, result.data, cacheTTL)
+              console.log(`[ResilientAIClient] Cached result for operation: ${operationName}`)
+            } catch (error) {
+              console.warn(
+                `[ResilientAIClient] Failed to cache result for ${operationName}:`,
+                (error as Error).message
+              )
+              // Don't fail the operation if caching fails
+            }
+          }
+
           this.recordOperationMetrics(
             operationName,
             currentProvider,
@@ -367,7 +441,8 @@ export class ResilientAIClient {
             ...result,
             provider: currentProvider,
             failedProviders,
-            totalLatencyMs: Date.now() - startTime
+            totalLatencyMs: Date.now() - startTime,
+            cacheHit: false
           }
         }
 
@@ -480,6 +555,23 @@ export class ResilientAIClient {
   }
 
   /**
+   * Record cache metrics to Datadog
+   */
+  private recordCacheMetrics(operationName: string, hit: boolean): void {
+    try {
+      datadogMetrics.increment('resilient_ai.cache_operations', 1, {
+        tags: {
+          component: 'resilient_ai_client',
+          operation: operationName,
+          result: hit ? 'hit' : 'miss'
+        }
+      })
+    } catch (error) {
+      console.debug('[ResilientAIClient] Failed to record cache metrics:', error)
+    }
+  }
+
+  /**
    * Get health status for all providers
    */
   getProviderHealth(): Map<AIProviderName, CircuitBreakerHealthStatus> {
@@ -510,12 +602,18 @@ export class ResilientAIClient {
    * Get all metrics
    */
   getMetrics(): ResilientClientMetrics {
+    const totalCacheOperations = this.metrics.cacheHits + this.metrics.cacheMisses
+    const cacheHitRate = totalCacheOperations > 0 ? this.metrics.cacheHits / totalCacheOperations : 0
+
     return {
       providerHealth: this.getProviderHealth(),
       fallbackChain: this.getFallbackChain(),
       totalRequests: this.metrics.totalRequests,
       fallbackExecutions: this.metrics.fallbackExecutions,
-      completeFailures: this.metrics.completeFailures
+      completeFailures: this.metrics.completeFailures,
+      cacheHits: this.metrics.cacheHits,
+      cacheMisses: this.metrics.cacheMisses,
+      cacheHitRate
     }
   }
 
@@ -535,7 +633,9 @@ export class ResilientAIClient {
     this.metrics = {
       totalRequests: 0,
       fallbackExecutions: 0,
-      completeFailures: 0
+      completeFailures: 0,
+      cacheHits: 0,
+      cacheMisses: 0
     }
     console.log('[ResilientAIClient] Reset all circuit breakers and metrics')
   }
@@ -583,6 +683,28 @@ export class ResilientAIClient {
     const breaker = this.circuitBreakerManager.getCircuitBreaker(provider)
     breaker.forceState(state)
     console.warn(`[ResilientAIClient] Forced ${provider} to state: ${state}`)
+  }
+
+  /**
+   * Generate a cache key from request content
+   * Uses SHA-256 hash of the stringified content
+   */
+  static generateCacheKey(content: unknown, prefix = 'ai:response'): string {
+    const contentString = typeof content === 'string' ? content : JSON.stringify(content)
+    const hash = createHash('sha256').update(contentString).digest('hex')
+    return `${prefix}:${hash}`
+  }
+
+  /**
+   * Invalidate cache for a specific key
+   */
+  async invalidateCache(cacheKey: string): Promise<boolean> {
+    try {
+      return await this.cacheManager.delete(cacheKey)
+    } catch (error) {
+      console.warn(`[ResilientAIClient] Failed to invalidate cache for ${cacheKey}:`, (error as Error).message)
+      return false
+    }
   }
 
   /**
