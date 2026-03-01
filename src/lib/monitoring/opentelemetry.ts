@@ -122,6 +122,10 @@ export function initializeOpenTelemetry() {
       metricReader: prometheusExporter,
       instrumentations: [
         getNodeAutoInstrumentations({
+          // Disable winston instrumentation (we use Pino)
+          '@opentelemetry/instrumentation-winston': {
+            enabled: false
+          },
           // Disable some instrumentations that might be noisy in development
           '@opentelemetry/instrumentation-dns': {
             enabled: process.env.NODE_ENV === 'production'
