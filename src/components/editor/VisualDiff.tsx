@@ -3,7 +3,9 @@
 import type { editor } from 'monaco-editor';
 import dynamic from 'next/dynamic';
 import { useTheme } from 'next-themes';
+import { useEffect } from 'react';
 import { DiffControls, type ChangeStatistics } from './DiffControls';
+import { configureMonacoWorkers } from '@/lib/monaco/monaco-worker-config';
 
 // ============================================================================
 // Types
@@ -88,6 +90,13 @@ export function VisualDiff({
   controlsDisabled = false,
 }: VisualDiffProps) {
   const { theme } = useTheme();
+
+  // Configure Monaco workers before editor loads
+  useEffect(() => {
+    configureMonacoWorkers({
+      debug: process.env.NODE_ENV === 'development',
+    });
+  }, []);
 
   // Calculate editor height when controls are shown
   const editorHeight = showControls && typeof height === 'string' && height === '100%'

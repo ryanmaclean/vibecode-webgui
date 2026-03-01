@@ -1,12 +1,23 @@
-import { Metadata } from 'next'
+'use client'
+
 import Link from 'next/link'
-import { CodeiumPlayground } from '@/components/editors/CodeiumPlayground'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 
-export const metadata: Metadata = {
-  title: 'Codeium Monaco Playground',
-  description: 'Experiment with Codeium inline completions directly in the browser using our Monaco + monacopilot integration.',
-}
+const CodeiumPlayground = dynamic(
+  () => import('@/components/editors/CodeiumPlayground').then((mod) => ({ default: mod.CodeiumPlayground })),
+  {
+    ssr: true,
+    loading: () => (
+      <div className="h-full w-full flex items-center justify-center bg-background" style={{ minHeight: '600px' }}>
+        <div className="space-y-4 text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-muted border-t-primary" />
+          <p className="text-sm text-muted-foreground">Loading playground…</p>
+        </div>
+      </div>
+    ),
+  }
+)
 
 export default function CodeiumPage() {
   return (

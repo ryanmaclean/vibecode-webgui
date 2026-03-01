@@ -18,6 +18,7 @@
     "dev": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev",
     "dev:simple": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev",
     "build": "cross-env NEXT_TELEMETRY_DISABLED=1 NODE_OPTIONS= DD_API_KEY= DD_TRACE_ENABLED=false next build --webpack",
+    "analyze": "cross-env ANALYZE=true NEXT_TELEMETRY_DISABLED=1 NODE_OPTIONS= DD_API_KEY= DD_TRACE_ENABLED=false next build --webpack",
     "start:dd": "cross-env NEXT_TELEMETRY_DISABLED=1 node --require ./src/instrument.ts node_modules/.bin/next start",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -333,6 +334,7 @@
     "ts-node": "10.9.2",
     "tsx": "4.21.0",
     "typescript": "5.9.3",
+    "webpack-bundle-analyzer": "^5.0.0",
     "y-websocket": "3.0.0",
     "yjs": "13.6.29"
   }
