@@ -3,8 +3,8 @@
   "spec": "077-implement-llm-response-caching-layer-for-repeated-",
   "state": "building",
   "subtasks": {
-    "completed": 9,
-    "total": 10,
+    "completed": 12,
+    "total": 16,
     "in_progress": 1,
     "failed": 0
   },
