@@ -12,6 +12,7 @@ import { GlobalCommandPalette } from '@/components/command-palette/GlobalCommand
 import { ModelSwitcher } from '@/components/ai/ModelSwitcher';
 import { GlobalCostAlerts } from '@/components/ai/GlobalCostAlerts';
 import { EnvironmentBadge } from '@/components/environment/EnvironmentBadge';
+import { UnifiedStatusBar } from '@/components/status-bar/UnifiedStatusBar';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
 // const geistSans = Geist({
@@ -104,6 +105,8 @@ export default function RootLayout({
           <GlobalCommandPalette />
           {/* Global cost alert notifications */}
           <GlobalCostAlerts />
+          {/* Unified status bar - fixed bottom bar showing real-time service health, keyboard shortcut: Cmd+Shift+H */}
+          <UnifiedStatusBar />
         </Providers>
       </body>
     </html>
