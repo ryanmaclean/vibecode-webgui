@@ -3,23 +3,23 @@
   "spec": "072-add-workspace-templates-and-cloning-feature",
   "state": "building",
   "subtasks": {
-    "completed": 1,
+    "completed": 5,
     "total": 10,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Database Schema",
+    "current": "API Routes",
     "id": null,
-    "total": 2
+    "total": 4
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 3,
+    "number": 7,
     "started_at": "2026-03-01T00:06:35.125398"
   },
-  "last_update": "2026-03-01T00:12:25.536991"
+  "last_update": "2026-03-01T00:22:31.637736"
 }
