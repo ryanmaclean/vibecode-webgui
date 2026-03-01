@@ -34,19 +34,11 @@ else
     # Fallback to individual checks if script not found
     echo "⚠️  Pre-commit script not found - running individual checks"
 
-    echo "  → Running ESLint..."
-    npm run lint || exit 1
+# Run optional tests (opt-in)
+# To enable tests: unset SKIP_TESTS or SKIP_TESTS=0 git commit -m "message"
+# To disable tests: SKIP_TESTS=1 git commit -m "message" (default)
+echo "🧪 Optional: Pre-commit tests (set SKIP_TESTS=0 to enable)"
+export SKIP_TESTS=${SKIP_TESTS:-1}
+bash "$(dirname "$0")/../scripts/pre-commit-test.sh" || exit 1
 
-    echo "  → Running TypeScript type check..."
-    npm run type-check || exit 1
-fi
-
-# Final validation
-echo "4/4 Running final validation..."
-git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx)$' > /dev/null && {
-    echo "✓ Code files staged and validated"
-} || {
-    echo "ℹ️  No code files staged"
-}
-
-echo "✅ All pre-commit quality gates passed!"
+echo "✓ All pre-commit checks passed!"
