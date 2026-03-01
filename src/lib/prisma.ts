@@ -46,9 +46,7 @@ export const prisma = prismaClient
 
 // Middleware for Datadog monitoring (only when not building)
 // Note: $use middleware is deprecated in Prisma 5+, using extensions instead
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- deprecated Prisma middleware API
 if (!isBuilding && typeof (prisma as unknown as { $use?: unknown }).$use === 'function') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deprecated Prisma middleware API
   (prisma as unknown as { $use: (fn: (params: { action: string; model?: string }, next: (params: unknown) => Promise<unknown>) => Promise<unknown>) => void }).$use(async (params, next) => {
     const startTime = Date.now()
     const span = tracer?.startSpan?.('prisma.query', {
@@ -119,7 +117,13 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 export default prisma
 
 // Helper functions for common operations
-export async function getUserByEmail(email: string) {
+export async function getUserByEmail(email: string): Promise<Prisma.UserGetPayload<{
+  include: {
+    sessions: true;
+    workspaces: true;
+    projects: true;
+  }
+}> | null> {
   if (isBuilding) {
     return null
   }
@@ -145,7 +149,12 @@ export async function createWorkspace(data: {
   user_id: number
   workspace_id: string
   url?: string
-}) {
+}): Promise<Prisma.WorkspaceGetPayload<{
+  include: {
+    user: true;
+    projects: true;
+  }
+}> | null> {
   if (isBuilding) {
     return null
   }
@@ -172,7 +181,7 @@ export async function logAIRequest(data: {
   status: string
   response?: Prisma.InputJsonValue
   error?: string
-}) {
+}): Promise<Prisma.AIRequestGetPayload<Record<string, never>> | null> {
   if (isBuilding) {
     return null
   }

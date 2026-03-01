@@ -1,29 +1,15 @@
 {
+  "extends": "./config/typescript/tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022",
     "lib": [
       "dom",
       "dom.iterable",
       "esnext"
     ],
     "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
-    "noImplicitReturns": true,
-    "noImplicitThis": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
     "jsx": "react-jsx",
-    "incremental": true,
     "tsBuildInfoFile": ".next/cache/.tsbuildinfo",
     "baseUrl": ".",
     "typeRoots": [

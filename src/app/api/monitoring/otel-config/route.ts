@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
-import { checkOpenTelemetryHealth } from '@/lib/monitoring/opentelemetry-config'
+import { checkOpenTelemetryHealth } from '@/lib/monitoring/opentelemetry-setup'
 
 const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - config endpoint
 
@@ -26,7 +26,7 @@ let otelSDK: any = null;
 if (!isDockerBuild) {
   try {
     // Dynamic imports to prevent static analysis issues
-    const opentelemetryModule = require('../../../../lib/monitoring/opentelemetry');
+    const opentelemetryModule = require('../../../../lib/monitoring/opentelemetry-setup');
     getOpenTelemetryConfig = opentelemetryModule.getOpenTelemetryConfig;
     otelSDK = opentelemetryModule.otelSDK;
   } catch {

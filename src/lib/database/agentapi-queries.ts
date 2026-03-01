@@ -13,7 +13,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { agentSessionCache, agentHealthCache, conversationContextCache } from '../cache/agentapi-redis-strategy';
 import { metrics as serverMetrics } from '../server-monitoring';
-import { cacheGet, cacheSet, cacheDelete, CacheKeyGenerators, TTLPresets } from '../cache/cache-utils';
+import { cacheGet, cacheSet, CacheKeyGenerators, TTLPresets } from '../cache/cache-utils';
 import { QueryCacheManager } from './query-cache-strategy';
 // import { logger } from '@/lib/logger';
 
@@ -44,15 +44,12 @@ interface BatchResult {
 
 // Load database URL from environment variable
 // Note: loadSecret is async, so we use env directly for synchronous initialization
+// Prisma 5+ uses DATABASE_URL environment variable directly, no datasources config needed
 const databaseUrl = process.env.DATABASE_URL ?? 'postgresql://localhost:5432/placeholder';
+process.env.DATABASE_URL = databaseUrl;
 
 const prismaBase = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  datasources: {
-    db: {
-      url: databaseUrl
-    },
-  },
 });
 
 // Cast to allow agent model references - these models are expected in the schema
@@ -991,7 +988,7 @@ export class AgentBatchQueries {
     const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
     try {
-      const results: BatchResult[] = await Promise.all([
+      const [conversationsResult, healthMetricsResult, eventsResult, workspacesResult] = await Promise.all([
         // Archive old conversations
         prisma.agentConversation.deleteMany({
           where: {
@@ -1030,7 +1027,7 @@ export class AgentBatchQueries {
       ]);
 
       const latency = Date.now() - startTime;
-      const totalCleaned = results.reduce((sum: number, result: BatchResult) => sum + result.count, 0);
+      const totalCleaned = conversationsResult.count + healthMetricsResult.count + eventsResult.count + workspacesResult.count;
 
       serverMetrics.histogram('agent.batch.cleanup', latency, {
         days: days.toString(),
@@ -1039,10 +1036,10 @@ export class AgentBatchQueries {
 
       return {
         cleaned: totalCleaned,
-        conversations: results[0].count,
-        healthMetrics: results[1].count,
-        events: results[2].count,
-        workspaces: results[3].count,
+        conversations: conversationsResult.count,
+        healthMetrics: healthMetricsResult.count,
+        events: eventsResult.count,
+        workspaces: workspacesResult.count,
       };
     } catch (error) {
       serverMetrics.increment('agent.batch.cleanup.error');
