@@ -174,7 +174,7 @@
     "@huggingface/inference": "4.13.12",
     "@kubernetes/client-node": "1.4.0",
     "@langchain/core": "1.1.28",
-    "@langchain/openai": "1.2.10",
+    "@langchain/openai": "1.2.11",
     "@modelcontextprotocol/sdk": "1.27.1",
     "@monaco-editor/react": "4.7.0",
     "@mui/material": "7.3.8",
