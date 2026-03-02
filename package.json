@@ -219,7 +219,7 @@
     "framer-motion": "12.34.3",
     "gray-matter": "4.0.3",
     "hot-shots": "14.0.0",
-    "ioredis": "5.9.3",
+    "ioredis": "5.10.0",
     "jsonwebtoken": "9.0.3",
     "kafkajs": "2.2.4",
     "langchain": "1.2.27",
