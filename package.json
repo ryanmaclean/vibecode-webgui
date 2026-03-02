@@ -184,7 +184,7 @@
     "@opentelemetry/exporter-trace-otlp-http": "0.212.0",
     "@opentelemetry/exporter-prometheus": "0.212.0",
     "@opentelemetry/instrumentation-dns": "0.55.0",
-    "@opentelemetry/instrumentation-express": "0.44.0",
+    "@opentelemetry/instrumentation-express": "0.60.0",
     "@opentelemetry/instrumentation-fs": "0.15.0",
     "@opentelemetry/instrumentation-http": "0.212.0",
     "@opentelemetry/instrumentation-net": "0.56.0",
