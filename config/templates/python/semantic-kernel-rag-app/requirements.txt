@@ -5,7 +5,7 @@ chromadb
 markdown
 beautifulsoup4
 azure-core==1.38.0
-pyasn1==0.6.2
+pyasn1==0.6.3
 
 # Security: Pin urllib3 and Werkzeug to address CVE vulnerabilities
 urllib3==2.6.3
