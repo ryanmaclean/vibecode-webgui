@@ -14,7 +14,7 @@ requests==2.32.4
 urllib3>=2.6.3
 
 # Testing framework
-pytest==7.4.3
+pytest==9.0.3
 pytest-cov==4.1.0
 pytest-mock==3.12.0
 
