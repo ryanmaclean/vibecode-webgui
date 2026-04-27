@@ -118,13 +118,14 @@ export class PGVectorClient {
    */
   async createCollection(schema: CollectionSchema): Promise<void> {
     const client = await this.pool.connect();
+    const tableName = validateTableName(schema.name);
 
     try {
       const query = `
-        CREATE TABLE IF NOT EXISTS ${schema.name} (
+        CREATE TABLE IF NOT EXISTS ${tableName} (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           content TEXT NOT NULL,
-          embedding vector(${schema.dimension}) NOT NULL,
+          embedding vector(${Number(schema.dimension)}) NOT NULL,
           metadata JSONB,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -135,8 +136,8 @@ export class PGVectorClient {
 
       // Create index for vector similarity search
       const indexQuery = `
-        CREATE INDEX IF NOT EXISTS ${schema.name}_embedding_idx
-        ON ${schema.name} USING ivfflat (embedding vector_cosine_ops)
+        CREATE INDEX IF NOT EXISTS ${tableName}_embedding_idx
+        ON ${tableName} USING ivfflat (embedding vector_cosine_ops)
         WITH (lists = 100);
       `;
 
@@ -158,6 +159,7 @@ export class PGVectorClient {
     if (chunks.length === 0) return 0;
 
     const client = await this.pool.connect();
+    const tableName = validateTableName(collectionName);
 
     try {
       const values: any[] = [];
@@ -176,7 +178,7 @@ export class PGVectorClient {
       });
 
       const query = `
-        INSERT INTO ${collectionName} (id, content, embedding, metadata, created_at)
+        INSERT INTO ${tableName} (id, content, embedding, metadata, created_at)
         VALUES ${placeholders.join(', ')}
         ON CONFLICT (id) DO UPDATE SET
           content = EXCLUDED.content,
@@ -204,6 +206,7 @@ export class PGVectorClient {
     options: SearchOptions = {}
   ): Promise<SearchResult[]> {
     const client = await this.pool.connect();
+    const tableName = validateTableName(collectionName);
 
     try {
       const limit = options.limit || 10;
@@ -216,7 +219,7 @@ export class PGVectorClient {
           embedding,
           metadata,
           1 - (embedding <=> $1::vector) as similarity
-        FROM ${collectionName}
+        FROM ${tableName}
         WHERE 1 - (embedding <=> $1::vector) > $2
         ORDER BY embedding <=> $1::vector
         LIMIT $3;
@@ -254,11 +257,12 @@ export class PGVectorClient {
     if (ids.length === 0) return 0;
 
     const client = await this.pool.connect();
+    const tableName = validateTableName(collectionName);
 
     try {
       const placeholders = ids.map((_, index) => `$${index + 1}`).join(', ');
       const query = `
-        DELETE FROM ${collectionName}
+        DELETE FROM ${tableName}
         WHERE id IN (${placeholders});
       `;
 
@@ -281,14 +285,15 @@ export class PGVectorClient {
     lastUpdated: Date;
   }> {
     const client = await this.pool.connect();
+    const tableName = validateTableName(collectionName);
 
     try {
       const query = `
         SELECT
           COUNT(*) as total_vectors,
-          pg_total_relation_size('${collectionName}') as index_size,
+          pg_total_relation_size('${tableName}') as index_size,
           MAX(updated_at) as last_updated
-        FROM ${collectionName};
+        FROM ${tableName};
       `;
 
       const result = await client.query(query);
@@ -335,9 +340,10 @@ export class PGVectorClient {
    */
   async deleteCollection(collectionName: string): Promise<boolean> {
     const client = await this.pool.connect();
+    const tableName = validateTableName(collectionName);
 
     try {
-      const query = `DROP TABLE IF EXISTS ${collectionName};`;
+      const query = `DROP TABLE IF EXISTS ${tableName};`;
       await client.query(query);
       return true;
     } catch (error) {
@@ -353,11 +359,12 @@ export class PGVectorClient {
    */
   async getById(collectionName: string, id: string): Promise<VectorChunk | null> {
     const client = await this.pool.connect();
+    const tableName = validateTableName(collectionName);
 
     try {
       const query = `
         SELECT id, content, embedding, metadata
-        FROM ${collectionName}
+        FROM ${tableName}
         WHERE id = $1;
       `;
 
@@ -391,6 +398,7 @@ export class PGVectorClient {
     updates: Partial<VectorChunk>
   ): Promise<boolean> {
     const client = await this.pool.connect();
+    const tableName = validateTableName(collectionName);
 
     try {
       const updateFields: string[] = [];
@@ -422,7 +430,7 @@ export class PGVectorClient {
       updateFields.push(`updated_at = NOW()`);
 
       const query = `
-        UPDATE ${collectionName}
+        UPDATE ${tableName}
         SET ${updateFields.join(', ')}
         WHERE id = $${paramCount};
       `;
@@ -446,12 +454,13 @@ export class PGVectorClient {
     if (fileIds.length === 0) return [];
 
     const client = await this.pool.connect();
+    const tableName = validateTableName(collectionName);
 
     try {
       const placeholders = fileIds.map((_, index) => `$${index + 1}`).join(', ');
       const query = `
         SELECT id, content, embedding, metadata
-        FROM ${collectionName}
+        FROM ${tableName}
         WHERE metadata->>'fileId' IN (${placeholders});
       `;
 
@@ -476,9 +485,10 @@ export class PGVectorClient {
    */
   async clearCollection(collectionName: string): Promise<boolean> {
     const client = await this.pool.connect();
+    const tableName = validateTableName(collectionName);
 
     try {
-      const query = `DELETE FROM ${collectionName};`;
+      const query = `DELETE FROM ${tableName};`;
       await client.query(query);
       return true;
     } catch (error) {
@@ -565,6 +575,40 @@ export const COLLECTION_SCHEMAS = {
     metric: 'cosine' as const
   }
 };
+
+/**
+ * Allowlist of valid table names that can be used in SQL queries.
+ * This prevents SQL injection via table name interpolation.
+ */
+const ALLOWED_TABLE_NAMES: ReadonlySet<string> = new Set(
+  Object.values(COLLECTION_SCHEMAS).map(schema => schema.name)
+);
+
+/**
+ * Validate a table name against the allowlist and SQL identifier format.
+ * Table names cannot be parameterized with $1 in PostgreSQL,
+ * so allowlisting is the correct defense against SQL injection.
+ *
+ * @param name - The table name to validate
+ * @returns The validated table name
+ * @throws Error if the name is not in the allowlist or is not a valid SQL identifier
+ */
+export function validateTableName(name: string): string {
+  // Defense-in-depth: ensure the name is a valid SQL identifier
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+    throw new Error(`Invalid table name format: "${name}". Must be a valid SQL identifier.`);
+  }
+
+  // Primary defense: check against the allowlist
+  if (!ALLOWED_TABLE_NAMES.has(name)) {
+    throw new Error(
+      `Table name "${name}" is not in the allowlist. ` +
+      `Allowed tables: ${[...ALLOWED_TABLE_NAMES].join(', ')}`
+    );
+  }
+
+  return name;
+}
 
 /**
  * Factory function to create a new PGVectorClient instance
