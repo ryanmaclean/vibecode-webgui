@@ -11,13 +11,13 @@
 
 | Severity | Found | Fixed | Remaining |
 |----------|-------|-------|-----------|
-| CRITICAL | 6 | 4 | 2 |
-| HIGH | 10 | 9 | 1 |
+| CRITICAL | 6 | 6 | 0 |
+| HIGH | 10 | 10 | 0 |
 | MEDIUM | 7 | 0 | 7 |
 | LOW | 5 | 2 | 3 |
 | Dependency | 73 | 70 | 3 |
 
-**Fixed:** Command injection in VM providers, `new Function()` code exec, SAML auth bypass, XSS in monitoring dashboard, committed private keys removed from tracking, committed node_modules removed, npm dependency vulns (73→3), SSRF in webhooks (URL validation + DNS rebinding prevention), Content-Security-Policy headers added, shell injection migration completed across all VM providers.
+**Fixed:** All 6 critical and all 10 high findings remediated. Command injection in VM providers, `new Function()` code exec, SAML auth bypass, XSS in monitoring dashboard, committed private keys removed from tracking, committed node_modules removed, npm dependency vulns (73→3), SSRF in webhooks (URL validation + DNS rebinding prevention), Content-Security-Policy headers, Gradio API code execution (auth + blocklist + allowlist), Goose migration command injection (execFile), hardcoded PostgreSQL passwords (env vars), SQL injection in pgvector (table name allowlist), shell=True in Python (shlex.split), unbounded resource creation (connection/process limits + rate limiter TTL), calculator regex bypass (recursive descent parser).
 
 ---
 
@@ -27,10 +27,9 @@
 - **File:** `src/lib/workflow/engine.ts:161`
 - **Fix:** Added `safeEvaluate()` with regex allowlist and blocklist for dangerous patterns (`eval`, `Function`, `import`, `require`, `process`, etc.) before `new Function()` call.
 
-### C2. Arbitrary Python Code Execution via Gradio API
+### C2. ~~Arbitrary Python Code Execution via Gradio API~~ FIXED
 - **File:** `src/app/api/gradio/run/route.ts:72-94`
-- **Issue:** Unvalidated Python code directly executed with no sandboxing or authorization.
-- **Remediation:** Add allowlisting, sandbox execution, require authentication.
+- **Fix:** Added authentication via `getServerSession()`. Added 46-pattern Python blocklist (os, subprocess, exec, eval, __import__, socket, pickle, etc.). Added Gradio allowlist requiring `import gradio` and UI component references. Reduced rate limit to 5 req/min, code size to 50KB, port range to 7860-7960.
 
 ### C3. ~~Command Injection Across VM Providers~~ FIXED
 - **Files:** `src/lib/vm/providers/wsl2.ts`, `lima.ts`, `native-vm.ts`
@@ -44,10 +43,9 @@
 - **File:** `src/app/monitoring/page.tsx`
 - **Fix:** Added `escapeHtml()` helper wrapping all 4 interpolated trace data fields (`traceId`, `service`, `operation`, `duration`) in innerHTML template.
 
-### C6. Command Injection via Goose Migration Name
+### C6. ~~Command Injection via Goose Migration Name~~ FIXED
 - **File:** `src/app/api/workspace/[id]/init-goose/route.ts:88`
-- **Issue:** `execAsync(\`goose -dir migrations create ${migrationName} sql\`)` - though Zod-validated, template string in shell context is risky.
-- **Remediation:** Use `execFile()` with argument arrays.
+- **Fix:** Replaced `execAsync()` with `execFileAsync('goose', ['-dir', 'migrations', 'create', migrationName, 'sql'])` using argument arrays. Tightened Zod regex to `/^[a-zA-Z0-9_-]+$/`.
 
 ---
 
@@ -58,31 +56,27 @@
 - **File:** `gitea/data/jwt/private.pem` - 4096-bit RSA JWT signing key
 - **Fix:** Removed both files from git tracking with `git rm --cached`. Added `.gitignore` patterns in root (wildcards for `*.key`, `*.p12`, `*.pfx`, `*.jks`) and per-directory `.gitignore` files. Keys remain on disk for local use but are no longer committed. Git history scrub with `git filter-repo` recommended as follow-up.
 
-### H2. Hardcoded PostgreSQL Password
+### H2. ~~Hardcoded PostgreSQL Password~~ FIXED
 - **File:** `config/vfkit/postgresql-pgvector-vm.yaml:423`
-- **Issue:** Password `"postgres_admin_2024"` hardcoded in version control.
-- **Remediation:** Use environment variables or secrets management.
+- **Fix:** Replaced 4 hardcoded password occurrences with `${POSTGRES_PASSWORD}` and `${VIBECODE_DB_PASSWORD}` environment variable references. Added comment requiring secrets management.
 
-### H3. SQL Injection via Unparameterized Table Names
+### H3. ~~SQL Injection via Unparameterized Table Names~~ FIXED
 - **File:** `src/lib/db/pgvector-client.ts`
-- **Issue:** Table names constructed via string interpolation in SQL queries.
-- **Remediation:** Use allowlisted table names, never interpolate user input into SQL.
+- **Fix:** Added `ALLOWED_TABLE_NAMES` set derived from `COLLECTION_SCHEMAS` and `validateTableName()` function with regex + allowlist validation. Applied to all 10 methods that interpolate table names in SQL queries.
 
-### H4. `shell=True` in Python Subprocess
+### H4. ~~`shell=True` in Python Subprocess~~ FIXED
 - **File:** `scripts/security_updates.py:120-126`
-- **Issue:** `subprocess.Popen()` with `shell=True` using user-provided commands.
-- **Remediation:** Use `subprocess.run()` with argument lists, never `shell=True` with external input.
+- **Fix:** Removed `shell=True`, replaced string commands with `shlex.split()` argument lists. Removed shell-specific syntax (pipes, redirections) from all `run_cmd()` callers — `capture_output=True` already handles stderr capture.
 
 ### H5. ~~Server-Side Request Forgery in Webhook Execution~~ FIXED
 - **File:** `src/lib/workflow/engine.ts:609-627`
 - **Fix:** Added `validateWebhookUrl()` function that: (1) parses URL, (2) rejects non-HTTP(S) protocols, (3) blocks localhost hostname, (4) checks IP literals against private ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 169.254.0.0/16, ::1, fc00::/7, fe80::/10), (5) resolves DNS and checks resolved IPs to prevent DNS rebinding attacks. Added `isPrivateIP()` helper for IPv4/IPv6 range checking.
 
-### H6. Unbounded Resource Creation (DoS)
-- `src/app/api/gradio/run/route.ts:22` - Unbounded Gradio process spawning
-- `src/app/api/workspace/files/sync/route.ts:37` - Unbounded WebSocket connections
-- `src/app/api/workspace/terminal/session/route.ts:31` - Unbounded PTY processes
-- `src/lib/rate-limiting.ts:45-62` - In-memory rate limiter with no cleanup (memory leak)
-- **Remediation:** Add per-user limits, TTL-based cleanup, connection pooling.
+### H6. ~~Unbounded Resource Creation (DoS)~~ FIXED
+- `src/app/api/gradio/run/route.ts:22` - Added `MAX_CONCURRENT_GRADIO_PROCESSES = 5` with 503 on exceed
+- `src/app/api/workspace/files/sync/route.ts:37` - Added 50 total / 10 per-workspace WebSocket limits
+- `src/app/api/workspace/terminal/session/route.ts:31` - Added 20 total / 10 per-user PTY limits
+- `src/lib/rate-limiting.ts:45-62` - Added 60s cleanup interval, 15min entry TTL, 10K entry cap
 
 ### H7. ~~Committed `node_modules` Directory~~ FIXED
 - **File:** `daemon/kafka-dsm/node_modules/` (5,829 files)
@@ -92,10 +86,9 @@
 - **Issue:** A prior security fix migrated `exec()` to `execFile()` in `qemu.ts` and `vfkit.ts`, but `wsl2.ts`, `lima.ts`, `docker.ts`, and `native-vm.ts` were missed.
 - **Fix:** Completed `exec()` to `execFile()` migration across all remaining VM providers: wsl2.ts (9 calls), lima.ts (9 calls), native-vm.ts (3 calls). All shell string interpolation replaced with argument arrays.
 
-### H9. Bypassable Regex Validation in Calculator Tool
+### H9. ~~Bypassable Regex Validation in Calculator Tool~~ FIXED
 - **File:** `src/lib/agent-framework/tools/index.ts:24-29`
-- **Issue:** Regex `/^[\d\s+\-*/().,]+$/` used before `new Function()` is insufficient for preventing code injection.
-- **Remediation:** Use a safe math expression parser.
+- **Fix:** Replaced regex + `new Function()` with safe `evaluateMathExpression()` recursive descent parser. Supports integers, decimals, +, -, *, /, parentheses, unary minus. No eval/Function/indirect eval. Non-arithmetic characters throw parse errors.
 
 ### H10. ~~39 HIGH npm Dependency Vulnerabilities~~ FIXED
 - **Root causes:** `minimatch` (ReDoS), `fast-xml-parser` (XXE), outdated `jest`, `eslint-config-next`, `testcontainers`
@@ -182,7 +175,7 @@
 ### Medium-term (P2)
 10. Restore deleted security test coverage
 11. ~~Add Content-Security-Policy headers~~ DONE
-12. Implement bounded resource pools for WebSockets, PTY sessions, Gradio processes
+12. ~~Implement bounded resource pools for WebSockets, PTY sessions, Gradio processes~~ DONE
 13. Move infrastructure `.env` files to `.env.example` pattern
 
 ### Datadog SCA Setup
