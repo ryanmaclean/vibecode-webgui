@@ -9,6 +9,8 @@
  */
 
 import { EventEmitter } from 'events';
+import { promises as dns } from 'dns';
+import { isIPv4, isIPv6 } from 'net';
 import {
   WorkflowDefinition,
   WorkflowExecution,
@@ -193,6 +195,117 @@ function evaluateExpression(expression: string, context: WorkflowContext): unkno
     return safeEvaluate(expression, contextVars);
   } catch (error) {
     throw new Error(`Expression evaluation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+// ============================================================================
+// SSRF Protection
+// ============================================================================
+
+/**
+ * Check if an IP address belongs to a private/internal range.
+ * Blocks: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8,
+ *         169.254.0.0/16 (link-local/cloud metadata), 0.0.0.0,
+ *         ::1, fc00::/7, fe80::/10
+ */
+function isPrivateIP(ip: string): boolean {
+  // Normalize IPv4-mapped IPv6 addresses (e.g. ::ffff:127.0.0.1)
+  const normalizedIp = ip.replace(/^::ffff:/, '');
+
+  if (isIPv4(normalizedIp)) {
+    const parts = normalizedIp.split('.').map(Number);
+    const [a, b] = parts;
+
+    // 0.0.0.0
+    if (normalizedIp === '0.0.0.0') return true;
+    // 127.0.0.0/8 (loopback)
+    if (a === 127) return true;
+    // 10.0.0.0/8
+    if (a === 10) return true;
+    // 172.16.0.0/12
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    // 192.168.0.0/16
+    if (a === 192 && b === 168) return true;
+    // 169.254.0.0/16 (link-local, cloud metadata)
+    if (a === 169 && b === 254) return true;
+
+    return false;
+  }
+
+  if (isIPv6(ip)) {
+    const lower = ip.toLowerCase();
+    // ::1 (loopback)
+    if (lower === '::1' || lower === '0000:0000:0000:0000:0000:0000:0000:0001') return true;
+    // fc00::/7 (unique local) — covers fc00:: through fdff::
+    if (lower.startsWith('fc') || lower.startsWith('fd')) return true;
+    // fe80::/10 (link-local)
+    if (lower.startsWith('fe80')) return true;
+
+    return false;
+  }
+
+  // If it doesn't parse as IPv4 or IPv6, treat as unsafe
+  return true;
+}
+
+/**
+ * Validate a webhook URL to prevent SSRF attacks.
+ * Throws if the URL targets internal/private resources.
+ */
+async function validateWebhookUrl(url: string): Promise<void> {
+  // 1. Parse the URL
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`Invalid webhook URL: ${url}`);
+  }
+
+  // 2. Reject non-HTTP(S) protocols
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error(`Webhook URL must use HTTP or HTTPS protocol, got: ${parsed.protocol}`);
+  }
+
+  // 3. Block localhost hostname
+  const hostname = parsed.hostname.toLowerCase();
+  if (hostname === 'localhost') {
+    throw new Error('Webhook URL must not target localhost');
+  }
+
+  // 4. If the hostname is already an IP literal, check it directly
+  if (isIPv4(hostname) || isIPv6(hostname)) {
+    if (isPrivateIP(hostname)) {
+      throw new Error(`Webhook URL must not target private/internal IP address: ${hostname}`);
+    }
+  }
+
+  // 5. Resolve DNS and check all resolved addresses to prevent DNS rebinding
+  try {
+    const addresses = await dns.resolve4(hostname).catch(() => [] as string[]);
+    const addresses6 = await dns.resolve6(hostname).catch(() => [] as string[]);
+    const allAddresses = [...addresses, ...addresses6];
+
+    if (allAddresses.length === 0) {
+      throw new Error(`Could not resolve webhook URL hostname: ${hostname}`);
+    }
+
+    for (const addr of allAddresses) {
+      if (isPrivateIP(addr)) {
+        throw new Error(
+          `Webhook URL hostname "${hostname}" resolves to private/internal IP address: ${addr}`
+        );
+      }
+    }
+  } catch (err) {
+    // Re-throw our own validation errors
+    if (err instanceof Error && (
+      err.message.includes('private/internal IP') ||
+      err.message.includes('Could not resolve')
+    )) {
+      throw err;
+    }
+    // For other DNS errors, reject the request to be safe
+    throw new Error(`DNS resolution failed for webhook URL hostname "${hostname}": ${err instanceof Error ? err.message : 'Unknown error'}`);
   }
 }
 
@@ -639,6 +752,10 @@ export class WorkflowEngine extends EventEmitter {
     execution: WorkflowExecution
   ): Promise<unknown> {
     const url = evaluateTemplate(config.url, execution.context);
+
+    // Validate URL to prevent SSRF attacks
+    await validateWebhookUrl(url);
+
     const body = config.body ? evaluateTemplate(config.body, execution.context) : undefined;
 
     const response = await fetch(url, {

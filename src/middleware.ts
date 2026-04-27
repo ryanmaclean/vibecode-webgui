@@ -15,6 +15,22 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     response.headers.set('X-Frame-Options', 'DENY');
     response.headers.set('X-XSS-Protection', '1; mode=block');
     response.headers.set('Referrer-Policy', 'origin-when-cross-origin');
+    response.headers.set(
+      'Content-Security-Policy',
+      [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-eval'",       // Monaco editor requires unsafe-eval
+        "style-src 'self' 'unsafe-inline'",       // React inline styles + Monaco/xterm themes
+        "img-src 'self' data: blob:",
+        "font-src 'self' data:",
+        "connect-src 'self' wss: https:",         // WebSocket connections + external AI API calls
+        "worker-src 'self' blob:",                // Monaco editor web workers
+        "frame-src 'none'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ].join('; ')
+    );
   }
   return response;
 }

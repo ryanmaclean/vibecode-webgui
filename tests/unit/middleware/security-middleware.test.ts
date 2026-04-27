@@ -640,11 +640,13 @@ describe('Security Middleware Module', () => {
       expect(mockHeadersSet).toHaveBeenCalledWith('X-XSS-Protection', '1; mode=block')
       expect(mockHeadersSet).toHaveBeenCalledWith('Referrer-Policy', 'origin-when-cross-origin')
       expect(mockHeadersSet).toHaveBeenCalledWith('Cache-Control', 'no-store, no-cache, must-revalidate')
+      expect(mockHeadersSet).toHaveBeenCalledWith(
+        'Content-Security-Policy',
+        expect.stringContaining("default-src 'self'")
+      )
     })
 
-    it('should not add CSP header in development', () => {
-      setNodeEnv('development')
-
+    it('should include all required CSP directives', () => {
       const mockHeadersSet = jest.fn()
       const response = {
         headers: {
@@ -654,10 +656,22 @@ describe('Security Middleware Module', () => {
 
       addSecurityHeaders(response)
 
-      expect(mockHeadersSet).not.toHaveBeenCalledWith(
-        'Content-Security-Policy',
-        expect.any(String)
+      const cspCall = mockHeadersSet.mock.calls.find(
+        (call: [string, string]) => call[0] === 'Content-Security-Policy'
       )
+      expect(cspCall).toBeDefined()
+      const cspValue = cspCall![1] as string
+
+      expect(cspValue).toContain("default-src 'self'")
+      expect(cspValue).toContain("script-src 'self' 'unsafe-eval'")
+      expect(cspValue).toContain("style-src 'self' 'unsafe-inline'")
+      expect(cspValue).toContain("img-src 'self' data: blob:")
+      expect(cspValue).toContain("connect-src 'self' wss: https:")
+      expect(cspValue).toContain("worker-src 'self' blob:")
+      expect(cspValue).toContain("frame-src 'none'")
+      expect(cspValue).toContain("object-src 'none'")
+      expect(cspValue).toContain("base-uri 'self'")
+      expect(cspValue).toContain("form-action 'self'")
     })
   })
 
