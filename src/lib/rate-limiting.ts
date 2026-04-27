@@ -44,21 +44,40 @@ interface TokenBucketState {
 // In-memory store for development (use Redis in production)
 const requestStore = new Map<string, TokenBucketState>()
 
-// Cleanup old entries every 5 minutes (only at runtime, not during build)
+// H6: Maximum number of entries in the in-memory store to cap memory usage
+const MAX_STORE_ENTRIES = 10_000
+
+// H6: TTL for entries that haven't been accessed — any entry idle longer than this is evicted
+const ENTRY_TTL_MS = 15 * 60 * 1000 // 15 minutes
+
+// H6: Cleanup interval — sweep expired entries every 60 seconds (was 5 min, reduced for tighter memory control)
+const CLEANUP_INTERVAL_MS = 60 * 1000
+
+// Cleanup old entries periodically (only at runtime, not during build)
 if (typeof setInterval !== 'undefined' && process.env.NEXT_PHASE !== 'phase-production-build') {
   setInterval(() => {
     const now = Date.now()
     for (const [key, bucket] of requestStore.entries()) {
-      if (bucket.refillPerMs <= 0) continue
-
-      const bucketWindowMs = bucket.capacity / bucket.refillPerMs
       const idleDuration = now - bucket.lastRefill
-      // Drop inactive buckets once they have been full for 2 windows
-      if (bucket.tokens >= bucket.capacity && idleDuration > bucketWindowMs * 2) {
+
+      // H6: Remove any entry that has been idle beyond the TTL, regardless of token state.
+      // This prevents the memory leak where depleted or partially-refilled buckets
+      // from clients that never return accumulate indefinitely.
+      if (idleDuration > ENTRY_TTL_MS) {
         requestStore.delete(key)
+        continue
+      }
+
+      // Also drop buckets that have fully refilled and been idle for 2 windows
+      // (original heuristic, kept for faster reclamation of fully-recovered entries)
+      if (bucket.refillPerMs > 0) {
+        const bucketWindowMs = bucket.capacity / bucket.refillPerMs
+        if (bucket.tokens >= bucket.capacity && idleDuration > bucketWindowMs * 2) {
+          requestStore.delete(key)
+        }
       }
     }
-  }, 5 * 60 * 1000)
+  }, CLEANUP_INTERVAL_MS)
 }
 
 /**
@@ -86,6 +105,17 @@ export default function rateLimit(config: RateLimitConfig) {
     // Get or create entry
     let entry = requestStore.get(key)
     if (!entry) {
+      // H6: Cap the store size to prevent unbounded memory growth under heavy load.
+      // When the store is full, deny new clients rather than growing without limit.
+      if (requestStore.size >= MAX_STORE_ENTRIES) {
+        return {
+          success: false,
+          limit: max,
+          remaining: 0,
+          reset: Math.ceil((now + windowMs) / 1000),
+          retryAfter: Math.ceil(windowMs / 1000),
+        }
+      }
       entry = {
         tokens: max,
         lastRefill: now,

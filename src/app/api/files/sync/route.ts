@@ -36,6 +36,18 @@ interface WebSocketMessage {
 // WebSocket connections per workspace
 const workspaceConnections = new Map<string, Set<WebSocket>>()
 
+// H6: Limit WebSocket connections to prevent unbounded resource creation (DoS)
+const MAX_TOTAL_WS_CONNECTIONS = 50
+const MAX_WS_CONNECTIONS_PER_WORKSPACE = 10
+
+function getTotalConnectionCount(): number {
+  let total = 0
+  for (const connections of workspaceConnections.values()) {
+    total += connections.size
+  }
+  return total
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
@@ -267,6 +279,17 @@ if (!(globalThis as { wss?: WebSocketServer }).wss) {
       // Validate connection parameters
       if (!workspaceId || !userId) {
         ws.close(1008, 'Workspace ID and User ID are required')
+        return
+      }
+
+      // H6: Enforce WebSocket connection limits to prevent unbounded resource creation
+      if (getTotalConnectionCount() >= MAX_TOTAL_WS_CONNECTIONS) {
+        ws.close(1013, 'Maximum total WebSocket connections reached')
+        return
+      }
+      const existingWorkspaceConns = workspaceConnections.get(workspaceId)?.size || 0
+      if (existingWorkspaceConns >= MAX_WS_CONNECTIONS_PER_WORKSPACE) {
+        ws.close(1013, 'Maximum WebSocket connections per workspace reached')
         return
       }
 
