@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 import { validatePathParams, validateRequestBody } from '@/lib/api/validation/middleware';
@@ -13,6 +13,7 @@ export const dynamic = 'force-dynamic'
 
 const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'workspace-init-goose' });
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 const apiRateLimit = createAPIRateLimit(10); // 10 requests per minute - initialization is expensive
 
@@ -84,8 +85,9 @@ export async function POST(
     await execAsync('which goose || go install github.com/pressly/goose/v3/cmd/goose@latest');
 
     // SECURITY: Initialize Goose with validated migration name
-    // migrationName is already validated by Zod schema (alphanumeric + hyphens/underscores only)
-    await execAsync(`goose -dir migrations create ${migrationName} sql`, {
+    // Uses execFileAsync with argument array to prevent command injection
+    // migrationName is also validated by Zod schema (alphanumeric + hyphens/underscores only)
+    await execFileAsync('goose', ['-dir', 'migrations', 'create', migrationName, 'sql'], {
       cwd: workspacePath,
       timeout: 30000 // 30 second timeout
     });
