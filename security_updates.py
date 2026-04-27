@@ -27,6 +27,7 @@ Note: preact patch removed as package is not used in this project
 import argparse
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -118,8 +119,7 @@ def run_cmd(
 
     try:
         result = subprocess.run(
-            cmd,
-            shell=True,
+            shlex.split(cmd),
             capture_output=True,
             text=True,
             timeout=300
@@ -242,10 +242,10 @@ def run_pretests(config: Config) -> bool:
 
     print_info("Running pre-update tests...", config.log_file)
 
-    if not run_cmd("npm run type-check 2>&1 | tail -20", "Running type-check", config):
+    if not run_cmd("npm run type-check", "Running type-check", config):
         print_warning("Type-check had issues (this is OK, may be pre-existing)", config.log_file)
 
-    if not run_cmd("npm run lint 2>&1 | tail -20", "Running lint", config):
+    if not run_cmd("npm run lint", "Running lint", config):
         print_warning("Lint had issues (this is OK, may be pre-existing)", config.log_file)
 
     print_info("Pre-update tests completed", config.log_file)
@@ -350,7 +350,7 @@ def run_posttests(config: Config) -> bool:
 
     # Type checking
     print_info("Running type-check...", config.log_file)
-    if not run_cmd("npm run type-check 2>&1", "Type checking", config):
+    if not run_cmd("npm run type-check", "Type checking", config):
         print_error("Type-check failed", config.log_file)
         if not config.force_update:
             return False
@@ -358,7 +358,7 @@ def run_posttests(config: Config) -> bool:
 
     # Linting
     print_info("Running lint...", config.log_file)
-    if not run_cmd("npm run lint 2>&1 | tail -50", "Linting", config):
+    if not run_cmd("npm run lint", "Linting", config):
         print_error("Lint failed", config.log_file)
         if not config.force_update:
             return False
@@ -366,7 +366,7 @@ def run_posttests(config: Config) -> bool:
 
     # Security audit
     print_info("Running security audit...", config.log_file)
-    if not run_cmd("npm audit 2>&1", "Security audit", config):
+    if not run_cmd("npm audit", "Security audit", config):
         print_warning("Audit reported issues (checking details)", config.log_file)
 
     # Check vulnerability count

@@ -3,6 +3,99 @@
 import { ToolDefinition } from '..';
 
 /**
+ * Safe math expression evaluator using recursive descent parsing.
+ * Supports: integers, decimals, +, -, *, /, parentheses, and unary minus.
+ * No eval(), no new Function(), no indirect eval.
+ *
+ * Grammar:
+ *   expr   = term (('+' | '-') term)*
+ *   term   = factor (('*' | '/') factor)*
+ *   factor = '-' factor | atom
+ *   atom   = NUMBER | '(' expr ')'
+ */
+function evaluateMathExpression(input: string): number {
+  let pos = 0;
+  const src = input.replace(/\s+/g, '');
+
+  function peek(): string {
+    return src[pos] ?? '';
+  }
+
+  function consume(ch?: string): string {
+    if (ch !== undefined && src[pos] !== ch) {
+      throw new Error(`Expected '${ch}' at position ${pos}`);
+    }
+    return src[pos++];
+  }
+
+  function parseNumber(): number {
+    const start = pos;
+    // digits, optional decimal point, more digits
+    while (pos < src.length && (src[pos] >= '0' && src[pos] <= '9')) pos++;
+    if (pos < src.length && src[pos] === '.') {
+      pos++;
+      while (pos < src.length && (src[pos] >= '0' && src[pos] <= '9')) pos++;
+    }
+    if (pos === start) {
+      throw new Error(`Expected number at position ${pos}`);
+    }
+    return Number(src.slice(start, pos));
+  }
+
+  // factor = '-' factor | atom
+  function parseFactor(): number {
+    if (peek() === '-') {
+      consume('-');
+      return -parseFactor();
+    }
+    return parseAtom();
+  }
+
+  // atom = NUMBER | '(' expr ')'
+  function parseAtom(): number {
+    if (peek() === '(') {
+      consume('(');
+      const val = parseExpr();
+      consume(')');
+      return val;
+    }
+    return parseNumber();
+  }
+
+  // term = factor (('*' | '/') factor)*
+  function parseTerm(): number {
+    let val = parseFactor();
+    while (peek() === '*' || peek() === '/') {
+      const op = consume();
+      const right = parseFactor();
+      if (op === '*') val *= right;
+      else val /= right;
+    }
+    return val;
+  }
+
+  // expr = term (('+' | '-') term)*
+  function parseExpr(): number {
+    let val = parseTerm();
+    while (peek() === '+' || peek() === '-') {
+      const op = consume();
+      const right = parseTerm();
+      if (op === '+') val += right;
+      else val -= right;
+    }
+    return val;
+  }
+
+  const result = parseExpr();
+
+  if (pos < src.length) {
+    throw new Error(`Unexpected character '${src[pos]}' at position ${pos}`);
+  }
+
+  return result;
+}
+
+/**
  * Calculator tool - performs basic arithmetic calculations
  */
 export const calculatorTool: ToolDefinition = {
@@ -20,21 +113,15 @@ export const calculatorTool: ToolDefinition = {
   },
   execute: async ({ expression }) => {
     try {
-      // Basic validation to prevent code injection
-      if (!/^[\d\s+\-*/().,]+$/.test(expression)) {
-        throw new Error('Invalid characters in expression');
-      }
-      
-      // Use Function constructor in a safe way (no access to globals)
-      const result = new Function(`return (${expression})`)();
-      
-      if (typeof result !== 'number' || !isFinite(result)) {
+      const result = evaluateMathExpression(expression);
+
+      if (!isFinite(result)) {
         throw new Error('Invalid calculation result');
       }
-      
+
       return { result };
     } catch (error) {
-      return { 
+      return {
         error: 'Failed to evaluate expression',
         details: error instanceof Error ? error.message : 'Unknown error',
       };
