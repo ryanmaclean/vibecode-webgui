@@ -1463,9 +1463,9 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
     name: 'Observability Platform',
     description: 'Complete observability stack with metrics, logs, traces, and alerting',
     category: 'infrastructure',
-    tags: ['observability', 'monitoring', 'prometheus', 'grafana', 'jaeger', 'elasticsearch'],
+    tags: ['observability', 'monitoring', 'datadog', 'jaeger', 'elasticsearch'],
     language: ['yaml', 'go', 'python'],
-    frameworks: ['kubernetes', 'prometheus', 'grafana'],
+    frameworks: ['kubernetes', 'datadog'],
     features: ['Metrics Collection', 'Log Aggregation', 'Distributed Tracing', 'Alerting', 'Dashboards'],
     complexity: 'advanced',
     estimatedSetupTime: '40 minutes',
@@ -1473,16 +1473,16 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
     dependencies: {},
     scripts: {
       'deploy': 'kubectl apply -f manifests/',
-      'port-forward': 'kubectl port-forward svc/grafana 3000:3000',
+      'port-forward': 'kubectl port-forward svc/datadog-agent 8125:8125',
       'logs': 'kubectl logs -f deployment/observability-agent',
       'test': 'python tests/test_monitoring.py'
     },
     envVars: [
       {
-        name: 'GRAFANA_ADMIN_PASSWORD',
-        description: 'Grafana admin password',
+        name: 'DD_API_KEY',
+        description: 'Datadog API key',
         required: true,
-        example: 'your-secure-password'
+        example: 'your-datadog-api-key'
       },
       {
         name: 'SLACK_WEBHOOK_URL',
@@ -1506,8 +1506,8 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
       setup: [
         'kubectl create namespace observability',
         'kubectl apply -f manifests/',
-        'kubectl port-forward svc/grafana 3000:3000',
-        'Access Grafana at http://localhost:3000'
+        'kubectl apply -f manifests/datadog-agent.yaml',
+        'Access Datadog at https://app.datadoghq.com'
       ],
       usage: [
         'Import pre-built dashboards',

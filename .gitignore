@@ -1,3 +1,11 @@
+# Private keys and certificates (security)
+fast-openvscode-vm/certs/openvscode-local-key.pem
+gitea/data/jwt/private.pem
+*.key
+*.p12
+*.pfx
+*.jks
+
 # Dependencies
 node_modules/
 .pnp

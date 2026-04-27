@@ -35,8 +35,6 @@ volumes:
     driver: local
   prometheus_data:
     driver: local
-  grafana_data:
-    driver: local
 
 # ===== SERVICES =====
 services:
@@ -414,37 +412,6 @@ services:
         reservations:
           cpus: '0.1'
           memory: 128M
-    profiles:
-      - monitoring
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: vibecode-grafana
-    restart: unless-stopped
-    networks:
-      - monitoring
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - DD_SERVICE=${DD_SERVICE:-grafana}
-      - DD_ENV=${DD_ENV:-development}
-      - DD_VERSION=${DD_VERSION:-0.1.0}
-      - DD_TAGS=team:platform,component:infra
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
-    ports:
-      - "3001:3000"
-    depends_on:
-      - prometheus
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
     profiles:
       - monitoring
 

@@ -1,5 +1,5 @@
 # Apple Silicon Performance Recording Rules
-# Pre-computed metrics for faster Grafana dashboards
+# Pre-computed metrics for faster Datadog dashboards
 
 groups:
   - name: apple_silicon_cpu

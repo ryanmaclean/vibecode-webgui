@@ -439,7 +439,7 @@ models:
 
 1. **Deploy Production DAGs**: Move sample DAGs to production
 2. **Configure Alerts**: Set up Slack/email alerts for failures
-3. **Enable Monitoring**: Deploy Prometheus + Grafana dashboards
+3. **Enable Monitoring**: Deploy Datadog + Prometheus dashboards
 4. **Implement Data Governance**: Set up data catalog and lineage
 5. **Scale Infrastructure**: Add more workers and increase resources
 

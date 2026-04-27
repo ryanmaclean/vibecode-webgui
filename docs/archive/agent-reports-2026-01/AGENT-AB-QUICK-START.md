@@ -78,7 +78,7 @@ docker compose -f docker-compose-production.yml up -d \
 # WebGUI: http://localhost:3000 (with hot reload)
 # Code Server: http://localhost:8080
 # Prometheus: http://localhost:9090
-# Grafana: http://localhost:3001
+# Datadog: https://app.datadoghq.com
 
 # Rebuild after code changes
 docker compose -f docker-compose-production.yml build vibecode-app
@@ -591,9 +591,9 @@ After successful deployment:
 
 1. **Configure DNS**: Set up proper domain names
 2. **Enable TLS**: Install cert-manager for HTTPS
-3. **Set up monitoring**: Deploy Prometheus/Grafana
+3. **Set up monitoring**: Deploy Datadog + Prometheus
 4. **Configure backups**: Set up Velero for automated backups
-5. **Enable logging**: Deploy ELK or Loki for centralized logging
+5. **Enable logging**: Configure Datadog Logs for centralized logging
 6. **Implement GitOps**: Set up ArgoCD for declarative deployments
 
 ---

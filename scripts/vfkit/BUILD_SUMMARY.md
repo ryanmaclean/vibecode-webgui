@@ -204,7 +204,7 @@ To complete end-to-end testing:
 ### Production Deployment
 1. Create multi-VM setup (dev, db, services)
 2. Set up networking between VMs
-3. Configure monitoring (Prometheus, Grafana)
+3. Configure monitoring (Datadog, Prometheus)
 4. Set up automated backups
 5. Document production procedures
 

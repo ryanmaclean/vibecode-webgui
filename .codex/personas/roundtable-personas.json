@@ -219,7 +219,7 @@
       "tools": [
         "Datadog",
         "Prometheus",
-        "Grafana",
+        "Datadog Dashboards",
         "OpenTelemetry",
         "PagerDuty"
       ]

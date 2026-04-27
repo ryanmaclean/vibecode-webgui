@@ -320,8 +320,8 @@ kubectl delete secret code-server-$USER_ID-config -n vibecode-production
 # Access Prometheus (port-forward)
 kubectl port-forward svc/prometheus 9090:9090 -n vibecode-production
 
-# Access Grafana
-kubectl port-forward svc/grafana 3000:3000 -n vibecode-production
+# Access Datadog
+# Access Datadog at https://app.datadoghq.com/
 # Default: admin/admin
 ```
 

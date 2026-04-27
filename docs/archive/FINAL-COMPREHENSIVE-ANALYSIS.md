@@ -217,7 +217,7 @@ backend@vibecode.dev / backend123
 ✅ **ArgoCD GitOps**: Complete project configuration and applications  
 ✅ **Multi-Environment**: Staging and production configurations  
 ✅ **Sealed Secrets**: Encrypted secret management  
-✅ **Monitoring Stack**: Datadog, Prometheus, Grafana integration  
+✅ **Monitoring Stack**: Datadog, Prometheus integration  
 ✅ **Auto-scaling**: HPA, VPA, cluster autoscaling configured  
 
 ---

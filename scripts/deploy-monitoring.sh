@@ -125,7 +125,7 @@ deploy_kubernetes() {
         --namespace "$NAMESPACE" \
         --values "$MONITORING_DIR/prometheus-helm-values.yml" \
         --set alertmanager.enabled=false \
-        --set grafana.enabled=false \
+        --set server.enabled=true \
         --set pushgateway.enabled=false \
         --atomic \
         --wait

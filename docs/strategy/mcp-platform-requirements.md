@@ -1362,7 +1362,7 @@ Enterprise (Custom):
 │  OpenTelemetry → Traces, Metrics, Logs                         │
 │  Datadog APM → Performance monitoring                           │
 │  Prometheus → Metrics collection                                │
-│  Grafana → Dashboards and alerting                              │
+│  Datadog → Dashboards and alerting                              │
 │  Sentry → Error tracking                                        │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
@@ -1492,7 +1492,7 @@ Enterprise (Custom):
 - OpenTelemetry (traces, metrics)
 - Datadog APM
 - Sentry (error tracking)
-- Prometheus + Grafana
+- Datadog + Prometheus
 
 ### Appendix C: Glossary
 

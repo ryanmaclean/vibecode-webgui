@@ -168,7 +168,7 @@ receivers:
         description: '{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.summary }}'
         severity: 'critical'
         client: 'VibeCode Monitoring'
-        client_url: 'https://grafana.vibecode.dev'
+        client_url: 'https://app.datadoghq.com'
         details:
           alert_count: '{{ len .Alerts }}'
           service: '{{ .CommonLabels.service }}'
@@ -229,8 +229,8 @@ receivers:
             text: 'Emergency Runbook'
             url: 'https://docs.vibecode.dev/runbooks/application-down'
           - type: button
-            text: 'Grafana Dashboard'
-            url: 'https://grafana.vibecode.dev/d/app-overview'
+            text: 'Datadog Dashboard'
+            url: 'https://app.datadoghq.com/d/app-overview'
 
   # Database alerts
   - name: 'database-alerts'

@@ -8,7 +8,7 @@ This repository contains a complete, production-ready GitOps automation pipeline
 - **Terraform configurations** for multi-cloud deployment (AWS, GCP, Azure)
 - **Kubernetes manifests** with Kustomize overlays for environment management
 - **ArgoCD GitOps** applications for automated deployment
-- **Comprehensive monitoring** with Datadog, Prometheus, and Grafana
+- **Comprehensive monitoring** with Datadog and Prometheus
 - **Secure secrets management** with Sealed Secrets
 - **Production-grade security** policies and network controls
 
@@ -38,7 +38,7 @@ This repository contains a complete, production-ready GitOps automation pipeline
 This single command will:
 - Create a 3-node Kubernetes cluster
 - Install ArgoCD GitOps platform
-- Deploy monitoring stack (Datadog, Prometheus, Grafana)
+- Deploy monitoring stack (Datadog, Prometheus)
 - Configure NGINX Ingress and SSL termination
 - Set up sealed secrets for secure secret management
 - Create application namespaces with proper RBAC
@@ -79,7 +79,7 @@ kubectl port-forward svc/vibecode-test-service -n vibecode-webgui-staging 8081:8
 ### Monitoring Stack
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│    Datadog      │────│   Prometheus     │────│    Grafana      │
+│    Datadog      │────│   Prometheus     │────│    Datadog     │
 │ Full APM/RUM    │    │  Metrics/Alerts  │    │  Dashboards     │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
@@ -124,7 +124,7 @@ vibecode-webgui/
 │   │   ├── monitoring/          # Monitoring stack
 │   │   │   ├── datadog-agent.yaml
 │   │   │   ├── prometheus.yaml
-│   │   │   └── grafana.yaml
+│   │   │   └── datadog-dashboards.yaml
 │   │   └── secrets/
 │   │       └── sealed-secrets/   # Encrypted secrets
 │   └── gitops/
@@ -228,7 +228,7 @@ git push origin main
 - **Business**: User activity, feature adoption, growth metrics
 - **Kubernetes**: Pod health, resource usage, scaling events
 
-### Grafana Dashboards
+### Datadog Dashboards
 - **Platform Overview**: High-level system health and performance
 - **AI Analytics**: Model usage, costs, response times
 - **Infrastructure**: Kubernetes cluster monitoring
@@ -389,7 +389,7 @@ kubectl port-forward svc/prometheus -n monitoring 9090:9090
 ### Platform Capabilities  
 - 🏗️ **Infrastructure as Code**: Terraform for all cloud resources
 - 🔄 **GitOps Deployments**: ArgoCD for automated deployments
-- 📊 **Complete Monitoring**: Datadog, Prometheus, Grafana integration
+- 📊 **Complete Monitoring**: Datadog, Prometheus integration
 - 🔐 **Enterprise Security**: Sealed secrets, RBAC, network policies
 - 🚀 **Auto-scaling**: HPA, VPA, cluster autoscaling
 - 🧪 **Comprehensive Testing**: Unit, integration, E2E, and chaos testing

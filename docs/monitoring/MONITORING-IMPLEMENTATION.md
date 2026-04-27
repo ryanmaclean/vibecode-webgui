@@ -376,7 +376,7 @@ Regular health monitoring for:
 
 ### Integration Roadmap
 
-1. **External Monitoring Tools**: Prometheus, Grafana integration
+1. **External Monitoring Tools**: Datadog, Prometheus integration
 2. **Incident Management**: PagerDuty, OpsGenie integration
 3. **CI/CD Integration**: Deployment impact monitoring
 4. **Customer Experience**: Real user monitoring (RUM) integration

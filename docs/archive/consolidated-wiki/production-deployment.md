@@ -12,7 +12,7 @@ Your GitOps automation is now **100% validated and ready for production**! Here'
 ✅ **100% Test Success Rate** - All 28 validation tests passing  
 ✅ **Zero Manual Intervention** - Complete automation from setup to deployment  
 ✅ **Enterprise Security** - Sealed secrets, RBAC, network policies  
-✅ **Full Observability** - Datadog, Prometheus, Grafana monitoring  
+✅ **Full Observability** - Datadog, Prometheus monitoring  
 ✅ **Multi-Environment** - Staging and production configurations  
 ✅ **Auto-scaling** - HPA, VPA, and cluster autoscaling  
 
@@ -127,7 +127,7 @@ kubectl apply -f k8s/azure-openai/
 
 - [ ] **Datadog Agent** - APM and infrastructure monitoring
 - [ ] **Prometheus** - Metrics collection
-- [ ] **Grafana** - Visualization dashboards
+- [ ] **Datadog** - Visualization dashboards
 - [ ] **AlertManager** - Incident response
 - [ ] **Log Aggregation** - Centralized logging
 - [ ] **Health Checks** - Application health monitoring
@@ -210,8 +210,8 @@ helm install prometheus prometheus-community/kube-prometheus-stack \
   --create-namespace \
   --values monitoring/prometheus/values-production.yaml
 
-# Configure Grafana dashboards
-kubectl apply -f monitoring/grafana/dashboards/
+# Configure Datadog dashboards
+# Datadog dashboards configured via app.datadoghq.com
 ```
 
 ## 🔍 Post-Deployment Validation
