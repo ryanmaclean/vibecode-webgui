@@ -1,6 +1,6 @@
 # Security Audit Report: vibecode-webgui
 
-**Date:** 2026-02-19 (updated 2026-04-27)
+**Date:** 2026-02-19 (updated 2026-04-30)
 **Branch:** `claude/install-trusted-skills-bPxQK`
 **Scope:** Full codebase (TypeScript 1297, Go 1126, Python 393, TSX 244, JS 185 files)
 **Tools:** npm audit, code review, differential review, secrets scan
@@ -13,11 +13,11 @@
 |----------|-------|-------|-----------|
 | CRITICAL | 6 | 6 | 0 |
 | HIGH | 10 | 10 | 0 |
-| MEDIUM | 7 | 0 | 7 |
-| LOW | 5 | 2 | 3 |
+| MEDIUM | 7 | 7 | 0 |
+| LOW | 5 | 5 | 0 |
 | Dependency | 73 | 70 | 3 |
 
-**Fixed:** All 6 critical and all 10 high findings remediated. Command injection in VM providers, `new Function()` code exec, SAML auth bypass, XSS in monitoring dashboard, committed private keys removed from tracking, committed node_modules removed, npm dependency vulns (73→3), SSRF in webhooks (URL validation + DNS rebinding prevention), Content-Security-Policy headers, Gradio API code execution (auth + blocklist + allowlist), Goose migration command injection (execFile), hardcoded PostgreSQL passwords (env vars), SQL injection in pgvector (table name allowlist), shell=True in Python (shlex.split), unbounded resource creation (connection/process limits + rate limiter TTL), calculator regex bypass (recursive descent parser).
+**Fixed:** All 28 code findings (6 critical, 10 high, 7 medium, 5 low) remediated. 3 residual dependency vulns remain (deep transitive, no direct fix available).
 
 ---
 
@@ -98,48 +98,43 @@
 
 ## MEDIUM Findings
 
-### M1. Committed `.env` Files Leaking Infrastructure
-- 9 `.env` files under `daemon/kafka-dsm/` and `daemon/gitea-kafka-bridge/` expose internal IPs (`10.0.3.70`), hostnames, Kafka topics, and service topology.
-- **Remediation:** Move to `.env.example` pattern, remove from repo.
+### M1. ~~Committed `.env` Files Leaking Infrastructure~~ FIXED
+- 11 `.env` files under `daemon/kafka-dsm/` and `daemon/gitea-kafka-bridge/` exposing internal IPs, hostnames, Kafka topics.
+- **Fix:** Removed all `.env` files from git tracking with `git rm --cached`. Created `.env.example` files with placeholder values. Added directory-specific `.gitignore` patterns (`*.env` + `!*.env.example`).
 
-### M2. CORS Wildcard in Development Mode
+### M2. ~~CORS Wildcard in Development Mode~~ FIXED
 - **File:** `src/middleware/security-middleware.ts:430`
-- **Issue:** Falls back to `Access-Control-Allow-Origin: *` in test/dev mode.
-- **Remediation:** Use explicit origins even in dev.
+- **Fix:** Replaced `*` wildcard with explicit `ALLOWED_DEV_ORIGINS` set (localhost:3000, localhost:3001, 127.0.0.1:3000, 127.0.0.1:3001). Origin is only reflected if it matches the allowlist.
 
-### M3. Deleted Security Test Coverage
-- **Commit:** `9b24827d` removed `tests/security/penetration-testing.test.ts`, `monitoring-security.test.ts`, and `test_security_scripts.py`.
-- **Remediation:** Restore penetration test coverage.
+### M3. ~~Deleted Security Test Coverage~~ FIXED
+- **Commit:** `9b24827d` removed security test files.
+- **Fix:** Restored all 3 files from git history: `tests/security/penetration-testing.test.ts`, `monitoring-security.test.ts`, `test_security_scripts.py`.
 
-### M4. Test Bypass Function Exported Globally
+### M4. ~~Test Bypass Function Exported Globally~~ FIXED
 - **File:** `src/middleware/security-middleware.ts:376-384`
-- **Issue:** `__TEST__bypassSecurityChecks()` disables all security checks when called.
-- **Remediation:** Gate behind `NODE_ENV === 'test'` check inside the function, or use dependency injection.
+- **Fix:** Added `NODE_ENV !== 'test'` guard that throws `Error('Security bypass is only available in test environment')` if called outside test mode. Updated test helpers to set NODE_ENV before calling.
 
-### M5. Authentication Bypass Pattern
+### M5. ~~Authentication Bypass Pattern~~ FIXED
 - **File:** `src/middleware.ts:43-46`
-- **Issue:** Middleware excludes all `/api/` routes from authentication checks.
-- **Remediation:** Explicitly list public API routes.
+- **Fix:** Replaced broad `/api/` exclusion with explicit allowlist of public routes: `/api/auth/`, `/api/health`, `/api/healthz`, `/api/readyz`, `/api/webhooks/`, `/api/security/csp-report`. All other API routes now require authentication.
 
-### M6. Workflow Execution Store Memory Leak
+### M6. ~~Workflow Execution Store Memory Leak~~ FIXED
 - **File:** `src/lib/workflow/engine.ts:183`
-- **Issue:** `executions` Map grows unbounded, never cleaned.
-- **Remediation:** Add TTL-based cleanup or size limits.
+- **Fix:** Added `MAX_EXECUTIONS = 1000` cap, `EXECUTION_TTL_MS = 30min` for completed executions, `cleanupExpiredExecutions()` on 5-min interval. Added `completedAt` timestamps to failed/cancelled states. Running executions are never cleaned up.
 
-### M7. Verbose Error Messages Exposing Internals
+### M7. ~~Verbose Error Messages Exposing Internals~~ FIXED
 - **File:** `src/app/api/upload/route.ts:334`
-- **Issue:** Internal error details returned to clients.
-- **Remediation:** Return generic errors, log details server-side.
+- **Fix:** Removed `details` field leaking `error.message` to clients. Returns generic "Upload failed. Please try again." Server-side logging preserved.
 
 ---
 
 ## LOW Findings
 
 - **L1.** ~~Missing Content-Security-Policy header in middleware~~ FIXED — Added CSP with `default-src 'self'`, `script-src 'self' 'unsafe-eval'` (Monaco), `style-src 'self' 'unsafe-inline'`, `connect-src 'self' wss: https:`, `worker-src 'self' blob:`, `frame-src 'none'`, `object-src 'none'` in both `src/middleware.ts` and `src/middleware/security-middleware.ts`
-- **L2.** Placeholder secrets in `OneClickDeploy.tsx:119-126`
-- **L3.** SSH StrictHostKeyChecking disabled in QEMU provider (`qemu.ts:160`)
-- **L4.** Incomplete log sanitization (`src/lib/logger.ts:246`)
-- **L5.** Default SSH password "vibecode" in VM launch script (`vibecode:475`)
+- **L2.** ~~Placeholder secrets in `OneClickDeploy.tsx:119-126`~~ FIXED — Replaced with clearly non-secret placeholders (`<your-api-key>`, `<generate-with-openssl-rand-base64-32>`) and added clarifying comment
+- **L3.** ~~SSH StrictHostKeyChecking disabled in QEMU provider (`qemu.ts:160`)~~ FIXED — Changed to `StrictHostKeyChecking=accept-new`, removed `UserKnownHostsFile=/dev/null`
+- **L4.** ~~Incomplete log sanitization (`src/lib/logger.ts:246`)~~ FIXED — Added 7 sanitization categories: Bearer tokens, Authorization headers, API keys (sk-/pk-/api_/key- prefixes), passwords in URLs, key=value credentials, database connection strings
+- **L5.** ~~Default SSH password "vibecode" in VM launch script (`vibecode:475`)~~ FIXED — Removed hardcoded password, reads from `$VM_SSH_PASSWORD` env var. Changed SSH to `StrictHostKeyChecking=accept-new`
 
 ---
 
@@ -173,10 +168,10 @@
 9. ~~Add SSRF protection to webhook execution~~ DONE (URL validation + DNS rebinding prevention)
 
 ### Medium-term (P2)
-10. Restore deleted security test coverage
+10. ~~Restore deleted security test coverage~~ DONE (3 test files restored from git history)
 11. ~~Add Content-Security-Policy headers~~ DONE
 12. ~~Implement bounded resource pools for WebSockets, PTY sessions, Gradio processes~~ DONE
-13. Move infrastructure `.env` files to `.env.example` pattern
+13. ~~Move infrastructure `.env` files to `.env.example` pattern~~ DONE (11 files)
 
 ### Datadog SCA Setup
 Since you're already on Datadog, enable SCA for free continuous monitoring:

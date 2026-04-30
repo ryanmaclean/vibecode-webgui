@@ -32,6 +32,18 @@ function setNodeEnv(value: string) {
   })
 }
 
+// Helper to call __TEST__bypassSecurityChecks with NODE_ENV temporarily set to 'test'
+function callBypassSecurityChecks(mod: SecurityMiddlewareModule, bypass: boolean) {
+  const prevEnv = process.env.NODE_ENV
+  setNodeEnv('test')
+  if (mod.__TEST__bypassSecurityChecks) {
+    mod.__TEST__bypassSecurityChecks(bypass)
+  }
+  if (prevEnv !== undefined) {
+    setNodeEnv(prevEnv)
+  }
+}
+
 // Mock Next.js modules
 jest.mock('next/server', () => ({
   NextRequest: jest.fn(),
@@ -82,9 +94,7 @@ const loadSecurityMiddleware = () => import('@/middleware/security-middleware')
 async function initializeSecurityModules(bypass = true) {
   jest.resetModules()
   securityMiddlewareModule = await loadSecurityMiddleware()
-  if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-    securityMiddlewareModule.__TEST__bypassSecurityChecks(bypass)
-  }
+  callBypassSecurityChecks(securityMiddlewareModule, bypass)
   nextServerModule = (await import('next/server')) as MockedNextServerModule
   nextServerModule.NextResponse.mockImplementation((_, init?: { status?: number }): MockNextResponse => ({
     status: init?.status ?? 200,
@@ -172,9 +182,7 @@ describe('Security Middleware Module', () => {
       setNodeEnv('production')
 
       // Ensure security checks are enabled
-      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
-      }
+      callBypassSecurityChecks(securityMiddlewareModule, false)
 
       mockRequest.method = 'OPTIONS'
       mockRequest.nextUrl.pathname = '/api/test'
@@ -196,9 +204,7 @@ describe('Security Middleware Module', () => {
       setNodeEnv('production')
 
       // Ensure security checks are enabled
-      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
-      }
+      callBypassSecurityChecks(securityMiddlewareModule, false)
 
       // Temporarily disable MOCK_ORIGINS for this test
       const oldMockOrigins = process.env.MOCK_ORIGINS
@@ -460,9 +466,7 @@ describe('Security Middleware Module', () => {
       setNodeEnv('production')
 
       // Ensure security checks are enabled
-      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
-      }
+      callBypassSecurityChecks(securityMiddlewareModule, false)
 
       mockRequest.nextUrl.pathname = '/api/ai/chat'
       mockRequest.method = 'GET'  // Use GET to avoid CSRF
@@ -495,9 +499,7 @@ describe('Security Middleware Module', () => {
       setNodeEnv('production')
 
       // Ensure security checks are enabled
-      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
-      }
+      callBypassSecurityChecks(securityMiddlewareModule, false)
 
       mockRequest.nextUrl.pathname = '/api/admin/users'
       mockRequest.headers.get.mockImplementation((header: string) => {
@@ -582,9 +584,7 @@ describe('Security Middleware Module', () => {
       setNodeEnv('production')
 
       // Ensure security checks are enabled
-      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
-      }
+      callBypassSecurityChecks(securityMiddlewareModule, false)
 
       mockRequest.nextUrl.pathname = '/api/ai/chat'
       mockRequest.method = 'POST'

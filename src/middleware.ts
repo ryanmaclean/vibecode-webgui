@@ -63,8 +63,23 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // Public API routes that don't require authentication.
+  // All other /api/ routes require a valid session token.
+  const publicApiPrefixes = [
+    '/api/auth/',        // NextAuth endpoints (login, callback, CSRF, etc.)
+    '/api/health',       // Health/readiness checks (also caught by early return above)
+    '/api/healthz',      // Health check (also caught by early return above)
+    '/api/readyz',       // Readiness check (also caught by early return above)
+    '/api/webhooks/',    // Incoming webhooks (use their own auth mechanisms)
+    '/api/security/csp-report', // CSP violation reports sent by browsers
+  ];
+
+  const isPublicApiRoute = publicApiPrefixes.some((prefix) =>
+    pathname.startsWith(prefix)
+  );
+
   // Check authentication for protected routes
-  const isProtectedRoute = !pathname.startsWith('/api/') &&
+  const isProtectedRoute = !(isPublicApiRoute) &&
                           !pathname.startsWith('/auth/') &&
                           !pathname.startsWith('/_next/') &&
                           pathname !== '/';

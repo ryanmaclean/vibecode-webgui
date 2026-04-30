@@ -157,7 +157,7 @@ export class QEMUProvider implements VMProvider {
     
     try {
       const { stdout, stderr } = await exec(
-        `ssh -p ${sshPort} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost "${command}"`
+        `ssh -p ${sshPort} -o StrictHostKeyChecking=accept-new root@localhost "${command}"`
       );
       
       return {

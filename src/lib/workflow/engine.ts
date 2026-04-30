@@ -313,16 +313,37 @@ async function validateWebhookUrl(url: string): Promise<void> {
 // Workflow Engine
 // ============================================================================
 
+/** Maximum number of executions to retain in the store */
+const MAX_EXECUTIONS = 1000;
+
+/** Time-to-live for completed/failed/cancelled executions (30 minutes) */
+const EXECUTION_TTL_MS = 30 * 60 * 1000;
+
+/** Interval between automatic cleanup sweeps (5 minutes) */
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
+/** Statuses that indicate an execution is finished and eligible for cleanup */
+const TERMINAL_STATUSES: ReadonlySet<WorkflowStatus> = new Set<WorkflowStatus>([
+  'completed',
+  'failed',
+  'cancelled',
+]);
+
 export class WorkflowEngine extends EventEmitter {
   private executions = new Map<string, WorkflowExecution>();
   private agentExecutor?: (config: AgentTaskConfig, context: WorkflowContext) => Promise<unknown>;
   private auditTrail: AuditTrail;
   private rollbackManager: RollbackManager;
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     super();
     this.auditTrail = new AuditTrail();
     this.rollbackManager = new RollbackManager();
+    this.cleanupTimer = setInterval(() => this.cleanupExpiredExecutions(), CLEANUP_INTERVAL_MS);
+    if (this.cleanupTimer && typeof this.cleanupTimer === 'object' && 'unref' in this.cleanupTimer) {
+      this.cleanupTimer.unref();
+    }
   }
 
   /**
@@ -433,6 +454,8 @@ export class WorkflowEngine extends EventEmitter {
       return execution;
     } catch (error) {
       execution.status = 'failed';
+      execution.metadata.completedAt = new Date();
+      execution.metadata.duration = Date.now() - startTime.valueOf();
       execution.error = {
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
@@ -863,10 +886,12 @@ export class WorkflowEngine extends EventEmitter {
     }
 
     execution.status = 'cancelled';
+    execution.metadata.completedAt = new Date();
     this.emitEvent(executionId, WorkflowEventType.WORKFLOW_CANCELLED);
   }
 
   /**
+<<<<<<< HEAD
    * Create a checkpoint for an execution
    */
   createCheckpoint(executionId: string, description?: string): Checkpoint {
@@ -960,6 +985,46 @@ export class WorkflowEngine extends EventEmitter {
    */
   getRollbackManager(): RollbackManager {
     return this.rollbackManager;
+  }
+
+  cleanupExpiredExecutions(): void {
+    const now = Date.now();
+
+    for (const [id, execution] of this.executions) {
+      if (!TERMINAL_STATUSES.has(execution.status)) continue;
+
+      const completedAt = execution.metadata.completedAt;
+      if (completedAt && now - completedAt.getTime() > EXECUTION_TTL_MS) {
+        this.executions.delete(id);
+      }
+    }
+
+    if (this.executions.size > MAX_EXECUTIONS) {
+      const terminal: { id: string; completedAt: number }[] = [];
+      for (const [id, execution] of this.executions) {
+        if (!TERMINAL_STATUSES.has(execution.status)) continue;
+        terminal.push({
+          id,
+          completedAt: execution.metadata.completedAt?.getTime() ?? 0,
+        });
+      }
+
+      terminal.sort((a, b) => a.completedAt - b.completedAt);
+
+      let toRemove = this.executions.size - MAX_EXECUTIONS;
+      for (const entry of terminal) {
+        if (toRemove <= 0) break;
+        this.executions.delete(entry.id);
+        toRemove--;
+      }
+    }
+  }
+
+  dispose(): void {
+    if (this.cleanupTimer !== null) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
   }
 }
 
