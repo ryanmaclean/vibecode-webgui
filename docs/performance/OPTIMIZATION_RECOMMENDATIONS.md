@@ -342,7 +342,7 @@ While memory usage is excellent, we should implement **proactive monitoring**:
 **Tools**:
 - Datadog for production monitoring
 - Custom scripts for development
-- Grafana dashboards for visualization
+- Datadog dashboards for visualization
 
 ---
 

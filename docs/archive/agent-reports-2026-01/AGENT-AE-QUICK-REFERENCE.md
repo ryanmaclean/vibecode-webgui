@@ -111,7 +111,7 @@ kubectl get destinationrules -A
 | OpenVSCode | https://vscode.api.local | (first login) |
 | API Docs | https://docs.api.local/api/docs | Public |
 | Prometheus | http://localhost:9090 | Public |
-| Grafana | http://localhost:3000 | admin:admin |
+| Datadog | https://app.datadoghq.com/ | API key auth |
 | Jaeger | http://localhost:6831 | Public |
 | Kiali | http://localhost:20001 | Public |
 
@@ -319,7 +319,7 @@ JWT_SECRET=<generate with: openssl rand -base64 32>
 OAUTH_CLIENT_SECRET=<from OAuth provider>
 POSTGRES_PASSWORD=<strong-password>
 TRAEFIK_DASHBOARD_PASSWORD=<hashed with: openssl passwd>
-GRAFANA_ADMIN_PASSWORD=<strong-password>
+DD_API_KEY=<your-datadog-api-key>
 ```
 
 ### Optional

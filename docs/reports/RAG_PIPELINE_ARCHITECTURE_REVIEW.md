@@ -70,7 +70,7 @@ Worklog for bead `st-2zt`. Focused on the Retrieval-Augmented Generation (RAG) s
 ---
 
 ## 4. Suggested Follow-ups & Metrics
-- Expose `rag_ingest_jobs.status/requested_at/completed_at` via API and Grafana/Dashboard for ops.
+- Expose `rag_ingest_jobs.status/requested_at/completed_at` via API and Datadog dashboard for ops.
 - Add automated smoke tests that upload a doc via `/api/uploads/pdf`, wait for queue completion, and verify `vectorStore.search` returns new context.
 - Publish weekly RAG health snapshots (chunk counts, ingestion failures, cache hit rates) so future beads can focus on concrete regressions.
 - Document failure runbooks for the queue worker (e.g., how to drain poison queue, reprocess uploads, rotate Azure credentials).

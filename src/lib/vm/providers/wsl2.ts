@@ -6,13 +6,12 @@
 import { VMProvider, VMConfig, VM, VMStatus, ExecResult } from '../types';
 import { validateVMName, validateVMPath, validateDownloadUrl } from '../security';
 import { logger } from '@/lib/logger';
-import { exec as execCallback, execFile as execFileCallback } from 'child_process';
+import { execFile as execFileCallback } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 
-const exec = promisify(execCallback);
 const execFile = promisify(execFileCallback);
 
 export class WSL2Provider implements VMProvider {
@@ -29,7 +28,7 @@ export class WSL2Provider implements VMProvider {
     }
     
     try {
-      const { stdout } = await exec('wsl --status');
+      const { stdout } = await execFile('wsl', ['--status']);
       return stdout.includes('WSL 2');
     } catch {
       return false;
@@ -76,20 +75,20 @@ export class WSL2Provider implements VMProvider {
     
     // WSL2 distributions start automatically when accessed
     // Just verify it's available
-    await exec(`wsl -d ${vmId} echo "started"`);
+    await execFile('wsl', ['-d', vmId, 'echo', 'started']);
   }
   
   async stop(vmId: string): Promise<void> {
     logger.info('Stopping WSL2 instance', { vmId });
     
-    await exec(`wsl --terminate ${vmId}`);
+    await execFile('wsl', ['--terminate', vmId]);
   }
   
   async destroy(vmId: string): Promise<void> {
     logger.info('Destroying WSL2 instance', { vmId });
     
     // Unregister distribution
-    await exec(`wsl --unregister ${vmId}`);
+    await execFile('wsl', ['--unregister', vmId]);
     
     // Remove config directory
     const installDir = path.join(this.configDir, vmId);
@@ -100,7 +99,7 @@ export class WSL2Provider implements VMProvider {
     const vms: VM[] = [];
     
     try {
-      const { stdout } = await exec('wsl --list --verbose');
+      const { stdout } = await execFile('wsl', ['--list', '--verbose']);
       const lines = stdout.split('\n').slice(1); // Skip header
       
       for (const line of lines) {
@@ -141,7 +140,7 @@ export class WSL2Provider implements VMProvider {
     logger.info('Executing command in WSL2', { vmId, command });
     
     try {
-      const { stdout, stderr } = await exec(`wsl -d ${vmId} -- ${command}`);
+      const { stdout, stderr } = await execFile('wsl', ['-d', vmId, '--', ...command.split(' ')]);
       
       return {
         exitCode: 0,
@@ -161,7 +160,7 @@ export class WSL2Provider implements VMProvider {
   
   async status(vmId: string): Promise<VMStatus> {
     try {
-      const { stdout } = await exec(`wsl --list --verbose`);
+      const { stdout } = await execFile('wsl', ['--list', '--verbose']);
       const lines = stdout.split('\n');
       
       for (const line of lines) {
@@ -214,12 +213,12 @@ export class WSL2Provider implements VMProvider {
     logger.info('Configuring WSL2 distribution', { distroName });
     
     // Set default user to root
-    await exec(`wsl -d ${distroName} -u root -- echo "Configured"`);
+    await execFile('wsl', ['-d', distroName, '-u', 'root', '--', 'echo', 'Configured']);
     
     // Install Node.js if needed
     if (config.provision) {
       for (const provision of config.provision) {
-        await exec(`wsl -d ${distroName} -u root -- sh -c "${provision.script}"`);
+        await execFile('wsl', ['-d', distroName, '-u', 'root', '--', 'sh', '-c', provision.script]);
       }
     }
     

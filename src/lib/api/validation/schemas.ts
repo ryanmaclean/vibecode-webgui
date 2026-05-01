@@ -658,7 +658,7 @@ export const initGooseParamSchema = z.object({
 /** Init goose body schema */
 export const initGooseSchema = z.object({
   workspaceId: workspaceIdSchema,
-  migrationName: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_]+$/)
+  migrationName: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/, 'Migration name must contain only alphanumeric characters, underscores, or hyphens')
 })
 
 // ============================================================================

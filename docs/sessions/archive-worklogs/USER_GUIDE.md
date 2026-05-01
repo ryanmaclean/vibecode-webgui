@@ -542,7 +542,7 @@ PORT=3000
 **Prometheus Metrics:**
 - Available at `http://localhost:9090/metrics`
 - Scrape with Prometheus server
-- Visualize in Grafana
+- Visualize in Datadog
 
 ---
 

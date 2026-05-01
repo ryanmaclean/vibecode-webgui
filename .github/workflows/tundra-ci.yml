@@ -2,9 +2,15 @@ name: tundra-ci
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
+    paths:
+      - 'daemon/kafka-dsm/**'
+      - 'scripts/check-kafka-topics.sh'
   pull_request:
-    branches: ["**"]
+    branches: [main]
+    paths:
+      - 'daemon/kafka-dsm/**'
+      - 'scripts/check-kafka-topics.sh'
 
 concurrency:
   group: tundra-ci-${{ github.ref }}

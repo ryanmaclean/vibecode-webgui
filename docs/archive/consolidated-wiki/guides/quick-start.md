@@ -90,7 +90,7 @@ kubectl get pods -n vibecode-monitoring
 
 - **VibeCode UI**: http://localhost:3000
 - **Prometheus**: http://localhost:9090 (via port-forward)
-- **Grafana**: http://localhost:3001 (via port-forward)
+- **Datadog**: https://app.datadoghq.com/ (SaaS)
 - **Datadog**: https://app.datadoghq.com/
 
 ### Test AI Integration

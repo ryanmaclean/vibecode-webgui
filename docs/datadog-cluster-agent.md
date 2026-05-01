@@ -43,8 +43,8 @@ DD_API_KEY="$DD_API_KEY" DD_SITE="${DD_SITE:-datadoghq.com}" node test-datadog-a
 
 If you need a lighter-weight or fully OSS stack, consider:
 
-- **Prometheus + Grafana** (Apache 2.0): scrape metrics with `kube-prometheus-stack` Helm chart; Grafana provides dashboards and alerting.
-- **OpenTelemetry Collector** (Apache 2.0): send traces/metrics/logs to backends such as Tempo, Loki, or Prometheus.
+- **Prometheus** (Apache 2.0): scrape metrics with `kube-prometheus-stack` Helm chart; Datadog provides dashboards and alerting.
+- **OpenTelemetry Collector** (Apache 2.0): send traces/metrics/logs to backends such as Datadog or Prometheus.
 - **VictoriaMetrics Operator** (Apache 2.0): a Prometheus-compatible time-series database with Kubernetes auto-discovery.
 
-These can coexist with Datadog or replace it if you have licensing constraints, but Datadog remains the default path for this project.
+These can coexist with Datadog if you have specific requirements, but Datadog remains the sole monitoring vendor for this project.

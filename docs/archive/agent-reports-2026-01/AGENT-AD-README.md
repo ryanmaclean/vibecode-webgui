@@ -385,7 +385,7 @@ The data pipeline infrastructure meets all success criteria:
 5. **Scale and Monitor**
    - Add more Airflow workers as needed
    - Scale Kafka partitions for throughput
-   - Set up Prometheus + Grafana dashboards
+   - Set up Datadog + Prometheus dashboards
 
 ---
 

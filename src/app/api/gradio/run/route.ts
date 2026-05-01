@@ -5,28 +5,150 @@ import path from 'path';
 import crypto from 'crypto';
 import { z } from '@/lib/zod-compat';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic'
 // import { logger } from '@/lib/logger';
 
-const apiRateLimit = createAPIRateLimit(20) // 20 requests per minute - expensive operations
+const apiRateLimit = createAPIRateLimit(5) // 5 requests per minute - code execution is high-risk
 
 // Validation schema for security
 const gradioRunSchema = z.object({
-  code: z.string().min(1).max(1_000_000), // 1MB code limit
-  port: z.number().int().min(3000).max(9999).optional(),
+  code: z.string().min(1).max(50_000), // 50KB code limit (tightened from 1MB)
+  port: z.number().int().min(7860).max(7960).optional(), // Restrict to standard Gradio port range
   share: z.boolean().optional()
 });
+
+/**
+ * C2 FIX: Dangerous Python patterns blocklist.
+ * Blocks code that attempts OS access, arbitrary code execution, file I/O,
+ * network access, process spawning, or module/attribute manipulation.
+ */
+const DANGEROUS_PYTHON_PATTERNS: Array<{ pattern: RegExp; description: string }> = [
+  // OS and system access
+  { pattern: /\bimport\s+os\b/, description: 'os module import' },
+  { pattern: /\bfrom\s+os\b/, description: 'os module import' },
+  { pattern: /\bimport\s+sys\b/, description: 'sys module import' },
+  { pattern: /\bfrom\s+sys\b/, description: 'sys module import' },
+  { pattern: /\bimport\s+subprocess\b/, description: 'subprocess module import' },
+  { pattern: /\bfrom\s+subprocess\b/, description: 'subprocess module import' },
+  { pattern: /\bimport\s+shutil\b/, description: 'shutil module import' },
+  { pattern: /\bfrom\s+shutil\b/, description: 'shutil module import' },
+  { pattern: /\bimport\s+signal\b/, description: 'signal module import' },
+  { pattern: /\bfrom\s+signal\b/, description: 'signal module import' },
+  { pattern: /\bimport\s+ctypes\b/, description: 'ctypes module import' },
+  { pattern: /\bfrom\s+ctypes\b/, description: 'ctypes module import' },
+
+  // Code execution primitives
+  { pattern: /\bexec\s*\(/, description: 'exec() call' },
+  { pattern: /\beval\s*\(/, description: 'eval() call' },
+  { pattern: /\bcompile\s*\(/, description: 'compile() call' },
+  { pattern: /\b__import__\s*\(/, description: '__import__() call' },
+  { pattern: /\bimportlib\b/, description: 'importlib usage' },
+
+  // File system access
+  { pattern: /\bopen\s*\(/, description: 'open() call - use Gradio file components instead' },
+  { pattern: /\bimport\s+pathlib\b/, description: 'pathlib module import' },
+  { pattern: /\bfrom\s+pathlib\b/, description: 'pathlib module import' },
+  { pattern: /\bimport\s+glob\b/, description: 'glob module import' },
+  { pattern: /\bfrom\s+glob\b/, description: 'glob module import' },
+  { pattern: /\bimport\s+shlex\b/, description: 'shlex module import' },
+  { pattern: /\bfrom\s+shlex\b/, description: 'shlex module import' },
+  { pattern: /\bimport\s+tempfile\b/, description: 'tempfile module import' },
+  { pattern: /\bfrom\s+tempfile\b/, description: 'tempfile module import' },
+
+  // Network access
+  { pattern: /\bimport\s+socket\b/, description: 'socket module import' },
+  { pattern: /\bfrom\s+socket\b/, description: 'socket module import' },
+  { pattern: /\bimport\s+http\b/, description: 'http module import' },
+  { pattern: /\bfrom\s+http\b/, description: 'http module import' },
+  { pattern: /\bimport\s+urllib\b/, description: 'urllib module import' },
+  { pattern: /\bfrom\s+urllib\b/, description: 'urllib module import' },
+  { pattern: /\bimport\s+requests\b/, description: 'requests module import' },
+  { pattern: /\bfrom\s+requests\b/, description: 'requests module import' },
+  { pattern: /\bimport\s+aiohttp\b/, description: 'aiohttp module import' },
+  { pattern: /\bfrom\s+aiohttp\b/, description: 'aiohttp module import' },
+  { pattern: /\bimport\s+httpx\b/, description: 'httpx module import' },
+  { pattern: /\bfrom\s+httpx\b/, description: 'httpx module import' },
+
+  // Dangerous dunder/attribute manipulation (sandbox escape vectors)
+  { pattern: /__subclasses__/, description: '__subclasses__ access' },
+  { pattern: /__globals__/, description: '__globals__ access' },
+  { pattern: /__builtins__/, description: '__builtins__ access' },
+  { pattern: /__class__/, description: '__class__ access for sandbox escape' },
+  { pattern: /\bgetattr\s*\(/, description: 'getattr() call' },
+  { pattern: /\bsetattr\s*\(/, description: 'setattr() call' },
+  { pattern: /\bdelattr\s*\(/, description: 'delattr() call' },
+
+  // Process/threading
+  { pattern: /\bimport\s+multiprocessing\b/, description: 'multiprocessing module import' },
+  { pattern: /\bfrom\s+multiprocessing\b/, description: 'multiprocessing module import' },
+  { pattern: /\bimport\s+threading\b/, description: 'threading module import' },
+  { pattern: /\bfrom\s+threading\b/, description: 'threading module import' },
+
+  // Pickle/deserialization (RCE vector)
+  { pattern: /\bimport\s+pickle\b/, description: 'pickle module import (deserialization RCE)' },
+  { pattern: /\bfrom\s+pickle\b/, description: 'pickle module import (deserialization RCE)' },
+  { pattern: /\bimport\s+shelve\b/, description: 'shelve module import' },
+  { pattern: /\bfrom\s+shelve\b/, description: 'shelve module import' },
+  { pattern: /\bimport\s+marshal\b/, description: 'marshal module import' },
+  { pattern: /\bfrom\s+marshal\b/, description: 'marshal module import' },
+];
+
+/**
+ * C2 FIX: Validates that submitted code is a legitimate Gradio application
+ * and does not contain dangerous patterns.
+ *
+ * Enforces:
+ * 1. Code must import gradio (allowlist requirement)
+ * 2. Code must use Gradio UI components (allowlist requirement)
+ * 3. Code must not contain any dangerous Python patterns (blocklist)
+ */
+function validateGradioCode(code: string): { valid: boolean; error?: string } {
+  // Requirement: code must import the gradio module
+  const hasGradioImport = /\bimport\s+gradio\b/.test(code) || /\bfrom\s+gradio\b/.test(code);
+  if (!hasGradioImport) {
+    return { valid: false, error: 'Code must import the gradio module. Only Gradio applications are permitted.' };
+  }
+
+  // Requirement: code must use Gradio UI components
+  const hasGradioUsage = /\b(gr\.|gradio\.)(Interface|Blocks|TabbedInterface|ChatInterface|Row|Column|Tab)\b/.test(code);
+  if (!hasGradioUsage) {
+    return { valid: false, error: 'Code must use Gradio components (e.g., gr.Interface, gr.Blocks). Only Gradio applications are permitted.' };
+  }
+
+  // Check against dangerous pattern blocklist
+  for (const { pattern, description } of DANGEROUS_PYTHON_PATTERNS) {
+    if (pattern.test(code)) {
+      return { valid: false, error: `Blocked: code contains forbidden pattern (${description}). Only safe Gradio operations are allowed.` };
+    }
+  }
+
+  return { valid: true };
+}
 
 // A simple in-memory store to keep track of running Gradio processes
 const runningProcesses: Map<string, any> = new Map();
 
+// H6: Limit concurrent Gradio processes to prevent resource exhaustion (DoS)
+const MAX_CONCURRENT_GRADIO_PROCESSES = 5;
+
 export async function POST(request: NextRequest) {
-  // Rate limiting
+  // C2 FIX: Authentication check - require a valid session for code execution
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json(
+      { error: 'Authentication required. You must be signed in to run Gradio applications.' },
+      { status: 401 }
+    );
+  }
+
+  // Rate limiting (strict: 5 requests per minute for code execution)
   const rateLimitResult = await apiRateLimit(request)
   if (!rateLimitResult.success) {
     return NextResponse.json(
-      { error: 'Too many requests' },
+      { error: 'Too many requests. Code execution is rate-limited for security.' },
       {
         status: 429,
         headers: {
@@ -37,6 +159,14 @@ export async function POST(request: NextRequest) {
         },
       }
     )
+  }
+
+  // H6: Enforce concurrent Gradio process limit to prevent unbounded resource creation
+  if (runningProcesses.size >= MAX_CONCURRENT_GRADIO_PROCESSES) {
+    return NextResponse.json(
+      { error: 'Too many concurrent Gradio processes. Please try again later.' },
+      { status: 503, headers: { 'Retry-After': '30' } }
+    );
   }
 
   try {
@@ -63,6 +193,19 @@ export async function POST(request: NextRequest) {
     }
 
     const { code } = validatedData;
+
+    // C2 FIX: Validate code against dangerous pattern blocklist and Gradio allowlist
+    const codeValidation = validateGradioCode(code);
+    if (!codeValidation.valid) {
+      console.warn('Gradio code validation blocked submission', {
+        userId: (session.user as any)?.id || session.user?.email,
+        error: codeValidation.error,
+      });
+      return NextResponse.json(
+        { error: codeValidation.error },
+        { status: 400 }
+      );
+    }
 
     // Create a unique directory for this execution to isolate files
     const execId = crypto.randomUUID();
@@ -93,6 +236,14 @@ export async function POST(request: NextRequest) {
     // Run the Gradio app as a child process
     const gradioApp = spawn('python3', ['app.py'], { cwd: tempDir, detached: true });
     runningProcesses.set(execId, gradioApp); // Track the process
+
+    // H6: Clean up process from tracking map when it exits
+    gradioApp.on('exit', () => {
+      runningProcesses.delete(execId);
+    });
+    gradioApp.on('error', () => {
+      runningProcesses.delete(execId);
+    });
 
     // Wait for the Gradio URL to be printed to stdout
     const url = await new Promise<string>((resolve, reject) => {

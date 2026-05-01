@@ -88,7 +88,7 @@ kubectl get svc -A
 | OpenVSCode | https://vscode.api.local | (configured on first login) |
 | API Docs | https://docs.api.local | Public |
 | Prometheus | http://localhost:9090 | Public |
-| Grafana | http://localhost:3000 | admin:admin |
+| Datadog | https://app.datadoghq.com/ | API key auth |
 
 ---
 
@@ -141,7 +141,7 @@ OAUTH_CLIENT_SECRET=$(openssl rand -base64 32)
 
 # Monitoring
 PROMETHEUS_RETENTION=15d
-GRAFANA_ADMIN_PASSWORD=securepassword456
+DD_API_KEY=your_datadog_api_key
 
 # Environment
 ENVIRONMENT=development
@@ -179,7 +179,7 @@ docker exec traefik-api-gateway \
 # View logs
 docker logs traefik-api-gateway
 docker logs prometheus
-docker logs grafana
+docker logs datadog-agent
 ```
 
 ---
@@ -449,7 +449,7 @@ curl -X POST https://api.vibecode.local/api/v1/terminal/sessions \
 # Prometheus (metrics)
 open http://localhost:9090
 
-# Grafana (dashboards)
+# Datadog (dashboards)
 open http://localhost:3000
 
 # Jaeger (tracing)
@@ -601,7 +601,7 @@ kubectl top pods
 # Valkey
 # Default: no password
 
-# Grafana
+# Datadog
 # Default: admin:admin
 ```
 

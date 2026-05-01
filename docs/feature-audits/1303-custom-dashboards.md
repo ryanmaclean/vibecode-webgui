@@ -7,7 +7,7 @@ Issue: #1303
 - Observability docs exist but no explicit dashboard templates located.
 
 ## Gaps / missing info
-- No clear dashboard configuration (Grafana/Datadog/etc.) in repo.
+- No clear dashboard configuration (Datadog) in repo.
 - Need to verify if dashboards are external-only or missing in mainline.
 
 ## Plan / TODO

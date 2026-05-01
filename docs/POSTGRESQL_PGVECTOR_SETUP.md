@@ -984,7 +984,7 @@ ORDER BY n_dead_tup DESC;
   }
   ```
 
-- [ ] Set up monitoring (Prometheus + Grafana)
+- [ ] Set up monitoring (Datadog + Prometheus)
   ```bash
   # Install postgres_exporter
   brew install postgres_exporter

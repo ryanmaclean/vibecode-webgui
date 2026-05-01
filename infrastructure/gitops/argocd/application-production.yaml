@@ -78,7 +78,7 @@ spec:
   - name: URL
     value: https://vibecode-webgui.yourdomain.com
   - name: Monitoring
-    value: https://grafana.yourdomain.com/d/vibecode-overview
+    value: https://app.datadoghq.com/dashboard/vibecode-overview
 
 ---
 # ArgoCD Application for Database Migration Job (Production)

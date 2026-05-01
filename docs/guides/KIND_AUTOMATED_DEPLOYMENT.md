@@ -22,7 +22,7 @@ export DD_API_KEY="your-api-key"
 # Run the Tundra bootstrap (recommended)
 ./scripts/kind-tundra-bootstrap.sh tundra-dome
 
-# Or run full automation with Prometheus/Grafana
+# Or run full automation with Datadog + Prometheus
 ./scripts/kind-full-automation.sh
 ```
 
@@ -32,7 +32,7 @@ export DD_API_KEY="your-api-key"
 |--------|---------|
 | `mac-mini-m4-setup.sh` | Fresh Mac setup (Homebrew, Docker, KIND, kubectl, Helm) |
 | `kind-tundra-bootstrap.sh` | Create KIND cluster with Tundra Dome + Datadog DSM |
-| `kind-full-automation.sh` | Full stack with Prometheus/Grafana (more resources) |
+| `kind-full-automation.sh` | Full stack with Datadog + Prometheus (more resources) |
 
 ## Prerequisites
 

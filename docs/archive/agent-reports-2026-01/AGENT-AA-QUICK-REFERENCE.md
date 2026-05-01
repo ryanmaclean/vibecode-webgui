@@ -16,7 +16,7 @@ chmod +x observability-stack-setup.sh
 /opt/observability/bin/start-observability.sh
 
 # 3. Access dashboards
-open http://localhost:3000  # Grafana (admin/admin)
+open https://app.datadoghq.com/  # Datadog
 open http://localhost:9090  # Prometheus
 open http://localhost:16686 # Jaeger tracing
 ```
@@ -27,15 +27,15 @@ open http://localhost:16686 # Jaeger tracing
 
 | Service | Endpoint | Purpose |
 |---------|----------|---------|
-| **Grafana** | http://localhost:3000 | Dashboards & visualization |
+| **Datadog** | https://app.datadoghq.com/ | Dashboards & visualization |
 | **Prometheus** | http://localhost:9090 | Metrics & queries |
 | **Jaeger UI** | http://localhost:16686 | Distributed tracing |
-| **Loki** | http://localhost:3100 | Log aggregation |
+| **Datadog Log Explorer** | https://app.datadoghq.com/logs | Log aggregation & search |
 | **OTEL Collector** | http://localhost:4317 (gRPC) | Telemetry ingestion |
 | **OTEL Collector** | http://localhost:4318 (HTTP) | Telemetry ingestion |
 
 **Default Credentials**:
-- Grafana: `admin` / `admin`
+- Datadog: API key authentication
 
 ---
 
@@ -57,15 +57,19 @@ curl 'http://localhost:9090/api/v1/query?query=process_cpu_seconds_total'
 ### Query Logs
 
 ```bash
-# Query Loki logs
-curl -G 'http://localhost:3100/loki/api/v1/query' \
-  --data-urlencode 'query={service="valkey"}' \
-  --data-urlencode 'limit=10'
+# Search Datadog logs for a specific service
+curl -X POST "https://api.datadoghq.com/api/v2/logs/events/search" \
+  -H "DD-API-KEY: ${DD_API_KEY}" \
+  -H "DD-APPLICATION-KEY: ${DD_APP_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"filter":{"query":"service:valkey","from":"now-1h","to":"now"},"page":{"limit":10}}'
 
-# Search for errors
-curl -G 'http://localhost:3100/loki/api/v1/query' \
-  --data-urlencode 'query={service=~".+"} |~ "ERROR"' \
-  --data-urlencode 'limit=50'
+# Search for errors across all services
+curl -X POST "https://api.datadoghq.com/api/v2/logs/events/search" \
+  -H "DD-API-KEY: ${DD_API_KEY}" \
+  -H "DD-APPLICATION-KEY: ${DD_APP_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"filter":{"query":"status:error","from":"now-1h","to":"now"},"page":{"limit":50}}'
 ```
 
 ### Find Traces
@@ -126,44 +130,49 @@ http_connections{service="openvscode"}
 
 ---
 
-## LogQL Queries (Loki)
+## Datadog Log Search Queries
 
 ### Basic Queries
 
-```logql
+```bash
 # All logs from a service
-{service="valkey"}
+# In Datadog Log Explorer: service:valkey
 
 # Logs with specific level
-{service="postgresql"} | json | level="ERROR"
+# In Datadog Log Explorer: service:postgresql status:error
 
 # Full-text search
-{service="openvscode"} |~ "timeout"
+# In Datadog Log Explorer: service:openvscode timeout
 
-# Multiple filters
-{service=~"valkey|postgresql"} | json | level="ERROR" | line_format "{{.timestamp}} {{.message}}"
+# Via API: search logs for a service with error status
+curl -X POST "https://api.datadoghq.com/api/v2/logs/events/search" \
+  -H "DD-API-KEY: ${DD_API_KEY}" \
+  -H "DD-APPLICATION-KEY: ${DD_APP_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"filter":{"query":"service:valkey status:error","from":"now-15m","to":"now"},"page":{"limit":25}}'
 ```
 
 ### Advanced Queries
 
-```logql
-# Error rate (per minute)
-rate({service=~".+"} |~ "ERROR" [1m])
+```bash
+# Error rate grouped by service (use Datadog Log Analytics)
+# In Datadog Log Explorer: status:error | group by service | count
 
-# Logs grouped by service
-sum by (service) (rate({service=~".+"} [5m]))
-
-# Top 10 error messages
-topk(10, sum by (message) (rate({level="ERROR"} [1h])))
+# Via API: aggregate error counts by service
+curl -X POST "https://api.datadoghq.com/api/v2/logs/analytics/aggregate" \
+  -H "DD-API-KEY: ${DD_API_KEY}" \
+  -H "DD-APPLICATION-KEY: ${DD_APP_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"filter":{"query":"status:error","from":"now-1h","to":"now"},"compute":[{"aggregation":"count"}],"group_by":[{"facet":"service"}]}'
 ```
 
 ---
 
-## Grafana Dashboard Shortcuts
+## Datadog Dashboard Shortcuts
 
 ### Navigate Dashboards
 
-- **Home**: Click Grafana logo (top-left)
+- **Home**: Click Datadog logo (top-left)
 - **Search**: Press `/` or `Ctrl+K`
 - **Time Range**: Click time picker (top-right)
 - **Refresh**: Click refresh icon or press `Shift+R`
@@ -187,8 +196,8 @@ topk(10, sum by (message) (rate({level="ERROR"} [1h])))
 # Prometheus alerts
 curl 'http://localhost:9090/api/v1/alerts'
 
-# Grafana alerts
-curl -H "Authorization: Bearer ${GRAFANA_API_KEY}" \
+# Datadog alerts
+curl -H "Authorization: Bearer ${DD_API_KEY}" \
   'http://localhost:3000/api/alerts'
 ```
 
@@ -360,7 +369,7 @@ tail -f /var/log/observability/otel-collector.log | grep datadog
 
 ---
 
-## Common Grafana Dashboards
+## Common Datadog Dashboards
 
 ### Available Dashboards
 
@@ -378,7 +387,7 @@ tail -f /var/log/observability/otel-collector.log | grep datadog
 ```bash
 # Via API
 curl -X POST -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ${GRAFANA_API_KEY}" \
+  -H "Authorization: Bearer ${DD_API_KEY}" \
   -d @dashboard.json \
   http://localhost:3000/api/dashboards/db
 
@@ -419,14 +428,12 @@ curl -G 'http://localhost:9090/api/v1/query' \
 # Stop all observability services
 pkill prometheus
 pkill otelcol-contrib
-pkill loki
-pkill promtail
 pkill jaeger-all-in-one
-pkill grafana-server
+# Datadog agent managed by systemd
 
 # Or kill by PID
 kill $(cat /tmp/prometheus.pid)
-kill $(cat /tmp/grafana.pid)
+kill $(cat /tmp/datadog-agent.pid)
 ```
 
 ---
@@ -457,9 +464,9 @@ export PROMETHEUS_STORAGE_PATH="/var/lib/observability/prometheus"
 ## Useful Links
 
 - **Prometheus Documentation**: https://prometheus.io/docs/
-- **Grafana Documentation**: https://grafana.com/docs/
+- **Datadog Documentation**: https://docs.datadoghq.com/
 - **OpenTelemetry Documentation**: https://opentelemetry.io/docs/
-- **Loki Documentation**: https://grafana.com/docs/loki/latest/
+- **Datadog Logs Documentation**: https://docs.datadoghq.com/logs/
 - **Jaeger Documentation**: https://www.jaegertracing.io/docs/
 
 ---
@@ -470,7 +477,7 @@ export PROMETHEUS_STORAGE_PATH="/var/lib/observability/prometheus"
 
 ```bash
 # All services status
-ps aux | grep -E '(prometheus|grafana|otel|loki|jaeger)'
+ps aux | grep -E '(prometheus|datadog|otel|jaeger)'
 
 # Check ports
 netstat -tlnp | grep -E '(3000|9090|4317|16686)'
@@ -488,8 +495,8 @@ prometheus --help
 # OTEL Collector help
 otelcol-contrib --help
 
-# Grafana help
-grafana-server --help
+# Datadog agent help
+datadog-agent --help
 ```
 
 ---
@@ -500,23 +507,20 @@ grafana-server --help
 /opt/observability/
 ├── bin/                  # Binaries
 ├── config/               # Configuration files
-├── dashboards/           # Grafana dashboards
+├── dashboards/           # Datadog dashboards
 ├── prometheus/           # Prometheus installation
-├── grafana/              # Grafana installation
+├── datadog-agent/        # Datadog agent installation
 └── jaeger/               # Jaeger installation
 
 /var/lib/observability/
 ├── prometheus/           # Metrics data
-├── loki/                 # Log data
-└── grafana/              # Grafana data
+└── datadog-agent/        # Datadog agent data
 
 /var/log/observability/
 ├── prometheus.log
 ├── otel-collector.log
-├── loki.log
-├── promtail.log
 ├── jaeger.log
-└── grafana.log
+└── datadog-agent.log
 ```
 
 ---

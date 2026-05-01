@@ -359,7 +359,7 @@ Install monitoring tools:
 # In each VM
 apk add --no-cache \
     prometheus-node-exporter \
-    grafana-agent
+    datadog-agent
 
 # Configure exporters
 rc-update add node-exporter

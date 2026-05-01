@@ -11,6 +11,10 @@ import Link from 'next/link'
 import { DemoBanner } from '@/components/ui/DemoBanner'
 import { Radio, Gauge, Sparkles, ArrowRight } from 'lucide-react'
 
+function escapeHtml(str: string): string {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
 export default function MonitoringDashboard() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('overview')
@@ -304,15 +308,15 @@ export default function MonitoringDashboard() {
                   modal.innerHTML = `
                     <div data-testid="trace-details-panel" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                       <div class="bg-white p-6 rounded-lg max-w-4xl w-full mx-4">
-                        <h3 class="text-lg font-medium mb-4">Trace Details: ${trace.traceId}</h3>
+                        <h3 class="text-lg font-medium mb-4">Trace Details: ${escapeHtml(trace.traceId)}</h3>
                         <div data-testid="trace-timeline" class="mb-4 p-4 bg-gray-50 rounded">
                           <div class="text-sm text-gray-600">Timeline visualization would go here</div>
                         </div>
                         <div data-testid="span-list" class="space-y-2">
                           <div class="text-sm font-medium">Spans:</div>
                           <div class="p-2 bg-blue-50 rounded">
-                            <div class="font-mono text-xs">${trace.service} - ${trace.operation}</div>
-                            <div class="text-xs text-gray-600">Duration: ${trace.duration}</div>
+                            <div class="font-mono text-xs">${escapeHtml(trace.service)} - ${escapeHtml(trace.operation)}</div>
+                            <div class="text-xs text-gray-600">Duration: ${escapeHtml(trace.duration)}</div>
                           </div>
                         </div>
                         <button onclick="this.closest('[data-testid=trace-details-panel]').remove()" class="mt-4 px-4 py-2 bg-gray-600 text-white rounded">Close</button>

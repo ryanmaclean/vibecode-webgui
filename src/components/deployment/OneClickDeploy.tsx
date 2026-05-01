@@ -111,19 +111,19 @@ const DEPLOYMENT_PLATFORMS = [
   }
 ]
 
-// Environment variable templates
+// Environment variable templates (placeholder values shown as examples for the UI)
 const ENV_TEMPLATES = {
   development: {
     NEXTAUTH_URL: 'http://localhost:3000',
     NODE_ENV: 'development',
-    OPENROUTER_API_KEY: 'your-openrouter-api-key-here',
-    NEXTAUTH_SECRET: 'your-nextauth-secret-here'
+    OPENROUTER_API_KEY: '<your-api-key>',
+    NEXTAUTH_SECRET: '<generate-with-openssl-rand-base64-32>'
   },
   production: {
     NEXTAUTH_URL: 'https://your-app-domain.com',
     NODE_ENV: 'production',
-    OPENROUTER_API_KEY: 'your-openrouter-api-key-here',
-    NEXTAUTH_SECRET: 'your-nextauth-secret-here'
+    OPENROUTER_API_KEY: '<your-api-key>',
+    NEXTAUTH_SECRET: '<generate-with-openssl-rand-base64-32>'
   }
 }
 

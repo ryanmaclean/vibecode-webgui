@@ -27,8 +27,23 @@ const getNodePty = async () => {
 interface PtyProcess {
   process: any; // node-pty IPty interface
   ws: WebSocket;
+  userId: string;
 }
 const activeProcesses = new Map<string, PtyProcess>();
+
+// H6: Limit PTY sessions to prevent unbounded resource creation (DoS)
+const MAX_TOTAL_PTY_SESSIONS = 20;
+const MAX_PTY_SESSIONS_PER_USER = 10;
+
+function getPtySessionCountForUser(userId: string): number {
+  let count = 0;
+  for (const proc of activeProcesses.values()) {
+    if (proc.userId === userId) {
+      count++;
+    }
+  }
+  return count;
+}
 
 // WebSocket server setup
 let wss: WebSocketServer | null = null;
@@ -55,6 +70,18 @@ function ensureWebSocketServer() {
       }
 
       const { workspaceId, userId } = validation.data;
+
+      // H6: Enforce PTY session limits to prevent unbounded resource creation
+      if (activeProcesses.size >= MAX_TOTAL_PTY_SESSIONS) {
+        logger.warn('Maximum total PTY sessions reached');
+        ws.close(4004, 'Maximum total terminal sessions reached');
+        return;
+      }
+      if (getPtySessionCountForUser(userId) >= MAX_PTY_SESSIONS_PER_USER) {
+        logger.warn(`Maximum PTY sessions per user reached for user: ${userId}`);
+        ws.close(4004, 'Maximum terminal sessions per user reached');
+        return;
+      }
 
       try {
         // SECURITY: Construct safe workspace path
@@ -86,7 +113,7 @@ function ensureWebSocketServer() {
         });
 
         // Store the PTY process
-        activeProcesses.set(workspaceId, { process: ptyProcess, ws });
+        activeProcesses.set(workspaceId, { process: ptyProcess, ws, userId });
 
         // Handle data from PTY process
         ptyProcess.onData((data: string) => {

@@ -11,7 +11,7 @@
 ### Desktop Extensions & Builds
 - **VSIX Supply:** Maintain VSIX mirror for top 50 VSCode extensions; run nightly compatibility sweeps on macOS, Windows, Linux.
 - **Custom Packaging:** Ship signed installers via electron-builder with Hardened Runtime on macOS and MSIX on Windows; auto-update through private CDN.
-- **Telemetry Harmonization:** Embed shared OpenTelemetry client with feature flags for Datadog vs Grafana back ends.
+- **Telemetry Harmonization:** Embed shared OpenTelemetry client with feature flags for Datadog back end.
 - **Licensing Checks:** Integrate FOSSA and OpenSSF Scorecard in CI to validate transitive dependencies before cutting release candidates.
 - **Testing Matrix:** Execute Playwright smoke suites plus Jest component checks per platform build; gate merges on green matrix.
 ### Mobile & Emerging Platforms

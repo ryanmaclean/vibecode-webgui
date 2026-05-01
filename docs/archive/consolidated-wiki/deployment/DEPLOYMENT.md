@@ -163,7 +163,7 @@ Services included:
 - NGINX Reverse Proxy (ports 80/443)
 - Code Server for VS Code (port 8080)
 - AI Gateway Service (port 3001)
-- Prometheus + Grafana (ports 9090/3001) - optional
+- Datadog + Prometheus (ports 9090/3001) - optional
 
 ## ☸️ Kubernetes Deployment
 

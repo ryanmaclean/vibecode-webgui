@@ -166,26 +166,6 @@ services:
     profiles:
       - monitoring
 
-  # Optional: Grafana for dashboards
-  grafana:
-    image: grafana/grafana:latest
-    container_name: vibecode-grafana
-    restart: unless-stopped
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
-      - DD_SERVICE=${DD_SERVICE:-grafana}
-      - DD_ENV=${DD_ENV:-development}
-      - DD_VERSION=${DD_VERSION:-0.1.0}
-      - DD_TAGS=team:platform,component:infra
-    volumes:
-      - grafana-data:/var/lib/grafana
-    networks:
-      - vibecode-network
-    profiles:
-      - monitoring
-
   # Dropbear SSH service for remote access
   dropbear:
     image: alpine:3.22
@@ -218,8 +198,6 @@ volumes:
   code-config:
     driver: local
   prometheus-data:
-    driver: local
-  grafana-data:
     driver: local
 
 networks:

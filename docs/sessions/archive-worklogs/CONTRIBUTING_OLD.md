@@ -24,7 +24,7 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
 
 ### High-Priority Contributions
 - **More vector database examples** (Qdrant, Weaviate, etc.)
-- **Additional monitoring integrations** (Prometheus, Grafana)
+- **Additional monitoring integrations** (Datadog, Prometheus)
 - **Performance optimizations** for vector searches
 - **Documentation improvements** (especially troubleshooting)
 

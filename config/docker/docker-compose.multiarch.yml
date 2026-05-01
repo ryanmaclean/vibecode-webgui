@@ -215,29 +215,6 @@ services:
     profiles:
       - monitoring
 
-  grafana:
-    image: grafana/grafana:latest
-    container_name: vibecode-grafana-multiarch
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - DD_SERVICE=${DD_SERVICE:-grafana}
-      - DD_ENV=${DD_ENV:-development}
-      - DD_VERSION=${DD_VERSION:-0.1.0}
-      - DD_TAGS=team:platform,component:infra
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./config/grafana:/etc/grafana/provisioning:ro
-    networks:
-      - vibecode-network
-    depends_on:
-      - prometheus
-    restart: unless-stopped
-    profiles:
-      - monitoring
-
   # Docker-in-Docker for container operations
   docker:
     image: docker:27.4.1-dind
@@ -287,8 +264,6 @@ volumes:
   nginx-cache:
     driver: local
   prometheus-data:
-    driver: local
-  grafana-data:
     driver: local
   docker-data:
     driver: local

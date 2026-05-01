@@ -508,7 +508,7 @@ Set up alerts if:
 ### Testing Resources
 - [Go Testing](https://golang.org/pkg/testing/)
 - [Integration Testing Best Practices](https://martinfowler.com/articles/integration-contract-testing.html)
-- [Performance Testing Guide](https://grafana.com/docs/k6/latest/)
+- [Performance Testing Guide](https://k6.io/docs/)
 
 ---
 

@@ -223,7 +223,7 @@ Update deployment YAML files in Week 1.
 
 ### Monitoring
 - Datadog dashboard: API Route Consolidation (TBD)
-- Proxy usage metrics: Grafana panel (TBD)
+- Proxy usage metrics: Datadog dashboard widget (TBD)
 - Error tracking: Sentry project (TBD)
 
 ## Team

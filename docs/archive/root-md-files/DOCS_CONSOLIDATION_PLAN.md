@@ -134,7 +134,7 @@ infrastructure/ → deployment/
 ### Current State Issues
 - Different API key references across files
 - Inconsistent license information
-- Outdated Grafana references (now removed)
+- Outdated monitoring tool references (now removed)
 - Missing Vector documentation
 
 ### ✅ Standardized Monitoring Stack Documentation
@@ -144,7 +144,7 @@ infrastructure/ → deployment/
 - Prometheus (Apache 2.0 license)
 - Vector (MPL-2.0 license)
 
-**Alternatives**: OpenTelemetry Collector (Apache 2.0), Grafana (AGPL v3)
+**Alternatives**: OpenTelemetry Collector (Apache 2.0), Datadog (commercial)
 
 **Security**: Kubehound attack path analysis
 

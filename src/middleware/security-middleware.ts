@@ -376,10 +376,24 @@ function validateCORS(request: NextRequest): { valid: boolean; headers: Record<s
 let __TEST__bypassEnabled = false;
 
 /**
+ * Allowed origins for development/test mode CORS.
+ * Instead of a wildcard, only these explicit localhost origins are permitted.
+ */
+const ALLOWED_DEV_ORIGINS = new Set([
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+]);
+
+/**
  * Enable/disable security checks bypass for testing
  * @internal - Only for use in unit tests
  */
 export function __TEST__bypassSecurityChecks(bypass: boolean): void {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('Security bypass is only available in test environment');
+  }
   __TEST__bypassEnabled = bypass;
 }
 
@@ -426,21 +440,27 @@ export async function apiSecurityMiddleware(request: NextRequest): Promise<NextR
         return new NextResponse('CORS policy violation', { status: 403 });
       }
     } else {
-      // For test/development, create a valid CORS response
-      corsValidation = { valid: true, headers: { 'Access-Control-Allow-Origin': origin || '*' } };
+      // For test/development, only allow explicit localhost origins (no wildcard)
+      const allowedOrigin = origin && ALLOWED_DEV_ORIGINS.has(origin) ? origin : undefined;
+      corsValidation = { valid: true, headers: { ...(allowedOrigin && { 'Access-Control-Allow-Origin': allowedOrigin }) } };
+    }
+
+    const corsOrigin = corsValidation.headers?.['Access-Control-Allow-Origin'];
+    const preflightHeaders: Record<string, string> = {
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+      'Access-Control-Max-Age': '86400',
+    };
+    if (corsOrigin) {
+      preflightHeaders['Access-Control-Allow-Origin'] = corsOrigin;
+    }
+    if (corsValidation.headers?.['Access-Control-Allow-Credentials']) {
+      preflightHeaders['Access-Control-Allow-Credentials'] = 'true';
     }
 
     return new NextResponse(null, {
       status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': corsValidation.headers?.['Access-Control-Allow-Origin'] || '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
-        'Access-Control-Max-Age': '86400',
-        ...(corsValidation.headers?.['Access-Control-Allow-Credentials'] && {
-          'Access-Control-Allow-Credentials': 'true'
-        })
-      }
+      headers: preflightHeaders,
     });
   }
 
@@ -481,7 +501,23 @@ export function addSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'origin-when-cross-origin');
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-  
+  response.headers.set(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-eval'",       // Monaco editor requires unsafe-eval
+      "style-src 'self' 'unsafe-inline'",       // React inline styles + Monaco/xterm themes
+      "img-src 'self' data: blob:",
+      "font-src 'self' data:",
+      "connect-src 'self' wss: https:",         // WebSocket connections + external AI API calls
+      "worker-src 'self' blob:",                // Monaco editor web workers
+      "frame-src 'none'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; ')
+  );
+
   return response;
 }
 
