@@ -88,12 +88,13 @@ async function getDatadogHealth(): Promise<DatadogHealthResult> {
       if (ddAgentHost) {
         // Try to check agent health via HTTP
         try {
-          const healthCheck = await execAsync(
-            `curl -s -o /dev/null -w "%{http_code}" http://${ddAgentHost}:${ddAgentPort}/info`,
-            { timeout: CHECK_TIMEOUT_MS }
-          );
+          const agentInfoUrl = `http://${ddAgentHost}:${ddAgentPort}/info`;
+          const agentResponse = await fetch(agentInfoUrl, {
+            signal: AbortSignal.timeout(CHECK_TIMEOUT_MS),
+          });
+          const statusCode = agentResponse.status.toString();
 
-          if (healthCheck.stdout.trim() === '200') {
+          if (statusCode === '200') {
             agentRunning = true;
             apiConnected = true;
             // Assume all features are active if agent responds
@@ -173,12 +174,16 @@ async function getOpenTelemetryHealth(): Promise<OpenTelemetryHealthResult> {
         const endpointUrl = new URL(otelEndpoint);
         const healthUrl = `${endpointUrl.protocol}//${endpointUrl.host}/health`;
 
-        const healthCheck = await execAsync(
-          `curl -s -o /dev/null -w "%{http_code}" ${healthUrl}`,
-          { timeout: CHECK_TIMEOUT_MS }
-        );
+        let otelHealthResponse: Response;
+        try {
+          otelHealthResponse = await fetch(healthUrl, {
+            signal: AbortSignal.timeout(CHECK_TIMEOUT_MS),
+          });
+        } catch {
+          throw new Error('OpenTelemetry collector endpoint not reachable');
+        }
 
-        if (healthCheck.stdout.trim() === '200') {
+        if (otelHealthResponse.status === 200) {
           collectorRunning = true;
           otlpEndpointReachable = true;
           receiversActive = true;
@@ -186,12 +191,16 @@ async function getOpenTelemetryHealth(): Promise<OpenTelemetryHealthResult> {
         } else {
           // Try alternate endpoint
           const metricsUrl = `${endpointUrl.protocol}//${endpointUrl.host}/metrics`;
-          const metricsCheck = await execAsync(
-            `curl -s -o /dev/null -w "%{http_code}" ${metricsUrl}`,
-            { timeout: CHECK_TIMEOUT_MS }
-          );
+          let otelMetricsResponse: Response;
+          try {
+            otelMetricsResponse = await fetch(metricsUrl, {
+              signal: AbortSignal.timeout(CHECK_TIMEOUT_MS),
+            });
+          } catch {
+            throw new Error('OpenTelemetry collector metrics endpoint not reachable');
+          }
 
-          if (metricsCheck.stdout.trim() === '200') {
+          if (otelMetricsResponse.status === 200) {
             collectorRunning = true;
             otlpEndpointReachable = true;
             receiversActive = true;
