@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { DemoBanner } from '@/components/ui/DemoBanner'
 import {
   MessageSquare,
@@ -256,6 +257,7 @@ const ITEMS_PER_PAGE = 8
 // ============================================================================
 
 export default function AIConversationsPage() {
+  const t = useTranslations()
   const [searchQuery, setSearchQuery] = useState('')
   const [modelFilter, setModelFilter] = useState<ModelFilter>('all')
   const [dateFilter, setDateFilter] = useState<DateFilter>('all')
