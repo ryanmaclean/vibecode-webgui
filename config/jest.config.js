@@ -53,7 +53,7 @@ const config = {
   },
 
   transformIgnorePatterns: [
-    '/node_modules/(?!(.*\\.mjs$|@codemirror|@lezer|@codemirror/))',
+    '/node_modules/(?!(.*\\.mjs$|@codemirror|@lezer|@codemirror/|next-intl|use-intl|@formatjs))',
   ],
 
   // Test environment options

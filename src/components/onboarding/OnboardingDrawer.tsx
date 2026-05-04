@@ -229,7 +229,7 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
                 <a href="/tools/codeium" className="no-underline">{t('onboarding.codeiumPlayground')}</a>
               </Badge>
               <Badge variant="secondary">
-                <a href="/console" className="no-underline">{t('onboarding.aiConsole')}</a>
+                <a href="/chat" className="no-underline">{t('onboarding.aiConsole')}</a>
               </Badge>
               <Badge variant="secondary">
                 <a href="/docs/logs/AGENT_ACTIVITY_LOG.md" target="_blank" rel="noreferrer" className="no-underline">

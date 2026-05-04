@@ -5,7 +5,5 @@
  */
 
 describe('Datadog Integration Tests', () => {
-  test('placeholder - tests moved to datadog-real.test.ts', () => {
-    expect(true).toBe(true);
-  });
+  it.todo('placeholder - tests moved to datadog-real.test.ts');
 });

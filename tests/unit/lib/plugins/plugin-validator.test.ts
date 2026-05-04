@@ -175,18 +175,10 @@ describe('Plugin Validator', () => {
   });
 
   describe('sanitizeManifest', () => {
-    it('should normalize manifest fields', () => {
-      // Test would require importing sanitizeManifest if exported
-      // For now, this is covered by validatePluginManifest tests
-      expect(true).toBe(true);
-    });
+    it.todo('should normalize manifest fields - requires sanitizeManifest to be exported');
   });
 
   describe('getValidationSummary', () => {
-    it('should provide validation summary', () => {
-      // Test would require importing getValidationSummary if exported
-      // For now, this is covered by the result structure tests
-      expect(true).toBe(true);
-    });
+    it.todo('should provide validation summary - requires getValidationSummary to be exported');
   });
 });

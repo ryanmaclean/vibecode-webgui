@@ -52,12 +52,12 @@ export async function GET(request: NextRequest) {
 }
 
 async function getLLMLatencyData(timeframe: string, model?: string | null) {
-  // TODO: Implement real data fetching from Datadog or metrics database
-  // For now, return structure that matches component expectations
   return {
     timestamp: new Date().toISOString(),
     timeRange: timeframe,
     model: model || undefined,
+    data_available: false,
+    message: 'Metrics collection requires a connected Datadog or metrics backend',
     metrics: {
       avgLatency: 0,
       p50Latency: 0,

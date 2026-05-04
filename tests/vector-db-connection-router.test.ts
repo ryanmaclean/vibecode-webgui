@@ -172,11 +172,8 @@ describe('VectorDBConnectionRouter', () => {
     const mockFactory = new MockDatabasePoolFactory();
     const router = new VectorDBConnectionRouter(primarySettings, replicaSettings, {}, mockFactory);
     
-    await router.close();
-    
-    // Verify all pools were closed (this test will need to be updated based on the actual implementation)
-    // For now, just verify the method doesn't throw
-    expect(true).toBe(true);
+    // Verify all pools were closed (just verify the method doesn't throw)
+    await expect(router.close()).resolves.not.toThrow();
   });
   
   test('falls back to primary when no replicas available', async () => {

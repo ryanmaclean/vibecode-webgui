@@ -89,6 +89,8 @@ const serverExternalPackages = [
   '@opentelemetry/exporter-jaeger',
   // Native modules that need special handling
   'node-pty',
+  // tiktoken uses a WASM file that must be loaded from disk at runtime
+  'tiktoken',
   // Exclude Node.js built-ins from client bundles
   'child_process',
   'fs',

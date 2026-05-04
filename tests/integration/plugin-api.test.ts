@@ -90,7 +90,7 @@ describe('Plugin API Integration Tests', () => {
         // Skip test if database not available
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true); // Pass test when database unavailable
+          return;
         } else {
           throw error;
         }
@@ -149,7 +149,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -168,7 +168,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -188,7 +188,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -213,7 +213,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -266,7 +266,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -317,7 +317,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -341,7 +341,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -365,7 +365,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -389,7 +389,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -436,7 +436,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -454,7 +454,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -471,7 +471,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -513,7 +513,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -558,7 +558,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -578,7 +578,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -597,7 +597,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -625,7 +625,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -651,7 +651,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
@@ -677,10 +677,10 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
-          // File size validation may occur at different layers
-          expect(true).toBe(true);
+          // File size validation may occur at different layers - swallow non-DB errors
+          return;
         }
       }
     });
@@ -703,36 +703,20 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }
       }
     });
 
-    it('should persist plugin to database', async () => {
-      // This test would require a valid plugin file and database
-      // Skipped in test environment without proper setup
-      expect(true).toBe(true);
-    });
+    it.todo('should persist plugin to database');
 
-    it('should return validation warnings', async () => {
-      // This test would require a plugin with validation issues
-      // Skipped in test environment without proper setup
-      expect(true).toBe(true);
-    });
+    it.todo('should return validation warnings');
 
-    it('should handle duplicate installation with force flag', async () => {
-      // This test would require proper plugin installation flow
-      // Skipped in test environment without proper setup
-      expect(true).toBe(true);
-    });
+    it.todo('should handle duplicate installation with force flag');
 
-    it('should auto-enable if autoEnable flag set', async () => {
-      // This test would require proper plugin installation flow
-      // Skipped in test environment without proper setup
-      expect(true).toBe(true);
-    });
+    it.todo('should auto-enable if autoEnable flag set');
 
     it('should require authentication', async () => {
       // Call without auth
@@ -749,7 +733,7 @@ describe('Plugin API Integration Tests', () => {
       } catch (error: any) {
         if (error.message?.includes('DATABASE_URL') || error.message?.includes('PrismaClient')) {
           console.warn('Skipping test - database not available');
-          expect(true).toBe(true);
+          return;
         } else {
           throw error;
         }

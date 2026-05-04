@@ -51,19 +51,17 @@ export async function GET(request: NextRequest) {
 }
 
 async function getLLMTokenData(timeframe: string) {
-  // TODO: Implement real data fetching from Datadog or metrics database
-  // For now, return structure that matches component expectations
-  const totalPromptTokens = 0
-  const totalCompletionTokens = 0
   return {
     timestamp: new Date().toISOString(),
     timeRange: timeframe,
+    data_available: false,
+    message: 'Metrics collection requires a connected Datadog or metrics backend',
     totalTokens: 0,
-    totalPromptTokens,
-    totalCompletionTokens,
+    totalPromptTokens: 0,
+    totalCompletionTokens: 0,
     totalRequests: 0,
     avgTokensPerRequest: 0,
-    promptToCompletionRatio: totalPromptTokens / Math.max(1, totalCompletionTokens),
+    promptToCompletionRatio: 0,
     models: [],
     timeSeries: []
   }

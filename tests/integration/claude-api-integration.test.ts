@@ -7,10 +7,8 @@
  * Staff Engineer Implementation - Production-ready API testing
  */
 
-import { describe, test, expect } from '@jest/globals'
+import { describe, it } from '@jest/globals'
 
 describe('Claude API Integration Tests', () => {
-  test('placeholder for Claude API integration', () => {
-    expect(true).toBe(true);
-  });
+  it.todo('placeholder for Claude API integration');
 });

@@ -34,13 +34,13 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // When API key is configured, return placeholder for real tracking data.
-    // In production, this would aggregate data from a metrics store.
+    // API key is present but no metrics backend is connected; return honest empty state.
     return NextResponse.json({
       status: 'operational',
-      message: 'AI usage tracking active. Connect a metrics backend for detailed analytics.',
+      message: 'Metrics collection requires a connected Datadog or metrics backend',
       timestamp: new Date().toISOString(),
       timeRange: '24h',
+      data_available: false,
       providers: {},
       models: [],
       totalCost: 0,

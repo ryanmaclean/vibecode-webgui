@@ -202,8 +202,7 @@ describe('Workspace Auto-Scaling', () => {
       // Trigger evaluation
       await autoScaler.evaluateWorkspace(workspaceId)
 
-      // The scaling should have been triggered (we can't easily test the actual scaling without mocking k8s)
-      expect(true).toBe(true) // Basic smoke test
+      // Verified: evaluateWorkspace completed without throwing (actual k8s scaling requires integration test)
     })
 
     it('should respect resource limits', async () => {
