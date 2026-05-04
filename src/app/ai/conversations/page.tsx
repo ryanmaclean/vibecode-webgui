@@ -473,7 +473,7 @@ export default function AIConversationsPage() {
                 }}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                Clear Filters
+                {t('common.clear')}
               </button>
             </div>
           </div>
@@ -506,7 +506,7 @@ export default function AIConversationsPage() {
               }}
               className="text-sm text-blue-600 hover:text-blue-800 font-medium"
             >
-              Clear all filters
+              {t('common.clear')}
             </button>
           )}
         </div>
