@@ -37,6 +37,8 @@ const config = {
     '^@/middleware/(.*)$': '<rootDir>/src/middleware/$1',
     '^@/providers/(.*)$': '<rootDir>/src/providers/$1',
     '^@/instrument$': '<rootDir>/src/instrument.ts',
+    '^next-intl$': '<rootDir>/tests/__mocks__/next-intl.js',
+    '^next-intl/(.*)$': '<rootDir>/tests/__mocks__/next-intl.js',
     '\\.(css|less|scss|sass)$': '<rootDir>/tests/__mocks__/cssModule.js',
     '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/tests/__mocks__/fileMock.js',
   },
@@ -53,7 +55,7 @@ const config = {
   },
 
   transformIgnorePatterns: [
-    '/node_modules/(?!(.*\\.mjs$|@codemirror|@lezer|@codemirror/|next-intl|use-intl|@formatjs))',
+    '/node_modules/(?!(.*\\.mjs$|@codemirror|@lezer|@codemirror/))',
   ],
 
   // Test environment options
