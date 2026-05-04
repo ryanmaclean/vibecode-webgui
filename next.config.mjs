@@ -1,6 +1,9 @@
+import createNextIntlPlugin from 'next-intl/plugin'
 import path from 'path'
 import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
+
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
 // Disable Next.js telemetry globally for every runtime invocation
 process.env.NEXT_TELEMETRY_DISABLED = process.env.NEXT_TELEMETRY_DISABLED || '1'
@@ -364,4 +367,4 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+export default withNextIntl(nextConfig)

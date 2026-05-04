@@ -1,0 +1,857 @@
+{
+  "common": {
+    "appName": "VibeCode",
+    "appFullName": "VibeCode WebGUI",
+    "appTitle": "VibeCode WebGUI - Plateforme de développement propulsée par l'IA",
+    "appDescription": "Environnement de développement web moderne avec assistance par IA",
+    "loading": "Chargement…",
+    "loadingWorkspace": "Chargement de l'espace de travail…",
+    "preparingWorkspace": "Préparation de l'espace de travail IA…",
+    "loadingModels": "Chargement des modèles…",
+    "loadingSettings": "Chargement des paramètres…",
+    "loadingHealth": "Chargement de l'état de santé",
+    "saving": "Enregistrement…",
+    "saved": "Enregistré",
+    "save": "Enregistrer",
+    "saveChanges": "Enregistrer les modifications",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "reset": "Réinitialiser",
+    "resetAll": "Tout réinitialiser",
+    "resetToDefaults": "Réinitialiser les valeurs par défaut",
+    "refresh": "Actualiser",
+    "retry": "Réessayer",
+    "send": "Envoyer",
+    "sending": "Envoi en cours…",
+    "search": "Rechercher",
+    "clear": "Effacer",
+    "copy": "Copier",
+    "open": "Ouvrir",
+    "continue": "Continuer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "back": "Retour",
+    "goHome": "Retour à l'accueil",
+    "tryAgain": "Réessayer",
+    "acknowledge": "Confirmer",
+    "skipToMainContent": "Passer au contenu principal",
+    "switchLanguage": "Changer de langue",
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter",
+    "createAccount": "Créer un compte",
+    "getStarted": "Commencer",
+    "confirm": "Confirmer",
+    "next": "Suivant",
+    "submit": "Envoyer",
+    "export": "Exporter",
+    "import": "Importer",
+    "online": "En ligne",
+    "offlineMode": "Mode hors ligne",
+    "allFeaturesAvailable": "Toutes les fonctionnalités sont disponibles",
+    "limitedFeaturesOffline": "Fonctionnalités limitées en mode hors ligne",
+    "available": "Disponible",
+    "unavailable": "Indisponible",
+    "error": "Erreur",
+    "warning": "Avertissement",
+    "info": "Information",
+    "success": "Succès"
+  },
+  "meta": {
+    "title": "VibeCode WebGUI - Plateforme de développement propulsée par l'IA",
+    "description": "Environnement de développement web moderne avec assistance par IA",
+    "signinTitle": "Connexion - VibeCode WebGUI",
+    "signinDescription": "Connectez-vous à votre compte VibeCode"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "vm": "VM",
+    "vmDashboard": "Dashboard",
+    "vmSnapshots": "Snapshots",
+    "ai": "IA",
+    "aiChat": "Chat",
+    "aiModels": "Modèles",
+    "aiCosts": "Coûts",
+    "aiPrompts": "Prompts",
+    "health": "Santé",
+    "monitoring": "Monitoring",
+    "workspaces": "Espaces de travail",
+    "experiments": "Expérimentations",
+    "tutorials": "Tutoriels",
+    "settings": "Paramètres",
+    "signOut": "Se déconnecter",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu",
+    "showKeyboardShortcuts": "Afficher les raccourcis clavier",
+    "keyboardShortcutsHint": "Raccourcis clavier (⌘/)",
+    "ariaLabel": {
+      "vmMenu": "Menu VM",
+      "aiMenu": "Menu IA"
+    }
+  },
+  "landing": {
+    "heroTitle": "Bienvenue sur VibeCode",
+    "heroSubtitle": "Environnement de développement propulsé par l'IA pour l'ère moderne",
+    "buildFaster": "Développez plus vite avec l'IA",
+    "buildFasterDescription": "Découvrez la prochaine génération d'outils de développement propulsés par l'intelligence artificielle. Écrivez du code, déboguez et déployez avec une rapidité et une précision inégalées.",
+    "lightningFast": "Ultra-rapide",
+    "lightningFastDescription": "Performances optimisées pour un retour instantané et un développement accéléré",
+    "aiPowered": "Propulsé par l'IA",
+    "aiPoweredDescription": "Suggestions de code intelligentes et workflows automatisés",
+    "secure": "Sécurisé",
+    "secureDescription": "Sécurité de niveau entreprise pour votre code et vos données"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "getStarted": "Commencer",
+    "vmManagement": "Gestion des VM",
+    "vmManagementDescription": "Gérer les machines virtuelles",
+    "aiStudio": "AI Studio",
+    "aiStudioDescription": "Modèles, coûts, prompts",
+    "healthMonitor": "Moniteur de santé",
+    "healthMonitorDescription": "État de santé des services",
+    "monitoring": "Monitoring",
+    "monitoringDescription": "Métriques & traces",
+    "settings": "Paramètres",
+    "settingsDescription": "Configuration de l'application",
+    "editor": "Editor",
+    "editorDescription": "Éditeur de code"
+  },
+  "ai": {
+    "dashboard": {
+      "title": "AI Dashboard",
+      "description": "Accédez à plus de 340 modèles d'IA, gérez les agents, suivez les coûts et parcourez les modèles de prompts — le tout en un seul endroit.",
+      "quickActions": "Actions rapides",
+      "newChat": "Nouveau Chat",
+      "compareModels": "Comparer les modèles",
+      "browsePrompts": "Parcourir les prompts",
+      "recentActivity": "Activité récente",
+      "cards": {
+        "chat": "Chat",
+        "chatStat": "Conversations actives : 3",
+        "chatDescription": "Démarrer ou poursuivre des conversations IA",
+        "agents": "Agents",
+        "agentsStat": "6 agents disponibles",
+        "agentsDescription": "Espace de travail multi-agents",
+        "models": "Modèles",
+        "modelsStat": "340+ modèles",
+        "modelsDescription": "Comparer et sélectionner des modèles IA",
+        "costs": "Coûts",
+        "costsStat": "Aujourd'hui : 2,47 $",
+        "costsDescription": "Suivre les coûts d'utilisation de l'IA",
+        "prompts": "Prompts",
+        "promptsStat": "33 modèles",
+        "promptsDescription": "Parcourir la bibliothèque de prompts",
+        "history": "Historique",
+        "historyStat": "142 conversations",
+        "historyDescription": "Voir les conversations passées",
+        "vectorExplorer": "Vector Explorer",
+        "vectorExplorerStat": "Explorer les embeddings",
+        "vectorExplorerDescription": "Visualiser les similarités vectorielles"
+      },
+      "usageStats": {
+        "requestsToday": "Requêtes aujourd'hui",
+        "avgResponseTime": "Temps de réponse moyen",
+        "topModel": "Modèle principal"
+      }
+    },
+    "models": {
+      "pageTitle": "Modèles IA",
+      "pageDescription": "Parcourez, comparez et obtenez des recommandations pour les modèles IA",
+      "refreshButton": "Actualiser",
+      "loadingModels": "Chargement des modèles…",
+      "addModelToComparison": "Ajouter un modèle à la comparaison",
+      "searchPlaceholder": "Rechercher et sélectionner des modèles à comparer…",
+      "modelsSelectedForComparison": "{count} modèles sur 4 sélectionnés pour la comparaison",
+      "getRecommendation": {
+        "title": "Obtenir une recommandation",
+        "description": "Trouvez le meilleur modèle pour votre tâche",
+        "taskTypeLabel": "Type de tâche",
+        "getRecommendationButton": "Obtenir une recommandation",
+        "findingButton": "Recherche en cours…",
+        "confidenceLabel": "Confiance : {percent} %",
+        "monthlyCostLabel": "~{cost} $/mois",
+        "alternativesLabel": "Alternatives"
+      },
+      "taskTypes": {
+        "code_generation": "Génération de code",
+        "code_review": "Revue de code",
+        "debugging": "Débogage",
+        "chat": "Chat",
+        "analysis": "Analyse",
+        "creative_writing": "Écriture créative",
+        "summarization": "Résumé",
+        "translation": "Traduction",
+        "math": "Mathématiques",
+        "research": "Recherche",
+        "general": "Général"
+      },
+      "selector": {
+        "searchPlaceholder": "Rechercher des modèles…",
+        "noModelsFound": "Aucun modèle trouvé",
+        "noModelsFoundHint": "Essayez d'ajuster votre recherche ou vos filtres",
+        "moreFilters": "Plus de filtres",
+        "modelsCount": "{count} modèles",
+        "clearFilters": "Effacer",
+        "minQuality": "Qualité minimale",
+        "minSpeed": "Vitesse minimale",
+        "vision": "Vision",
+        "functionCalling": "Appel de fonctions",
+        "recentlyUsed": "Utilisé récemment",
+        "groups": {
+          "favorites": "Favoris",
+          "recent": "Récents",
+          "localModels": "Modèles locaux"
+        },
+        "qualityOptions": {
+          "any": "Toute",
+          "good": "Bonne+",
+          "excellent": "Excellente+",
+          "stateOfArt": "État de l'art"
+        },
+        "speedOptions": {
+          "any": "Toute",
+          "medium": "Moyenne+",
+          "fast": "Rapide+",
+          "veryFast": "Très rapide"
+        }
+      },
+      "quickFilters": {
+        "bestForCoding": "Idéal pour le code",
+        "bestForCodingDescription": "Meilleurs modèles pour la génération et le débogage de code",
+        "bestValue": "Meilleur rapport qualité-prix",
+        "bestValueDescription": "Excellente qualité à des prix abordables",
+        "fastest": "Les plus rapides",
+        "fastestDescription": "Modèles optimisés pour la vitesse",
+        "largestContext": "Contexte le plus large",
+        "largestContextDescription": "Modèles avec des fenêtres de contexte de 100 000+ tokens",
+        "vision": "Vision",
+        "visionDescription": "Modèles capables de comprendre les images",
+        "freeModels": "Modèles gratuits",
+        "freeModelsDescription": "Modèles IA sans coût"
+      },
+      "badges": {
+        "free": "Gratuit",
+        "low": "Bas",
+        "medium": "Moyen",
+        "high": "Élevé",
+        "slow": "Lent",
+        "fast": "Rapide",
+        "basic": "Basique",
+        "good": "Bon",
+        "excellent": "Excellent",
+        "notApplicable": "N/A"
+      },
+      "switcherPanel": {
+        "title": "Changer de modèle",
+        "viewAll": "Voir tout",
+        "searchPlaceholder": "Rechercher des modèles…",
+        "currentModel": "Modèle actuel",
+        "favorites": "Favoris",
+        "recent": "Récents",
+        "allModels": "Tous les modèles ({count})",
+        "noModelsFound": "Aucun modèle trouvé correspondant à « {query} »",
+        "addToFavorites": "Ajouter aux favoris",
+        "removeFromFavorites": "Retirer des favoris"
+      },
+      "switcherButton": {
+        "selectModel": "Sélectionner un modèle",
+        "ariaLabel": "Changer de modèle IA"
+      }
+    },
+    "costs": {
+      "pageTitle": "Coûts IA",
+      "pageDescription": "Surveillez les dépenses, définissez des budgets et estimez les coûts des modèles IA",
+      "costEstimatorButton": "Estimateur de coûts",
+      "closeEstimatorButton": "Fermer l'estimateur",
+      "quickCostEstimate": "Estimation rapide des coûts",
+      "modelLabel": "Modèle",
+      "sampleMessageLabel": "Message d'exemple",
+      "sampleMessagePlaceholder": "Collez un exemple de prompt pour estimer son coût…",
+      "alerts": {
+        "budgetThresholdTitle": "Seuil budgétaire atteint",
+        "dailyLimitTitle": "Limite journalière atteinte",
+        "sessionLimitTitle": "Limite de session atteinte",
+        "rateSpikeTitle": "Pic de coût inhabituel détecté",
+        "unusualUsageTitle": "Schéma d'utilisation inhabituel",
+        "currentLabel": "Actuel : {cost}",
+        "limitLabel": "Limite : {cost}",
+        "percentOfLimit": "{percent} % de la limite",
+        "acknowledgeButton": "Confirmer",
+        "closeNotification": "Fermer la notification"
+      }
+    },
+    "prompts": {
+      "pageTitle": "Bibliothèque de prompts",
+      "pageDescription": "{count} modèles de prompts réutilisables pour l'assistance au code par IA dans {categories} catégories",
+      "searchPlaceholder": "Rechercher des modèles par nom, description ou tag…",
+      "allTemplates": "Tous les modèles",
+      "noTemplatesFound": "Aucun modèle trouvé",
+      "categories": {
+        "codeReview": "Revue de code",
+        "explainCode": "Expliquer le code",
+        "refactor": "Refactorisation",
+        "generateTests": "Générer des tests",
+        "documentation": "Documentation"
+      },
+      "templateCard": {
+        "recommendedModels": "Modèles recommandés",
+        "variables": "Variables ({required} obligatoire(s){optional})",
+        "systemPrompt": "Prompt système",
+        "userPromptTemplate": "Modèle de prompt utilisateur",
+        "tags": "Tags",
+        "useTemplate": "Utiliser ce modèle",
+        "required": "obligatoire",
+        "type": "type : {type}",
+        "default": "défaut : {value}",
+        "vars": "{count} variable",
+        "varsPlural": "{count} variables"
+      }
+    },
+    "agents": {
+      "pageTitle": "Agents IA",
+      "agentsList": "Agents",
+      "selectAgent": "Sélectionner un agent",
+      "messageCount": "{count} messages",
+      "youLabel": "Vous",
+      "sendButton": "Envoyer",
+      "messagePlaceholder": "Message à {agentName}…",
+      "statusLabels": {
+        "active": "actif",
+        "idle": "inactif",
+        "busy": "occupé"
+      },
+      "agentList": {
+        "codeAssistant": "Assistant code",
+        "codeAssistantRole": "Développeur Full-Stack",
+        "codeAssistantDescription": "Génère, refactorise et explique du code dans plusieurs langages.",
+        "debugHelper": "Assistant débogage",
+        "debugHelperRole": "Chasseur de bugs",
+        "debugHelperDescription": "Analyse les stack traces, identifie les causes racines et suggère des corrections.",
+        "architect": "Architecte",
+        "architectRole": "Concepteur de systèmes",
+        "architectDescription": "Conçoit l'architecture des systèmes, les API et les schémas de base de données.",
+        "reviewer": "Relecteur",
+        "reviewerRole": "Relecteur de code",
+        "reviewerDescription": "Relit le code pour évaluer la qualité, la sécurité et les bonnes pratiques.",
+        "tester": "Testeur",
+        "testerRole": "Ingénieur QA",
+        "testerDescription": "Rédige des tests unitaires, des tests d'intégration et des stratégies de test.",
+        "devops": "DevOps",
+        "devopsRole": "Ingénieur infrastructure",
+        "devopsDescription": "Gère les pipelines CI/CD, Docker, Kubernetes et l'infrastructure cloud."
+      }
+    }
+  },
+  "chat": {
+    "title": "Chat IA",
+    "heading": "Chat IA",
+    "emptyState": "Aucun message pour l'instant. Démarrez une conversation !",
+    "inputPlaceholder": "Saisissez votre message… (Maj+Entrée pour une nouvelle ligne)",
+    "promptPlaceholder": "Posez votre question…",
+    "sendButton": "Envoyer",
+    "sendingButton": "Envoi en cours…",
+    "clearButton": "Effacer",
+    "thinkingIndicator": "Réflexion en cours…",
+    "modelLabel": "Modèle",
+    "modelPlaceholder": "Sélectionner un modèle…",
+    "newConversation": "Nouvelle conversation",
+    "clearChat": "Effacer la conversation",
+    "regenerate": "Régénérer la réponse",
+    "copyCode": "Copier le code",
+    "aiWorkspaceTitle": "Espace de travail IA",
+    "aiWorkspaceSubtitle": "Démarrez une conversation avec votre assistant IA",
+    "costConfirmDialog": {
+      "title": "Confirmer la requête coûteuse",
+      "description": "Ce message est estimé à plus de 500 tokens. Veuillez vérifier l'estimation des coûts ci-dessous.",
+      "modelLabel": "Modèle :",
+      "highTokenWarningTitle": "Nombre de tokens élevé détecté",
+      "highTokenWarningDescription": "Estimation de {tokenCount} tokens. Cette requête peut entraîner des coûts plus élevés.",
+      "cancelButton": "Annuler",
+      "confirmButton": "Envoyer quand même"
+    }
+  },
+  "settings": {
+    "pageTitle": "Paramètres",
+    "pageDescription": "Configurez vos préférences VibeCode et les paramètres de l'application",
+    "title": "Paramètres",
+    "exportSettings": "Exporter les paramètres",
+    "importSettings": "Importer les paramètres",
+    "importSettingsFileLabel": "Importer un fichier de paramètres",
+    "resetToDefaults": "Réinitialiser les valeurs par défaut",
+    "setupWizard": "Assistant de configuration",
+    "exportSuccess": "Paramètres exportés avec succès",
+    "exportFailed": "Échec de l'exportation des paramètres",
+    "importSelectJson": "Veuillez sélectionner un fichier JSON",
+    "importOverwriteConfirm": "Cette action écrasera vos paramètres actuels. Continuer ?",
+    "importInvalidFormat": "Format de fichier de paramètres invalide",
+    "importInvalidSections": "Le fichier de paramètres ne contient pas de sections valides",
+    "importParseFailed": "Impossible d'analyser le fichier de paramètres. Assurez-vous qu'il contient du JSON valide.",
+    "importSuccess": "Paramètres importés avec succès",
+    "resetConfirm": "Réinitialiser tous les paramètres par défaut ?",
+    "resetSuccess": "Paramètres réinitialisés par défaut",
+    "resetFailed": "Échec de la réinitialisation des paramètres",
+    "importLabel": "Importer un fichier de paramètres",
+    "saveStatus": {
+      "saved": "Enregistré",
+      "error": "Erreur",
+      "unsavedChanges": "Modifications non enregistrées",
+      "saving": "Enregistrement…",
+      "pleaseFixErrors": "Veuillez corriger les erreurs suivantes :"
+    },
+    "closeSettingsLabel": "Fermer les paramètres",
+    "resetAllLabel": "Réinitialiser tous les paramètres par défaut",
+    "saveSettingsLabel": "Enregistrer les paramètres",
+    "tabs": {
+      "general": "Général",
+      "services": "Services",
+      "networking": "Réseau",
+      "environment": "Environnement",
+      "ai": "IA",
+      "advanced": "Avancé"
+    },
+    "general": {
+      "title": "Paramètres généraux",
+      "resetLabel": "Réinitialiser les paramètres généraux par défaut",
+      "theme": {
+        "label": "Thème",
+        "description": "Choisissez votre schéma de couleurs préféré",
+        "light": "Clair",
+        "dark": "Sombre",
+        "system": "Système",
+        "ariaLabel": "Sélection du thème"
+      },
+      "launchAtLogin": {
+        "label": "Lancer au démarrage",
+        "description": "Démarrer automatiquement VibeCode lors de la connexion"
+      },
+      "minimizeToTray": {
+        "label": "Réduire dans la barre système",
+        "description": "Garder VibeCode en cours d'exécution dans la barre système à la fermeture"
+      },
+      "notifications": {
+        "label": "Notifications",
+        "description": "Afficher les notifications bureau pour les événements importants"
+      },
+      "confirmOnClose": {
+        "label": "Confirmation à la fermeture",
+        "description": "Demander une confirmation avant de fermer avec des modifications non enregistrées"
+      },
+      "autoSaveInterval": {
+        "label": "Intervalle de sauvegarde automatique",
+        "description": "Enregistrer automatiquement votre travail (en secondes, 0 pour désactiver)"
+      },
+      "vimMode": {
+        "label": "Mode Vim",
+        "description": "Activer la navigation clavier de style Vim (j/k pour le défilement, etc.)"
+      }
+    },
+    "services": {
+      "title": "Paramètres des services",
+      "resetLabel": "Réinitialiser les paramètres des services par défaut",
+      "autoStartServices": {
+        "label": "Démarrage automatique des services",
+        "description": "Démarrer automatiquement les services en arrière-plan au lancement de l'application"
+      },
+      "healthMonitoring": {
+        "label": "Surveillance de la santé",
+        "description": "Activer les vérifications de santé des services en temps réel"
+      },
+      "portConfiguration": {
+        "title": "Configuration des ports",
+        "appPort": "Port de l'application",
+        "aiGatewayPort": "Port de la passerelle IA",
+        "databasePort": "Port de la base de données",
+        "vmServicePort": "Port du service VM"
+      },
+      "timeoutConfiguration": {
+        "title": "Configuration des délais d'expiration (ms)",
+        "connectionTimeout": "Délai de connexion",
+        "requestTimeout": "Délai de requête"
+      },
+      "maxRetries": {
+        "label": "Nombre maximum de tentatives",
+        "description": "Nombre maximum de tentatives pour les connexions échouées"
+      }
+    },
+    "networking": {
+      "title": "Réseau & Sécurité",
+      "subtitle": "Réseau zéro confiance avec Tailscale",
+      "connectionStatusTitle": "État de la connexion",
+      "setupConfigTitle": "Configuration & Installation",
+      "aboutTailscale": {
+        "title": "À propos de Tailscale",
+        "description": "Tailscale crée une couche réseau sécurisée permettant à vos appareils de communiquer en toute sécurité sur Internet sans exposer les services au public.",
+        "keyFeatures": "Fonctionnalités clés :",
+        "features": {
+          "encryption": "Chiffrement de bout en bout pour tout le trafic",
+          "zeroTrust": "Modèle de sécurité zéro confiance",
+          "noPorts": "Aucun port ouvert vers Internet public",
+          "keyRotation": "Rotation et gestion automatiques des clés",
+          "crossPlatform": "Support multiplateforme"
+        }
+      }
+    },
+    "ai": {
+      "title": "Paramètres IA",
+      "resetLabel": "Réinitialiser les paramètres IA par défaut",
+      "defaultModel": {
+        "label": "Modèle par défaut",
+        "description": "Le modèle IA à utiliser par défaut",
+        "placeholder": "Sélectionner un modèle"
+      },
+      "apiKeys": {
+        "title": "Clés API",
+        "description": "Les clés API sont stockées de manière sécurisée et ne sont jamais exposées dans les exports de paramètres",
+        "openaiLabel": "Clé API OpenAI",
+        "openaiPlaceholder": "sk-...",
+        "anthropicLabel": "Clé API Anthropic",
+        "anthropicPlaceholder": "sk-ant-..."
+      },
+      "maxTokens": {
+        "label": "Tokens maximum",
+        "description": "Nombre maximum de tokens dans les réponses IA"
+      },
+      "temperature": {
+        "label": "Température",
+        "description": "Contrôle la créativité : 0 est concentré, 2 est très créatif"
+      },
+      "topP": {
+        "label": "Top P (échantillonnage par noyau)"
+      },
+      "streamResponses": {
+        "label": "Diffuser les réponses",
+        "description": "Afficher les réponses IA au fur et à mesure de leur génération"
+      },
+      "codeSuggestions": {
+        "label": "Suggestions de code",
+        "description": "Activer les complétions de code assistées par IA"
+      },
+      "autoCompleteDelay": {
+        "label": "Délai de saisie automatique",
+        "description": "Délai avant l'affichage des suggestions (en millisecondes)"
+      }
+    },
+    "advanced": {
+      "title": "Paramètres avancés",
+      "resetLabel": "Réinitialiser les paramètres avancés par défaut",
+      "agentSafety": {
+        "title": "Sécurité & confirmation des agents",
+        "description": "Configurer la façon dont les actions des agents sont prévisualisées et approuvées avant exécution",
+        "enableActionPreview": {
+          "label": "Activer la prévisualisation des actions",
+          "description": "Afficher des aperçus de diff avant d'appliquer les modifications"
+        },
+        "requireConfirmation": {
+          "label": "Exiger une confirmation",
+          "description": "Exiger une approbation explicite pour les actions des agents"
+        },
+        "bulkApprovalMode": {
+          "label": "Mode d'approbation en masse",
+          "description": "Permettre l'approbation de plusieurs modifications à la fois"
+        },
+        "showExplanations": {
+          "label": "Afficher les explications",
+          "description": "Afficher la raison pour laquelle chaque modification est proposée"
+        },
+        "autoApproveReadOnly": {
+          "label": "Approbation automatique en lecture seule",
+          "description": "Ignorer la confirmation pour les opérations en lecture seule"
+        }
+      },
+      "telemetry": {
+        "title": "Confidentialité & télémétrie",
+        "analytics": {
+          "label": "Analyses anonymes",
+          "description": "Aider à améliorer VibeCode en partageant des données d'utilisation anonymes"
+        },
+        "crashReporting": {
+          "label": "Rapports de plantage",
+          "description": "Envoyer automatiquement des rapports de plantage pour aider à résoudre les problèmes"
+        },
+        "performanceMonitoring": {
+          "label": "Surveillance des performances",
+          "description": "Suivre les métriques de performance de l'application"
+        }
+      },
+      "debugMode": {
+        "label": "Mode débogage",
+        "description": "Activer la journalisation étendue et les fonctionnalités développeur"
+      },
+      "logLevel": {
+        "label": "Niveau de journalisation",
+        "description": "Définir le niveau de verbosité des journaux de l'application",
+        "options": {
+          "error": "Erreur",
+          "warn": "Avertissement",
+          "info": "Information",
+          "debug": "Débogage",
+          "trace": "Trace"
+        }
+      },
+      "dataDirectory": {
+        "label": "Répertoire de données",
+        "description": "Chemin personnalisé pour le stockage des données de l'application",
+        "placeholder": "Emplacement par défaut"
+      },
+      "hardwareAcceleration": {
+        "label": "Accélération matérielle",
+        "description": "Utiliser le GPU pour des performances améliorées"
+      },
+      "experimentalFeatures": {
+        "label": "Fonctionnalités expérimentales",
+        "description": "Activer les fonctionnalités encore en cours de développement"
+      },
+      "proxy": {
+        "title": "Configuration du proxy",
+        "urlLabel": "URL du proxy",
+        "urlPlaceholder": "http://proxy.example.com:8080",
+        "bypassForLocal": {
+          "label": "Contourner pour le réseau local",
+          "description": "Ignorer le proxy pour les adresses réseau locales"
+        }
+      }
+    },
+    "maskedInput": {
+      "showValue": "Afficher la valeur",
+      "hideValue": "Masquer la valeur"
+    }
+  },
+  "workspace": {
+    "title": "Espaces de travail",
+    "pageTitle": "Espaces de travail",
+    "e2eTestMode": "Mode test E2E",
+    "create": "Créer un espace de travail",
+    "createWorkspace": "Créer un espace de travail",
+    "clone": "Cloner l'espace de travail",
+    "delete": "Supprimer l'espace de travail",
+    "open": "Ouvrir l'espace de travail",
+    "rename": "Renommer l'espace de travail",
+    "useTemplate": "Utiliser un modèle",
+    "searchPlaceholder": "Rechercher des espaces de travail…",
+    "searchAriaLabel": "Rechercher des espaces de travail",
+    "loadingAriaLabel": "Chargement des espaces de travail",
+    "emptyState": {
+      "title": "Aucun espace de travail trouvé",
+      "description": "Créez votre premier espace de travail pour commencer"
+    },
+    "workspaceCard": {
+      "createdLabel": "Créé le {date}",
+      "openButton": "Ouvrir",
+      "editButton": "Modifier l'espace de travail",
+      "settingsButton": "Paramètres de l'espace de travail"
+    },
+    "createModal": {
+      "title": "Créer un nouvel espace de travail",
+      "nameLabel": "Nom de l'espace de travail",
+      "namePlaceholder": "Saisissez le nom de l'espace de travail",
+      "descriptionLabel": "Description (facultative)",
+      "descriptionPlaceholder": "Saisissez la description de l'espace de travail",
+      "submitButton": "Créer l'espace de travail",
+      "creatingButton": "Création en cours…",
+      "cancelButton": "Annuler",
+      "nameRequired": "Le nom de l'espace de travail est obligatoire",
+      "nameTooShort": "Le nom de l'espace de travail doit comporter au moins 3 caractères"
+    },
+    "templateModal": {
+      "title": "Choisir un modèle",
+      "nextjsTypescript": "Next.js + TypeScript",
+      "nextjsTypescriptDescription": "Application web full-stack",
+      "reactVite": "React + Vite",
+      "reactViteDescription": "Développement frontend rapide",
+      "nodejsApi": "Node.js API",
+      "nodejsApiDescription": "API REST backend",
+      "continueButton": "Continuer",
+      "cancelButton": "Annuler"
+    }
+  },
+  "statusBar": {
+    "serviceHealth": "Santé des services",
+    "lastUpdated": "Dernière mise à jour : ",
+    "loadingHealth": "Chargement de l'état de santé",
+    "healthLabel": "Barre d'état de santé des services",
+    "detailedHealthLabel": "Informations détaillées sur la santé des services",
+    "healthy": "Sain",
+    "degraded": "Dégradé",
+    "unhealthy": "Défaillant",
+    "unknown": "Inconnu",
+    "collapseStatusBar": "Réduire la barre d'état",
+    "expandStatusBar": "Développer la barre d'état",
+    "ariaRegionLabel": "Barre d'état de santé des services",
+    "healthyServicesCount": "{healthy} services sains sur {total} au total",
+    "connection": {
+      "liveUpdatesEnabled": "Mises à jour en temps réel activées",
+      "reconnecting": "Reconnexion aux mises à jour en temps réel",
+      "usingPolling": "Utilisation de l'interrogation pour les mises à jour"
+    },
+    "overallStatus": {
+      "allSystemsOperational": "Tous les systèmes sont opérationnels",
+      "someSystemsDegraded": "Certains systèmes sont dégradés",
+      "systemIssuesDetected": "Des problèmes système ont été détectés",
+      "statusUnknown": "État inconnu"
+    }
+  },
+  "commandPalette": {
+    "searchPlaceholder": "Saisissez une commande ou recherchez…",
+    "searchAriaLabel": "Rechercher des commandes",
+    "closeAriaLabel": "Fermer la palette de commandes",
+    "resultsAriaLabel": "Résultats des commandes",
+    "noCommandsFound": "Aucune commande trouvée pour « {query} »",
+    "typeToSearch": "Saisissez du texte pour rechercher des commandes…",
+    "keyboardHints": {
+      "navigate": "Naviguer",
+      "select": "Sélectionner",
+      "close": "Fermer"
+    },
+    "commands": {
+      "goDashboard": "Aller au Dashboard",
+      "goDashboardDescription": "Naviguer vers le tableau de bord principal",
+      "goVm": "Aller à la gestion des VM",
+      "goVmDescription": "Gérer les machines virtuelles",
+      "goAiChat": "Aller au Chat IA",
+      "goAiChatDescription": "Ouvrir l'interface de Chat IA",
+      "openSettings": "Ouvrir les paramètres",
+      "openSettingsDescription": "Configurer les paramètres de l'application",
+      "goMonitoring": "Aller au Monitoring",
+      "goMonitoringDescription": "Afficher le monitoring système et les métriques"
+    }
+  },
+  "auth": {
+    "signInTitle": "Connexion VibeCode Dev",
+    "signInSubtitle": "Connexion simplifiée pour l'environnement de développement",
+    "signUpTitle": "Créer votre compte",
+    "email": "Adresse e-mail",
+    "emailLabel": "Adresse e-mail",
+    "emailPlaceholder": "Adresse e-mail",
+    "password": "Mot de passe",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "noAccount": "Vous n'avez pas de compte ?",
+    "hasAccount": "Vous avez déjà un compte ?",
+    "signInWith": "Se connecter avec {provider}",
+    "orContinueWith": "Ou continuer avec",
+    "signInButton": "Se connecter",
+    "testUsersHeading": "Utilisateurs de test pour le développement :",
+    "adminUsersLabel": "Administrateurs :",
+    "developersLabel": "Développeurs :",
+    "teamMembersLabel": "Membres de l'équipe :",
+    "errors": {
+      "invalidCredentials": "Identifiants invalides",
+      "authFailed": "Échec de l'authentification — aucune session créée",
+      "unexpectedError": "Une erreur inattendue s'est produite",
+      "validEmail": "Saisissez une adresse e-mail valide",
+      "passwordTooShort": "Le mot de passe doit comporter au moins 6 caractères"
+    },
+    "errorPrefix": "Erreur : "
+  },
+  "onboarding": {
+    "welcomeTitle": "Bienvenue sur VibeCode",
+    "subtitle": "Personnalisez votre espace de travail et connectez les services que vous utilisez au quotidien.",
+    "closeButton": "Fermer l'onboarding",
+    "themeTitle": "Thème",
+    "themeDescription": "Sélectionnez l'apparence par défaut du dashboard.",
+    "cliEditorTitle": "Préférence d'éditeur CLI",
+    "cliEditorDescription": "Nous adapterons les conseils futurs à votre éditeur de terminal favori.",
+    "editorLabel": "Éditeur",
+    "selectEditor": "Sélectionner un éditeur",
+    "extensionsTitle": "Extensions recommandées",
+    "extensionsDescription": "Installez ces extensions VS Code pour correspondre à la stack VibeCode.",
+    "copyButton": "Copier",
+    "integrationsTitle": "Intégrations",
+    "integrationsDescription": "Suivez les services que vous avez connectés.",
+    "setupButton": "Configurer",
+    "integrationsIncompleteHint": "Cochez chaque intégration une fois que vous avez connecté le compte ou la clé API.",
+    "quickActionsTitle": "Actions rapides",
+    "codeiumPlayground": "Codeium Playground",
+    "aiConsole": "Console IA",
+    "activityLog": "Journal d'activité",
+    "github": "GitHub",
+    "themeOptions": {
+      "light": "Clair",
+      "dark": "Sombre"
+    },
+    "cliEditorOptions": {
+      "vim": "Vim",
+      "neovim": "Neovim",
+      "codeServer": "code-server"
+    },
+    "integrationServices": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "linear": "Linear",
+      "jira": "Jira",
+      "openai": "OpenAI",
+      "anthropic": "Anthropic"
+    },
+    "errors": {
+      "failedToUpdate": "Échec de la mise à jour des préférences"
+    }
+  },
+  "offlineIndicator": {
+    "featureAvailabilityTitle": "Disponibilité des fonctionnalités",
+    "features": {
+      "browseLocalFiles": "Parcourir les fichiers locaux",
+      "browseLocalFilesDescription": "Accéder aux fichiers en cache",
+      "viewOrganizations": "Voir les organisations",
+      "viewOrganizationsDescription": "Afficher les données d'organisation en cache",
+      "viewProjects": "Voir les projets",
+      "viewProjectsDescription": "Afficher les données de projet en cache",
+      "createTasks": "Créer des tâches",
+      "createTasksDescription": "Nécessite une connexion au serveur",
+      "syncData": "Synchroniser les données",
+      "syncDataDescription": "Nécessite une connexion au serveur",
+      "realTimeUpdates": "Mises à jour en temps réel",
+      "realTimeUpdatesDescription": "Nécessite une connexion au serveur"
+    }
+  },
+  "errors": {
+    "notFound": "Page introuvable",
+    "notFoundDescription": "La page que vous recherchez n'existe pas ou a été déplacée.",
+    "serverError": "Une erreur s'est produite",
+    "serverErrorDescription": "Une erreur inattendue s'est produite. Veuillez réessayer.",
+    "criticalError": "Erreur critique",
+    "criticalErrorDescription": "Une erreur critique s'est produite. L'application doit être rechargée.",
+    "reloadApplication": "Recharger l'application",
+    "goHome": "Retour à l'accueil",
+    "tryAgain": "Réessayer",
+    "unauthorized": "Non autorisé",
+    "forbidden": "Accès interdit",
+    "failedToFetchHealth": "Échec de la récupération des données de santé",
+    "failedToLoadModels": "Échec du chargement des modèles",
+    "failedToGetRecommendation": "Échec de l'obtention de la recommandation",
+    "failedToApproveAction": "Échec de l'approbation de l'action",
+    "failedToRejectAction": "Échec du rejet de l'action",
+    "failedToBulkApproveActions": "Échec de l'approbation en masse des actions"
+  },
+  "notFound": {
+    "code": "404",
+    "title": "Page introuvable",
+    "description": "La page que vous recherchez n'existe pas.",
+    "goHome": "Retour à l'accueil"
+  },
+  "health": {
+    "title": "Moniteur de santé",
+    "allServicesHealthy": "Tous les services fonctionnent normalement",
+    "servicesDown": "{count} services rencontrent des problèmes",
+    "lastChecked": "Dernière vérification",
+    "checkNow": "Vérifier maintenant",
+    "responseTime": "Temps de réponse",
+    "uptime": "Disponibilité"
+  },
+  "monitoring": {
+    "title": "Monitoring",
+    "metrics": "Métriques",
+    "traces": "Traces",
+    "logs": "Logs",
+    "alerts": "Alertes"
+  },
+  "editor": {
+    "title": "Éditeur de code",
+    "untitled": "Sans titre",
+    "saveFile": "Enregistrer le fichier",
+    "openFile": "Ouvrir un fichier",
+    "newFile": "Nouveau fichier"
+  }
+}
