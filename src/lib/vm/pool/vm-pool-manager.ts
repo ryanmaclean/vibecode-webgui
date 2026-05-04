@@ -199,6 +199,7 @@ export class VMPoolManager {
     const instance: VMInstance = {
       id,
       name,
+      userId: options.userId,
       status: {
         status: 'creating',
         health: 0
@@ -452,6 +453,7 @@ export class VMPoolManager {
     // Create new VM with source config
     const cloneOptions: CreateVMOptions = {
       name: options?.name || `${source.name}-clone`,
+      userId: source.userId,
       profileId: source.profileId,
       config: { ...source.config },
       resources: { ...source.resources },

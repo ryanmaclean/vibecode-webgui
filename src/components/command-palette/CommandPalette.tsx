@@ -7,6 +7,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,37 +19,73 @@ export interface CommandPaletteProps {
   className?: string;
 }
 
-// Sample commands for demonstration (will be replaced with actual command registry)
-const SAMPLE_COMMANDS: Searchable[] = [
+interface Command extends Searchable {
+  action: { type: 'navigate'; href: string } | { type: 'callback'; fn: () => void };
+}
+
+const COMMANDS: Command[] = [
   {
     id: 'go-dashboard',
     label: 'Go to Dashboard',
     description: 'Navigate to the main dashboard',
     keywords: ['home', 'overview'],
+    action: { type: 'navigate', href: '/' },
   },
   {
     id: 'go-vm',
     label: 'Go to VM Management',
     description: 'Manage virtual machines',
     keywords: ['virtual', 'machine', 'vms'],
+    action: { type: 'navigate', href: '/vm' },
   },
   {
     id: 'go-ai-chat',
     label: 'Go to AI Chat',
     description: 'Open AI chat interface',
     keywords: ['assistant', 'conversation'],
+    action: { type: 'navigate', href: '/chat' },
+  },
+  {
+    id: 'go-ai-models',
+    label: 'Go to AI Models',
+    description: 'Browse and compare AI models',
+    keywords: ['model', 'llm', 'compare'],
+    action: { type: 'navigate', href: '/ai/models' },
   },
   {
     id: 'go-settings',
     label: 'Open Settings',
     description: 'Configure application settings',
     keywords: ['preferences', 'config', 'configuration'],
+    action: { type: 'navigate', href: '/settings' },
   },
   {
     id: 'go-monitoring',
     label: 'Go to Monitoring',
     description: 'View system monitoring and metrics',
     keywords: ['metrics', 'performance', 'stats'],
+    action: { type: 'navigate', href: '/monitoring' },
+  },
+  {
+    id: 'go-health',
+    label: 'Go to Health Monitor',
+    description: 'View service health status',
+    keywords: ['health', 'status', 'uptime'],
+    action: { type: 'navigate', href: '/health' },
+  },
+  {
+    id: 'go-workspaces',
+    label: 'Go to Workspaces',
+    description: 'Manage development workspaces',
+    keywords: ['workspace', 'project'],
+    action: { type: 'navigate', href: '/workspaces' },
+  },
+  {
+    id: 'go-editor',
+    label: 'Open Code Editor',
+    description: 'Open the code editor',
+    keywords: ['code', 'edit', 'ide'],
+    action: { type: 'navigate', href: '/editor' },
   },
 ];
 
@@ -65,9 +102,11 @@ export function CommandPalette({
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedIndex, setSelectedIndex] = React.useState(0);
 
+  const router = useRouter();
+
   // Fuzzy search results
   const searchResults = React.useMemo(() => {
-    return fuzzySearch(SAMPLE_COMMANDS, searchQuery, {
+    return fuzzySearch(COMMANDS, searchQuery, {
       limit: 10,
       threshold: 0,
     });
@@ -88,12 +127,17 @@ export function CommandPalette({
     }
   }, [selectedIndex]);
 
-  // Handle command selection
   const handleSelectCommand = React.useCallback((commandId: string) => {
-    // TODO: Execute the command based on commandId
-    // For now, just close the palette
+    const command = COMMANDS.find(c => c.id === commandId);
+    if (command) {
+      if (command.action.type === 'navigate') {
+        router.push(command.action.href);
+      } else {
+        command.action.fn();
+      }
+    }
     onClose();
-  }, [onClose]);
+  }, [onClose, router]);
 
   // Handle keyboard navigation
   React.useEffect(() => {

@@ -1,26 +1,27 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { DemoBanner } from '@/components/ui/DemoBanner'
 import { allBuiltInTemplates } from '@/lib/ai/prompts/templates/index'
 import { PromptCategory } from '@/types/prompts'
 import type { PromptTemplate } from '@/types/prompts'
 
-const CATEGORY_META: Record<string, { label: string; color: string; bgColor: string; icon: string }> = {
-  [PromptCategory.CODE_REVIEW]: { label: 'Code Review', color: 'text-blue-700', bgColor: 'bg-blue-50 border-blue-200', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
-  [PromptCategory.EXPLAIN]: { label: 'Explain Code', color: 'text-green-700', bgColor: 'bg-green-50 border-green-200', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-  [PromptCategory.REFACTOR]: { label: 'Refactor', color: 'text-purple-700', bgColor: 'bg-purple-50 border-purple-200', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
-  [PromptCategory.TEST]: { label: 'Generate Tests', color: 'text-orange-700', bgColor: 'bg-orange-50 border-orange-200', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
-  [PromptCategory.DOCUMENT]: { label: 'Documentation', color: 'text-teal-700', bgColor: 'bg-teal-50 border-teal-200', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+const CATEGORY_META: Record<string, { color: string; bgColor: string; icon: string; labelKey: string }> = {
+  [PromptCategory.CODE_REVIEW]: { labelKey: 'ai.prompts.categories.codeReview', color: 'text-blue-700', bgColor: 'bg-blue-50 border-blue-200', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
+  [PromptCategory.EXPLAIN]: { labelKey: 'ai.prompts.categories.explainCode', color: 'text-green-700', bgColor: 'bg-green-50 border-green-200', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+  [PromptCategory.REFACTOR]: { labelKey: 'ai.prompts.categories.refactor', color: 'text-purple-700', bgColor: 'bg-purple-50 border-purple-200', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
+  [PromptCategory.TEST]: { labelKey: 'ai.prompts.categories.generateTests', color: 'text-orange-700', bgColor: 'bg-orange-50 border-orange-200', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+  [PromptCategory.DOCUMENT]: { labelKey: 'ai.prompts.categories.documentation', color: 'text-teal-700', bgColor: 'bg-teal-50 border-teal-200', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
 }
 
-const CATEGORIES = [
-  { value: 'all', label: 'All Templates' },
-  { value: PromptCategory.CODE_REVIEW, label: 'Code Review' },
-  { value: PromptCategory.EXPLAIN, label: 'Explain Code' },
-  { value: PromptCategory.REFACTOR, label: 'Refactor' },
-  { value: PromptCategory.TEST, label: 'Generate Tests' },
-  { value: PromptCategory.DOCUMENT, label: 'Documentation' },
+const CATEGORY_VALUES = [
+  { value: 'all' },
+  { value: PromptCategory.CODE_REVIEW },
+  { value: PromptCategory.EXPLAIN },
+  { value: PromptCategory.REFACTOR },
+  { value: PromptCategory.TEST },
+  { value: PromptCategory.DOCUMENT },
 ]
 
 function CategoryIcon({ path, className }: { path: string; className?: string }) {
@@ -31,12 +32,16 @@ function CategoryIcon({ path, className }: { path: string; className?: string })
   )
 }
 
-function TemplateCard({ template, isExpanded, onToggle }: {
+function TemplateCard({ template, isExpanded, onToggle, t }: {
   template: PromptTemplate
   isExpanded: boolean
   onToggle: () => void
+  t: ReturnType<typeof useTranslations>
 }) {
-  const meta = CATEGORY_META[template.category] || { label: template.category, color: 'text-gray-700', bgColor: 'bg-gray-50 border-gray-200', icon: '' }
+  const metaEntry = CATEGORY_META[template.category]
+  const meta = metaEntry
+    ? { ...metaEntry, label: t(metaEntry.labelKey as Parameters<typeof t>[0]) }
+    : { label: template.category, color: 'text-gray-700', bgColor: 'bg-gray-50 border-gray-200', icon: '' }
   const requiredVars = template.variables.filter(v => v.required).length
   const optionalVars = template.variables.length - requiredVars
 
@@ -63,7 +68,9 @@ function TemplateCard({ template, isExpanded, onToggle }: {
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
               </svg>
-              {template.variables.length} var{template.variables.length !== 1 ? 's' : ''}
+              {template.variables.length !== 1
+                ? t('ai.prompts.templateCard.varsPlural', { count: template.variables.length })
+                : t('ai.prompts.templateCard.vars', { count: template.variables.length })}
             </div>
             <svg className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -92,7 +99,7 @@ function TemplateCard({ template, isExpanded, onToggle }: {
         <div className="border-t px-5 pb-5 space-y-4">
           {/* Recommended Models */}
           <div className="pt-4">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Recommended Models</h4>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('ai.prompts.templateCard.recommendedModels')}</h4>
             <div className="flex flex-wrap gap-1.5">
               {template.recommendedModels.map(model => (
                 <span key={model} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-mono">
@@ -105,7 +112,7 @@ function TemplateCard({ template, isExpanded, onToggle }: {
           {/* Variables */}
           <div>
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Variables ({requiredVars} required{optionalVars > 0 ? `, ${optionalVars} optional` : ''})
+              {t('ai.prompts.templateCard.variables', { required: requiredVars, optional: optionalVars > 0 ? `, ${optionalVars} optional` : '' })}
             </h4>
             <div className="grid gap-2">
               {template.variables.map(v => (
@@ -117,12 +124,12 @@ function TemplateCard({ template, isExpanded, onToggle }: {
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-gray-700">{v.description}</span>
                       {v.required && (
-                        <span className="text-xs text-red-500 font-medium">required</span>
+                        <span className="text-xs text-red-500 font-medium">{t('ai.prompts.templateCard.required')}</span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
-                      <span>type: {v.type}</span>
-                      {v.defaultValue && <span>default: {v.defaultValue}</span>}
+                      <span>{t('ai.prompts.templateCard.type', { type: v.type })}</span>
+                      {v.defaultValue && <span>{t('ai.prompts.templateCard.default', { value: v.defaultValue })}</span>}
                     </div>
                   </div>
                 </div>
@@ -132,7 +139,7 @@ function TemplateCard({ template, isExpanded, onToggle }: {
 
           {/* System Prompt Preview */}
           <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">System Prompt</h4>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('ai.prompts.templateCard.systemPrompt')}</h4>
             <pre className="p-3 bg-gray-900 text-gray-100 rounded-md text-xs overflow-x-auto max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">
               {template.systemPrompt}
             </pre>
@@ -140,7 +147,7 @@ function TemplateCard({ template, isExpanded, onToggle }: {
 
           {/* User Prompt Template */}
           <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">User Prompt Template</h4>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('ai.prompts.templateCard.userPromptTemplate')}</h4>
             <pre className="p-3 bg-gray-800 text-green-300 rounded-md text-xs overflow-x-auto max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">
               {template.userPromptTemplate}
             </pre>
@@ -149,7 +156,7 @@ function TemplateCard({ template, isExpanded, onToggle }: {
           {/* Tags */}
           {template.tags && template.tags.length > 0 && (
             <div>
-              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tags</h4>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('ai.prompts.templateCard.tags')}</h4>
               <div className="flex flex-wrap gap-1.5">
                 {template.tags.map(tag => (
                   <span key={tag} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">
@@ -169,7 +176,7 @@ function TemplateCard({ template, isExpanded, onToggle }: {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              Use Template
+              {t('ai.prompts.templateCard.useTemplate')}
             </a>
           </div>
         </div>
@@ -179,9 +186,17 @@ function TemplateCard({ template, isExpanded, onToggle }: {
 }
 
 export default function PromptsLibraryPage() {
+  const t = useTranslations()
   const [activeCategory, setActiveCategory] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  const CATEGORIES = CATEGORY_VALUES.map((cat) => ({
+    value: cat.value,
+    label: cat.value === 'all'
+      ? t('ai.prompts.allTemplates')
+      : t((CATEGORY_META[cat.value]?.labelKey ?? cat.value) as Parameters<typeof t>[0]),
+  }))
 
   const filteredTemplates = useMemo(() => {
     let results: PromptTemplate[] = allBuiltInTemplates
@@ -218,9 +233,9 @@ export default function PromptsLibraryPage() {
         <DemoBanner />
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Prompt Library</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('ai.prompts.pageTitle')}</h1>
           <p className="mt-2 text-gray-600">
-            {allBuiltInTemplates.length} reusable prompt templates for AI-powered code assistance across {Object.keys(CATEGORY_META).length} categories
+            {t('ai.prompts.pageDescription', { count: allBuiltInTemplates.length, categories: Object.keys(CATEGORY_META).length })}
           </p>
         </div>
 
@@ -232,7 +247,7 @@ export default function PromptsLibraryPage() {
             </svg>
             <input
               type="text"
-              placeholder="Search templates by name, description, or tag..."
+              placeholder={t('ai.prompts.searchPlaceholder')}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 bg-white"
@@ -289,6 +304,7 @@ export default function PromptsLibraryPage() {
                 template={template}
                 isExpanded={expandedId === template.id}
                 onToggle={() => setExpandedId(expandedId === template.id ? null : template.id)}
+                t={t}
               />
             ))}
           </div>
@@ -297,13 +313,13 @@ export default function PromptsLibraryPage() {
             <svg className="mx-auto w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">No templates found</h3>
-            <p className="mt-1 text-sm text-gray-500">Try adjusting your search or category filter.</p>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">{t('ai.prompts.noTemplatesFound')}</h3>
+            <p className="mt-1 text-sm text-gray-500">{t('ai.models.selector.noModelsFoundHint')}</p>
             <button
               onClick={() => { setSearchQuery(''); setActiveCategory('all') }}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
             >
-              Clear Filters
+              {t('common.clear')}
             </button>
           </div>
         )}

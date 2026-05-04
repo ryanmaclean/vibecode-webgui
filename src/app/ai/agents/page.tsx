@@ -8,6 +8,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { DemoBanner } from '@/components/ui/DemoBanner';
 import {
   Bot,

@@ -23,6 +23,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -74,17 +75,17 @@ export interface UnifiedStatusBarProps {
 /**
  * Get status icon component with accessibility
  */
-function getOverallStatusIcon(status: AggregatedHealthStatus) {
+function getOverallStatusIcon(status: AggregatedHealthStatus, t: (key: string) => string) {
   const getStatusLabel = () => {
     switch (status) {
       case 'healthy':
-        return 'All systems operational';
+        return t('statusBar.overallStatus.allSystemsOperational');
       case 'degraded':
-        return 'Some systems degraded';
+        return t('statusBar.overallStatus.someSystemsDegraded');
       case 'unhealthy':
-        return 'System issues detected';
+        return t('statusBar.overallStatus.systemIssuesDetected');
       default:
-        return 'Status unknown';
+        return t('statusBar.overallStatus.statusUnknown');
     }
   };
 
@@ -119,14 +120,14 @@ function getStatusBadgeColor(status: AggregatedHealthStatus): string {
 /**
  * Get connection status indicator with accessibility
  */
-function ConnectionStatusIndicator({ status }: { status: WsConnectionStatus }) {
+function ConnectionStatusIndicator({ status, t }: { status: WsConnectionStatus; t: (key: string) => string }) {
   const isConnected = status === 'connected';
   const isReconnecting = status === 'reconnecting';
 
   const getStatusText = () => {
-    if (isConnected) return 'Live updates enabled';
-    if (isReconnecting) return 'Reconnecting to live updates';
-    return 'Using polling for updates';
+    if (isConnected) return t('statusBar.connection.liveUpdatesEnabled');
+    if (isReconnecting) return t('statusBar.connection.reconnecting');
+    return t('statusBar.connection.usingPolling');
   };
 
   return (
@@ -168,6 +169,7 @@ export const UnifiedStatusBar = React.memo(function UnifiedStatusBar({
   disableWebSocket = false,
   pollingInterval = POLL_INTERVAL_MS,
 }: UnifiedStatusBarProps) {
+  const t = useTranslations();
   const [healthData, setHealthData] = React.useState<UnifiedHealthResponse | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -389,7 +391,7 @@ export const UnifiedStatusBar = React.memo(function UnifiedStatusBar({
         className
       )}
       role="region"
-      aria-label="Service health status bar"
+      aria-label={t('statusBar.ariaRegionLabel')}
       aria-live="polite"
     >
       {/* Compact status bar header */}
@@ -402,7 +404,7 @@ export const UnifiedStatusBar = React.memo(function UnifiedStatusBar({
         role="button"
         tabIndex={0}
         aria-expanded={isExpanded}
-        aria-label={`Status bar: ${isExpanded ? 'Collapse' : 'Expand'} to ${isExpanded ? 'hide' : 'show'} details. Press Ctrl+Shift+H to toggle. Current status: ${healthData?.summary.healthyServices || 0} of ${healthData?.summary.totalServices || 0} services healthy.`}
+        aria-label={`${t('statusBar.healthLabel')}: ${isExpanded ? t('statusBar.collapseStatusBar') : t('statusBar.expandStatusBar')}. Press Ctrl+Shift+H to toggle. Current status: ${healthData?.summary.healthyServices || 0} of ${healthData?.summary.totalServices || 0} services healthy.`}
         onKeyDown={(e: React.KeyboardEvent) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -425,7 +427,7 @@ export const UnifiedStatusBar = React.memo(function UnifiedStatusBar({
               e.stopPropagation();
               handleToggle();
             }}
-            aria-label={isExpanded ? 'Collapse status bar' : 'Expand status bar'}
+            aria-label={isExpanded ? t('statusBar.collapseStatusBar') : t('statusBar.expandStatusBar')}
           >
             {isExpanded ? (
               <ChevronDown className="h-4 w-4" aria-hidden="true" />
@@ -435,18 +437,18 @@ export const UnifiedStatusBar = React.memo(function UnifiedStatusBar({
           </Button>
 
           <div className="flex-shrink-0" aria-hidden="true">
-            {getOverallStatusIcon(healthData?.status || 'healthy')}
+            {getOverallStatusIcon(healthData?.status || 'healthy', t)}
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <span className="text-xs sm:text-sm font-medium truncate">Service Health</span>
+            <span className="text-xs sm:text-sm font-medium truncate">{t('statusBar.serviceHealth')}</span>
             {healthData && (
               <Badge
                 className={cn(
                   'text-xs font-semibold flex-shrink-0',
                   getStatusBadgeColor(healthData.status)
                 )}
-                aria-label={`${healthData.summary.healthyServices} healthy services out of ${healthData.summary.totalServices} total`}
+                aria-label={t('statusBar.healthyServicesCount').replace('{healthy}', String(healthData.summary.healthyServices)).replace('{total}', String(healthData.summary.totalServices))}
               >
                 {healthData.summary.healthyServices}/{healthData.summary.totalServices}
               </Badge>
@@ -478,19 +480,19 @@ export const UnifiedStatusBar = React.memo(function UnifiedStatusBar({
             </Tooltip>
           )}
 
-          {!disableWebSocket && <ConnectionStatusIndicator status={wsStatus} />}
+          {!disableWebSocket && <ConnectionStatusIndicator status={wsStatus} t={t} />}
 
           {healthData && (
             <span className="text-xs text-muted-foreground hidden sm:block" aria-live="off">
-              <span className="sr-only">Last updated: </span>
+              <span className="sr-only">{t('statusBar.lastUpdated')}</span>
               {new Date(healthData.timestamp).toLocaleTimeString()}
             </span>
           )}
 
           {loading && (
-            <div role="status" aria-label="Loading health status">
+            <div role="status" aria-label={t('statusBar.loadingHealth')}>
               <Activity className="w-4 h-4 text-muted-foreground animate-pulse" aria-hidden="true" />
-              <span className="sr-only">Loading...</span>
+              <span className="sr-only">{t('common.loading')}</span>
             </div>
           )}
         </div>
@@ -502,7 +504,7 @@ export const UnifiedStatusBar = React.memo(function UnifiedStatusBar({
           className="overflow-y-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4"
           style={{ maxHeight: 'calc(70vh - 3rem)' }}
           role="region"
-          aria-label="Detailed service health information"
+          aria-label={t('statusBar.detailedHealthLabel')}
         >
           <CollapsibleStatusPanel
             healthData={healthData}

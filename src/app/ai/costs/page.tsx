@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { DemoBanner } from '@/components/ui/DemoBanner'
 import CostDashboard from '@/components/ai/CostDashboard'
 import CostEstimator from '@/components/ai/CostEstimator'
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Calculator, X } from 'lucide-react'
 
 export default function AICostsPage() {
+  const t = useTranslations()
   const [showEstimator, setShowEstimator] = useState(false)
   const [estimatorMessage, setEstimatorMessage] = useState('')
   const [estimatorModel, setEstimatorModel] = useState('gpt-4o')
@@ -18,9 +20,9 @@ export default function AICostsPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">AI Costs</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('ai.costs.pageTitle')}</h1>
           <p className="mt-1 text-gray-600">
-            Monitor spending, set budgets, and estimate costs across AI models
+            {t('ai.costs.pageDescription')}
           </p>
         </div>
         <Button
@@ -30,12 +32,12 @@ export default function AICostsPage() {
           {showEstimator ? (
             <>
               <X className="h-4 w-4 mr-2" />
-              Close Estimator
+              {t('ai.costs.closeEstimatorButton')}
             </>
           ) : (
             <>
               <Calculator className="h-4 w-4 mr-2" />
-              Cost Estimator
+              {t('ai.costs.costEstimatorButton')}
             </>
           )}
         </Button>
@@ -44,11 +46,11 @@ export default function AICostsPage() {
       {/* Cost Estimator Panel */}
       {showEstimator && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Cost Estimate</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">{t('ai.costs.quickCostEstimate')}</h3>
           <div className="space-y-4">
             <div>
               <label htmlFor="estimator-model" className="block text-sm font-medium text-gray-700 mb-1">
-                Model
+                {t('ai.costs.modelLabel')}
               </label>
               <select
                 id="estimator-model"
@@ -79,13 +81,13 @@ export default function AICostsPage() {
             </div>
             <div>
               <label htmlFor="estimator-message" className="block text-sm font-medium text-gray-700 mb-1">
-                Sample Message
+                {t('ai.costs.sampleMessageLabel')}
               </label>
               <textarea
                 id="estimator-message"
                 value={estimatorMessage}
                 onChange={(e) => setEstimatorMessage(e.target.value)}
-                placeholder="Paste a sample prompt to estimate its cost..."
+                placeholder={t('ai.costs.sampleMessagePlaceholder')}
                 rows={4}
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />

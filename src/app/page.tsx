@@ -90,13 +90,13 @@ export default function Home() {
             </p>
             <div className="flex gap-4 justify-center">
               <Link
-                href="/auth/login"
+                href="/auth/signin"
                 className="bg-white text-purple-700 font-semibold py-3 px-8 rounded-lg hover:bg-white/90 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105"
               >
                 {t('common.signIn')}
               </Link>
               <Link
-                href="/auth/register"
+                href="/auth/signin"
                 className="border-2 border-white text-white font-semibold py-3 px-8 rounded-lg hover:bg-white/10 transition-all backdrop-blur-sm"
               >
                 {t('common.createAccount')}

@@ -7,6 +7,8 @@
 
 import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { monitoring } from '@/lib/monitoring'
 import { createServiceLogger } from '@/lib/logging'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
@@ -73,6 +75,11 @@ export async function checkDatabaseInitialization() {
 }
 
 export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const rateLimitResult = await apiRateLimit(request)
   if (!rateLimitResult.success) {
     return NextResponse.json(

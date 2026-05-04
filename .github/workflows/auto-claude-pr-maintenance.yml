@@ -19,7 +19,7 @@ jobs:
     if: github.repository == 'ryanmaclean/vibecode-webgui'
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Download, Upload, RotateCcw, Wand2 } from 'lucide-react';
 import { SettingsPanel } from '@/components/settings/SettingsPanel';
@@ -11,6 +12,7 @@ import { DEFAULT_APP_SETTINGS } from '@/types/settings';
 import type { AppSettings } from '@/types/settings';
 
 export default function SettingsPage() {
+  const t = useTranslations()
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [panelKey, setPanelKey] = useState(0);
@@ -45,9 +47,9 @@ export default function SettingsPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showStatus('success', 'Settings exported successfully');
+      showStatus('success', t('settings.exportSuccess'));
     } catch {
-      showStatus('error', 'Failed to export settings');
+      showStatus('error', t('settings.exportFailed'));
     }
   }, [showStatus]);
 
@@ -63,11 +65,11 @@ export default function SettingsPage() {
     e.target.value = '';
 
     if (!file.name.endsWith('.json')) {
-      showStatus('error', 'Please select a JSON file');
+      showStatus('error', t('settings.importSelectJson'));
       return;
     }
 
-    if (!window.confirm('This will overwrite your current settings. Continue?')) {
+    if (!window.confirm(t('settings.importOverwriteConfirm'))) {
       return;
     }
 
@@ -77,13 +79,13 @@ export default function SettingsPage() {
 
       // Basic structure validation
       if (!imported || typeof imported !== 'object') {
-        showStatus('error', 'Invalid settings file format');
+        showStatus('error', t('settings.importInvalidFormat'));
         return;
       }
 
       const hasValidSection = imported.general || imported.services || imported.ai || imported.advanced;
       if (!hasValidSection) {
-        showStatus('error', 'Settings file does not contain valid settings sections');
+        showStatus('error', t('settings.importInvalidSections'));
         return;
       }
 
@@ -91,14 +93,14 @@ export default function SettingsPage() {
       manager.setAll(imported);
       await manager.save();
       setPanelKey((k) => k + 1);
-      showStatus('success', 'Settings imported successfully');
+      showStatus('success', t('settings.importSuccess'));
     } catch {
-      showStatus('error', 'Failed to parse settings file. Ensure it contains valid JSON.');
+      showStatus('error', t('settings.importParseFailed'));
     }
   }, [showStatus]);
 
   const handleResetToDefaults = useCallback(async () => {
-    if (!window.confirm('Reset all settings to defaults?')) {
+    if (!window.confirm(t('settings.resetConfirm'))) {
       return;
     }
 
@@ -107,9 +109,9 @@ export default function SettingsPage() {
       manager.setAll(DEFAULT_APP_SETTINGS);
       await manager.save();
       setPanelKey((k) => k + 1);
-      showStatus('success', 'Settings reset to defaults');
+      showStatus('success', t('settings.resetSuccess'));
     } catch {
-      showStatus('error', 'Failed to reset settings');
+      showStatus('error', t('settings.resetFailed'));
     }
   }, [showStatus]);
 
@@ -128,11 +130,11 @@ export default function SettingsPage() {
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={handleExport}>
                   <Download className="h-4 w-4 mr-2" aria-hidden="true" />
-                  Export Settings
+                  {t('settings.exportSettings')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleImport}>
                   <Upload className="h-4 w-4 mr-2" aria-hidden="true" />
-                  Import Settings
+                  {t('settings.importSettings')}
                 </Button>
                 <input
                   ref={fileInputRef}
@@ -140,15 +142,15 @@ export default function SettingsPage() {
                   accept=".json"
                   onChange={handleFileChange}
                   className="hidden"
-                  aria-label="Import settings file"
+                  aria-label={t('settings.importSettingsFileLabel')}
                 />
                 <Button variant="outline" size="sm" onClick={handleResetToDefaults}>
                   <RotateCcw className="h-4 w-4 mr-2" aria-hidden="true" />
-                  Reset to Defaults
+                  {t('settings.resetToDefaults')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setWizardOpen(true)}>
                   <Wand2 className="h-4 w-4 mr-2" aria-hidden="true" />
-                  Setup Wizard
+                  {t('settings.setupWizard')}
                 </Button>
               </div>
               {statusMessage && (
