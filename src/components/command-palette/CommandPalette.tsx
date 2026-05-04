@@ -7,6 +7,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X } from 'lucide-react';
@@ -97,6 +98,7 @@ export function CommandPalette({
   onClose,
   className,
 }: CommandPaletteProps) {
+  const t = useTranslations();
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const selectedItemRef = React.useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -104,13 +106,33 @@ export function CommandPalette({
 
   const router = useRouter();
 
+  // Build translated commands (only translate keys that exist in en.json)
+  const translatedCommands = React.useMemo<Command[]>(() => {
+    return COMMANDS.map((cmd) => {
+      switch (cmd.id) {
+        case 'go-dashboard':
+          return { ...cmd, label: t('commandPalette.commands.goDashboard'), description: t('commandPalette.commands.goDashboardDescription') };
+        case 'go-vm':
+          return { ...cmd, label: t('commandPalette.commands.goVm'), description: t('commandPalette.commands.goVmDescription') };
+        case 'go-ai-chat':
+          return { ...cmd, label: t('commandPalette.commands.goAiChat'), description: t('commandPalette.commands.goAiChatDescription') };
+        case 'go-settings':
+          return { ...cmd, label: t('commandPalette.commands.openSettings'), description: t('commandPalette.commands.openSettingsDescription') };
+        case 'go-monitoring':
+          return { ...cmd, label: t('commandPalette.commands.goMonitoring'), description: t('commandPalette.commands.goMonitoringDescription') };
+        default:
+          return cmd;
+      }
+    });
+  }, [t]);
+
   // Fuzzy search results
   const searchResults = React.useMemo(() => {
-    return fuzzySearch(COMMANDS, searchQuery, {
+    return fuzzySearch(translatedCommands, searchQuery, {
       limit: 10,
       threshold: 0,
     });
-  }, [searchQuery]);
+  }, [translatedCommands, searchQuery]);
 
   // Reset selected index when search results change
   React.useEffect(() => {
@@ -128,7 +150,7 @@ export function CommandPalette({
   }, [selectedIndex]);
 
   const handleSelectCommand = React.useCallback((commandId: string) => {
-    const command = COMMANDS.find(c => c.id === commandId);
+    const command = translatedCommands.find(c => c.id === commandId);
     if (command) {
       if (command.action.type === 'navigate') {
         router.push(command.action.href);
@@ -137,7 +159,7 @@ export function CommandPalette({
       }
     }
     onClose();
-  }, [onClose, router]);
+  }, [onClose, router, translatedCommands]);
 
   // Handle keyboard navigation
   React.useEffect(() => {
@@ -288,7 +310,7 @@ export function CommandPalette({
                   <input
                     ref={searchInputRef}
                     type="text"
-                    placeholder="Type a command or search..."
+                    placeholder={t('commandPalette.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className={cn(
@@ -298,7 +320,7 @@ export function CommandPalette({
                       'focus:outline-none',
                       'text-base'
                     )}
-                    aria-label="Search commands"
+                    aria-label={t('commandPalette.searchAriaLabel')}
                     id="command-palette-title"
                   />
                   <button
@@ -311,7 +333,7 @@ export function CommandPalette({
                       'transition-colors',
                       'focus:outline-none focus:ring-2 focus:ring-blue-500'
                     )}
-                    aria-label="Close command palette"
+                    aria-label={t('commandPalette.closeAriaLabel')}
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -325,7 +347,7 @@ export function CommandPalette({
                   'p-2'
                 )}
                 role="listbox"
-                aria-label="Command results"
+                aria-label={t('commandPalette.resultsAriaLabel')}
               >
                 {searchResults.length > 0 ? (
                   <div className="space-y-1">
@@ -384,13 +406,13 @@ export function CommandPalette({
                 ) : searchQuery ? (
                   <div className="p-8 text-center text-neutral-500 dark:text-neutral-400">
                     <p className="text-sm">
-                      No commands found for &quot;{searchQuery}&quot;
+                      {t('commandPalette.noCommandsFound').replace('{query}', searchQuery)}
                     </p>
                   </div>
                 ) : (
                   <div className="p-8 text-center text-neutral-500 dark:text-neutral-400">
                     <p className="text-sm">
-                      Type to search for commands...
+                      {t('commandPalette.typeToSearch')}
                     </p>
                   </div>
                 )}
@@ -404,20 +426,20 @@ export function CommandPalette({
                       <kbd className="px-1.5 py-0.5 rounded border border-neutral-300 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800 font-mono text-xs">
                         ↑↓
                       </kbd>
-                      <span>Navigate</span>
+                      <span>{t('commandPalette.keyboardHints.navigate')}</span>
                     </span>
                     <span className="flex items-center gap-1">
                       <kbd className="px-1.5 py-0.5 rounded border border-neutral-300 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800 font-mono text-xs">
                         ↵
                       </kbd>
-                      <span>Select</span>
+                      <span>{t('commandPalette.keyboardHints.select')}</span>
                     </span>
                   </div>
                   <span className="flex items-center gap-1">
                     <kbd className="px-1.5 py-0.5 rounded border border-neutral-300 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800 font-mono text-xs">
                       Esc
                     </kbd>
-                    <span>Close</span>
+                    <span>{t('commandPalette.keyboardHints.close')}</span>
                   </span>
                 </div>
               </div>

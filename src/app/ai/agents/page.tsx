@@ -225,11 +225,13 @@ function AgentCard({
   isSelected,
   messageCount,
   onClick,
+  t,
 }: {
   agent: Agent;
   isSelected: boolean;
   messageCount: number;
   onClick: () => void;
+  t: ReturnType<typeof useTranslations>;
 }) {
   return (
     <button
@@ -254,13 +256,13 @@ function AgentCard({
         <p className="text-xs text-gray-500 truncate">{agent.role}</p>
       </div>
       {messageCount > 0 && (
-        <span className="text-xs text-gray-400 flex-shrink-0">{messageCount} msgs</span>
+        <span className="text-xs text-gray-400 flex-shrink-0">{t('ai.agents.messageCount', { count: messageCount })}</span>
       )}
     </button>
   );
 }
 
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message, t }: { message: Message; t: ReturnType<typeof useTranslations> }) {
   const isUser = message.role === 'user';
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -276,7 +278,7 @@ function MessageBubble({ message }: { message: Message }) {
       </div>
       <div className={`flex flex-col gap-1 max-w-[80%] ${isUser ? 'items-end' : 'items-start'}`}>
         <div className={`flex items-center gap-2 text-xs text-gray-500 ${isUser ? 'flex-row-reverse' : ''}`}>
-          <span className="font-medium">{isUser ? 'You' : message.agentName}</span>
+          <span className="font-medium">{isUser ? t('ai.agents.youLabel') : message.agentName}</span>
           <span className="flex items-center gap-1">
             <Clock size={10} />
             {new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: 'numeric' }).format(message.timestamp)}
@@ -300,10 +302,12 @@ function ConversationPanel({
   agent,
   messages,
   onSendMessage,
+  t,
 }: {
   agent: Agent;
   messages: Message[];
   onSendMessage: (content: string) => void;
+  t: ReturnType<typeof useTranslations>;
 }) {
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -344,7 +348,7 @@ function ConversationPanel({
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
+          <MessageBubble key={msg.id} message={msg} t={t} />
         ))}
         <div ref={messagesEndRef} />
       </div>
@@ -361,7 +365,7 @@ function ConversationPanel({
                 handleSend();
               }
             }}
-            placeholder={`Message ${agent.name}...`}
+            placeholder={t('ai.agents.messagePlaceholder', { agentName: agent.name })}
             className="flex-1 px-3 py-2 rounded-lg resize-none text-sm border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             rows={1}
           />
@@ -371,7 +375,7 @@ function ConversationPanel({
             className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 text-sm"
           >
             <Send size={14} />
-            Send
+            {t('ai.agents.sendButton')}
           </button>
         </div>
       </div>
@@ -432,6 +436,7 @@ function getAgentResponse(agentId: string): string {
 // ============================================================================
 
 export default function AIAgentsPage() {
+  const t = useTranslations();
   const [selectedAgentId, setSelectedAgentId] = useState<string>(AGENTS[0].id);
   const [conversations, setConversations] = useState<Map<string, Message[]>>(createInitialConversations);
   const [mobileAgentListOpen, setMobileAgentListOpen] = useState(false);
@@ -494,7 +499,7 @@ export default function AIAgentsPage() {
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <Bot className="h-8 w-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-900">AI Agents</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{t('ai.agents.pageTitle')}</h1>
           </div>
           <p className="text-gray-600">
             Manage concurrent conversations with specialized AI agents. Select an agent to start a conversation.
@@ -537,6 +542,7 @@ export default function AIAgentsPage() {
                     setSelectedAgentId(agent.id);
                     setMobileAgentListOpen(false);
                   }}
+                  t={t}
                 />
               ))}
             </div>
@@ -548,7 +554,7 @@ export default function AIAgentsPage() {
           {/* Agent sidebar - desktop */}
           <div className="hidden md:block w-72 flex-shrink-0">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 space-y-2 sticky top-6">
-              <h2 className="text-sm font-semibold text-gray-700 px-1 mb-3">Available Agents</h2>
+              <h2 className="text-sm font-semibold text-gray-700 px-1 mb-3">{t('ai.agents.agentsList')}</h2>
               {AGENTS.map((agent) => (
                 <AgentCard
                   key={agent.id}
@@ -556,6 +562,7 @@ export default function AIAgentsPage() {
                   isSelected={agent.id === selectedAgentId}
                   messageCount={(conversations.get(agent.id) || []).length}
                   onClick={() => setSelectedAgentId(agent.id)}
+                  t={t}
                 />
               ))}
             </div>
@@ -567,6 +574,7 @@ export default function AIAgentsPage() {
               agent={selectedAgent}
               messages={currentMessages}
               onSendMessage={(content) => handleSendMessage(selectedAgentId, content)}
+              t={t}
             />
           </div>
         </div>
