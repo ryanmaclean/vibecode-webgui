@@ -9,6 +9,7 @@
 'use client'
 
 import * as React from 'react'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { ModelSwitcherPanel } from '@/components/ai/ModelSwitcherPanel'
 import { useModelSwitcher } from '@/hooks/useModelSwitcher'
@@ -20,6 +21,7 @@ interface ModelSwitcherProps {
 }
 
 const ModelSwitcher = React.memo(({ className }: ModelSwitcherProps) => {
+  const t = useTranslations()
   const {
     // Panel state
     isOpen,
@@ -69,13 +71,13 @@ const ModelSwitcher = React.memo(({ className }: ModelSwitcherProps) => {
           'gap-2 transition-all',
           isOpen && 'bg-accent'
         )}
-        aria-label="Switch AI model"
+        aria-label={t('ai.models.switcherButton.ariaLabel')}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
         <Sparkles className="h-4 w-4" />
         <span className="font-medium truncate max-w-[200px]">
-          {selectedModel?.name || 'Select Model'}
+          {selectedModel?.name || t('ai.models.switcherButton.selectModel')}
         </span>
         <ChevronDown
           className={cn(
