@@ -12,7 +12,7 @@ import { DEFAULT_APP_SETTINGS } from '@/types/settings';
 import type { AppSettings } from '@/types/settings';
 
 export default function SettingsPage() {
-  const t = useTranslations()
+  const t = useTranslations();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [panelKey, setPanelKey] = useState(0);
