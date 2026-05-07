@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { DemoBanner } from '@/components/ui/DemoBanner'
 import {
@@ -15,6 +15,9 @@ import {
   ChevronRight,
   RefreshCw,
   ArrowUpDown,
+  AlertCircle,
+  Loader2,
+  Inbox,
 } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -49,197 +52,6 @@ interface IndexHealth {
   lastRebuild: string
   suggestion: string
 }
-
-// ── Mock Data ──────────────────────────────────────────────────────────────
-
-const MOCK_COLLECTIONS: Collection[] = [
-  {
-    name: 'code_embeddings',
-    vectorCount: 524288,
-    dimensions: 1536,
-    indexType: 'HNSW',
-    diskUsageMB: 1126,
-    status: 'healthy',
-    lastUpdated: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-  },
-  {
-    name: 'doc_embeddings',
-    vectorCount: 312450,
-    dimensions: 1536,
-    indexType: 'HNSW',
-    diskUsageMB: 672,
-    status: 'healthy',
-    lastUpdated: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
-  },
-  {
-    name: 'chat_history',
-    vectorCount: 198320,
-    dimensions: 768,
-    indexType: 'IVFFlat',
-    diskUsageMB: 245,
-    status: 'warning',
-    lastUpdated: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-  },
-  {
-    name: 'project_files',
-    vectorCount: 89450,
-    dimensions: 1536,
-    indexType: 'HNSW',
-    diskUsageMB: 198,
-    status: 'healthy',
-    lastUpdated: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-  },
-  {
-    name: 'api_docs',
-    vectorCount: 45120,
-    dimensions: 1024,
-    indexType: 'IVFFlat',
-    diskUsageMB: 78,
-    status: 'rebuilding',
-    lastUpdated: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
-  },
-  {
-    name: 'wiki_pages',
-    vectorCount: 28672,
-    dimensions: 768,
-    indexType: 'HNSW',
-    diskUsageMB: 52,
-    status: 'healthy',
-    lastUpdated: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-  },
-]
-
-const MOCK_QUERIES: RecentQuery[] = [
-  {
-    id: 'q-001',
-    queryPreview: 'How to implement authentication middleware...',
-    collection: 'code_embeddings',
-    similarityScore: 0.94,
-    latencyMs: 8,
-    resultsCount: 15,
-    timestamp: new Date(Date.now() - 30 * 1000).toISOString(),
-  },
-  {
-    id: 'q-002',
-    queryPreview: 'Database connection pool configuration...',
-    collection: 'doc_embeddings',
-    similarityScore: 0.91,
-    latencyMs: 11,
-    resultsCount: 8,
-    timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'q-003',
-    queryPreview: 'Error handling patterns in TypeScript...',
-    collection: 'code_embeddings',
-    similarityScore: 0.88,
-    latencyMs: 14,
-    resultsCount: 22,
-    timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'q-004',
-    queryPreview: 'Docker container networking setup...',
-    collection: 'doc_embeddings',
-    similarityScore: 0.87,
-    latencyMs: 9,
-    resultsCount: 12,
-    timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'q-005',
-    queryPreview: 'Previous conversation about VM snapshots...',
-    collection: 'chat_history',
-    similarityScore: 0.96,
-    latencyMs: 6,
-    resultsCount: 5,
-    timestamp: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'q-006',
-    queryPreview: 'REST API rate limiting best practices...',
-    collection: 'api_docs',
-    similarityScore: 0.82,
-    latencyMs: 18,
-    resultsCount: 9,
-    timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'q-007',
-    queryPreview: 'React component lifecycle management...',
-    collection: 'code_embeddings',
-    similarityScore: 0.90,
-    latencyMs: 10,
-    resultsCount: 18,
-    timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'q-008',
-    queryPreview: 'Kubernetes deployment strategies...',
-    collection: 'wiki_pages',
-    similarityScore: 0.79,
-    latencyMs: 22,
-    resultsCount: 6,
-    timestamp: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'q-009',
-    queryPreview: 'WebSocket reconnection handling...',
-    collection: 'code_embeddings',
-    similarityScore: 0.85,
-    latencyMs: 13,
-    resultsCount: 11,
-    timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'q-010',
-    queryPreview: 'PostgreSQL index optimization techniques...',
-    collection: 'doc_embeddings',
-    similarityScore: 0.93,
-    latencyMs: 7,
-    resultsCount: 14,
-    timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-  },
-]
-
-const MOCK_INDEX_HEALTH: IndexHealth[] = [
-  {
-    collection: 'code_embeddings',
-    fragmentationPct: 8.2,
-    lastRebuild: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    suggestion: 'Index is healthy. No action needed.',
-  },
-  {
-    collection: 'doc_embeddings',
-    fragmentationPct: 12.5,
-    lastRebuild: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    suggestion: 'Consider scheduling a rebuild within the next 48 hours.',
-  },
-  {
-    collection: 'chat_history',
-    fragmentationPct: 34.8,
-    lastRebuild: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-    suggestion: 'High fragmentation detected. Rebuild recommended immediately to improve query performance.',
-  },
-  {
-    collection: 'project_files',
-    fragmentationPct: 5.1,
-    lastRebuild: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    suggestion: 'Index is healthy. No action needed.',
-  },
-  {
-    collection: 'api_docs',
-    fragmentationPct: 0.0,
-    lastRebuild: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    suggestion: 'Index rebuild in progress. Expected completion in ~3 minutes.',
-  },
-  {
-    collection: 'wiki_pages',
-    fragmentationPct: 18.3,
-    lastRebuild: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    suggestion: 'Moderate fragmentation. Schedule a rebuild during low-traffic hours.',
-  },
-]
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -314,20 +126,50 @@ function fragmentationBarColor(pct: number): string {
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function VectorDatabaseMonitorPage() {
+  const [collections, setCollections] = useState<Collection[]>([])
+  const [queries, setQueries] = useState<RecentQuery[]>([])
+  const [indexHealth, setIndexHealth] = useState<IndexHealth[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<SortColumn>('vectorCount')
   const [sortDesc, setSortDesc] = useState(true)
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date())
 
-  // Computed summary metrics
-  const totalVectors = MOCK_COLLECTIONS.reduce((sum, c) => sum + c.vectorCount, 0)
-  const totalDiskMB = MOCK_COLLECTIONS.reduce((sum, c) => sum + c.diskUsageMB, 0)
-  const avgLatency = Math.round(
-    MOCK_QUERIES.reduce((sum, q) => sum + q.latencyMs, 0) / MOCK_QUERIES.length
-  )
-  const embeddingRate = 450 // mock static rate
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/monitoring/vector-db')
+      if (!res.ok) {
+        throw new Error(`Failed to fetch vector DB data (${res.status})`)
+      }
+      const data = await res.json()
+      setCollections(data.collections ?? [])
+      setQueries(data.queries ?? [])
+      setIndexHealth(data.indexHealth ?? [])
+      setLastRefreshed(new Date())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch vector DB data')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  // Computed summary metrics (safe for empty arrays)
+  const totalVectors = collections.reduce((sum, c) => sum + c.vectorCount, 0)
+  const totalDiskMB = collections.reduce((sum, c) => sum + c.diskUsageMB, 0)
+  const avgLatency =
+    queries.length > 0
+      ? Math.round(queries.reduce((sum, q) => sum + q.latencyMs, 0) / queries.length)
+      : 0
+  const embeddingRate = 0 // no mock static rate — will be wired to real source
 
   // Sorted collections
-  const sortedCollections = [...MOCK_COLLECTIONS].sort((a, b) => {
+  const sortedCollections = [...collections].sort((a, b) => {
     let aVal: string | number
     let bVal: string | number
     switch (sortBy) {
@@ -361,7 +203,38 @@ export default function VectorDatabaseMonitorPage() {
   }
 
   const handleRefresh = () => {
-    setLastRefreshed(new Date())
+    fetchData()
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3 text-gray-500 dark:text-gray-400">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-sm">Loading vector database data...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <AlertCircle className="h-8 w-8 text-red-500" />
+          <p className="text-sm text-gray-700 dark:text-gray-300">{error}</p>
+          <button
+            onClick={handleRefresh}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Retry
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -409,7 +282,7 @@ export default function VectorDatabaseMonitorPage() {
         <SummaryCard
           label="Total Vectors"
           value={formatVectorCount(totalVectors)}
-          subValue={`${MOCK_COLLECTIONS.length} collections`}
+          subValue={`${collections.length} collections`}
           icon={<Layers className="h-5 w-5 text-blue-500" />}
         />
         <SummaryCard
@@ -440,7 +313,7 @@ export default function VectorDatabaseMonitorPage() {
             Collections
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            {MOCK_COLLECTIONS.length} collections &middot; Click column headers to sort
+            {collections.length} collections &middot; Click column headers to sort
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -488,36 +361,47 @@ export default function VectorDatabaseMonitorPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {sortedCollections.map((col) => (
-                <tr
-                  key={col.name}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                >
-                  <td className="px-4 py-2.5 font-mono text-xs text-gray-900 dark:text-gray-100">
-                    {col.name}
-                  </td>
-                  <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">
-                    {col.vectorCount.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">
-                    {col.dimensions}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <span className={indexTypeBadge(col.indexType)}>{col.indexType}</span>
-                  </td>
-                  <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">
-                    {formatDiskUsage(col.diskUsageMB)}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <span className={statusBadge(col.status)}>
-                      {col.status === 'healthy' && <CheckCircle className="h-3 w-3" />}
-                      {col.status === 'warning' && <AlertTriangle className="h-3 w-3" />}
-                      {col.status === 'rebuilding' && <RefreshCw className="h-3 w-3 animate-spin" />}
-                      {col.status}
-                    </span>
+              {sortedCollections.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center">
+                    <div className="flex flex-col items-center gap-2 text-gray-400 dark:text-gray-500">
+                      <Inbox className="h-6 w-6" />
+                      <p className="text-sm">No collections found</p>
+                    </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                sortedCollections.map((col) => (
+                  <tr
+                    key={col.name}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <td className="px-4 py-2.5 font-mono text-xs text-gray-900 dark:text-gray-100">
+                      {col.name}
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">
+                      {col.vectorCount.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">
+                      {col.dimensions}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <span className={indexTypeBadge(col.indexType)}>{col.indexType}</span>
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">
+                      {formatDiskUsage(col.diskUsageMB)}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <span className={statusBadge(col.status)}>
+                        {col.status === 'healthy' && <CheckCircle className="h-3 w-3" />}
+                        {col.status === 'warning' && <AlertTriangle className="h-3 w-3" />}
+                        {col.status === 'rebuilding' && <RefreshCw className="h-3 w-3 animate-spin" />}
+                        {col.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -531,7 +415,7 @@ export default function VectorDatabaseMonitorPage() {
             Recent Queries
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Last {MOCK_QUERIES.length} similarity search queries
+            Last {queries.length} similarity search queries
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -559,34 +443,45 @@ export default function VectorDatabaseMonitorPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {MOCK_QUERIES.map((query) => (
-                <tr
-                  key={query.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                >
-                  <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100 max-w-xs truncate">
-                    {query.queryPreview}
-                  </td>
-                  <td className="px-4 py-2.5 font-mono text-xs text-gray-600 dark:text-gray-400">
-                    {query.collection}
-                  </td>
-                  <td className={`px-4 py-2.5 text-right font-medium ${similarityColor(query.similarityScore)}`}>
-                    {query.similarityScore.toFixed(2)}
-                  </td>
-                  <td className={`px-4 py-2.5 text-right font-medium ${latencyColor(query.latencyMs)}`}>
-                    {query.latencyMs}ms
-                  </td>
-                  <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">
-                    {query.resultsCount}
-                  </td>
-                  <td className="px-4 py-2.5 text-right text-xs text-gray-500 dark:text-gray-400">
-                    <span className="flex items-center justify-end gap-1">
-                      <Clock className="h-3 w-3" />
-                      {formatRelativeTime(query.timestamp)}
-                    </span>
+              {queries.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center">
+                    <div className="flex flex-col items-center gap-2 text-gray-400 dark:text-gray-500">
+                      <Inbox className="h-6 w-6" />
+                      <p className="text-sm">No recent queries</p>
+                    </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                queries.map((query) => (
+                  <tr
+                    key={query.id}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <td className="px-4 py-2.5 text-gray-900 dark:text-gray-100 max-w-xs truncate">
+                      {query.queryPreview}
+                    </td>
+                    <td className="px-4 py-2.5 font-mono text-xs text-gray-600 dark:text-gray-400">
+                      {query.collection}
+                    </td>
+                    <td className={`px-4 py-2.5 text-right font-medium ${similarityColor(query.similarityScore)}`}>
+                      {query.similarityScore.toFixed(2)}
+                    </td>
+                    <td className={`px-4 py-2.5 text-right font-medium ${latencyColor(query.latencyMs)}`}>
+                      {query.latencyMs}ms
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-300">
+                      {query.resultsCount}
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-xs text-gray-500 dark:text-gray-400">
+                      <span className="flex items-center justify-end gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatRelativeTime(query.timestamp)}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -604,41 +499,50 @@ export default function VectorDatabaseMonitorPage() {
           </p>
         </div>
         <div className="divide-y divide-gray-100 dark:divide-gray-800">
-          {MOCK_INDEX_HEALTH.map((health) => (
-            <div key={health.collection} className="px-4 py-3">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-sm text-gray-900 dark:text-gray-100">
-                    {health.collection}
-                  </span>
-                  <span className={`text-sm font-semibold ${fragmentationColor(health.fragmentationPct)}`}>
-                    {health.fragmentationPct.toFixed(1)}% fragmented
+          {indexHealth.length === 0 ? (
+            <div className="px-4 py-12 text-center">
+              <div className="flex flex-col items-center gap-2 text-gray-400 dark:text-gray-500">
+                <Inbox className="h-6 w-6" />
+                <p className="text-sm">No index health data available</p>
+              </div>
+            </div>
+          ) : (
+            indexHealth.map((health) => (
+              <div key={health.collection} className="px-4 py-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-sm text-gray-900 dark:text-gray-100">
+                      {health.collection}
+                    </span>
+                    <span className={`text-sm font-semibold ${fragmentationColor(health.fragmentationPct)}`}>
+                      {health.fragmentationPct.toFixed(1)}% fragmented
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Last rebuild: {formatRelativeTime(health.lastRebuild)}
                   </span>
                 </div>
-                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  Last rebuild: {formatRelativeTime(health.lastRebuild)}
-                </span>
+                {/* Fragmentation bar */}
+                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 mb-2">
+                  <div
+                    className={`${fragmentationBarColor(health.fragmentationPct)} h-2 rounded-full transition-all`}
+                    style={{ width: `${Math.min(health.fragmentationPct, 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                  {health.fragmentationPct >= 25 ? (
+                    <AlertTriangle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                  ) : health.fragmentationPct >= 10 ? (
+                    <AlertTriangle className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />
+                  ) : (
+                    <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                  )}
+                  {health.suggestion}
+                </p>
               </div>
-              {/* Fragmentation bar */}
-              <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 mb-2">
-                <div
-                  className={`${fragmentationBarColor(health.fragmentationPct)} h-2 rounded-full transition-all`}
-                  style={{ width: `${Math.min(health.fragmentationPct, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                {health.fragmentationPct >= 25 ? (
-                  <AlertTriangle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
-                ) : health.fragmentationPct >= 10 ? (
-                  <AlertTriangle className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />
-                ) : (
-                  <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
-                )}
-                {health.suggestion}
-              </p>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>
