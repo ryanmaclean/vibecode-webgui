@@ -1,46 +1,203 @@
 ---
 name: datadog-code-security
-description: Run Datadog Code Security scans on a codebase — SAST (rule-based static analysis), SAIST (AI-native SAST using LLMs for vulnerability detection), and SCA (software composition analysis for dependency vulnerabilities). Use when asked to scan code for vulnerabilities, run a security audit, find bugs via static analysis, or check dependencies for known CVEs.
+description: Run Datadog Code Security scans on a codebase — SAST (rule-based static analysis), SAIST (AI-native SAST using LLMs for vulnerability detection), SCA (software composition analysis), secrets detection, and IaC scanning. Integrates via the Code Security MCP Server for real-time scanning in Claude Code, Cursor, and VS Code. Use when asked to scan code for vulnerabilities, run a security audit, find bugs via static analysis, or check dependencies for known CVEs.
 ---
 
 # Datadog Code Security Skill
 
-Scan codebases for security vulnerabilities using Datadog's three-layer Code Security suite:
+Scan codebases for security vulnerabilities using Datadog's Code Security suite. As of 2026, the primary developer integration is the **Code Security MCP Server** which runs all scanners locally and provides real-time feedback in AI coding assistants.
 
 | Layer | What it does | How it works |
 |-------|-------------|--------------|
 | **SAST** | Rule-based static analysis | Deterministic rules scan first-party code for CWEs |
-| **SAIST** | AI-native SAST (preview) | LLMs detect context-dependent vulns that rules miss |
+| **SAIST** | AI-native SAST | LLMs detect context-dependent vulns that rules miss |
 | **SCA** | Software Composition Analysis | Scans dependencies for known CVEs via advisory DBs |
+| **Secrets** | Hardcoded secret detection | Finds API keys, tokens, passwords in source code |
+| **IaC** | Infrastructure-as-Code scanning | Detects misconfigurations in Terraform, CloudFormation, etc. |
 
-## When to Use
+## Code Security MCP Server (Recommended)
 
-- User asks to "scan for vulnerabilities", "run security analysis", "check for CVEs"
-- Before a release or PR merge as a security gate
-- After adding new dependencies (SCA)
-- For deep analysis of complex code paths (SAIST)
+The MCP server is the fastest way to get all scanners running in your IDE. It downloads scanners on-demand, runs locally over STDIO, and provides immediate feedback with line numbers, rule references, and proposed fixes.
 
-## SAST — Static Code Analysis
-
-Datadog's rule-based SAST scans first-party code using the `datadog-ci` CLI.
-
-### Setup
+### Install
 
 ```bash
-npm install -g @datadog/datadog-ci
-# or
-pip install datadog-ci
+# Homebrew (macOS/Linux)
+brew install datadog-labs/pack/datadog-code-security-mcp
+
+# Or direct download
+curl -L "https://github.com/datadog-labs/datadog-code-security-mcp/releases/latest/download/datadog-code-security-mcp-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz" | tar xz
+sudo install -m 755 datadog-code-security-mcp /usr/local/bin/
 ```
 
-### Run SAST
+Verify: `datadog-code-security-mcp version`
+
+### Configure for Claude Code
 
 ```bash
-# Scan current directory
-datadog-ci sarif upload --service <service-name> --env <env> <sarif-file>
-
-# Via Datadog UI: Security > Code Security > Static Analysis
-# Configure in CI: add datadog-ci static-analysis to your pipeline
+claude mcp add datadog-code-security \
+  -e DD_API_KEY=<your-api-key> \
+  -e DD_APP_KEY=<your-app-key> \
+  -e DD_SITE=datadoghq.com \
+  -- datadog-code-security-mcp start
 ```
+
+Verify: `claude mcp list | grep datadog-code-security`
+
+### Configure for Cursor
+
+Add to `~/.cursor/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "datadog-code-security": {
+      "command": "datadog-code-security-mcp",
+      "args": ["start"],
+      "env": {
+        "DD_API_KEY": "<your-api-key>",
+        "DD_APP_KEY": "<your-app-key>",
+        "DD_SITE": "datadoghq.com"
+      }
+    }
+  }
+}
+```
+
+### Configure for VS Code
+
+Add to `.vscode/settings.json`:
+```json
+{
+  "mcp": {
+    "servers": {
+      "datadog-code-security": {
+        "command": "datadog-code-security-mcp",
+        "args": ["start"],
+        "env": {
+          "DD_API_KEY": "<your-api-key>",
+          "DD_APP_KEY": "<your-app-key>",
+          "DD_SITE": "datadoghq.com"
+        }
+      }
+    }
+  }
+}
+```
+
+### MCP Tools Available
+
+| Tool | Function | Auth Required |
+|------|----------|--------------|
+| `datadog_sast_scan` | Static analysis for code vulnerabilities | Yes |
+| `datadog_secrets_scan` | Hardcoded secrets detection | Yes |
+| `datadog_sca_scan` | Dependency vulnerability scanning (CVEs) | Yes |
+| `datadog_iac_scan` | Infrastructure-as-Code security | Yes |
+| `datadog_generate_sbom` | Software Bill of Materials generation | No |
+
+### CLI Usage (without MCP)
+
+```bash
+# Scan everything
+datadog-code-security-mcp scan all ./src
+
+# Individual scan types
+datadog-code-security-mcp scan sast ./src
+datadog-code-security-mcp scan secrets ./config
+datadog-code-security-mcp scan sca ./
+datadog-code-security-mcp scan iac ./terraform
+
+# Generate SBOM
+datadog-code-security-mcp generate-sbom .
+
+# JSON output
+datadog-code-security-mcp scan all ./src --json
+```
+
+### Required Security Binaries
+
+The MCP server wraps these binaries (auto-downloaded or install manually):
+
+| Binary | Purpose | Install |
+|--------|---------|---------|
+| `datadog-static-analyzer` | SAST + Secrets | `brew install datadog-static-analyzer` |
+| `datadog-sbom-generator` | SBOM + SCA | GitHub releases |
+| `datadog-security-cli` | SCA | `brew install --cask datadog/tap/datadog-security-cli` |
+| `datadog-iac-scanner` | IaC | GitHub releases |
+
+### Environment Variables
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `DD_API_KEY` | Yes* | Datadog API key |
+| `DD_APP_KEY` | Yes* | Datadog application key |
+| `DD_SITE` | No | Datadog site (default: datadoghq.com) |
+
+*SBOM generation works without auth. All other scans require both keys.
+
+## SAIST — AI-Native SAST
+
+Datadog SAIST uses LLMs to detect vulnerabilities that rule-based SAST misses. Open-source at `github.com/DataDog/datadog-saist`. It reasons about code semantics, execution context, and call stacks rather than relying on rigid pattern matching.
+
+### How SAIST Works
+
+1. **Identification** — Heuristics filter candidate files likely to contain risks
+2. **Context Retrieval** — Gathers invoked functions and related files for full context
+3. **Analysis** — LLM assesses code for vulnerabilities with execution context
+4. **Post-Processing** — Heuristic + LLM-based false positive filtering
+
+Uses two models: a **detection model** for finding vulns and a **validation model** for filtering false positives.
+
+### OWASP Benchmark (SAIST vs Traditional SAST)
+
+| Category | SAIST | Traditional SAST |
+|----------|-------|-----------------|
+| Command Injection | 90% | 59% |
+| XSS | 93% | 65% |
+| SQL Injection | 86% | 63% |
+| Path Traversal | 90% | 64% |
+
+### Run SAIST Standalone
+
+```bash
+git clone https://github.com/DataDog/datadog-saist.git
+cd datadog-saist && make build
+
+# Requires one LLM API key:
+export ANTHROPIC_API_KEY="..."   # or OPENAI_API_KEY or GOOGLE_API_KEY
+
+./bin/datadog-saist \
+  --directory ./src \
+  --output results.sarif \
+  --detection-model claude-sonnet-4-6 \
+  --validation-model claude-haiku-4-5
+```
+
+### SAIST CLI Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--directory` | Code directory to scan | (required) |
+| `--output` | SARIF output file path | (required) |
+| `--detection-model` | LLM for detection | (required) |
+| `--validation-model` | LLM for FP filtering | (required) |
+| `--file-concurrency` | Parallel threads | 20 |
+| `--request-timeout-sec` | LLM timeout | 30 |
+| `--debug` | Verbose output | false |
+| `--write-prompts` | Save prompts to files | false |
+
+### Supported Languages (SAIST)
+
+Java, Python, Go, C#
+
+### Detected CWE Categories (15)
+
+SQL Injection, Command Injection, XSS, Path Traversal, Insecure Deserialization, Broken Access Control, SSRF, XXE, LDAP Injection, Log Injection, Open Redirect, Weak Cryptography, Hardcoded Secrets, Information Exposure, Improper Input Validation
+
+## SAST — Rule-Based Static Analysis
+
+### Supported Languages
+
+Python, JavaScript/TypeScript, Java, Go, Ruby, C#, PHP, Kotlin, Swift, Docker, Terraform
 
 ### CI Integration (GitHub Actions)
 
@@ -53,93 +210,7 @@ datadog-ci sarif upload --service <service-name> --env <env> <sarif-file>
     dd_site: datadoghq.com
 ```
 
-### Supported Languages
-
-Python, JavaScript/TypeScript, Java, Go, Ruby, C#, PHP, Kotlin, Swift, Docker, Terraform
-
-## SAIST — AI-Native SAST (Preview)
-
-Datadog SAIST uses LLMs for vulnerability detection. Open-source at `github.com/DataDog/datadog-saist`.
-
-Unlike rule-based SAST, SAIST reasons about code semantics, execution context, and call stacks to detect vulnerabilities that rigid rules miss.
-
-### How SAIST Works
-
-1. **Identification** — Heuristics filter candidate files likely to contain risks
-2. **Context Retrieval** — Gathers invoked functions and related files for full context
-3. **Analysis** — LLM assesses code for vulnerabilities with execution context
-4. **Post-Processing** — Heuristic + LLM-based false positive filtering
-
-Architecture uses two models: a **detection model** for finding vulns and a **validation model** for filtering false positives.
-
-### OWASP Benchmark (SAIST vs Traditional SAST)
-
-| Category | SAIST | Traditional SAST |
-|----------|-------|-----------------|
-| Command Injection | 90% | 59% |
-| XSS | 93% | 65% |
-| SQL Injection | 86% | 63% |
-| Path Traversal | 90% | 64% |
-
-### Setup (Open Source)
-
-```bash
-git clone https://github.com/DataDog/datadog-saist.git
-cd datadog-saist
-make build
-```
-
-Requires an LLM API key (one of):
-```bash
-export ANTHROPIC_API_KEY="..."   # Claude
-export OPENAI_API_KEY="..."      # GPT
-export GOOGLE_API_KEY="..."      # Gemini
-```
-
-### Run SAIST
-
-```bash
-./bin/datadog-saist \
-  --directory ./src \
-  --output results.sarif \
-  --detection-model claude-sonnet-4-6 \
-  --validation-model claude-haiku-4-5
-```
-
-### CLI Options
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--directory` | Code directory to scan | (required) |
-| `--output` | SARIF output file path | (required) |
-| `--detection-model` | LLM for vulnerability detection | (required) |
-| `--validation-model` | LLM for false-positive filtering | (required) |
-| `--file-concurrency` | Parallel file analysis threads | 20 |
-| `--request-timeout-sec` | LLM request timeout | 30 |
-| `--debug` | Verbose output | false |
-| `--write-prompts` | Save generated prompts to files | false |
-
-### Supported Languages (SAIST)
-
-Java, Python, Go (C# coming soon)
-
-### Detected CWE Categories (15)
-
-SQL Injection, Command Injection, XSS, Path Traversal, Insecure Deserialization, Broken Access Control, SSRF, XXE, LDAP Injection, Log Injection, Open Redirect, Weak Cryptography, Hardcoded Secrets, Information Exposure, Improper Input Validation
-
 ## SCA — Software Composition Analysis
-
-Scans open-source dependencies for known vulnerabilities using Datadog's advisory database.
-
-### Run SCA
-
-```bash
-# Via Datadog UI: Security > Code Security > Vulnerabilities
-# Filter by: Library Vulnerabilities
-
-# CI integration
-datadog-ci sbom upload --service <service-name> --env <env> <sbom-file>
-```
 
 ### What SCA Checks
 
@@ -154,45 +225,52 @@ npm/yarn/pnpm, pip/poetry/pipenv, Maven/Gradle, Go modules, NuGet, RubyGems, Car
 
 ## Workflow: Full Security Scan
 
-For a comprehensive scan, run all three layers:
-
 ```bash
-# 1. SCA — check dependencies first (fastest)
-# Review: Security > Code Security > Library Vulnerabilities
+# Option A: MCP Server (recommended — runs all scans in one command)
+datadog-code-security-mcp scan all ./src
 
-# 2. SAST — rule-based scan (fast, deterministic)
-# Review: Security > Code Security > Code Vulnerabilities
+# Option B: Individual tools
+# 1. SCA — check dependencies (fastest)
+datadog-code-security-mcp scan sca .
 
-# 3. SAIST — AI-native deep scan (thorough, uses LLM credits)
+# 2. Secrets — find hardcoded credentials
+datadog-code-security-mcp scan secrets .
+
+# 3. SAST — rule-based code scan
+datadog-code-security-mcp scan sast ./src
+
+# 4. IaC — infrastructure misconfigs
+datadog-code-security-mcp scan iac ./terraform
+
+# 5. SAIST — AI-native deep scan (uses LLM credits)
 ./bin/datadog-saist \
   --directory ./src \
   --output saist-results.sarif \
   --detection-model claude-sonnet-4-6 \
   --validation-model claude-haiku-4-5
 
-# Upload SARIF results to Datadog
-datadog-ci sarif upload \
-  --service my-service \
-  --env production \
-  saist-results.sarif
+# Upload SARIF to Datadog
+datadog-ci sarif upload --service my-service --env production saist-results.sarif
 ```
+
+## Remediation
+
+- **Bits AI Dev Agent** — Auto-generates fixes for vulnerabilities, submits as PRs in GitHub
+- **Bulk campaigns** — Fix multiple vulns at once with custom instructions and PR grouping
+- **Malicious PR detection** (Preview) — LLM-powered detection of malicious code in incoming PRs
 
 ## Triage Workflow
 
-When findings come in:
-
-1. **Critical/High severity** — Fix immediately, block PR merge
-2. **Medium severity** — Fix in current sprint
+1. **Critical/High** — Fix immediately, block PR merge
+2. **Medium** — Fix in current sprint
 3. **Low/Info** — Track, fix opportunistically
-4. **False positive** — Mark as false positive in Datadog UI (SAIST auto-filters most of these)
+4. **False positive** — Mark in UI (SAIST auto-filters most)
 
-Use Datadog's "Fix with Bits" feature for AI-assisted remediation suggestions directly in the UI.
+## Platform Integration
 
-## Integration with Datadog Platform
-
-SAIST findings integrate with the broader Datadog ecosystem:
-- **IAST (Runtime Code Analysis)** — Validates SAST/SAIST findings with real traffic in production
+- **IAST (Runtime Code Analysis)** — Validates SAST/SAIST findings with real production traffic
 - **APM** — Correlates vulnerabilities with affected services and traces
 - **Service Catalog** — Maps findings to service owners for routing
 - **Monitors** — Alert on new critical vulnerabilities
 - **Workflows** — Automate triage and notification pipelines
+- **Bits AI Security Analyst** — Autonomously triages Cloud SIEM signals and investigates threats
