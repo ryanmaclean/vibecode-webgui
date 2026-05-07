@@ -1,5 +1,5 @@
 transformers
-torch
+torch==2.11.0
 python-dotenv
 huggingface_hub
 accelerate

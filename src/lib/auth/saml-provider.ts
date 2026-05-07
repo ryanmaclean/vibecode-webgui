@@ -47,7 +47,7 @@ export interface SAMLUser {
   lastName?: string
   groups?: string[]
   roles?: string[]
-  samlAttributes: Record<string, any>
+  samlAttributes: Record<string, string | string[]>
   provider: 'saml'
   samlIssuer: string
   samlSessionIndex?: string
@@ -626,7 +626,7 @@ export class SAMLProvider {
   /**
    * Find the ds:Signature element within a parent element.
    */
-  private findSignature(element: any): any {
+  private findSignature(element: Record<string, any>): any {
     return element['ds:Signature'] || element['Signature'] || null
   }
 

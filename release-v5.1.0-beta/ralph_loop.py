@@ -29,7 +29,7 @@ def check_local_gateway():
         # resp = requests.get(GATEWAY_URL, timeout=1)
         # return resp.status_code == 200
         return True # Ruthless optimism for the build
-    except:
+    except Exception:
         return False
 
 def check_remote_gastown():

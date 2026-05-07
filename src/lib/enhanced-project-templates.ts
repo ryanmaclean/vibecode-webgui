@@ -539,7 +539,7 @@ export class EnhancedProjectTemplates {
 
   // Python ML Platform methods
   private generatePythonRequirements(_options: unknown): string {
-    return 'fastapi==0.104.1\nuvicorn==0.24.0\npydantic==2.5.0\nsqlalchemy==2.0.23\nalembic==1.13.0\ntorch==2.1.0\ntransformers==4.35.0\nnumpy==1.24.3\npandas==2.1.3\nscikit-learn==1.3.2\nmlflow==2.8.0\njupyter==1.0.0\npytest==7.4.3\nblack==23.11.0\nisort==5.12.0\nflake8==6.1.0';
+    return 'fastapi==0.104.1\nuvicorn==0.24.0\npydantic==2.5.0\nsqlalchemy==2.0.23\nalembic==1.13.0\ntorch==2.11.0\ntransformers==4.35.0\nnumpy==1.24.3\npandas==2.1.3\nscikit-learn==1.3.2\nmlflow==3.12.0\njupyter==1.0.0\npytest==7.4.3\nblack==23.11.0\nisort==5.12.0\nflake8==6.1.0';
   }
 
   private generatePyprojectToml(projectName: string): string {

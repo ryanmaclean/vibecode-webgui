@@ -381,6 +381,10 @@ export function activate(context: vscode.ExtensionContext) {
             chatContainer.scrollTop = chatContainer.scrollHeight;
         });
 
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
         function addMessage(role, content, source, timestamp) {
             // Remove loading indicator if exists
             const loadingElements = chatContainer.querySelectorAll('.loading');
@@ -393,13 +397,13 @@ export function activate(context: vscode.ExtensionContext) {
             
             messageDiv.innerHTML = \`
                 <div class="message-avatar">\${role === 'user' ? 'You' : 'AI'}</div>
-                <div class="message-content">\${content.replace(/\\n/g, '<br>')}</div>
+                <div class="message-content">\${escapeHtml(content).replace(/\\n/g, '<br>')}</div>
             \`;
             
             if (source) {
                 const sourceDiv = document.createElement('div');
                 sourceDiv.className = 'source-info';
-                sourceDiv.innerHTML = \`<span>Source:</span> \${source}\`;
+                sourceDiv.innerHTML = \`<span>Source:</span> \${escapeHtml(source)}\`;
                 sourceDiv.onclick = () => vscode.postMessage({ 
                     command: 'openFile', 
                     path: source,
