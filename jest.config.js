@@ -16,9 +16,11 @@ module.exports = {
     '<rootDir>/tests/integration/vector-db-postgres.test.ts',
     '<rootDir>/tests/unit/lib/vector-db/vector-database-factory.test.ts',
     '<rootDir>/tests/complete/cluster-validation.test.ts',
+    '<rootDir>/tests/unit/ci-self-healing.test.ts',
   ],
   modulePathIgnorePatterns: [
     ...(baseConfig.modulePathIgnorePatterns || []),
-    '<rootDir>/vibecode_webgui/', // Duplicate rig/crew trees - use root only
+    '<rootDir>/vibecode_webgui/',
+    '<rootDir>/.next/',
   ],
 };

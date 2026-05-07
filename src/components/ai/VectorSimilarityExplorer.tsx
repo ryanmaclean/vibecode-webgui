@@ -13,6 +13,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -117,6 +118,7 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
   defaultQuery = '',
   defaultContentType = 'code',
 }) => {
+  const t = useTranslations('ai');
   const [query, setQuery] = useState(defaultQuery);
   const [contentType, setContentType] = useState<ContentType>(defaultContentType);
   const [limit, setLimit] = useState(10);
@@ -125,7 +127,7 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
   const [error, setError] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
 
-  const handleSearch = async () => {
+  const handleSearch = async (): Promise<void> => {
     if (!query.trim()) {
       setError('Please enter a search query');
       return;
@@ -163,7 +165,7 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent): void => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       handleSearch();
     }
@@ -176,7 +178,7 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
           .filter((r) => r.embedding)
           .map((result, idx) => ({
             id: result.id,
-            vector: result.embedding!,
+            vector: result.embedding as number[],
             label: `Result ${idx + 1} (${(result.similarity_score * 100).toFixed(1)}%)`,
             metadata: result.metadata,
             timestamp: result.metadata?.created_at,
@@ -208,9 +210,9 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <div>
-              <CardTitle>Vector Similarity Explorer</CardTitle>
+              <CardTitle>{t('vectorExplorer.title')}</CardTitle>
               <CardDescription>
-                Search for semantically similar content using AI embeddings
+                {t('vectorExplorer.description')}
               </CardDescription>
             </div>
           </div>
@@ -218,10 +220,10 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
         <CardContent className="space-y-4">
           {/* Search Input */}
           <div className="space-y-2">
-            <Label htmlFor="query">Search Query</Label>
+            <Label htmlFor="query">{t('vectorExplorer.searchQuery')}</Label>
             <Textarea
               id="query"
-              placeholder="Enter text to find similar content... (Cmd/Ctrl + Enter to search)"
+              placeholder={t('vectorExplorer.searchQueryPlaceholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -229,14 +231,14 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
               disabled={loading}
             />
             <p className="text-xs text-gray-500">
-              Enter any text and we'll find semantically similar content in the database
+              {t('vectorExplorer.searchQueryHint')}
             </p>
           </div>
 
           {/* Search Options */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="content-type">Content Type</Label>
+              <Label htmlFor="content-type">{t('vectorExplorer.contentType')}</Label>
               <Select
                 value={contentType}
                 onValueChange={(value) => setContentType(value as ContentType)}
@@ -252,7 +254,7 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
                       <SelectItem key={key} value={key}>
                         <div className="flex items-center gap-2">
                           <Icon className="h-4 w-4" />
-                          <span>{config.label}</span>
+                          <span>{t(`vectorExplorer.contentTypes.${key}`)}</span>
                         </div>
                       </SelectItem>
                     );
@@ -262,7 +264,7 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="limit">Result Limit</Label>
+              <Label htmlFor="limit">{t('vectorExplorer.resultLimit')}</Label>
               <Select
                 value={limit.toString()}
                 onValueChange={(value) => setLimit(parseInt(value))}
@@ -272,16 +274,16 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="5">5 results</SelectItem>
-                  <SelectItem value="10">10 results</SelectItem>
-                  <SelectItem value="20">20 results</SelectItem>
-                  <SelectItem value="50">50 results</SelectItem>
+                  <SelectItem value="5">{t('vectorExplorer.limits.five')}</SelectItem>
+                  <SelectItem value="10">{t('vectorExplorer.limits.ten')}</SelectItem>
+                  <SelectItem value="20">{t('vectorExplorer.limits.twenty')}</SelectItem>
+                  <SelectItem value="50">{t('vectorExplorer.limits.fifty')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="threshold">Similarity Threshold</Label>
+              <Label htmlFor="threshold">{t('vectorExplorer.similarityThreshold')}</Label>
               <Select
                 value={similarityThreshold.toString()}
                 onValueChange={(value) => setSimilarityThreshold(parseFloat(value))}
@@ -291,11 +293,11 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0.5">50% (Low)</SelectItem>
-                  <SelectItem value="0.6">60% (Medium-Low)</SelectItem>
-                  <SelectItem value="0.7">70% (Medium)</SelectItem>
-                  <SelectItem value="0.8">80% (High)</SelectItem>
-                  <SelectItem value="0.9">90% (Very High)</SelectItem>
+                  <SelectItem value="0.5">{t('vectorExplorer.thresholds.low')}</SelectItem>
+                  <SelectItem value="0.6">{t('vectorExplorer.thresholds.mediumLow')}</SelectItem>
+                  <SelectItem value="0.7">{t('vectorExplorer.thresholds.medium')}</SelectItem>
+                  <SelectItem value="0.8">{t('vectorExplorer.thresholds.high')}</SelectItem>
+                  <SelectItem value="0.9">{t('vectorExplorer.thresholds.veryHigh')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -311,12 +313,12 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Searching...
+                {t('vectorExplorer.searching')}
               </>
             ) : (
               <>
                 <Search className="mr-2 h-4 w-4" />
-                Search Similar Content
+                {t('vectorExplorer.search')}
               </>
             )}
           </Button>
@@ -329,7 +331,7 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
           <CardContent className="pt-6">
             <div className="flex items-center space-x-2 text-red-600">
               <AlertCircle className="h-5 w-5" />
-              <span className="font-medium">Error: {error}</span>
+              <span className="font-medium">{t('vectorExplorer.errorPrefix', { error })}</span>
             </div>
           </CardContent>
         </Card>
@@ -342,35 +344,35 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-600" />
-                <CardTitle className="text-lg">Search Results</CardTitle>
+                <CardTitle className="text-lg">{t('vectorExplorer.searchResults')}</CardTitle>
               </div>
               <div className="flex items-center gap-2">
                 {searchResults.from_cache && (
                   <Badge variant="outline" className="text-xs">
-                    Cached
+                    {t('vectorExplorer.cached')}
                   </Badge>
                 )}
                 {searchResults.embedding_from_cache && (
                   <Badge variant="outline" className="text-xs">
-                    Embedding Cached
+                    {t('vectorExplorer.embeddingCached')}
                   </Badge>
                 )}
                 <Badge variant="secondary">
-                  {searchResults.total_results} results
+                  {t('vectorExplorer.resultsCount', { count: searchResults.total_results })}
                 </Badge>
               </div>
             </div>
             <CardDescription>
-              Found {searchResults.total_results} similar {contentType} item(s)
-              {searchResults.total_results > 0 && ` with similarity ≥ ${(similarityThreshold * 100).toFixed(0)}%`}
+              {t('vectorExplorer.foundResults', { count: searchResults.total_results, type: contentType })}
+              {searchResults.total_results > 0 && ` ${t('vectorExplorer.foundResultsWithThreshold', { threshold: (similarityThreshold * 100).toFixed(0) })}`}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {searchResults.total_results === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Target className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p className="font-medium">No similar content found</p>
-                <p className="text-sm mt-1">Try lowering the similarity threshold or changing the content type</p>
+                <p className="font-medium">{t('vectorExplorer.noSimilarContent')}</p>
+                <p className="text-sm mt-1">{t('vectorExplorer.noSimilarContentHint')}</p>
               </div>
             ) : (
               <>
@@ -394,7 +396,7 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
                             color: 'white',
                           }}
                         >
-                          {(result.similarity_score * 100).toFixed(1)}% match
+                          {t('vectorExplorer.matchPercent', { percent: (result.similarity_score * 100).toFixed(1) })}
                         </Badge>
                       </div>
                       {result.metadata?.content_type && (
@@ -409,13 +411,13 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
                     {result.metadata && (
                       <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500">
                         {result.metadata.language && (
-                          <span>Language: {result.metadata.language}</span>
+                          <span>{t('vectorExplorer.language', { lang: result.metadata.language })}</span>
                         )}
                         {result.metadata.framework && (
-                          <span>Framework: {result.metadata.framework}</span>
+                          <span>{t('vectorExplorer.framework', { fw: result.metadata.framework })}</span>
                         )}
                         {result.metadata.created_at && (
-                          <span>Created: {new Date(result.metadata.created_at).toLocaleDateString()}</span>
+                          <span>{t('vectorExplorer.created', { date: new Date(result.metadata.created_at).toLocaleDateString() })}</span>
                         )}
                       </div>
                     )}
@@ -431,9 +433,9 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
       {searchResults && searchResults.total_results > 0 && embeddings.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Embedding Analysis</CardTitle>
+            <CardTitle>{t('vectorExplorer.embeddingAnalysis')}</CardTitle>
             <CardDescription>
-              Visual representation of vector embeddings and similarity scores
+              {t('vectorExplorer.embeddingAnalysisDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -453,13 +455,13 @@ export const VectorSimilarityExplorer: React.FC<VectorSimilarityExplorerProps> =
             <div className="flex items-start space-x-3">
               <ContentTypeIcon className="h-5 w-5 text-blue-600 mt-0.5" />
               <div className="text-sm text-blue-900">
-                <p className="font-medium mb-1">How it works:</p>
+                <p className="font-medium mb-1">{t('vectorExplorer.howItWorks')}</p>
                 <ul className="list-disc list-inside space-y-1 text-blue-800">
-                  <li>Enter your search query in the text area above</li>
-                  <li>Select the content type you want to search (code, documentation, or chat)</li>
-                  <li>Adjust the result limit and similarity threshold as needed</li>
-                  <li>Click "Search" or press Cmd/Ctrl + Enter to find similar content</li>
-                  <li>View detailed results with similarity scores and embedding visualizations</li>
+                  <li>{t('vectorExplorer.howItWorksSteps.step1')}</li>
+                  <li>{t('vectorExplorer.howItWorksSteps.step2')}</li>
+                  <li>{t('vectorExplorer.howItWorksSteps.step3')}</li>
+                  <li>{t('vectorExplorer.howItWorksSteps.step4')}</li>
+                  <li>{t('vectorExplorer.howItWorksSteps.step5')}</li>
                 </ul>
               </div>
             </div>

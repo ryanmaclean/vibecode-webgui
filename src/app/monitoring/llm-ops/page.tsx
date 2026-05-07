@@ -5,8 +5,9 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { DemoBanner } from '@/components/ui/DemoBanner'
 import {
   Brain,
@@ -111,7 +112,8 @@ function statusBadge(status: 'healthy' | 'degraded' | 'down'): string {
 
 // ── Component ──────────────────────────────────────────────────────────────
 
-export default function LLMOpsPage() {
+export default function LLMOpsPage(): React.JSX.Element {
+  const t = useTranslations('monitoring')
   const [activeTab, setActiveTab] = useState('overview')
 
   // State for real data
@@ -126,7 +128,7 @@ export default function LLMOpsPage() {
   useEffect(() => {
     let isInitialLoad = true
 
-    async function fetchData() {
+    async function fetchData(): Promise<void> {
       try {
         if (isInitialLoad) {
           setLoading(true)
@@ -217,7 +219,7 @@ export default function LLMOpsPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading LLM operations data...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">{t('llmOps.loadingData')}</p>
         </div>
       </div>
     )
@@ -228,7 +230,7 @@ export default function LLMOpsPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 dark:text-red-400">Error: {error}</p>
+          <p className="text-red-600 dark:text-red-400">{t('llmOps.error')}: {error}</p>
         </div>
       </div>
     )
@@ -237,12 +239,12 @@ export default function LLMOpsPage() {
   if (!metrics) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-600 dark:text-gray-400">No data available</p>
+        <p className="text-gray-600 dark:text-gray-400">{t('llmOps.noData')}</p>
       </div>
     )
   }
 
-  const renderOverviewTab = () => (
+  const renderOverviewTab = (): React.JSX.Element => (
     <div className="space-y-6">
       {/* Key Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -253,7 +255,7 @@ export default function LLMOpsPage() {
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {metrics.totalRequests.toLocaleString()}
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Total Requests</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('llmOps.totalRequests')}</div>
         </div>
 
         <div data-testid="llm-tokens-card" className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-lg shadow">
@@ -263,7 +265,7 @@ export default function LLMOpsPage() {
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {formatTokens(metrics.totalTokens)}
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Tokens Consumed</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('llmOps.tokensConsumed')}</div>
         </div>
 
         <div data-testid="llm-cost-card" className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-lg shadow">
@@ -273,31 +275,31 @@ export default function LLMOpsPage() {
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {formatCost(metrics.totalCost)}
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Total Cost (30 days)</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('llmOps.totalCost30Days')}</div>
         </div>
       </div>
 
       {/* Performance Metrics */}
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Performance Metrics</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{t('llmOps.performanceMetrics')}</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div className="text-center">
             <div className={`text-2xl font-bold ${latencyColor(metrics.avgLatency)}`}>
               {formatLatency(metrics.avgLatency)}
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Avg Latency</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">{t('llmOps.avgLatency')}</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">
               {metrics.successRate}%
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Success Rate</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">{t('llmOps.successRate')}</div>
           </div>
           <div className="text-center">
             <div className={`text-2xl font-bold ${errorRateColor(metrics.errorRate)}`}>
               {metrics.errorRate}%
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Error Rate</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">{t('llmOps.errorRate')}</div>
           </div>
         </div>
       </div>
@@ -307,7 +309,7 @@ export default function LLMOpsPage() {
         <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Activity className="h-5 w-5 text-blue-500" />
-            Provider Statistics
+            {t('llmOps.providerStatistics')}
           </h2>
         </div>
         <div className="overflow-x-auto">
@@ -315,25 +317,25 @@ export default function LLMOpsPage() {
             <thead>
               <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Provider
+                  {t('llmOps.provider')}
                 </th>
                 <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Requests
+                  {t('llmOps.requests')}
                 </th>
                 <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Tokens
+                  {t('llmOps.tokens')}
                 </th>
                 <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Cost
+                  {t('llmOps.cost')}
                 </th>
                 <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Avg Latency
+                  {t('llmOps.avgLatency')}
                 </th>
                 <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Error Rate
+                  {t('llmOps.errorRate')}
                 </th>
                 <th className="text-center px-4 py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Status
+                  {t('llmOps.status')}
                 </th>
               </tr>
             </thead>
@@ -379,16 +381,16 @@ export default function LLMOpsPage() {
     </div>
   )
 
-  const renderModelsTab = () => (
+  const renderModelsTab = (): React.JSX.Element => (
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-purple-500" />
-            Model Usage Statistics
+            {t('llmOps.modelUsageStatistics')}
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            {models.length} models active in the last 30 days
+            {t('llmOps.modelsActive30Days', { count: models.length })}
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -396,22 +398,22 @@ export default function LLMOpsPage() {
             <thead>
               <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Model
+                  {t('llmOps.model')}
                 </th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Provider
+                  {t('llmOps.provider')}
                 </th>
                 <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Requests
+                  {t('llmOps.requests')}
                 </th>
                 <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Tokens
+                  {t('llmOps.tokens')}
                 </th>
                 <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Cost
+                  {t('llmOps.cost')}
                 </th>
                 <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Avg Latency
+                  {t('llmOps.avgLatency')}
                 </th>
               </tr>
             </thead>
@@ -449,12 +451,12 @@ export default function LLMOpsPage() {
     </div>
   )
 
-  const renderRequestsTab = () => (
+  const renderRequestsTab = (): React.JSX.Element => (
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg">
         <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Recent LLM Requests</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('llmOps.recentRequests')}</h3>
             <div className="flex gap-2">
               <select
                 data-testid="request-status-filter"
@@ -462,9 +464,9 @@ export default function LLMOpsPage() {
                 title="Request filters will be enabled when backend request history is available"
                 className="px-3 py-1 border border-gray-300 dark:border-gray-700 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               >
-                <option value="">All Status</option>
-                <option value="success">Success</option>
-                <option value="error">Error</option>
+                <option value="">{t('llmOps.allStatus')}</option>
+                <option value="success">{t('llmOps.statusSuccess')}</option>
+                <option value="error">{t('llmOps.statusError')}</option>
               </select>
               <select
                 data-testid="request-provider-filter"
@@ -472,7 +474,7 @@ export default function LLMOpsPage() {
                 title="Request filters will be enabled when backend request history is available"
                 className="px-3 py-1 border border-gray-300 dark:border-gray-700 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               >
-                <option value="">All Providers</option>
+                <option value="">{t('llmOps.allProviders')}</option>
                 <option value="OpenAI">OpenAI</option>
                 <option value="Anthropic">Anthropic</option>
                 <option value="OpenRouter">OpenRouter</option>
@@ -538,7 +540,7 @@ export default function LLMOpsPage() {
     </div>
   )
 
-  const renderCostsTab = () => (
+  const renderCostsTab = (): React.JSX.Element => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div data-testid="cost-today-card" className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-lg shadow">
@@ -548,7 +550,7 @@ export default function LLMOpsPage() {
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {formatCost(41.20)}
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Today</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('llmOps.today')}</div>
         </div>
 
         <div data-testid="cost-week-card" className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-lg shadow">
@@ -558,7 +560,7 @@ export default function LLMOpsPage() {
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {formatCost(289.45)}
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">This Week</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('llmOps.thisWeek')}</div>
         </div>
 
         <div data-testid="cost-month-card" className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-lg shadow">
@@ -568,7 +570,7 @@ export default function LLMOpsPage() {
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {formatCost(metrics.totalCost)}
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">This Month</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('llmOps.thisMonth')}</div>
         </div>
 
         <div data-testid="cost-projected-card" className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-lg shadow">
@@ -578,13 +580,13 @@ export default function LLMOpsPage() {
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {formatCost(1850.00)}
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Projected (30d)</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('llmOps.projected30Days')}</div>
         </div>
       </div>
 
       {/* Cost by Provider */}
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Cost Breakdown by Provider</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{t('llmOps.costBreakdownByProvider')}</h3>
         <div className="space-y-3">
           {providers.map((provider) => {
             const percentageValue = metrics.totalCost > 0 ? (provider.cost / metrics.totalCost) * 100 : 0
@@ -621,10 +623,10 @@ export default function LLMOpsPage() {
           href="/monitoring"
           className="hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
         >
-          Monitoring
+          {t('breadcrumbMonitoring')}
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
-        <span className="text-gray-900 dark:text-gray-100 font-medium">LLM Operations</span>
+        <span className="text-gray-900 dark:text-gray-100 font-medium">{t('llmOps.breadcrumb')}</span>
       </nav>
 
       {/* Header */}
@@ -632,10 +634,10 @@ export default function LLMOpsPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Brain className="h-7 w-7" />
-            LLM Operations
+            {t('llmOps.title')}
           </h1>
           <p className="mt-1 text-gray-600 dark:text-gray-400">
-            Monitor LLM usage, costs, and performance across all providers
+            {t('llmOps.subtitle')}
           </p>
         </div>
       </div>
