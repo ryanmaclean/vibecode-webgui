@@ -161,7 +161,7 @@ api_key_patterns=(
 for file in $staged_files; do
     if [[ -f "$file" ]]; then
         # Skip binary files and specific ignored files
-        if [[ "$file" == .env || "$file" == *.env.local || "$file" == *.env.* || "$file" == *node_modules* || "$file" == *.git* ]]; then
+        if [[ "$file" == .env || "$file" == *.env.local || "$file" == *.env.* || "$file" == *node_modules* || "$file" == *.git* || "$file" == package-lock.json ]]; then
             continue
         fi
         

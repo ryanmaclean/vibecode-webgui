@@ -276,6 +276,7 @@
     "@babel/preset-env": "7.29.0",
     "@babel/preset-react": "7.28.5",
     "@babel/preset-typescript": "7.28.5",
+    "@commitlint/config-conventional": "20.5.3",
     "@datadog/browser-rum": "6.27.1",
     "@datadog/datadog-ci": "5.15.0",
     "@eslint/eslintrc": "3.3.3",
