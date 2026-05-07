@@ -1,23 +1,42 @@
 ---
 name: datadog-code-security
-description: Run Datadog Code Security scans on a codebase — SAST (rule-based static analysis), SAIST (AI-native SAST using LLMs for vulnerability detection), SCA (software composition analysis), secrets detection, and IaC scanning. Integrates via the Code Security MCP Server for real-time scanning in Claude Code, Cursor, and VS Code. Use when asked to scan code for vulnerabilities, run a security audit, find bugs via static analysis, or check dependencies for known CVEs.
+description: Run Datadog Code Security scans — SAST, SAIST (AI-native SAST), SCA, secrets, IaC scanning, plus supply-chain protection (GuardDog, Supply-Chain Firewall) and IDE runtime defense (IDE Shepherd). Integrates via Code Security MCP Server for real-time scanning in Claude Code, Cursor, and VS Code. Use when asked to scan code for vulnerabilities, run a security audit, find bugs via static analysis, check dependencies for known CVEs, or protect against supply-chain attacks.
 ---
 
 # Datadog Code Security Skill
 
-Scan codebases for security vulnerabilities using Datadog's Code Security suite. As of 2026, the primary developer integration is the **Code Security MCP Server** which runs all scanners locally and provides real-time feedback in AI coding assistants.
+Full-stack application security from Datadog — from code analysis to supply-chain defense to IDE runtime protection.
 
-| Layer | What it does | How it works |
-|-------|-------------|--------------|
+## Tool Overview
+
+### Code Analysis (find vulns in your code)
+
+| Tool | What it does | How it works |
+|------|-------------|--------------|
 | **SAST** | Rule-based static analysis | Deterministic rules scan first-party code for CWEs |
 | **SAIST** | AI-native SAST | LLMs detect context-dependent vulns that rules miss |
 | **SCA** | Software Composition Analysis | Scans dependencies for known CVEs via advisory DBs |
 | **Secrets** | Hardcoded secret detection | Finds API keys, tokens, passwords in source code |
-| **IaC** | Infrastructure-as-Code scanning | Detects misconfigurations in Terraform, CloudFormation, etc. |
+| **IaC** | Infrastructure-as-Code scanning | Detects misconfigs in Terraform, CloudFormation, etc. |
 
-## Code Security MCP Server (Recommended)
+### Supply-Chain Defense (block malicious packages)
 
-The MCP server is the fastest way to get all scanners running in your IDE. It downloads scanners on-demand, runs locally over STDIO, and provides immediate feedback with line numbers, rule references, and proposed fixes.
+| Tool | What it does | How it works |
+|------|-------------|--------------|
+| **[Supply-Chain Firewall](https://github.com/DataDog/supply-chain-firewall)** | Blocks malicious packages at install time | Wraps pip/npm/poetry, checks against malware DBs before install |
+| **[GuardDog](https://github.com/DataDog/guarddog)** | Identifies malicious packages via heuristics | Semgrep + Yara rules on source code and metadata analysis |
+
+### IDE Runtime Defense (protect your dev environment)
+
+| Tool | What it does | How it works |
+|------|-------------|--------------|
+| **[IDE Shepherd](https://github.com/DataDog/IDE-Shepherd-extension)** | Blocks malicious VS Code/Cursor extensions in real-time | Hooks Node.js primitives (`http`, `child_process`, `fs`) to intercept attacks before execution |
+
+---
+
+## Code Security MCP Server (Recommended Entry Point)
+
+The MCP server runs all code scanners locally with real-time feedback — line numbers, rule references, and proposed fixes.
 
 ### Install
 
@@ -25,12 +44,10 @@ The MCP server is the fastest way to get all scanners running in your IDE. It do
 # Homebrew (macOS/Linux)
 brew install datadog-labs/pack/datadog-code-security-mcp
 
-# Or direct download
+# Direct download
 curl -L "https://github.com/datadog-labs/datadog-code-security-mcp/releases/latest/download/datadog-code-security-mcp-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz" | tar xz
 sudo install -m 755 datadog-code-security-mcp /usr/local/bin/
 ```
-
-Verify: `datadog-code-security-mcp version`
 
 ### Configure for Claude Code
 
@@ -41,8 +58,6 @@ claude mcp add datadog-code-security \
   -e DD_SITE=datadoghq.com \
   -- datadog-code-security-mcp start
 ```
-
-Verify: `claude mcp list | grep datadog-code-security`
 
 ### Configure for Cursor
 
@@ -84,10 +99,10 @@ Add to `.vscode/settings.json`:
 }
 ```
 
-### MCP Tools Available
+### MCP Tools
 
-| Tool | Function | Auth Required |
-|------|----------|--------------|
+| Tool | Function | Auth |
+|------|----------|------|
 | `datadog_sast_scan` | Static analysis for code vulnerabilities | Yes |
 | `datadog_secrets_scan` | Hardcoded secrets detection | Yes |
 | `datadog_sca_scan` | Dependency vulnerability scanning (CVEs) | Yes |
@@ -97,25 +112,16 @@ Add to `.vscode/settings.json`:
 ### CLI Usage (without MCP)
 
 ```bash
-# Scan everything
-datadog-code-security-mcp scan all ./src
-
-# Individual scan types
-datadog-code-security-mcp scan sast ./src
-datadog-code-security-mcp scan secrets ./config
-datadog-code-security-mcp scan sca ./
-datadog-code-security-mcp scan iac ./terraform
-
-# Generate SBOM
-datadog-code-security-mcp generate-sbom .
-
-# JSON output
-datadog-code-security-mcp scan all ./src --json
+datadog-code-security-mcp scan all ./src          # Everything
+datadog-code-security-mcp scan sast ./src          # SAST only
+datadog-code-security-mcp scan secrets ./config    # Secrets only
+datadog-code-security-mcp scan sca ./              # SCA only
+datadog-code-security-mcp scan iac ./terraform     # IaC only
+datadog-code-security-mcp generate-sbom .          # SBOM
+datadog-code-security-mcp scan all ./src --json    # JSON output
 ```
 
-### Required Security Binaries
-
-The MCP server wraps these binaries (auto-downloaded or install manually):
+### Required Binaries (auto-downloaded or install manually)
 
 | Binary | Purpose | Install |
 |--------|---------|---------|
@@ -132,13 +138,15 @@ The MCP server wraps these binaries (auto-downloaded or install manually):
 | `DD_APP_KEY` | Yes* | Datadog application key |
 | `DD_SITE` | No | Datadog site (default: datadoghq.com) |
 
-*SBOM generation works without auth. All other scans require both keys.
+*SBOM generation works without auth.
+
+---
 
 ## SAIST — AI-Native SAST
 
-Datadog SAIST uses LLMs to detect vulnerabilities that rule-based SAST misses. Open-source at `github.com/DataDog/datadog-saist`. It reasons about code semantics, execution context, and call stacks rather than relying on rigid pattern matching.
+Open-source at [github.com/DataDog/datadog-saist](https://github.com/DataDog/datadog-saist). Uses LLMs to reason about code semantics, execution context, and call stacks — catches what rigid rules miss.
 
-### How SAIST Works
+### How It Works
 
 1. **Identification** — Heuristics filter candidate files likely to contain risks
 2. **Context Retrieval** — Gathers invoked functions and related files for full context
@@ -156,7 +164,7 @@ Uses two models: a **detection model** for finding vulns and a **validation mode
 | SQL Injection | 86% | 63% |
 | Path Traversal | 90% | 64% |
 
-### Run SAIST Standalone
+### Run SAIST
 
 ```bash
 git clone https://github.com/DataDog/datadog-saist.git
@@ -185,13 +193,194 @@ export ANTHROPIC_API_KEY="..."   # or OPENAI_API_KEY or GOOGLE_API_KEY
 | `--debug` | Verbose output | false |
 | `--write-prompts` | Save prompts to files | false |
 
-### Supported Languages (SAIST)
-
-Java, Python, Go, C#
+### Supported Languages: Java, Python, Go, C#
 
 ### Detected CWE Categories (15)
 
 SQL Injection, Command Injection, XSS, Path Traversal, Insecure Deserialization, Broken Access Control, SSRF, XXE, LDAP Injection, Log Injection, Open Redirect, Weak Cryptography, Hardcoded Secrets, Information Exposure, Improper Input Validation
+
+---
+
+## Supply-Chain Firewall (SCFW)
+
+Blocks malicious packages **before they install**. Drop-in wrapper around pip, npm, and poetry.
+
+### Install
+
+```bash
+pipx install scfw    # or: pip install scfw
+scfw configure       # interactive setup, optional Datadog logging
+```
+
+### Usage
+
+```bash
+# Wrap any install command — SCFW checks packages before proceeding
+scfw run npm install react
+scfw run pip install -r requirements.txt
+scfw run poetry add flask
+
+# Audit already-installed packages
+scfw audit npm
+scfw audit pip
+scfw audit --executable venv/bin/python pip
+```
+
+### How It Works
+
+1. Intercepts the package manager call
+2. Collects all target packages
+3. Verifies each against malware databases
+4. **Blocks immediately** on critical findings, **prompts** on warnings
+5. Proceeds only if clean
+
+### Data Sources
+
+| Verifier | What it checks |
+|----------|---------------|
+| Datadog Security Research Dataset | Known malicious packages |
+| OSV.dev Advisories | Malicious packages + vulnerability data |
+| Package Registry Metadata | Recently published / suspicious packages |
+| Custom Findings | User-provided allowlists/blocklists |
+
+### Supported Package Managers
+
+| Manager | Min Version | Inspected Commands |
+|---------|-------------|-------------------|
+| npm | >= 7.0 | `install` (including aliases) |
+| pip | >= 22.2 | `install` |
+| poetry | >= 1.7 | `add`, `install`, `sync`, `update` |
+
+### Datadog Integration
+
+```bash
+scfw configure   # enables optional HTTP API logging or local Agent logging
+```
+
+Logs all blocked/allowed decisions to Datadog for audit trails and incident response.
+
+### Platforms: macOS (full), Linux (supported), Windows (not supported)
+
+---
+
+## GuardDog
+
+Identifies malicious packages via heuristic analysis — Semgrep rules on source code + metadata checks. Covers 6 ecosystems with ~60 built-in heuristics.
+
+### Install
+
+```bash
+pip install guarddog          # or: uvx guarddog pypi scan requests
+# Windows: Docker only
+docker pull ghcr.io/datadog/guarddog
+```
+
+### Usage
+
+```bash
+# Scan a specific package
+guarddog pypi scan requests
+guarddog npm scan express
+guarddog pypi scan requests --version 2.28.1
+
+# Verify dependencies from manifest files
+guarddog pypi verify requirements.txt
+guarddog npm verify package-lock.json
+guarddog go verify go.mod
+guarddog github_action verify .github/workflows/main.yml
+
+# Output formats
+guarddog pypi scan requests --output-format sarif    # for GitHub code scanning
+guarddog pypi scan requests --output-format json     # machine-readable
+```
+
+### Supported Ecosystems
+
+| Ecosystem | Source Code Rules | Metadata Rules |
+|-----------|-----------------|----------------|
+| PyPI | 14 | 12 |
+| npm | 10 | 9 |
+| Go | 4 | — |
+| RubyGems | 7 | — |
+| GitHub Actions | 10 | — |
+| VS Code Extensions | 10 | — |
+
+### What It Detects
+
+**Source code heuristics:** exec-base64, code-execution, cmd-overwrite, clipboard-access, exfiltrate-sensitive-data, dll-hijacking, steganography, obfuscation, download-executable, silent-process-execution, reverse shells, suspicious links
+
+**Metadata heuristics:** typosquatting, deceptive-author, empty-information, release-zero, single-python-file, potentially-compromised-email-domain, bundled-binary, repository-integrity-mismatch
+
+### CI Integration (GitHub Actions)
+
+```yaml
+- run: uvx guarddog pypi verify requirements.txt --output-format sarif > guarddog.sarif
+- uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: guarddog.sarif
+```
+
+### Custom Rules
+
+Drop Semgrep (`.yml`) or Yara (`.yar`) rules into `guarddog/analyzer/sourcecode/` — auto-imported and available via CLI.
+
+### Environment Variables
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `GUARDDOG_PARALLELISM` | Thread count | CPU count |
+| `GUARDDOG_SEMGREP_TIMEOUT` | Rule timeout | 10s |
+| `GUARDDOG_SEMGREP_MAX_TARGET_BYTES` | Max file size | 10MB |
+| `GUARDDOG_MAX_UNCOMPRESSED_SIZE` | Archive bomb limit | 2GB |
+| `GUARDDOG_MAX_COMPRESSION_RATIO` | Compression bomb detection | 100:1 |
+
+---
+
+## IDE Shepherd
+
+VS Code/Cursor extension that detects and **blocks malicious extensions at runtime** — intercepts Node.js primitives before execution.
+
+### Install
+
+Search "IDE Shepherd" in VS Code/Cursor Extensions panel, or:
+```bash
+code --install-extension ide-shepherd-extension-2.1.0.vsix
+```
+
+### What It Detects
+
+**Runtime interception** (hooks `http`, `child_process`, `fs` as modules load):
+
+| Category | Examples |
+|----------|---------|
+| Network | Requests to malware domains, data exfiltration endpoints, tunneling services |
+| Process execution | PowerShell with evasion flags, command injection, piping to shell interpreters, detached processes |
+| File system | Reading SSH keys/AWS creds/kube configs/shell history, unauthorized SSH key writes, shell profile modification |
+| Workspace tasks | Network downloads, encoded PowerShell, privilege escalation, recursive deletion |
+
+**Static analysis** (scans all JS in extensions including `node_modules`):
+
+| Rule | Pattern |
+|------|---------|
+| Download-and-execute | Network fetch + process spawn |
+| Reverse shell | Raw sockets + exec calls |
+| Dynamic payload | eval with decoded content |
+| Detached process | Background process with silent stdio |
+| Command injection | Shell command construction vectors |
+
+**Metadata heuristics:** Void descriptions, generic categorization, wildcard activation, missing repo info
+
+### Trust Controls
+
+- Allowlist specific extension versions after manual review
+- Trust entire publishers
+- Mark workspaces as trusted (prevents build task interruption)
+
+### Datadog Agent Integration
+
+Sends security events to Datadog Agent for centralized logging and telemetry.
+
+---
 
 ## SAST — Rule-Based Static Analysis
 
@@ -210,6 +399,8 @@ Python, JavaScript/TypeScript, Java, Go, Ruby, C#, PHP, Kotlin, Swift, Docker, T
     dd_site: datadoghq.com
 ```
 
+---
+
 ## SCA — Software Composition Analysis
 
 ### What SCA Checks
@@ -223,34 +414,29 @@ Python, JavaScript/TypeScript, Java, Go, Ruby, C#, PHP, Kotlin, Swift, Docker, T
 
 npm/yarn/pnpm, pip/poetry/pipenv, Maven/Gradle, Go modules, NuGet, RubyGems, Cargo, CocoaPods
 
+---
+
 ## Workflow: Full Security Scan
 
 ```bash
-# Option A: MCP Server (recommended — runs all scans in one command)
+# 1. Supply-chain defense — block malicious deps before install
+scfw run npm install                    # firewall-wrapped install
+guarddog npm verify package-lock.json   # heuristic scan of deps
+
+# 2. MCP Server — run all code scanners
 datadog-code-security-mcp scan all ./src
 
-# Option B: Individual tools
-# 1. SCA — check dependencies (fastest)
-datadog-code-security-mcp scan sca .
-
-# 2. Secrets — find hardcoded credentials
-datadog-code-security-mcp scan secrets .
-
-# 3. SAST — rule-based code scan
-datadog-code-security-mcp scan sast ./src
-
-# 4. IaC — infrastructure misconfigs
-datadog-code-security-mcp scan iac ./terraform
-
-# 5. SAIST — AI-native deep scan (uses LLM credits)
+# 3. SAIST — AI-native deep scan (uses LLM credits)
 ./bin/datadog-saist \
   --directory ./src \
   --output saist-results.sarif \
   --detection-model claude-sonnet-4-6 \
   --validation-model claude-haiku-4-5
 
-# Upload SARIF to Datadog
+# 4. Upload all SARIF results to Datadog
 datadog-ci sarif upload --service my-service --env production saist-results.sarif
+
+# 5. IDE protection — install IDE Shepherd in VS Code/Cursor
 ```
 
 ## Remediation
