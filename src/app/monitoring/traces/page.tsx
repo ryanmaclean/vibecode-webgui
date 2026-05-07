@@ -88,297 +88,6 @@ interface TracesAPIResponse {
   }
 }
 
-// ── Mock Data ──────────────────────────────────────────────────────────────
-
-const MOCK_TRACES: Trace[] = [
-  {
-    trace_id: 'trace-abc-123-def-456',
-    root_span: 'GET /api/chat',
-    service: 'vibecode-webgui',
-    operation: 'POST /api/chat',
-    duration_ms: 1245,
-    span_count: 8,
-    status: 'success',
-    timestamp: new Date(Date.now() - 15000).toISOString(),
-    spans: [
-      {
-        id: 'span-1',
-        name: 'POST /api/chat',
-        service: 'vibecode-webgui',
-        duration_ms: 1245,
-        start_offset_ms: 0,
-        status: 'success',
-        tags: { 'http.method': 'POST', 'http.status_code': '200' },
-      },
-      {
-        id: 'span-2',
-        name: 'auth.validateToken',
-        service: 'vibecode-webgui',
-        duration_ms: 12,
-        start_offset_ms: 2,
-        status: 'success',
-        tags: { 'auth.user_id': 'user-123' },
-      },
-      {
-        id: 'span-3',
-        name: 'cache.get',
-        service: 'valkey',
-        duration_ms: 3,
-        start_offset_ms: 15,
-        status: 'success',
-        tags: { 'cache.hit': 'false' },
-      },
-      {
-        id: 'span-4',
-        name: 'POST /api/ai/chat',
-        service: 'vibecode-agentapi',
-        duration_ms: 1180,
-        start_offset_ms: 20,
-        status: 'success',
-        tags: { 'ai.model': 'claude-3.5-sonnet', 'ai.tokens': '1847' },
-      },
-      {
-        id: 'span-5',
-        name: 'ai.completion',
-        service: 'openrouter',
-        duration_ms: 1150,
-        start_offset_ms: 30,
-        status: 'success',
-        tags: { 'ai.provider': 'openrouter', 'ai.latency_ms': '1150' },
-      },
-      {
-        id: 'span-6',
-        name: 'INSERT conversation',
-        service: 'postgresql',
-        duration_ms: 8,
-        start_offset_ms: 1200,
-        status: 'success',
-        tags: { 'db.statement': 'INSERT', 'db.table': 'conversations' },
-      },
-      {
-        id: 'span-7',
-        name: 'cache.set',
-        service: 'valkey',
-        duration_ms: 2,
-        start_offset_ms: 1210,
-        status: 'success',
-        tags: { 'cache.key': 'conv:abc123', 'cache.ttl': '3600' },
-      },
-      {
-        id: 'span-8',
-        name: 'response.send',
-        service: 'vibecode-webgui',
-        duration_ms: 1,
-        start_offset_ms: 1244,
-        status: 'success',
-        tags: { 'http.response_size': '2048' },
-      },
-    ],
-  },
-  {
-    trace_id: 'trace-ghi-789-jkl-012',
-    root_span: 'GET /api/workspaces',
-    service: 'vibecode-webgui',
-    operation: 'GET /api/workspaces',
-    duration_ms: 45,
-    span_count: 3,
-    status: 'success',
-    timestamp: new Date(Date.now() - 30000).toISOString(),
-    spans: [
-      {
-        id: 'span-1',
-        name: 'GET /api/workspaces',
-        service: 'vibecode-webgui',
-        duration_ms: 45,
-        start_offset_ms: 0,
-        status: 'success',
-      },
-      {
-        id: 'span-2',
-        name: 'cache.get',
-        service: 'valkey',
-        duration_ms: 2,
-        start_offset_ms: 2,
-        status: 'success',
-        tags: { 'cache.hit': 'true' },
-      },
-      {
-        id: 'span-3',
-        name: 'response.send',
-        service: 'vibecode-webgui',
-        duration_ms: 1,
-        start_offset_ms: 44,
-        status: 'success',
-      },
-    ],
-  },
-  {
-    trace_id: 'trace-mno-345-pqr-678',
-    root_span: 'POST /api/embeddings',
-    service: 'vibecode-webgui',
-    operation: 'POST /api/embeddings',
-    duration_ms: 3250,
-    span_count: 5,
-    status: 'error',
-    timestamp: new Date(Date.now() - 45000).toISOString(),
-    spans: [
-      {
-        id: 'span-1',
-        name: 'POST /api/embeddings',
-        service: 'vibecode-webgui',
-        duration_ms: 3250,
-        start_offset_ms: 0,
-        status: 'error',
-        tags: { 'http.status_code': '500' },
-      },
-      {
-        id: 'span-2',
-        name: 'azure.embeddings',
-        service: 'azure-openai',
-        duration_ms: 3200,
-        start_offset_ms: 10,
-        status: 'error',
-        tags: { 'error.type': 'RateLimitError', 'error.message': 'Rate limit exceeded' },
-      },
-      {
-        id: 'span-3',
-        name: 'error.log',
-        service: 'vibecode-webgui',
-        duration_ms: 2,
-        start_offset_ms: 3220,
-        status: 'success',
-      },
-      {
-        id: 'span-4',
-        name: 'INSERT error_log',
-        service: 'postgresql',
-        duration_ms: 15,
-        start_offset_ms: 3230,
-        status: 'success',
-      },
-      {
-        id: 'span-5',
-        name: 'response.error',
-        service: 'vibecode-webgui',
-        duration_ms: 1,
-        start_offset_ms: 3249,
-        status: 'error',
-      },
-    ],
-  },
-  {
-    trace_id: 'trace-stu-901-vwx-234',
-    root_span: 'GET /health',
-    service: 'vibecode-webgui',
-    operation: 'GET /health',
-    duration_ms: 892,
-    span_count: 4,
-    status: 'warning',
-    timestamp: new Date(Date.now() - 60000).toISOString(),
-    spans: [
-      {
-        id: 'span-1',
-        name: 'GET /health',
-        service: 'vibecode-webgui',
-        duration_ms: 892,
-        start_offset_ms: 0,
-        status: 'warning',
-      },
-      {
-        id: 'span-2',
-        name: 'health.checkDatabase',
-        service: 'postgresql',
-        duration_ms: 850,
-        start_offset_ms: 5,
-        status: 'warning',
-        tags: { 'warning': 'slow_response', 'threshold_ms': '100' },
-      },
-      {
-        id: 'span-3',
-        name: 'health.checkCache',
-        service: 'valkey',
-        duration_ms: 3,
-        start_offset_ms: 860,
-        status: 'success',
-      },
-      {
-        id: 'span-4',
-        name: 'response.send',
-        service: 'vibecode-webgui',
-        duration_ms: 1,
-        start_offset_ms: 891,
-        status: 'success',
-      },
-    ],
-  },
-]
-
-const MOCK_SERVICE_NODES: ServiceNode[] = [
-  {
-    id: 'webgui',
-    name: 'Web UI',
-    type: 'frontend',
-    status: 'healthy',
-    trace_count: 1247,
-    avg_latency_ms: 234,
-    error_rate: 0.8,
-  },
-  {
-    id: 'api',
-    name: 'Next.js API',
-    type: 'backend',
-    status: 'healthy',
-    trace_count: 1247,
-    avg_latency_ms: 156,
-    error_rate: 1.2,
-  },
-  {
-    id: 'agentapi',
-    name: 'Agent API',
-    type: 'backend',
-    status: 'healthy',
-    trace_count: 456,
-    avg_latency_ms: 890,
-    error_rate: 0.5,
-  },
-  {
-    id: 'database',
-    name: 'PostgreSQL',
-    type: 'database',
-    status: 'degraded',
-    trace_count: 892,
-    avg_latency_ms: 45,
-    error_rate: 0.1,
-  },
-  {
-    id: 'cache',
-    name: 'Valkey',
-    type: 'cache',
-    status: 'healthy',
-    trace_count: 2341,
-    avg_latency_ms: 3,
-    error_rate: 0.0,
-  },
-  {
-    id: 'ai',
-    name: 'AI Service',
-    type: 'external',
-    status: 'healthy',
-    trace_count: 234,
-    avg_latency_ms: 1200,
-    error_rate: 2.1,
-  },
-]
-
-const MOCK_SERVICE_EDGES: ServiceEdge[] = [
-  { from: 'webgui', to: 'api', type: 'http', call_count: 1247, avg_latency_ms: 156 },
-  { from: 'api', to: 'database', type: 'sql', call_count: 892, avg_latency_ms: 45 },
-  { from: 'api', to: 'cache', type: 'redis', call_count: 2341, avg_latency_ms: 3 },
-  { from: 'api', to: 'agentapi', type: 'http', call_count: 456, avg_latency_ms: 890 },
-  { from: 'agentapi', to: 'ai', type: 'http', call_count: 234, avg_latency_ms: 1200 },
-  { from: 'agentapi', to: 'database', type: 'sql', call_count: 123, avg_latency_ms: 38 },
-]
-
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function statusBadge(status: TraceStatus): string {
@@ -466,34 +175,53 @@ function errorRateColor(rate: number): string {
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function TracesPage() {
-  const [traces, setTraces] = useState<Trace[]>(MOCK_TRACES)
-  const [serviceNodes] = useState<ServiceNode[]>(MOCK_SERVICE_NODES)
-  const [serviceEdges] = useState<ServiceEdge[]>(MOCK_SERVICE_EDGES)
+  const [traces, setTraces] = useState<Trace[]>([])
+  const [serviceNodes, setServiceNodes] = useState<ServiceNode[]>([])
+  const [serviceEdges, setServiceEdges] = useState<ServiceEdge[]>([])
   const [selectedTrace, setSelectedTrace] = useState<Trace | null>(null)
   const [serviceFilter, setServiceFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<TraceStatus | 'all'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [autoRefresh, setAutoRefresh] = useState(false)
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date())
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const refreshData = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const response = await fetch('/api/monitoring/traces?timeframe=1h')
-      if (response.ok) {
-        const data: TracesAPIResponse = await response.json()
-        if (Array.isArray(data.traces)) {
-          setTraces(data.traces)
-        }
-        setLastRefreshed(new Date())
+      if (!response.ok) {
+        throw new Error(`Failed to fetch traces (HTTP ${response.status})`)
       }
-    } catch (error) {
-      console.error('Failed to refresh trace data:', error)
+      const data: TracesAPIResponse = await response.json()
+      if (Array.isArray(data.traces)) {
+        setTraces(data.traces)
+      }
+      if (data.visualization?.service_map) {
+        const { nodes, edges } = data.visualization.service_map
+        if (Array.isArray(nodes)) {
+          setServiceNodes(nodes)
+        }
+        if (Array.isArray(edges)) {
+          setServiceEdges(edges)
+        }
+      }
+      setLastRefreshed(new Date())
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch trace data'
+      setError(message)
+      console.error('Failed to refresh trace data:', err)
     } finally {
       setLoading(false)
     }
   }, [])
+
+  // Fetch data on mount
+  useEffect(() => {
+    refreshData()
+  }, [refreshData])
 
   useEffect(() => {
     if (!autoRefresh) return
@@ -588,6 +316,38 @@ export default function TracesPage() {
           </button>
         </div>
       </div>
+
+      {/* Loading State */}
+      {loading && traces.length === 0 && (
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-12">
+          <div className="flex flex-col items-center justify-center gap-3">
+            <RefreshCw className="h-8 w-8 text-gray-400 dark:text-gray-500 animate-spin" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">Loading trace data...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+          <div className="flex items-start gap-3">
+            <XCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800 dark:text-red-300">
+                Failed to load trace data
+              </p>
+              <p className="text-sm text-red-600 dark:text-red-400 mt-1">{error}</p>
+              <button
+                onClick={refreshData}
+                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
