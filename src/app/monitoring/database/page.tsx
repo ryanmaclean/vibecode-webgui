@@ -93,7 +93,7 @@ interface DatabaseHealth {
 }
 
 export default function DatabaseHealthDashboard(): React.JSX.Element {
-  const t = useTranslations('monitoring')
+  const t = useTranslations('monitoring');
   const [health, setHealth] = useState<DatabaseHealth | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
