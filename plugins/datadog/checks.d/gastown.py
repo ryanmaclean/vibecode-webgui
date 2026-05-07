@@ -118,7 +118,7 @@ class GasTownCheck(AgentCheck):
                     try:
                         count = int(line.split('(')[1].split(')')[0])
                         total_polecats = count
-                    except:
+                    except Exception:
                         pass
             elif in_polecats_section:
                 if line.strip() and not line.startswith('─'):

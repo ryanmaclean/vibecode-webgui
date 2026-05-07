@@ -3,9 +3,11 @@
 # -- VibeCode Telemetry --
 import sys
 import os
+
 try:
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
     from vibecode.telemetry import init_telemetry
+
     tracer = init_telemetry(os.path.basename(__file__))
 except ImportError:
     pass
@@ -19,6 +21,7 @@ This module provides automatic error tracking for all Python scripts.
 # Datadog APM tracing
 try:
     from ddtrace import patch_all
+
     patch_all()
 except ImportError:
     pass  # ddtrace not installed
@@ -26,6 +29,7 @@ except ImportError:
 
 import json
 import os
+import shlex
 import socket
 import subprocess
 import sys
@@ -36,7 +40,9 @@ from pathlib import Path
 from typing import Any, Dict
 
 # Error tracking configuration
-DD_ERROR_TRACKING_ENABLED = os.environ.get("DD_ERROR_TRACKING_ENABLED", "true").lower() == "true"
+DD_ERROR_TRACKING_ENABLED = (
+    os.environ.get("DD_ERROR_TRACKING_ENABLED", "true").lower() == "true"
+)
 DD_SERVICE = os.environ.get("DD_SERVICE", "vibecode-webgui")
 DD_ENV = os.environ.get("DD_ENV", os.environ.get("NODE_ENV", "development"))
 DD_VERSION = os.environ.get("DD_VERSION", "1.0.0")
@@ -79,16 +85,24 @@ def _send_to_datadog(payload: Dict[str, Any]) -> bool:
     try:
         subprocess.run(
             [
-                "curl", "-s", "-X", "POST",
+                "curl",
+                "-s",
+                "-X",
+                "POST",
                 f"https://http-intake.logs.datadoghq.com/v1/input/{DD_API_KEY}",
-                "-H", "Content-Type: application/json",
-                "-d", json.dumps(payload),
-                "--max-time", "5",
-                "--retry", "2",
-                "--retry-delay", "1"
+                "-H",
+                "Content-Type: application/json",
+                "-d",
+                json.dumps(payload),
+                "--max-time",
+                "5",
+                "--retry",
+                "2",
+                "--retry-delay",
+                "1",
             ],
             capture_output=True,
-            timeout=10
+            timeout=10,
         )
         return True
     except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
@@ -100,7 +114,7 @@ def log_error_to_datadog(
     error_code: int = 1,
     component: str = "script",
     action: str = "execution",
-    additional_context: str = ""
+    additional_context: str = "",
 ) -> bool:
     """Log an error to Datadog.
 
@@ -125,7 +139,7 @@ def log_error_to_datadog(
         "error": {
             "message": error_message,
             "type": "ScriptError",
-            "stack": f"Script: {SCRIPT_NAME}\nArgs: {SCRIPT_ARGS}\nExit Code: {error_code}"
+            "stack": f"Script: {SCRIPT_NAME}\nArgs: {SCRIPT_ARGS}\nExit Code: {error_code}",
         },
         "context": {
             "component": component,
@@ -137,15 +151,15 @@ def log_error_to_datadog(
             "hostname": _get_hostname(),
             "user": _get_username(),
             "working_directory": os.getcwd(),
-            "additional_context": additional_context
+            "additional_context": additional_context,
         },
         "tags": [
             f"service:{DD_SERVICE}",
             f"env:{DD_ENV}",
             f"component:{component}",
             f"script:{SCRIPT_NAME}",
-            "error_type:script_execution"
-        ]
+            "error_type:script_execution",
+        ],
     }
 
     return _send_to_datadog(payload)
@@ -167,7 +181,9 @@ def handle_script_error(exit_code: int, line_number: str = "unknown") -> None:
     print(f"   Working Directory: {os.getcwd()}", file=sys.stderr)
 
     # Track error in Datadog
-    log_error_to_datadog(error_message, exit_code, "script", "execution", f"line:{line_number}")
+    log_error_to_datadog(
+        error_message, exit_code, "script", "execution", f"line:{line_number}"
+    )
 
 
 def track_script_start(component: str = "script", action: str = "start") -> bool:
@@ -197,15 +213,15 @@ def track_script_start(component: str = "script", action: str = "start") -> bool
             "script_args": SCRIPT_ARGS,
             "hostname": _get_hostname(),
             "user": _get_username(),
-            "working_directory": os.getcwd()
+            "working_directory": os.getcwd(),
         },
         "tags": [
             f"service:{DD_SERVICE}",
             f"env:{DD_ENV}",
             f"component:{component}",
             f"script:{SCRIPT_NAME}",
-            "event_type:script_start"
-        ]
+            "event_type:script_start",
+        ],
     }
 
     return _send_to_datadog(payload)
@@ -215,7 +231,7 @@ def track_script_completion(
     exit_code: int = 0,
     component: str = "script",
     action: str = "completion",
-    duration: str = "unknown"
+    duration: str = "unknown",
 ) -> bool:
     """Track script completion event.
 
@@ -247,7 +263,7 @@ def track_script_completion(
             "duration": duration,
             "hostname": _get_hostname(),
             "user": _get_username(),
-            "working_directory": os.getcwd()
+            "working_directory": os.getcwd(),
         },
         "tags": [
             f"service:{DD_SERVICE}",
@@ -255,8 +271,8 @@ def track_script_completion(
             f"component:{component}",
             f"script:{SCRIPT_NAME}",
             "event_type:script_completion",
-            f"exit_code:{exit_code}"
-        ]
+            f"exit_code:{exit_code}",
+        ],
     }
 
     return _send_to_datadog(payload)
@@ -267,7 +283,7 @@ def track_command_execution(
     exit_code: int = 0,
     component: str = "script",
     action: str = "command_execution",
-    output: str = ""
+    output: str = "",
 ) -> bool:
     """Track command execution event.
 
@@ -299,7 +315,7 @@ def track_command_execution(
             "script_name": SCRIPT_NAME,
             "hostname": _get_hostname(),
             "user": _get_username(),
-            "working_directory": os.getcwd()
+            "working_directory": os.getcwd(),
         },
         "tags": [
             f"service:{DD_SERVICE}",
@@ -307,14 +323,16 @@ def track_command_execution(
             f"component:{component}",
             f"script:{SCRIPT_NAME}",
             "event_type:command_execution",
-            f"exit_code:{exit_code}"
-        ]
+            f"exit_code:{exit_code}",
+        ],
     }
 
     return _send_to_datadog(payload)
 
 
-def safe_execute(command: str, component: str = "script", action: str = "command_execution") -> int:
+def safe_execute(
+    command: str, component: str = "script", action: str = "command_execution"
+) -> int:
     """Safely execute a command with error tracking.
 
     Args:
@@ -327,17 +345,17 @@ def safe_execute(command: str, component: str = "script", action: str = "command
     """
     print(f"Executing: {command}")
 
-    result = subprocess.run(command, shell=True, capture_output=True, text=True)
-    track_command_execution(command, result.returncode, component, action, result.stdout)
+    args = shlex.split(command)
+    result = subprocess.run(args, shell=False, capture_output=True, text=True)
+    track_command_execution(
+        command, result.returncode, component, action, result.stdout
+    )
 
     return result.returncode
 
 
 def track_performance_metric(
-    metric_name: str,
-    metric_value: float,
-    component: str = "script",
-    unit: str = "ms"
+    metric_name: str, metric_value: float, component: str = "script", unit: str = "ms"
 ) -> bool:
     """Track a performance metric.
 
@@ -367,7 +385,7 @@ def track_performance_metric(
             "script_name": SCRIPT_NAME,
             "hostname": _get_hostname(),
             "user": _get_username(),
-            "working_directory": os.getcwd()
+            "working_directory": os.getcwd(),
         },
         "tags": [
             f"service:{DD_SERVICE}",
@@ -375,8 +393,8 @@ def track_performance_metric(
             f"component:{component}",
             f"script:{SCRIPT_NAME}",
             f"metric_name:{metric_name}",
-            "event_type:performance_metric"
-        ]
+            "event_type:performance_metric",
+        ],
     }
 
     return _send_to_datadog(payload)
@@ -405,10 +423,12 @@ class ErrorTracker:
                 exit_code,
                 self.component,
                 "execution",
-                f"exception:{exc_type.__name__}"
+                f"exception:{exc_type.__name__}",
             )
 
-        track_script_completion(exit_code, self.component, "completion", f"{duration:.2f}s")
+        track_script_completion(
+            exit_code, self.component, "completion", f"{duration:.2f}s"
+        )
         return False  # Don't suppress exceptions
 
 

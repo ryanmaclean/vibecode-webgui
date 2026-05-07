@@ -500,7 +500,15 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
                 }
 
                 function formatMessageContent(content) {
-                    return content
+                    // Escape HTML first to prevent XSS
+                    const escaped = content
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#039;');
+
+                    return escaped
                         .replace(/\`\`\`([\\s\\S]*?)\`\`\`/g, '<pre><code>$1</code></pre>')
                         .replace(/\`([^\`]+)\`/g, '<code>$1</code>')
                         .replace(/\\n/g, '<br>');

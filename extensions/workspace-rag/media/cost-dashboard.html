@@ -223,6 +223,10 @@
             }
         });
 
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
         function displayDashboard(data) {
             // Summary cards
             document.getElementById('daily-cost').textContent = '$' + data.daily.totalCost.toFixed(2);
@@ -242,7 +246,7 @@
                     return `
                         <div class="budget">
                             <div class="budget-header">
-                                <span class="budget-label">${budget.period}</span>
+                                <span class="budget-label">${escapeHtml(budget.period)}</span>
                                 <span class="budget-amount">$${budget.current.toFixed(2)} / $${budget.limit.toFixed(2)}</span>
                             </div>
                             <div class="budget-bar">
@@ -263,7 +267,7 @@
                 const providers = Array.from(data.weekly.byProvider.values());
                 providersList.innerHTML = providers.map(provider => `
                     <div class="provider-item">
-                        <span class="provider-name">${provider.provider}</span>
+                        <span class="provider-name">${escapeHtml(provider.provider)}</span>
                         <span class="provider-cost">$${provider.cost.toFixed(2)} (${provider.requestCount} requests)</span>
                     </div>
                 `).join('');
@@ -274,9 +278,9 @@
                 document.getElementById('suggestions-section').style.display = 'block';
                 const suggestionsList = document.getElementById('suggestions-list');
                 suggestionsList.innerHTML = data.suggestions.map(s => `
-                    <div class="suggestion ${s.severity}">
-                        <strong>${s.message}</strong>
-                        <div class="details">${s.details}</div>
+                    <div class="suggestion ${escapeHtml(s.severity)}">
+                        <strong>${escapeHtml(s.message)}</strong>
+                        <div class="details">${escapeHtml(s.details)}</div>
                         ${s.potentialSavings > 0 ? `<div class="savings">Potential savings: $${s.potentialSavings.toFixed(2)}</div>` : ''}
                     </div>
                 `).join('');

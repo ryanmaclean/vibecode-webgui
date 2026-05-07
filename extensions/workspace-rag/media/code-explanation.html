@@ -197,6 +197,10 @@
             }
         });
 
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
         function displayExplanation(explanation) {
             // Complexity
             document.getElementById('complexity-level').textContent = explanation.complexity.overall;
@@ -213,9 +217,9 @@
                 document.getElementById('patterns-section').style.display = 'block';
                 const patternsList = document.getElementById('patterns-list');
                 patternsList.innerHTML = explanation.patterns.map(p => `
-                    <div class="pattern ${p.category}">
-                        <h4>${p.name} <span class="confidence">(${(p.confidence * 100).toFixed(0)}% confidence)</span></h4>
-                        <p>${p.description}</p>
+                    <div class="pattern ${escapeHtml(p.category)}">
+                        <h4>${escapeHtml(p.name)} <span class="confidence">(${(p.confidence * 100).toFixed(0)}% confidence)</span></h4>
+                        <p>${escapeHtml(p.description)}</p>
                     </div>
                 `).join('');
             }
@@ -225,9 +229,9 @@
                 document.getElementById('warnings-section').style.display = 'block';
                 const warningsList = document.getElementById('warnings-list');
                 warningsList.innerHTML = explanation.warnings.map(w => `
-                    <div class="warning ${w.severity}">
-                        <strong>${w.type}:</strong> ${w.message}
-                        <em>Suggestion: ${w.suggestion}</em>
+                    <div class="warning ${escapeHtml(w.severity)}">
+                        <strong>${escapeHtml(w.type)}:</strong> ${escapeHtml(w.message)}
+                        <em>Suggestion: ${escapeHtml(w.suggestion)}</em>
                     </div>
                 `).join('');
             }
@@ -244,15 +248,15 @@
                 const alternativesList = document.getElementById('alternatives-list');
                 alternativesList.innerHTML = explanation.alternatives.map(alt => `
                     <div class="alternative ${alt.recommended ? 'recommended' : ''}">
-                        <h4>${alt.description} ${alt.recommended ? '<span class="star">⭐ Recommended</span>' : ''}</h4>
+                        <h4>${escapeHtml(alt.description)} ${alt.recommended ? '<span class="star">⭐ Recommended</span>' : ''}</h4>
                         <div class="pros-cons">
-                            <strong>Pros:</strong> ${alt.pros.join(', ')}
+                            <strong>Pros:</strong> ${alt.pros.map(escapeHtml).join(', ')}
                         </div>
                         <div class="pros-cons">
-                            <strong>Cons:</strong> ${alt.cons.join(', ')}
+                            <strong>Cons:</strong> ${alt.cons.map(escapeHtml).join(', ')}
                         </div>
                         <div class="pros-cons">
-                            <strong>Complexity:</strong> ${alt.complexity.overall} (score: ${alt.complexity.score})
+                            <strong>Complexity:</strong> ${escapeHtml(alt.complexity.overall)} (score: ${alt.complexity.score})
                         </div>
                     </div>
                 `).join('');
@@ -263,7 +267,7 @@
                 document.getElementById('learning-section').style.display = 'block';
                 const learningPath = document.getElementById('learning-path');
                 learningPath.innerHTML = explanation.learningPath.map(topic => `
-                    <li>${topic}</li>
+                    <li>${escapeHtml(topic)}</li>
                 `).join('');
             }
         }

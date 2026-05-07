@@ -706,6 +706,10 @@ export class MonitoringProvider implements vscode.WebviewViewProvider {
                     document.getElementById('lastUpdated').textContent = new Date(data.lastUpdated).toLocaleTimeString();
                 }
                 
+                function escapeHtml(str) {
+                    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+                }
+
                 function updateAlerts(alerts) {
                     const alertCount = document.getElementById('alertCount');
                     const alertsList = document.getElementById('alertsList');
@@ -718,15 +722,15 @@ export class MonitoringProvider implements vscode.WebviewViewProvider {
                         alertsList.innerHTML = '<div class="no-alerts">No active alerts</div>';
                     } else {
                         alertsList.innerHTML = alerts.recent_alerts.map(alert => \`
-                            <div class="alert \${alert.level}">
+                            <div class="alert \${escapeHtml(alert.level)}">
                                 <div class="alert-content">
-                                    <div class="alert-message">\${alert.message}</div>
+                                    <div class="alert-message">\${escapeHtml(alert.message)}</div>
                                     <div class="alert-details">
-                                        \${alert.service} • \${new Date(alert.timestamp).toLocaleTimeString()}
+                                        \${escapeHtml(alert.service)} • \${new Date(alert.timestamp).toLocaleTimeString()}
                                     </div>
                                 </div>
                                 <div class="alert-actions">
-                                    <button class="alert-btn" onclick="acknowledgeAlert('\${alert.id}')">✓</button>
+                                    <button class="alert-btn" onclick="acknowledgeAlert('\${escapeHtml(alert.id)}')">✓</button>
                                 </div>
                             </div>
                         \`).join('');
