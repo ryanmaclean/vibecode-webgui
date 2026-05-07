@@ -260,7 +260,7 @@
     "@octokit/openapi-types": "24.0.0",
     "axios": "^1.13.4",
     "diff": "8.0.3",
-    "hono": "^4.11.4",
+    "hono": "^4.12.16",
     "fast-xml-parser": "^5.3.4",
     "uuid": "^14.0.0"
   },
