@@ -118,6 +118,11 @@ const AGENTS: Agent[] = [
   },
 ];
 
+// Safe reference to the first agent — AGENTS is a non-empty constant array,
+// but noUncheckedIndexedAccess makes AGENTS[0] typed as Agent | undefined.
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+const DEFAULT_AGENT: Agent = AGENTS[0]!;
+
 function createInitialConversations(): Map<string, Message[]> {
   const conversations = new Map<string, Message[]>();
 
@@ -428,7 +433,7 @@ const AGENT_RESPONSES: Record<string, string[]> = {
 
 function getAgentResponse(agentId: string): string {
   const responses = AGENT_RESPONSES[agentId] || ['I understand. Let me help you with that.'];
-  return responses[Math.floor(Math.random() * responses.length)];
+  return responses[Math.floor(Math.random() * responses.length)] ?? 'I understand. Let me help you with that.';
 }
 
 // ============================================================================
@@ -437,12 +442,12 @@ function getAgentResponse(agentId: string): string {
 
 export default function AIAgentsPage() {
   const t = useTranslations();
-  const [selectedAgentId, setSelectedAgentId] = useState<string>(AGENTS[0].id);
+  const [selectedAgentId, setSelectedAgentId] = useState<string>(DEFAULT_AGENT.id);
   const [conversations, setConversations] = useState<Map<string, Message[]>>(createInitialConversations);
   const [mobileAgentListOpen, setMobileAgentListOpen] = useState(false);
   const msgCounter = useRef(0);
 
-  const selectedAgent = AGENTS.find((a) => a.id === selectedAgentId) || AGENTS[0];
+  const selectedAgent = AGENTS.find((a) => a.id === selectedAgentId) ?? DEFAULT_AGENT;
   const currentMessages = conversations.get(selectedAgentId) || [];
 
   const handleSendMessage = useCallback((agentId: string, content: string) => {
