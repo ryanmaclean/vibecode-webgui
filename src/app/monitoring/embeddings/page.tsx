@@ -47,7 +47,7 @@ interface UsageReport {
 }
 
 export default function EmbeddingMonitoringDashboard(): React.JSX.Element {
-  const t = useTranslations('monitoring')
+  const t = useTranslations('monitoring');
   const [metrics, setMetrics] = useState<EmbeddingMetrics | null>(null);
   const [usageReport, setUsageReport] = useState<UsageReport | null>(null);
   const [loading, setLoading] = useState(true);
