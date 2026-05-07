@@ -31,282 +31,7 @@ interface LogEntry {
   details?: string
 }
 
-// ── Mock Data ──────────────────────────────────────────────────────────────
-
-const now = Date.now()
-
-const MOCK_LOGS: LogEntry[] = [
-  {
-    id: 'log-001',
-    timestamp: new Date(now - 8 * 1000).toISOString(),
-    level: 'error',
-    source: 'API',
-    message: 'Request to /api/ai/chat failed: ECONNREFUSED',
-    details: 'Error: connect ECONNREFUSED 127.0.0.1:11434\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1605:16)\n    at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:128:17)\n\nRequest ID: req_a8f3c21e\nDuration: 3012ms\nRetries: 3/3 exhausted',
-  },
-  {
-    id: 'log-002',
-    timestamp: new Date(now - 15 * 1000).toISOString(),
-    level: 'warn',
-    source: 'Health',
-    message: "Service 'valkey' response time 2850ms exceeds threshold (1000ms)",
-    details: 'Health check endpoint: valkey://localhost:6379/ping\nExpected response: <1000ms\nActual response: 2850ms\nConsecutive slow responses: 3\nCircuit breaker status: HALF_OPEN',
-  },
-  {
-    id: 'log-003',
-    timestamp: new Date(now - 22 * 1000).toISOString(),
-    level: 'info',
-    source: 'VM',
-    message: 'Instance vm-001 boot completed in 24.3s',
-    details: 'VM ID: vm-001\nProfile: alpine-dev\nCPU: 4 cores\nMemory: 4096 MB\nDisk: 20 GB\nBoot stages:\n  - Image load: 2.1s\n  - Kernel init: 8.4s\n  - Service startup: 13.8s',
-  },
-  {
-    id: 'log-004',
-    timestamp: new Date(now - 30 * 1000).toISOString(),
-    level: 'debug',
-    source: 'Auth',
-    message: 'Session token refreshed for user admin',
-    details: 'User: admin\nSession ID: sess_f4a91bc2\nToken type: JWT\nExpires in: 3600s\nRefresh reason: Token approaching expiry (< 300s remaining)',
-  },
-  {
-    id: 'log-005',
-    timestamp: new Date(now - 45 * 1000).toISOString(),
-    level: 'info',
-    source: 'AI',
-    message: 'Model claude-3.5-sonnet selected, estimated cost: $0.003',
-    details: 'Provider: OpenRouter\nModel: claude-3.5-sonnet\nInput tokens: 1240\nEstimated output: ~800 tokens\nCost breakdown:\n  - Input: $0.0018 (1240 * $1.50/1M)\n  - Output: $0.0012 (est. 800 * $1.50/1M)',
-  },
-  {
-    id: 'log-006',
-    timestamp: new Date(now - 52 * 1000).toISOString(),
-    level: 'error',
-    source: 'WebSocket',
-    message: 'Connection dropped: client ws_9f2e unexpectedly closed',
-    details: 'WebSocket ID: ws_9f2e\nClient IP: 192.168.64.1\nConnected duration: 847s\nClose code: 1006 (Abnormal Closure)\nLast message: 42s ago\nPending messages in queue: 3',
-  },
-  {
-    id: 'log-007',
-    timestamp: new Date(now - 68 * 1000).toISOString(),
-    level: 'info',
-    source: 'Scheduler',
-    message: 'Cron job "health-check-sweep" completed successfully (12 services checked)',
-    details: 'Job: health-check-sweep\nSchedule: */30 * * * * (every 30s)\nDuration: 1.8s\nResults:\n  - Healthy: 10\n  - Degraded: 1 (valkey)\n  - Down: 1 (ollama)\nNext run: 30s',
-  },
-  {
-    id: 'log-008',
-    timestamp: new Date(now - 75 * 1000).toISOString(),
-    level: 'warn',
-    source: 'AI',
-    message: 'Rate limit approaching: 82/100 requests in current window',
-    details: 'Provider: OpenRouter\nRate limit: 100 req/min\nCurrent usage: 82 req/min\nWindow resets in: 18s\nRecommendation: Consider request queuing or model fallback',
-  },
-  {
-    id: 'log-009',
-    timestamp: new Date(now - 90 * 1000).toISOString(),
-    level: 'info',
-    source: 'API',
-    message: 'GET /api/health/services responded 200 in 12ms',
-  },
-  {
-    id: 'log-010',
-    timestamp: new Date(now - 102 * 1000).toISOString(),
-    level: 'debug',
-    source: 'VM',
-    message: 'Snapshot vm-001-snap-003 created, size: 1.2 GB',
-    details: 'VM: vm-001\nSnapshot ID: vm-001-snap-003\nType: incremental\nBase snapshot: vm-001-snap-002\nDelta size: 245 MB\nTotal size: 1.2 GB\nCompression: zstd (ratio: 2.4x)',
-  },
-  {
-    id: 'log-011',
-    timestamp: new Date(now - 120 * 1000).toISOString(),
-    level: 'error',
-    source: 'Health',
-    message: "Service 'ollama' health check failed: connection refused",
-    details: 'Endpoint: http://localhost:11434/api/tags\nError: ECONNREFUSED\nConsecutive failures: 5\nCircuit breaker: OPEN\nLast healthy: 12m ago\nRecovery action: Auto-restart scheduled in 30s',
-  },
-  {
-    id: 'log-012',
-    timestamp: new Date(now - 135 * 1000).toISOString(),
-    level: 'info',
-    source: 'Auth',
-    message: 'User admin logged in successfully via credentials',
-    details: 'User: admin\nMethod: credentials\nIP: 192.168.64.1\nUser-Agent: Mozilla/5.0 (Macintosh; Apple Silicon)\nSession created: sess_f4a91bc2',
-  },
-  {
-    id: 'log-013',
-    timestamp: new Date(now - 148 * 1000).toISOString(),
-    level: 'warn',
-    source: 'Scheduler',
-    message: 'Job "cost-aggregation" took 4.2s, exceeding 3s timeout warning',
-    details: 'Job: cost-aggregation\nSchedule: 0 */5 * * * * (every 5 min)\nDuration: 4.2s\nWarning threshold: 3s\nHard timeout: 10s\nRecords processed: 2,847\nRecommendation: Consider batching or index optimization',
-  },
-  {
-    id: 'log-014',
-    timestamp: new Date(now - 160 * 1000).toISOString(),
-    level: 'info',
-    source: 'WebSocket',
-    message: 'Client ws_d41a connected from 192.168.64.1 (total: 3 active)',
-  },
-  {
-    id: 'log-015',
-    timestamp: new Date(now - 175 * 1000).toISOString(),
-    level: 'debug',
-    source: 'API',
-    message: 'Rate limiter: /api/ai/chat endpoint at 34/60 requests per minute',
-    details: 'Endpoint: /api/ai/chat\nWindow: 60s\nCurrent: 34 requests\nLimit: 60 requests\nRemaining: 26\nClient IP: 192.168.64.1',
-  },
-  {
-    id: 'log-016',
-    timestamp: new Date(now - 190 * 1000).toISOString(),
-    level: 'info',
-    source: 'AI',
-    message: 'Chat completion finished: 1,847 tokens in 2.3s (803 tok/s)',
-    details: 'Model: claude-3.5-sonnet\nInput tokens: 1,240\nOutput tokens: 607\nTotal: 1,847\nLatency: 2.3s\nThroughput: 803 tok/s\nActual cost: $0.0028\nConversation: conv_88a1f3',
-  },
-  {
-    id: 'log-017',
-    timestamp: new Date(now - 210 * 1000).toISOString(),
-    level: 'error',
-    source: 'API',
-    message: 'POST /api/vm/snapshots returned 500: disk space insufficient',
-    details: 'Error: InsufficientDiskSpace\nRequired: 2.4 GB\nAvailable: 1.1 GB\nDisk: /dev/vda1\nVM: vm-002\n\nStack trace:\n  at SnapshotService.create (src/lib/vm/snapshots.ts:142)\n  at POST /api/vm/snapshots (src/app/api/vm/snapshots/route.ts:28)',
-  },
-  {
-    id: 'log-018',
-    timestamp: new Date(now - 225 * 1000).toISOString(),
-    level: 'warn',
-    source: 'VM',
-    message: 'Instance vm-002 memory usage at 89% (3.6 GB / 4.0 GB)',
-    details: 'VM: vm-002\nProfile: alpine-docker\nMemory allocated: 4096 MB\nMemory used: 3686 MB (89.0%)\nSwap used: 128 MB\nTop processes:\n  - dockerd: 1.2 GB\n  - postgres: 890 MB\n  - node: 456 MB',
-  },
-  {
-    id: 'log-019',
-    timestamp: new Date(now - 240 * 1000).toISOString(),
-    level: 'info',
-    source: 'Health',
-    message: 'All 12 services healthy, avg response time: 45ms',
-  },
-  {
-    id: 'log-020',
-    timestamp: new Date(now - 258 * 1000).toISOString(),
-    level: 'debug',
-    source: 'WebSocket',
-    message: 'Heartbeat sent to 3 connected clients, all acknowledged',
-    details: 'Connected clients: ws_d41a, ws_9f2e, ws_b71c\nHeartbeat interval: 30s\nAll clients responded within 200ms\nNext heartbeat: 30s',
-  },
-  {
-    id: 'log-021',
-    timestamp: new Date(now - 275 * 1000).toISOString(),
-    level: 'info',
-    source: 'Scheduler',
-    message: 'Job "log-rotation" completed: 3 files rotated, 45 MB freed',
-  },
-  {
-    id: 'log-022',
-    timestamp: new Date(now - 290 * 1000).toISOString(),
-    level: 'warn',
-    source: 'Auth',
-    message: 'Failed login attempt for user "root" from 10.0.0.15 (attempt 3/5)',
-    details: 'User: root\nIP: 10.0.0.15\nMethod: credentials\nConsecutive failures: 3\nLockout threshold: 5\nLockout duration: 15m\nUser-Agent: curl/8.1.0',
-  },
-  {
-    id: 'log-023',
-    timestamp: new Date(now - 310 * 1000).toISOString(),
-    level: 'error',
-    source: 'AI',
-    message: 'OpenRouter API returned 429: rate limit exceeded, retry in 12s',
-    details: 'Provider: OpenRouter\nEndpoint: /api/v1/chat/completions\nHTTP status: 429\nRetry-After: 12s\nModel: gpt-4-turbo\nQueued requests: 2\nFallback: claude-3-haiku (pending)',
-  },
-  {
-    id: 'log-024',
-    timestamp: new Date(now - 330 * 1000).toISOString(),
-    level: 'info',
-    source: 'API',
-    message: 'PUT /api/settings responded 200 in 28ms (settings updated)',
-  },
-  {
-    id: 'log-025',
-    timestamp: new Date(now - 345 * 1000).toISOString(),
-    level: 'debug',
-    source: 'Health',
-    message: 'Circuit breaker for postgres transitioned: CLOSED -> CLOSED (success)',
-    details: 'Service: postgres\nPrevious state: CLOSED\nNew state: CLOSED\nSuccess count: 48\nFailure count: 0\nSuccess rate: 100%\nThreshold: 50% failures in 60s window',
-  },
-  {
-    id: 'log-026',
-    timestamp: new Date(now - 360 * 1000).toISOString(),
-    level: 'info',
-    source: 'VM',
-    message: 'Port forwarding established: host:2222 -> vm-001:22 (SSH)',
-  },
-  {
-    id: 'log-027',
-    timestamp: new Date(now - 380 * 1000).toISOString(),
-    level: 'warn',
-    source: 'API',
-    message: 'Slow query detected: GET /api/ai/costs took 1.8s (threshold: 500ms)',
-    details: 'Endpoint: GET /api/ai/costs\nDuration: 1.8s\nThreshold: 500ms\nQuery: SELECT * FROM cost_records WHERE created_at > ...\nRows returned: 12,847\nRecommendation: Add pagination or date range filter',
-  },
-  {
-    id: 'log-028',
-    timestamp: new Date(now - 400 * 1000).toISOString(),
-    level: 'info',
-    source: 'AI',
-    message: 'Model fallback: gpt-4-turbo -> claude-3-haiku (rate limited)',
-  },
-  {
-    id: 'log-029',
-    timestamp: new Date(now - 420 * 1000).toISOString(),
-    level: 'debug',
-    source: 'Scheduler',
-    message: 'Next scheduled jobs: health-check-sweep (12s), cost-aggregation (4m 12s)',
-  },
-  {
-    id: 'log-030',
-    timestamp: new Date(now - 440 * 1000).toISOString(),
-    level: 'error',
-    source: 'WebSocket',
-    message: 'Failed to broadcast health update: 1 of 3 clients unreachable',
-    details: 'Broadcast type: health-update\nTotal clients: 3\nSuccessful: 2 (ws_d41a, ws_b71c)\nFailed: 1 (ws_9f2e)\nError: Connection reset by peer\nAction: Client ws_9f2e marked for cleanup',
-  },
-  {
-    id: 'log-031',
-    timestamp: new Date(now - 460 * 1000).toISOString(),
-    level: 'info',
-    source: 'Auth',
-    message: 'API key validated for service account "ci-runner"',
-  },
-  {
-    id: 'log-032',
-    timestamp: new Date(now - 480 * 1000).toISOString(),
-    level: 'warn',
-    source: 'Health',
-    message: "Service 'docker' response time elevated: 890ms (threshold: 500ms)",
-  },
-  {
-    id: 'log-033',
-    timestamp: new Date(now - 500 * 1000).toISOString(),
-    level: 'info',
-    source: 'VM',
-    message: 'Instance vm-001 resource usage: CPU 34%, Memory 52%, Disk 28%',
-  },
-  {
-    id: 'log-034',
-    timestamp: new Date(now - 520 * 1000).toISOString(),
-    level: 'debug',
-    source: 'AI',
-    message: 'Token usage cache hit for conversation conv_88a1f3 (saved 1 API call)',
-  },
-  {
-    id: 'log-035',
-    timestamp: new Date(now - 540 * 1000).toISOString(),
-    level: 'error',
-    source: 'Scheduler',
-    message: 'Job "backup-rotate" failed: permission denied on /var/backups',
-    details: 'Job: backup-rotate\nSchedule: 0 0 * * * (daily)\nError: EACCES: permission denied, unlink /var/backups/vm-001-20240115.tar.gz\nUser: vibecode\nRequired: root\nAction: Job marked as failed, admin notification sent',
-  },
-]
-
-// ── Constants ──────────────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────
 
 const LOG_SOURCES: LogSource[] = ['API', 'WebSocket', 'Health', 'AI', 'VM', 'Auth', 'Scheduler']
 const PAGE_SIZE = 15
@@ -378,7 +103,9 @@ function formatFullTimestamp(iso: string): string {
 type LevelFilter = 'all' | LogLevel
 
 export default function MonitoringLogsPage() {
-  const [logs] = useState<LogEntry[]>(MOCK_LOGS)
+  const [logs, setLogs] = useState<LogEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [levelFilter, setLevelFilter] = useState<LevelFilter>('all')
   const [sourceFilter, setSourceFilter] = useState<LogSource | 'all'>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -387,9 +114,32 @@ export default function MonitoringLogsPage() {
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set())
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
-  const refreshData = useCallback(() => {
-    setLastRefreshed(new Date())
+  const fetchLogs = useCallback(async () => {
+    try {
+      setError(null)
+      const res = await fetch('/api/monitoring/logs')
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? `Failed to fetch logs (${res.status})`)
+      }
+      const data = await res.json()
+      setLogs(data.logs ?? [])
+      setLastRefreshed(new Date())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch logs')
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  // Fetch logs on mount
+  useEffect(() => {
+    fetchLogs()
+  }, [fetchLogs])
+
+  const refreshData = useCallback(() => {
+    fetchLogs()
+  }, [fetchLogs])
 
   // Auto-refresh every 5s when enabled
   useEffect(() => {
@@ -609,11 +359,34 @@ export default function MonitoringLogsPage() {
 
       {/* Log Entries */}
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
-        {visibleLogs.length === 0 ? (
+        {loading ? (
+          <div className="p-8 text-center">
+            <RefreshCw className="h-8 w-8 text-gray-400 dark:text-gray-500 mx-auto mb-3 animate-spin" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Loading log entries...
+            </p>
+          </div>
+        ) : error ? (
+          <div className="p-8 text-center">
+            <AlertCircle className="h-10 w-10 text-red-400 dark:text-red-500 mx-auto mb-3" />
+            <p className="text-sm text-red-600 dark:text-red-400 mb-3">
+              {error}
+            </p>
+            <button
+              onClick={refreshData}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </button>
+          </div>
+        ) : visibleLogs.length === 0 ? (
           <div className="p-8 text-center">
             <FileText className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              No log entries matching the current filters.
+              {logs.length === 0
+                ? 'No log entries available.'
+                : 'No log entries matching the current filters.'}
             </p>
           </div>
         ) : (

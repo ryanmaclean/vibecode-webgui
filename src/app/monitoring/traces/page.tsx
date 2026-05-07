@@ -393,6 +393,15 @@ export default function TracesPage() {
           </p>
         </div>
         <div className="p-6">
+          {serviceNodes.length === 0 ? (
+            <div className="text-center py-6">
+              <Server className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                No service map data available yet.
+              </p>
+            </div>
+          ) : (
+          <>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {serviceNodes.map((node) => (
               <div
@@ -406,31 +415,40 @@ export default function TracesPage() {
                   </span>
                 </div>
                 <div className="space-y-1">
+                  {node.status && (
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500 dark:text-gray-400">Status</span>
                     <span className={serviceStatusBadge(node.status)}>{node.status}</span>
                   </div>
+                  )}
+                  {node.trace_count != null && (
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500 dark:text-gray-400">Traces</span>
                     <span className="text-gray-900 dark:text-gray-100">{node.trace_count}</span>
                   </div>
+                  )}
+                  {node.avg_latency_ms != null && (
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500 dark:text-gray-400">Latency</span>
                     <span className={latencyColor(node.avg_latency_ms)}>
                       {formatDuration(node.avg_latency_ms)}
                     </span>
                   </div>
+                  )}
+                  {node.error_rate != null && (
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500 dark:text-gray-400">Error Rate</span>
                     <span className={errorRateColor(node.error_rate)}>
                       {node.error_rate.toFixed(1)}%
                     </span>
                   </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
 
+          {serviceEdges.length > 0 && (
           <div className="mt-6 space-y-2">
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Service Dependencies
@@ -451,13 +469,18 @@ export default function TracesPage() {
                     {toNode?.name}
                   </span>
                   <span className="text-gray-500">({edge.type})</span>
+                  {edge.call_count != null && (
                   <span className="ml-auto">
-                    {edge.call_count} calls, avg {formatDuration(edge.avg_latency_ms)}
+                    {edge.call_count} calls{edge.avg_latency_ms != null ? `, avg ${formatDuration(edge.avg_latency_ms)}` : ''}
                   </span>
+                  )}
                 </div>
               )
             })}
           </div>
+          )}
+          </>
+          )}
         </div>
       </div>
 
@@ -526,7 +549,9 @@ export default function TracesPage() {
           <div className="p-8 text-center">
             <Activity className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              No traces matching the current filters.
+              {traces.length === 0
+                ? 'No traces collected yet. Traces will appear here once instrumentation is active.'
+                : 'No traces matching the current filters.'}
             </p>
           </div>
         ) : (
