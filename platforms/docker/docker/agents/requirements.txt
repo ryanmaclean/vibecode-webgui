@@ -10,11 +10,11 @@ pydantic-settings==2.7.0
 # Web framework
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
-python-multipart==0.0.26
+python-multipart==0.0.27
 
 # HTTP client
 httpx==0.28.1
-aiohttp==3.13.4
+aiohttp==3.13.5
 
 # Async support
 asyncio==3.4.3
@@ -40,7 +40,7 @@ python-dotenv==1.2.2
 pyyaml==6.0.2
 
 # Security
-cryptography==46.0.7
+cryptography==48.0.0
 python-jose[cryptography]>=3.4.0
 passlib[bcrypt]==1.7.4
 

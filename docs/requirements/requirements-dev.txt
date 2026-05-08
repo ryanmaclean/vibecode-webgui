@@ -10,7 +10,7 @@ azure-mgmt-network==25.3.0
 azure-mgmt-storage==21.1.0
 
 # HTTP requests and utilities
-requests==2.33.0
+requests==2.33.1
 urllib3>=2.6.3
 
 # Testing framework
