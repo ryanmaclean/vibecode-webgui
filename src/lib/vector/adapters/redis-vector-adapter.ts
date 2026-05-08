@@ -272,24 +272,6 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
       
       // Return mock results
       const mockResults: SearchResult[] = [];
-      for (let i = 0; i < 5; i++) {
-        mockResults.push({
-          chunk: {
-            id: `redis-chunk-${i}`,
-            content: `Mock Redis content for result ${i}`,
-            embedding: [],
-            metadata: {
-              fileId: 789,
-              fileName: 'redis-config.ts',
-              startLine: 5 + i * 5,
-              endLine: 10 + i * 5,
-              language: 'typescript',
-              tokens: 30
-            }
-          },
-          similarity: 0.96 - (i * 0.04)
-        });
-      }
       
       // Filter by threshold
       const filteredResults = mockResults.filter(r => r.similarity >= threshold);

@@ -20,7 +20,6 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import {
 Settings,
-  Cpu,
   FileSearch,
   Code2,
   Zap,
@@ -140,7 +139,7 @@ export function AgentConfigPanel({
   onSave,
   readOnly = false,
   className
-}: AgentConfigPanelProps) {
+}: AgentConfigPanelProps): React.JSX.Element {
   const [config, setConfig] = useState<AgentConfig>({
     ...DEFAULT_CONFIG,
     ...initialConfig

@@ -10,7 +10,6 @@ import {
   PlusIcon,
   MagnifyingGlassIcon,
   StarIcon as StarIconOutline,
-  StarIcon as StarIconSolid,
   ClockIcon,
   TagIcon,
   FolderIcon,
@@ -110,7 +109,7 @@ export function ProjectScaffolder({
   className = '',
   initialTemplate,
   initialProjectName
-}: ProjectScaffolderProps) {
+}: ProjectScaffolderProps): React.JSX.Element {
   const [templates, setTemplates] = useState<ProjectTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
   const [projectConfig, setProjectConfig] = useState<ProjectConfig>({
@@ -159,7 +158,7 @@ export function ProjectScaffolder({
     loadTemplates();
   }, []);
 
-  const loadTemplates = async () => {
+  const loadTemplates = async (): Promise<void> => {
     try {
       const res = await fetch('/api/projects/templates')
       const data = res.ok ? await res.json() : { templates: [] }
@@ -226,7 +225,7 @@ export function ProjectScaffolder({
     { id: 'desktop', name: 'Desktop', count: templates.filter(t => t.category === 'desktop').length }
   ];
 
-  const handleTemplateSelect = (template: ProjectTemplate) => {
+  const handleTemplateSelect = (template: ProjectTemplate): void => {
     setSelectedTemplate(template);
     setProjectConfig(prev => ({
       ...prev,
@@ -235,7 +234,7 @@ export function ProjectScaffolder({
     onTemplateSelect?.(template);
   };
 
-  const handleCreateProject = async () => {
+  const handleCreateProject = async (): Promise<void> => {
     if (!selectedTemplate || !projectConfig.name.trim()) {
       setGenerationStatus({
         status: 'error',
@@ -305,11 +304,11 @@ export function ProjectScaffolder({
     }
   };
 
-  const updateProjectConfig = (updates: Partial<ProjectConfig>) => {
+  const updateProjectConfig = (updates: Partial<ProjectConfig>): void => {
     setProjectConfig(prev => ({ ...prev, ...updates }));
   };
 
-  const renderStars = (rating: number) => {
+  const renderStars = (rating: number): React.JSX.Element[] => {
     const stars = [];
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;

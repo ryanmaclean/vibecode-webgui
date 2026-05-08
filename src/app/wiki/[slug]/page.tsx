@@ -3,20 +3,6 @@ import path from 'path';
 import { redirect } from 'next/navigation';
 import matter from 'gray-matter';
 import { marked } from 'marked';
-// import { logger } from '@/lib/logger';
-// Disable static generation due to dynamic nature of wiki pages
-// export async function generateStaticParams() {
-//   try {
-//     const files = fs.readdirSync(path.join(process.cwd(), 'content/wiki'));
-//     return files.map((filename) => ({
-//       slug: filename.replace('.md', ''),
-//     }));
-//   } catch (error) {
-//     console.warn('Wiki directory not found, disabling static generation');
-//     return [];
-//   }
-// }
-
 // This is the main page component for a single wiki page.
 export default async function WikiPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

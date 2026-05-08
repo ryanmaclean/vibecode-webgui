@@ -6,9 +6,6 @@ import { Send, Bot, User, Upload, Code, Settings, Eye, Pin, X } from 'lucide-rea
 import { Button, Textarea, Card, CardContent, Badge, ScrollArea } from '@/components/ui';
 import { AIErrorBoundary } from '@/components/error/ErrorBoundary'
 import { ContextViewer } from './ContextViewer'
-// import { logger } from '@/lib/logger';
-// import PromptTemplates from './PromptTemplates'
-// import PromptEnhancer from './PromptEnhancer'
 
 interface Message {
   id: string

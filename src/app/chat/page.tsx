@@ -119,21 +119,6 @@ export default function ChatPage() {
     }
   }, [pendingConfirmations]);
 
-  // TODO: In Phase 4, this will be replaced with actual agent event listener
-  // Example:
-  // useEffect(() => {
-  //   const handleConfirmationRequired = (event: ConfirmationRequiredEvent) => {
-  //     setPendingConfirmations((prev) => [...prev, event.request]);
-  //     setIsDialogOpen(true);
-  //   };
-  //
-  //   agent?.on(AgentEvent.ConfirmationRequired, handleConfirmationRequired);
-  //
-  //   return () => {
-  //     agent?.off(AgentEvent.ConfirmationRequired, handleConfirmationRequired);
-  //   };
-  // }, [agent]);
-
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">{t('chat.heading')}</h1>

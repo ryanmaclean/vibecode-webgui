@@ -10,7 +10,6 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   StarIcon as StarIconOutline,
-  StarIcon as StarIconSolid,
   ClockIcon,
   UserIcon,
   TagIcon,
@@ -59,11 +58,11 @@ interface TemplateMarketplaceProps {
 
 export function TemplateMarketplace({
   onTemplateSelect,
-  onTemplatePreview,
+  onTemplatePreview: _onTemplatePreview,
   selectedTemplateId,
   selectedCategory,
   className = ''
-}: TemplateMarketplaceProps) {
+}: TemplateMarketplaceProps): React.JSX.Element {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +79,7 @@ export function TemplateMarketplace({
     loadTemplates();
   }, [searchOptions]);
 
-  const loadTemplates = async () => {
+  const loadTemplates = async (): Promise<void> => {
     setLoading(true);
     setError(null);
 
@@ -141,7 +140,7 @@ export function TemplateMarketplace({
     }
   };
 
-  const handleSortChange = (sortBy: string) => {
+  const handleSortChange = (sortBy: string): void => {
     setSearchOptions(prev => ({
       ...prev,
       sortBy: sortBy as MarketplaceSearchOptions['sortBy'],
@@ -149,7 +148,7 @@ export function TemplateMarketplace({
     }));
   };
 
-  const handleFilterChange = (key: keyof MarketplaceSearchOptions, value: any) => {
+  const handleFilterChange = (key: keyof MarketplaceSearchOptions, value: MarketplaceSearchOptions[keyof MarketplaceSearchOptions]): void => {
     setSearchOptions(prev => ({
       ...prev,
       [key]: value,
@@ -157,7 +156,7 @@ export function TemplateMarketplace({
     }));
   };
 
-  const clearFilters = () => {
+  const clearFilters = (): void => {
     setSearchOptions({
       sortBy: 'relevance',
       pricing: 'all',
@@ -166,7 +165,7 @@ export function TemplateMarketplace({
     });
   };
 
-  const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'sm') => {
+  const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'sm'): React.JSX.Element[] => {
     const sizeClasses = {
       sm: 'h-4 w-4',
       md: 'h-5 w-5',

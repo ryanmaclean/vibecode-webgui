@@ -59,8 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
 
     try {
-      // This would be a real API call in production
-      // Simulate successful login
+      // DEMO: Mock login — replace with real authentication API call in production.
+      // Generates a random user ID and derives the display name from the email prefix.
       const mockUser: User = {
         id: 'user_' + Math.random().toString(36).substr(2, 9),
         name: email.split('@')[0],
@@ -97,8 +97,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
 
     try {
-      // This would be a real API call in production
-      // Simulate successful signup
+      // DEMO: Mock signup — replace with real registration API call in production.
+      // Generates a random user ID; name and email come from the signup form.
       const mockUser: User = {
         id: 'user_' + Math.random().toString(36).substr(2, 9),
         name,

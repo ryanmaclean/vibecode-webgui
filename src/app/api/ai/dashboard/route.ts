@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkMonitoringAuth, getUnauthorizedResponse } from '@/lib/monitoring/auth'
-import { createAPIRateLimit } from '@/lib/rate-limiting'
-
 export const dynamic = 'force-dynamic'
 
-const apiRateLimit = createAPIRateLimit(60)
-
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   const authResult = await checkMonitoringAuth(request)
   if (!authResult.isAuthorized) {
     return getUnauthorizedResponse(authResult.error)

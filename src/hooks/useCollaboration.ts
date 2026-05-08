@@ -711,25 +711,10 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     // Simulate connection delay
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Simulate other users in workspace
-    const mockUsers: CollaborativeUser[] = [
-      {
-        id: 'user-2',
-        name: 'Alice Developer',
-        color: '#ef4444',
-        isActive: true,
-        lastSeen: new Date()
-      },
-      {
-        id: 'user-3',
-        name: 'Bob Designer',
-        color: '#22c55e',
-        isActive: true,
-        lastSeen: new Date()
-      }
-    ];
+    // No simulated users — only real connected users will appear
+    const connectedUsers: CollaborativeUser[] = [];
 
-    setActiveUsers(mockUsers);
+    setActiveUsers(connectedUsers);
 
     // Start heartbeat
     if (heartbeatIntervalRef.current) {

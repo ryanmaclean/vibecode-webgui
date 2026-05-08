@@ -17,17 +17,6 @@ import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 
-// Fonts temporarily disabled due to Babel/SWC conflict
-// const geistSans = Geist({
-//   variable: "--font-geist-sans",
-//   subsets: ["latin"],
-// });
-
-// const geistMono = Geist_Mono({
-//   variable: "--font-geist-mono",
-//   subsets: ["latin"],
-// });
-
 export const metadata: Metadata = {
   title: "VibeCode WebGUI - AI-Powered Development Platform",
   description: "Modern web-based development environment with AI assistance",

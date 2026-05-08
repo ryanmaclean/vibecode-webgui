@@ -28,7 +28,7 @@ Wand2,
   Eye,
   Loader
 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
@@ -149,7 +149,7 @@ interface TemplateStepProps {
   onSelect: (templateId: string) => void
 }
 
-function TemplateStep({ templates, selected, onSelect }: TemplateStepProps) {
+function TemplateStep({ templates, selected, onSelect }: TemplateStepProps): React.JSX.Element {
   return (
     <div className="space-y-4">
       <div className="text-center space-y-2">
@@ -196,7 +196,7 @@ interface DetailsStepProps {
   onChange: (updates: Partial<WizardData>) => void
 }
 
-function DetailsStep({ data, onChange }: DetailsStepProps) {
+function DetailsStep({ data, onChange }: DetailsStepProps): React.JSX.Element {
   return (
     <div className="space-y-4">
       <div className="text-center space-y-2">
@@ -252,7 +252,7 @@ interface ReviewStepProps {
   template?: AgentTemplate
 }
 
-function ReviewStep({ data, template }: ReviewStepProps) {
+function ReviewStep({ data, template }: ReviewStepProps): React.JSX.Element {
   return (
     <div className="space-y-4">
       <div className="text-center space-y-2">
@@ -340,7 +340,7 @@ export function CreateAgentWizard({
   onCancel,
   templates = FALLBACK_TEMPLATES,
   className
-}: CreateAgentWizardProps) {
+}: CreateAgentWizardProps): React.JSX.Element {
   const [currentStep, setCurrentStep] = useState(0)
   const [isCreating, setIsCreating] = useState(false)
   const [activeTemplates, setActiveTemplates] = useState<AgentTemplate[]>(templates)
@@ -407,7 +407,7 @@ export function CreateAgentWizard({
     }
   }, [onCreate, wizardData])
 
-  const canProceed = () => {
+  const canProceed = (): boolean => {
     switch (currentStep) {
       case 0:
         return wizardData.template !== undefined

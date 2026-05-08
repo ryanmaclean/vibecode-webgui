@@ -20,7 +20,7 @@ import {
   Network,
 } from 'lucide-react'
 
-export default function AIPage() {
+export default function AIPage(): React.JSX.Element {
   const t = useTranslations()
   const [recentActivity, setRecentActivity] = useState<Array<{ text: string; time: string }>>([])
   const [usageData, setUsageData] = useState({ requestsToday: '0', avgResponseTime: '0s', topModel: 'N/A' })

@@ -109,7 +109,7 @@ function CollaborativeWorkspaceContent({
     const currentUser: User = {
       id: userId,
       name: userName,
-      email: `${userName.toLowerCase()}@example.com`,
+      email: userName,
       color: '#1f75cb',
       isActive: true,
       role: 'owner',
