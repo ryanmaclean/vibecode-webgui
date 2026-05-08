@@ -60,7 +60,16 @@ func logHeader(msg string) {
 	fmt.Printf("\n%s%s%s%s\n", colorCyan, colorBold, msg, colorReset)
 }
 
+var allowedCommands = map[string]bool{
+	"kind":    true,
+	"kubectl": true,
+	"docker":  true,
+}
+
 func runCmd(name string, args ...string) error {
+	if !allowedCommands[name] {
+		return fmt.Errorf("command not allowed: %s", name)
+	}
 	cmd := exec.Command(name, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -68,6 +77,9 @@ func runCmd(name string, args ...string) error {
 }
 
 func runCmdOutput(name string, args ...string) (string, error) {
+	if !allowedCommands[name] {
+		return "", fmt.Errorf("command not allowed: %s", name)
+	}
 	cmd := exec.Command(name, args...)
 	out, err := cmd.Output()
 	return string(out), err

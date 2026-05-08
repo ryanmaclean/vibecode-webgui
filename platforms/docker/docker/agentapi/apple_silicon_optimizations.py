@@ -272,7 +272,7 @@ class PowerManager:
                 timeout=1
             )
             return 'Battery Power' in result.stdout
-        except:
+        except Exception:
             return False
 
     def _get_thermal_level(self) -> str:
@@ -287,7 +287,7 @@ class PowerManager:
             import re
             match = re.search(r'thermal level: (\w+)', result.stdout)
             return match.group(1) if match else "Unknown"
-        except:
+        except Exception:
             return "Unknown"
 
     def select_power_mode(self, state: PowerState) -> PowerMode:
@@ -451,7 +451,7 @@ class PerformanceMonitor:
                 'read_count': io_counters.read_count,
                 'write_count': io_counters.write_count,
             }
-        except:
+        except Exception:
             return {}
 
     def get_all_metrics(self) -> Dict[str, Any]:

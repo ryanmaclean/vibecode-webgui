@@ -80,7 +80,9 @@ func startCmd() *cobra.Command {
 			switch target {
 			case "dev", "openvscode", "code":
 				fmt.Println("Starting OpenVSCode Server...")
-				exec.Command("limactl", "shell", "default", "--", "code-server", "--bind-addr", "0.0.0.0:8080").Run()
+				if err := exec.Command("limactl", "shell", "default", "--", "code-server", "--bind-addr", "0.0.0.0:8080").Run(); err != nil {
+					fmt.Printf("Error starting OpenVSCode: %v\n", err)
+				}
 			case "docker":
 				fmt.Println("Starting Docker Compose...")
 				run("docker", "compose", "up", "-d")
@@ -237,12 +239,17 @@ func benchCmd() *cobra.Command {
 				var total time.Duration
 				for i := 0; i < iterations; i++ {
 					start := time.Now()
-					exec.Command("limactl", "shell", "default", "--", "echo", "ok").Run()
+					if err := exec.Command("limactl", "shell", "default", "--", "echo", "ok").Run(); err != nil {
+						fmt.Printf("  [%d/%d] Error: %v\n", i+1, iterations, err)
+						continue
+					}
 					elapsed := time.Since(start)
 					total += elapsed
 					fmt.Printf("  [%d/%d] %v\n", i+1, iterations, elapsed)
 				}
-				fmt.Printf("\nMean: %v\n", total/time.Duration(iterations))
+				if iterations > 0 {
+					fmt.Printf("\nMean: %v\n", total/time.Duration(iterations))
+				}
 
 			case "vim":
 				runScript("vim_hypervisor_bench.py", "--iterations", fmt.Sprint(iterations))
@@ -334,7 +341,9 @@ func devCmd() *cobra.Command {
 
 			case "chromium":
 				fmt.Println("Starting Chromium IDE...")
-				exec.Command("open", "-a", "Chromium", fmt.Sprintf("http://localhost:%d", port)).Run()
+				if err := exec.Command("open", "-a", "Chromium", fmt.Sprintf("http://localhost:%d", port)).Run(); err != nil {
+					fmt.Printf("Error opening Chromium: %v\n", err)
+				}
 
 			default:
 				runScript("start_" + devType + ".py")
@@ -363,7 +372,19 @@ func runCmd() *cobra.Command {
 // HELPERS
 // ============================================================
 
+var allowedCommands = map[string]bool{
+	"limactl": true,
+	"docker":  true,
+	"vfkit":   true,
+	"brew":    true,
+	"python3": true,
+	"open":    true,
+}
+
 func run(name string, args ...string) error {
+	if !allowedCommands[name] {
+		return fmt.Errorf("command not allowed: %s", name)
+	}
 	cmd := exec.Command(name, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -385,7 +406,9 @@ func runScript(name string, args ...string) {
 			cmd := exec.Command("python3", cmdArgs...)
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
-			cmd.Run()
+			if err := cmd.Run(); err != nil {
+				fmt.Printf("Error running script %s: %v\n", name, err)
+			}
 			return
 		}
 	}

@@ -887,9 +887,9 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
     estimatedSetupTime: '25 minutes',
     files: [],
     dependencies: {
-      'torch': '^2.1.0',
+      'torch': '^2.11.0',
       'torchvision': '^0.16.0',
-      'mlflow': '^2.8.0',
+      'mlflow': '^3.12.0',
       'numpy': '^1.24.0',
       'pandas': '^2.1.0',
       'scikit-learn': '^1.3.0',
