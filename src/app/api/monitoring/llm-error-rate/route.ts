@@ -51,11 +51,11 @@ export async function GET(request: NextRequest) {
 }
 
 async function getLLMErrorRateData(timeframe: string) {
-  // TODO: Implement real data fetching from Datadog or metrics database
-  // For now, return structure that matches component expectations
   return {
     timestamp: new Date().toISOString(),
     timeRange: timeframe,
+    data_available: false,
+    message: 'Metrics collection requires a connected Datadog or metrics backend',
     currentErrorRate: 0,
     errorMetrics: {
       total: 0,

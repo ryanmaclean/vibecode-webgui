@@ -373,18 +373,13 @@ describe('API Health Endpoints Error Scenarios', () => {
         setTimeout(() => reject(new Error('Timeout')), 2000)
       );
 
-      try {
-        await Promise.race([
-          healthzHandler(createMockRequest('http://localhost:3000/api/healthz')),
-          timeout
-        ]);
+      const response = await Promise.race([
+        healthzHandler(createMockRequest('http://localhost:3000/api/healthz')),
+        timeout
+      ]);
 
-        // If we get here, the probe responded within timeout
-        expect(true).toBe(true);
-      } catch (error) {
-        // Should not timeout
-        fail('Health check should not timeout');
-      }
+      // If we get here, the probe responded within timeout
+      expect(response).toBeDefined();
     });
   });
 

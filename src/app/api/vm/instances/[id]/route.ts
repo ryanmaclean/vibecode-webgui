@@ -61,6 +61,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       );
     }
 
+    if (vm.userId && vm.userId !== session.user?.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     log.info('Retrieved VM instance', {
       userId: session.user?.id,
       vmId: id
@@ -103,14 +107,27 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get pool manager and delete VM
+    const poolManager = getPoolManager();
+    await poolManager.initialize();
+
+    // Fetch VM first to check ownership
+    const vm = poolManager.getVM(id);
+    if (!vm) {
+      return NextResponse.json(
+        { error: 'VM not found', code: 'VM_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+
+    if (vm.userId && vm.userId !== session.user?.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     log.info('Deleting VM instance', {
       userId: session.user?.id,
       vmId: id
     });
-
-    // Get pool manager and delete VM
-    const poolManager = getPoolManager();
-    await poolManager.initialize();
 
     const result = await poolManager.deleteVM(id);
 

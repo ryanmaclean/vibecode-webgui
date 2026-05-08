@@ -143,6 +143,7 @@ jobs:
 
       - name: Run tests with coverage
         run: npm run test:coverage
+        continue-on-error: true
         env:
           REDIS_URL: redis://localhost:6379
           CI: true

@@ -351,8 +351,7 @@ describe('Guardrails', () => {
 
       await shutdownExperiment('test-experiment', 'Critical error rate exceeded', violations)
 
-      // Just verify it doesn't throw
-      expect(true).toBe(true)
+      // Verified: shutdownExperiment completed without throwing
     })
   })
 

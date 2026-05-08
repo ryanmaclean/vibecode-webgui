@@ -72,6 +72,7 @@ export async function middleware(request: NextRequest) {
     '/api/readyz',       // Readiness check (also caught by early return above)
     '/api/webhooks/',    // Incoming webhooks (use their own auth mechanisms)
     '/api/security/csp-report', // CSP violation reports sent by browsers
+    '/api/locale',       // Locale switching (no auth needed)
   ];
 
   const isPublicApiRoute = publicApiPrefixes.some((prefix) =>

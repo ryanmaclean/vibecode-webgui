@@ -1,0 +1,1678 @@
+{
+  "common": {
+    "appName": "VibeCode",
+    "appFullName": "VibeCode WebGUI",
+    "appTitle": "VibeCode WebGUI - AI-Powered Development Platform",
+    "appDescription": "Modern web-based development environment with AI assistance",
+    "loading": "Loading...",
+    "loadingWorkspace": "Loading workspace…",
+    "preparingWorkspace": "Preparing the AI workspace…",
+    "loadingModels": "Loading models...",
+    "loadingSettings": "Loading settings...",
+    "loadingHealth": "Loading health status",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "save": "Save",
+    "saveChanges": "Save Changes",
+    "cancel": "Cancel",
+    "close": "Close",
+    "reset": "Reset",
+    "resetAll": "Reset All",
+    "resetToDefaults": "Reset to Defaults",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "send": "Send",
+    "sending": "Sending...",
+    "search": "Search",
+    "clear": "Clear",
+    "copy": "Copy",
+    "open": "Open",
+    "continue": "Continue",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "back": "Back",
+    "goHome": "Go Home",
+    "tryAgain": "Try Again",
+    "acknowledge": "Acknowledge",
+    "skipToMainContent": "Skip to main content",
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "createAccount": "Create Account",
+    "getStarted": "Get Started",
+    "confirm": "Confirm",
+    "next": "Next",
+    "submit": "Submit",
+    "export": "Export",
+    "import": "Import",
+    "online": "Online",
+    "offlineMode": "Offline Mode",
+    "allFeaturesAvailable": "All features available",
+    "limitedFeaturesOffline": "Limited features in offline mode",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info",
+    "success": "Success",
+    "switchLanguage": "Switch language"
+  },
+  "meta": {
+    "title": "VibeCode WebGUI - AI-Powered Development Platform",
+    "description": "Modern web-based development environment with AI assistance",
+    "signinTitle": "Sign In - VibeCode WebGUI",
+    "signinDescription": "Sign in to your VibeCode account"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "vm": "VM",
+    "vmDashboard": "Dashboard",
+    "vmSnapshots": "Snapshots",
+    "ai": "AI",
+    "aiChat": "Chat",
+    "aiModels": "Models",
+    "aiCosts": "Costs",
+    "aiPrompts": "Prompts",
+    "health": "Health",
+    "monitoring": "Monitoring",
+    "workspaces": "Workspaces",
+    "experiments": "Experiments",
+    "tutorials": "Tutorials",
+    "settings": "Settings",
+    "signOut": "Sign Out",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "showKeyboardShortcuts": "Show keyboard shortcuts",
+    "keyboardShortcutsHint": "Keyboard shortcuts (⌘/)",
+    "ariaLabel": {
+      "vmMenu": "VM menu",
+      "aiMenu": "AI menu"
+    }
+  },
+  "landing": {
+    "heroTitle": "Welcome to VibeCode",
+    "heroSubtitle": "AI-powered development environment for the modern era",
+    "buildFaster": "Build Faster with AI",
+    "buildFasterDescription": "Experience the next generation of development tools powered by artificial intelligence. Write code, debug, and deploy with unprecedented speed and accuracy.",
+    "lightningFast": "Lightning Fast",
+    "lightningFastDescription": "Optimized performance for instant feedback and rapid development",
+    "aiPowered": "AI-Powered",
+    "aiPoweredDescription": "Intelligent code suggestions and automated workflows",
+    "secure": "Secure",
+    "secureDescription": "Enterprise-grade security for your code and data"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "getStarted": "Get Started",
+    "vmManagement": "VM Management",
+    "vmManagementDescription": "Manage virtual machines",
+    "aiStudio": "AI Studio",
+    "aiStudioDescription": "Models, costs, prompts",
+    "healthMonitor": "Health Monitor",
+    "healthMonitorDescription": "Service health status",
+    "monitoring": "Monitoring",
+    "monitoringDescription": "Metrics & traces",
+    "settings": "Settings",
+    "settingsDescription": "App configuration",
+    "editor": "Editor",
+    "editorDescription": "Code editor"
+  },
+  "ai": {
+    "dashboard": {
+      "title": "AI Dashboard",
+      "description": "Access 340+ AI models, manage agents, track costs, and browse prompt templates -- all from one place.",
+      "quickActions": "Quick Actions",
+      "newChat": "New Chat",
+      "compareModels": "Compare Models",
+      "browsePrompts": "Browse Prompts",
+      "recentActivity": "Recent Activity",
+      "cards": {
+        "chat": "Chat",
+        "chatStat": "Active Conversations: 3",
+        "chatDescription": "Start or continue AI conversations",
+        "agents": "Agents",
+        "agentsStat": "6 Agents Available",
+        "agentsDescription": "Multi-agent workspace",
+        "models": "Models",
+        "modelsStat": "340+ Models",
+        "modelsDescription": "Compare and select AI models",
+        "costs": "Costs",
+        "costsStat": "Today: $2.47",
+        "costsDescription": "Track AI usage costs",
+        "prompts": "Prompts",
+        "promptsStat": "33 Templates",
+        "promptsDescription": "Browse prompt library",
+        "history": "History",
+        "historyStat": "142 Conversations",
+        "historyDescription": "View past conversations",
+        "vectorExplorer": "Vector Explorer",
+        "vectorExplorerStat": "Explore Embeddings",
+        "vectorExplorerDescription": "Visualize vector similarities"
+      },
+      "usageStats": {
+        "requestsToday": "Requests Today",
+        "avgResponseTime": "Avg Response Time",
+        "topModel": "Top Model"
+      }
+    },
+    "models": {
+      "pageTitle": "AI Models",
+      "pageDescription": "Browse, compare, and get recommendations for AI models",
+      "refreshButton": "Refresh",
+      "loadingModels": "Loading models...",
+      "addModelToComparison": "Add Model to Comparison",
+      "searchPlaceholder": "Search and select models to compare...",
+      "modelsSelectedForComparison": "{count} of 4 models selected for comparison",
+      "getRecommendation": {
+        "title": "Get Recommendation",
+        "description": "Find the best model for your task",
+        "taskTypeLabel": "Task Type",
+        "getRecommendationButton": "Get Recommendation",
+        "findingButton": "Finding...",
+        "confidenceLabel": "Confidence: {percent}%",
+        "monthlyCostLabel": "~${cost}/mo",
+        "alternativesLabel": "Alternatives"
+      },
+      "taskTypes": {
+        "code_generation": "Code Generation",
+        "code_review": "Code Review",
+        "debugging": "Debugging",
+        "chat": "Chat",
+        "analysis": "Analysis",
+        "creative_writing": "Creative Writing",
+        "summarization": "Summarization",
+        "translation": "Translation",
+        "math": "Math",
+        "research": "Research",
+        "general": "General"
+      },
+      "selector": {
+        "searchPlaceholder": "Search models...",
+        "noModelsFound": "No models found",
+        "noModelsFoundHint": "Try adjusting your search or filters",
+        "moreFilters": "More filters",
+        "modelsCount": "{count} models",
+        "clearFilters": "Clear",
+        "minQuality": "Min Quality",
+        "minSpeed": "Min Speed",
+        "vision": "Vision",
+        "functionCalling": "Function Calling",
+        "recentlyUsed": "Recently used",
+        "groups": {
+          "favorites": "Favorites",
+          "recent": "Recent",
+          "localModels": "Local Models"
+        },
+        "qualityOptions": {
+          "any": "Any",
+          "good": "Good+",
+          "excellent": "Excellent+",
+          "stateOfArt": "State of Art"
+        },
+        "speedOptions": {
+          "any": "Any",
+          "medium": "Medium+",
+          "fast": "Fast+",
+          "veryFast": "Very Fast"
+        }
+      },
+      "quickFilters": {
+        "bestForCoding": "Best for Coding",
+        "bestForCodingDescription": "Top models for code generation and debugging",
+        "bestValue": "Best Value",
+        "bestValueDescription": "Great quality at affordable prices",
+        "fastest": "Fastest",
+        "fastestDescription": "Models optimized for speed",
+        "largestContext": "Largest Context",
+        "largestContextDescription": "Models with 100K+ context windows",
+        "vision": "Vision",
+        "visionDescription": "Models that can understand images",
+        "freeModels": "Free Models",
+        "freeModelsDescription": "No-cost AI models"
+      },
+      "badges": {
+        "free": "Free",
+        "low": "Low",
+        "medium": "Med",
+        "high": "High",
+        "slow": "Slow",
+        "fast": "Fast",
+        "basic": "Basic",
+        "good": "Good",
+        "excellent": "Excellent",
+        "notApplicable": "N/A"
+      },
+      "switcherPanel": {
+        "title": "Switch Model",
+        "viewAll": "View All",
+        "searchPlaceholder": "Search models...",
+        "currentModel": "Current Model",
+        "favorites": "Favorites",
+        "recent": "Recent",
+        "allModels": "All Models ({count})",
+        "noModelsFound": "No models found matching \"{query}\"",
+        "addToFavorites": "Add to favorites",
+        "removeFromFavorites": "Remove from favorites"
+      },
+      "switcherButton": {
+        "selectModel": "Select Model",
+        "ariaLabel": "Switch AI model"
+      }
+    },
+    "costs": {
+      "pageTitle": "AI Costs",
+      "pageDescription": "Monitor spending, set budgets, and estimate costs across AI models",
+      "costEstimatorButton": "Cost Estimator",
+      "closeEstimatorButton": "Close Estimator",
+      "quickCostEstimate": "Quick Cost Estimate",
+      "modelLabel": "Model",
+      "sampleMessageLabel": "Sample Message",
+      "sampleMessagePlaceholder": "Paste a sample prompt to estimate its cost...",
+      "alerts": {
+        "budgetThresholdTitle": "Budget Threshold Reached",
+        "dailyLimitTitle": "Daily Limit Reached",
+        "sessionLimitTitle": "Session Limit Reached",
+        "rateSpikeTitle": "Unusual Cost Spike Detected",
+        "unusualUsageTitle": "Unusual Usage Pattern",
+        "currentLabel": "Current: {cost}",
+        "limitLabel": "Limit: {cost}",
+        "percentOfLimit": "{percent}% of limit",
+        "acknowledgeButton": "Acknowledge",
+        "closeNotification": "Close notification"
+      }
+    },
+    "prompts": {
+      "pageTitle": "Prompt Library",
+      "pageDescription": "{count} reusable prompt templates for AI-powered code assistance across {categories} categories",
+      "searchPlaceholder": "Search templates by name, description, or tag...",
+      "allTemplates": "All Templates",
+      "noTemplatesFound": "No templates found",
+      "categories": {
+        "codeReview": "Code Review",
+        "explainCode": "Explain Code",
+        "refactor": "Refactor",
+        "generateTests": "Generate Tests",
+        "documentation": "Documentation"
+      },
+      "templateCard": {
+        "recommendedModels": "Recommended Models",
+        "variables": "Variables ({required} required{optional})",
+        "systemPrompt": "System Prompt",
+        "userPromptTemplate": "User Prompt Template",
+        "tags": "Tags",
+        "useTemplate": "Use Template",
+        "required": "required",
+        "type": "type: {type}",
+        "default": "default: {value}",
+        "vars": "{count} var",
+        "varsPlural": "{count} vars"
+      }
+    },
+    "agents": {
+      "pageTitle": "AI Agents",
+      "agentsList": "Agents",
+      "selectAgent": "Select an agent",
+      "messageCount": "{count} msgs",
+      "youLabel": "You",
+      "sendButton": "Send",
+      "messagePlaceholder": "Message {agentName}...",
+      "statusLabels": {
+        "active": "active",
+        "idle": "idle",
+        "busy": "busy"
+      },
+      "agentList": {
+        "codeAssistant": "Code Assistant",
+        "codeAssistantRole": "Full-Stack Developer",
+        "codeAssistantDescription": "Generates, refactors, and explains code across languages.",
+        "debugHelper": "Debug Helper",
+        "debugHelperRole": "Bug Hunter",
+        "debugHelperDescription": "Analyzes stack traces, identifies root causes, and suggests fixes.",
+        "architect": "Architect",
+        "architectRole": "System Designer",
+        "architectDescription": "Designs system architecture, APIs, and database schemas.",
+        "reviewer": "Reviewer",
+        "reviewerRole": "Code Reviewer",
+        "reviewerDescription": "Reviews code for quality, security, and best practices.",
+        "tester": "Tester",
+        "testerRole": "QA Engineer",
+        "testerDescription": "Writes unit tests, integration tests, and test strategies.",
+        "devops": "DevOps",
+        "devopsRole": "Infrastructure Engineer",
+        "devopsDescription": "Manages CI/CD pipelines, Docker, Kubernetes, and cloud infra."
+      }
+    },
+    "modelUsage": {
+      "title": "Model Usage History",
+      "description": "Track AI model usage, token consumption, and patterns over time",
+      "loadingHistory": "Loading usage history...",
+      "noUsageData": "No Usage Data",
+      "noUsageDataDescription": "Start using AI models to see usage statistics",
+      "noUsageDataForPeriod": "No usage data for this period",
+      "noTokenConsumptionData": "No token consumption data for this period",
+      "noModelUsageYet": "No model usage data yet",
+      "noModelData": "No Model Data",
+      "noModelDataDescription": "No AI models have been used yet",
+      "noTrendData": "No Trend Data",
+      "noTrendDataDescription": "No usage data available for the selected {period} period",
+      "noActivityData": "No Activity Data",
+      "noActivityDataDescription": "No recent activity in the selected {period} period",
+      "periodSelect": {
+        "hourly": "Hourly",
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly"
+      },
+      "metricSelect": {
+        "tokens": "Tokens",
+        "requests": "Requests"
+      },
+      "tabs": {
+        "overview": "Overview",
+        "overviewShort": "Stats",
+        "trends": "Usage Trends",
+        "trendsShort": "Trends",
+        "models": "Model Breakdown",
+        "modelsShort": "Models",
+        "details": "Details",
+        "detailsShort": "More"
+      },
+      "stats": {
+        "totalTokens": "Total Tokens",
+        "totalTokensDesc": "Current session",
+        "totalRequests": "Total Requests",
+        "totalRequestsDesc": "API calls made",
+        "avgTokensPerRequest": "Avg Tokens/Request",
+        "avgTokensPerRequestDesc": "Average per call",
+        "mostUsedModel": "Most Used Model",
+        "mostUsedModelDesc": "Top choice",
+        "promptTokens": "Prompt Tokens",
+        "completionTokens": "Completion Tokens",
+        "tokenRatio": "Token Ratio",
+        "completionPromptRatio": "Completion/Prompt ratio"
+      },
+      "allTimeStats": {
+        "title": "All-Time Statistics",
+        "description": "Lifetime usage metrics since {date}",
+        "totalTokens": "Total Tokens",
+        "totalRequests": "Total Requests",
+        "totalCost": "Total Cost"
+      },
+      "tokenConsumption": {
+        "title": "Token Consumption",
+        "description": "Prompt vs completion token usage over time",
+        "promptTokens": "Prompt Tokens",
+        "completionTokens": "Completion Tokens",
+        "prompt": "Prompt",
+        "completion": "Completion"
+      },
+      "usageTrends": {
+        "title": "Usage Trends",
+        "description": "{period} usage patterns over time"
+      },
+      "modelBreakdown": {
+        "title": "Model Usage Breakdown",
+        "description": "Usage distribution across different AI models",
+        "detailsTitle": "Model Usage Details",
+        "detailsDescription": "Detailed statistics for each model used (click headers to sort)"
+      },
+      "topModelsSummary": {
+        "title": "Top Models Summary",
+        "description": "Quick overview of most frequently used models",
+        "requests": "Requests:",
+        "tokens": "Tokens:",
+        "share": "Share:"
+      },
+      "table": {
+        "model": "Model",
+        "requests": "Requests",
+        "prompt": "Prompt",
+        "completion": "Completion",
+        "total": "Total",
+        "cost": "Cost",
+        "requestsLabel": "{count} requests"
+      },
+      "recentActivity": {
+        "title": "Recent {period} Activity",
+        "description": "Last 5 data points from {total} total",
+        "requests": "{count} requests"
+      },
+      "sessionInfo": {
+        "title": "Session Information",
+        "description": "Current usage session details",
+        "sessionStart": "Session Start:",
+        "lastUpdated": "Last Updated:",
+        "totalRequests": "Total Requests:",
+        "totalTokens": "Total Tokens:",
+        "modelsUsed": "Models Used:",
+        "dataPoints": "Data Points:"
+      }
+    },
+    "costDashboard": {
+      "title": "AI Cost Dashboard",
+      "description": "Track and manage your AI spending across {count}+ models",
+      "refresh": "Refresh",
+      "exportCsv": "Export CSV",
+      "exportJson": "Export JSON",
+      "export": "Export",
+      "lastUpdated": "Last updated: {time}",
+      "stats": {
+        "sessionCost": "Session Cost",
+        "sessionCostDesc": "{count} requests",
+        "todayCost": "Today's Cost",
+        "vsYesterday": "vs yesterday",
+        "totalTokens": "Total Tokens",
+        "totalTokensDesc": "This session",
+        "allTimeCost": "All-Time Cost",
+        "allTimeCostDesc": "{count} total requests"
+      },
+      "tabs": {
+        "overview": "Overview",
+        "byModel": "By Model",
+        "alerts": "Alerts",
+        "settings": "Settings"
+      },
+      "overview": {
+        "usageOverTime": "Usage Over Time",
+        "costPredictions": "Cost Predictions",
+        "costPredictionsDesc": "Based on your usage patterns over the last 7 days",
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "monthlyBudgetProgress": "Monthly Budget Progress",
+        "budgetWillExhaust": "At current rate, budget will be exhausted in {days} days"
+      },
+      "metricSelect": {
+        "cost": "Cost",
+        "tokens": "Tokens",
+        "requests": "Requests"
+      },
+      "models": {
+        "costByModel": "Cost by Model",
+        "costByModelDesc": "Breakdown of spending across different AI models",
+        "modelUsageDetails": "Model Usage Details",
+        "modelUsageDetailsDesc": "Detailed statistics for each model used",
+        "noModelData": "No model usage data in this session",
+        "noModelDataChart": "No model usage data yet",
+        "requestsLabel": "{count} requests",
+        "tokensLabel": "{tokens} tokens"
+      },
+      "alerts": {
+        "title": "Cost Alerts",
+        "description": "Configure alerts to monitor your AI spending",
+        "createAlert": "Create Alert",
+        "noAlerts": "No alerts configured. Set up alerts to monitor your spending.",
+        "active": "Active",
+        "disabled": "Disabled",
+        "acknowledge": "Acknowledge",
+        "threshold": "Threshold: {cost}",
+        "current": "Current: {cost}",
+        "thresholdCurrent": "Threshold: {threshold} | Current: {current}",
+        "dismiss": "Dismiss"
+      },
+      "createAlertDialog": {
+        "title": "Create Cost Alert",
+        "description": "Set up a new alert to monitor your AI spending",
+        "alertType": "Alert Type",
+        "threshold": "Threshold (USD)",
+        "severity": "Severity",
+        "resetPeriod": "Reset Period",
+        "enableImmediately": "Enable alert immediately",
+        "sendNotifications": "Send notifications when triggered",
+        "cancel": "Cancel",
+        "create": "Create Alert",
+        "alertTypes": {
+          "budget_threshold": "Budget Threshold",
+          "daily_limit": "Daily Limit",
+          "session_limit": "Session Limit",
+          "rate_spike": "Rate Spike",
+          "unusual_usage": "Unusual Usage"
+        },
+        "severities": {
+          "info": "Info",
+          "warning": "Warning",
+          "critical": "Critical"
+        }
+      },
+      "noUsageData": "No usage data for this period"
+    },
+    "modelDetails": {
+      "removeFavorite": "Remove from favorites",
+      "addFavorite": "Add to favorites",
+      "close": "Close",
+      "addToComparison": "Add to Comparison",
+      "useThisModel": "Use This Model",
+      "tabs": {
+        "overview": "Overview",
+        "capabilities": "Capabilities",
+        "benchmarks": "Benchmarks",
+        "pricing": "Pricing"
+      },
+      "overview": {
+        "description": "Description",
+        "noDescription": "No description available.",
+        "keyMetrics": "Key Metrics",
+        "qualityTier": "Quality Tier",
+        "avgLatency": "Avg Latency",
+        "tokensPerSec": "Tokens/sec",
+        "benchmarkScore": "Benchmark Score",
+        "tokenLimits": "Token Limits",
+        "contextWindow": "Context Window",
+        "maxInput": "Max Input",
+        "maxOutput": "Max Output",
+        "tags": "Tags",
+        "provider": "Provider",
+        "tier": "Tier: {tier}",
+        "apiDocs": "API Docs"
+      },
+      "capabilities": {
+        "featureSupport": "Feature Support",
+        "functionCalling": "Function Calling",
+        "streaming": "Streaming",
+        "vision": "Vision",
+        "deprecated": "Deprecated",
+        "active": "Active"
+      },
+      "benchmarks": {
+        "overallScore": "Overall Benchmark Score",
+        "aggregatedFrom": "Aggregated from {count} benchmarks",
+        "scoresByCategory": "Scores by Category",
+        "individualBenchmarks": "Individual Benchmarks",
+        "noBenchmarkData": "No Benchmark Data",
+        "noBenchmarkDataDesc": "Benchmark data is not yet available for this model."
+      },
+      "pricing": {
+        "basePricing": "Base Pricing",
+        "inputTokens": "Input Tokens",
+        "outputTokens": "Output Tokens",
+        "per1kTokens": "per 1,000 tokens",
+        "costCalculator": "Cost Calculator",
+        "inputTokensLabel": "Input Tokens",
+        "outputTokensLabel": "Output Tokens",
+        "requestsPerDay": "Requests/Day",
+        "perRequest": "Per Request",
+        "dailyCost": "Daily Cost",
+        "monthlyCost": "Monthly Cost",
+        "freeTierAvailable": "Free Tier Available"
+      },
+      "quality": {
+        "basic": "Basic",
+        "basicDesc": "Suitable for simple tasks and basic conversations",
+        "good": "Good",
+        "goodDesc": "Reliable for most everyday use cases",
+        "excellent": "Excellent",
+        "excellentDesc": "High performance for complex tasks",
+        "stateOfArt": "State of the Art",
+        "stateOfArtDesc": "Cutting-edge performance, best in class"
+      },
+      "speed": {
+        "slow": "Slow",
+        "slowDesc": "Longer response times, best for non-time-critical tasks",
+        "medium": "Medium",
+        "mediumDesc": "Balanced response times for most use cases",
+        "fast": "Fast",
+        "fastDesc": "Quick responses suitable for interactive use",
+        "veryFast": "Very Fast",
+        "veryFastDesc": "Near-instant responses for real-time applications"
+      }
+    },
+    "qualityDashboard": {
+      "title": "AI Quality Metrics Dashboard",
+      "description": "Track AI suggestion quality, acceptance rates, and model performance",
+      "refresh": "Refresh",
+      "allModels": "All Models",
+      "lastUpdated": "Last updated: {time}",
+      "errorLoading": "Error loading dashboard: {error}",
+      "retry": "Retry",
+      "noQualityData": "No quality data available",
+      "periodSelect": {
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly"
+      },
+      "stats": {
+        "acceptanceRate": "Acceptance Rate",
+        "acceptanceRateDesc": "{count} suggestions",
+        "avgEditDistance": "Avg Edit Distance",
+        "avgEditDistanceDesc": "Characters changed",
+        "avgSimilarity": "Avg Similarity",
+        "avgSimilarityDesc": "To original suggestion",
+        "avgTimeToAccept": "Avg Time to Accept",
+        "ratingDesc": "Rating: {rating}★"
+      },
+      "activeAlerts": "{count} Active Quality Alerts",
+      "criticalAlerts": "{count} Critical",
+      "tabs": {
+        "overview": "Overview",
+        "byModel": "By Model",
+        "trends": "Trends",
+        "alerts": "Alerts"
+      },
+      "overview": {
+        "recentActivity": "Recent Activity",
+        "recentActivityDesc": "Latest model performance",
+        "modelHealthSummary": "Model Health Summary",
+        "modelHealthSummaryDesc": "Status of all monitored models",
+        "noRecentActivity": "No recent activity",
+        "noModelsTracked": "No models tracked yet",
+        "suggestions": "{count} suggestions"
+      },
+      "modelCard": {
+        "acceptanceRate": "Acceptance Rate",
+        "totalSuggestions": "Total Suggestions",
+        "editDistance": "Edit Distance",
+        "similarity": "Similarity",
+        "rating": "Rating",
+        "avgTime": "Avg time:",
+        "accepted": "accepted",
+        "rejected": "rejected",
+        "notAvailable": "N/A"
+      },
+      "modelTab": {
+        "noModelData": "No model data available for the selected period"
+      },
+      "trends": {
+        "title": "Quality Trends Over Time",
+        "noTrendData": "No trend data available for the selected period",
+        "metricSelect": {
+          "acceptanceRate": "Acceptance Rate",
+          "editDistance": "Edit Distance",
+          "similarity": "Similarity",
+          "rating": "Rating"
+        }
+      },
+      "alertsTab": {
+        "title": "Quality Degradation Alerts",
+        "description": "Monitor quality issues across all models",
+        "noAlerts": "No quality alerts. All models performing well!",
+        "detected": "Detected: {time}",
+        "current": "Current: {value}",
+        "threshold": "Threshold: {value}",
+        "dismiss": "Dismiss",
+        "resolved": "RESOLVED"
+      },
+      "dismiss": "Dismiss"
+    },
+    "contextMetrics": {
+      "title": "Context Metrics",
+      "description": "Context window quality and utilization metrics",
+      "autoRefreshOn": "Auto-refresh On",
+      "autoRefreshOff": "Auto-refresh Off",
+      "refresh": "Refresh",
+      "errorLoading": "Error loading metrics: {error}",
+      "stats": {
+        "contextUtilization": "Context Utilization",
+        "contextUtilizationDesc": "{tokens} / {available} tokens",
+        "avgRelevanceScore": "Avg Relevance Score",
+        "avgRelevanceScoreDesc": "{count} items included",
+        "itemsIncluded": "Items Included",
+        "itemsIncludedDesc": "{count} excluded",
+        "avgBuildTime": "Avg Build Time",
+        "avgBuildTimeDesc": "{count} builds"
+      },
+      "currentContext": {
+        "title": "Current Context Window",
+        "description": "Strategy: {strategy} | Model: {model}",
+        "tokenUtilization": "Token Utilization",
+        "totalTokens": "Total Tokens:",
+        "available": "Available:",
+        "exclusionRate": "Exclusion Rate:",
+        "buildTime": "Build Time:"
+      },
+      "tabs": {
+        "utilization": "Utilization",
+        "priority": "Priority",
+        "types": "Types",
+        "relevance": "Relevance"
+      },
+      "utilizationHistory": {
+        "title": "Utilization History",
+        "description": "Context window utilization over recent builds"
+      },
+      "priorityDistribution": {
+        "title": "Priority Distribution",
+        "description": "Breakdown of context items by priority level"
+      },
+      "typeDistribution": {
+        "title": "Item Type Distribution",
+        "description": "Breakdown of context items by type"
+      },
+      "relevanceScores": {
+        "title": "Relevance Score Distribution",
+        "description": "Distribution of item relevance scores",
+        "min": "Min:",
+        "max": "Max:",
+        "mean": "Mean:",
+        "median": "Median:",
+        "p95": "P95:"
+      },
+      "sessionStats": {
+        "title": "Session Statistics",
+        "description": "Aggregated metrics for session {sessionId}",
+        "totalEvents": "Total Events:",
+        "contextBuilds": "Context Builds:",
+        "avgTokens": "Avg Tokens:",
+        "avgExclusion": "Avg Exclusion:"
+      }
+    },
+    "vectorExplorer": {
+      "title": "Vector Similarity Explorer",
+      "description": "Search for semantically similar content using AI embeddings",
+      "searchQuery": "Search Query",
+      "searchQueryPlaceholder": "Enter text to find similar content... (Cmd/Ctrl + Enter to search)",
+      "searchQueryHint": "Enter any text and we'll find semantically similar content in the database",
+      "contentType": "Content Type",
+      "resultLimit": "Result Limit",
+      "similarityThreshold": "Similarity Threshold",
+      "search": "Search Similar Content",
+      "searching": "Searching...",
+      "errorPrefix": "Error: {error}",
+      "searchResults": "Search Results",
+      "cached": "Cached",
+      "embeddingCached": "Embedding Cached",
+      "resultsCount": "{count} results",
+      "foundResults": "Found {count} similar {type} item(s)",
+      "foundResultsWithThreshold": "with similarity ≥ {threshold}%",
+      "noSimilarContent": "No similar content found",
+      "noSimilarContentHint": "Try lowering the similarity threshold or changing the content type",
+      "matchPercent": "{percent}% match",
+      "language": "Language: {lang}",
+      "framework": "Framework: {fw}",
+      "created": "Created: {date}",
+      "embeddingAnalysis": "Embedding Analysis",
+      "embeddingAnalysisDesc": "Visual representation of vector embeddings and similarity scores",
+      "howItWorks": "How it works:",
+      "howItWorksSteps": {
+        "step1": "Enter your search query in the text area above",
+        "step2": "Select the content type you want to search (code, documentation, or chat)",
+        "step3": "Adjust the result limit and similarity threshold as needed",
+        "step4": "Click \"Search\" or press Cmd/Ctrl + Enter to find similar content",
+        "step5": "View detailed results with similarity scores and embedding visualizations"
+      },
+      "contentTypes": {
+        "code": "Code",
+        "documentation": "Documentation",
+        "chat": "Chat"
+      },
+      "limits": {
+        "five": "5 results",
+        "ten": "10 results",
+        "twenty": "20 results",
+        "fifty": "50 results"
+      },
+      "thresholds": {
+        "low": "50% (Low)",
+        "mediumLow": "60% (Medium-Low)",
+        "medium": "70% (Medium)",
+        "high": "80% (High)",
+        "veryHigh": "90% (Very High)"
+      }
+    },
+    "modelComparison": {
+      "title": "Model Comparison",
+      "description": "Compare up to {max} models side by side",
+      "addModel": "Add Model",
+      "addModelToCompare": "Add Model to Compare",
+      "addModelDescription": "Select a model to add to the comparison",
+      "cancel": "Cancel",
+      "noModelsTitle": "No models to compare",
+      "noModelsDescription": "Add at least 2 models to start comparing",
+      "addFirstModel": "Add First Model",
+      "addAnotherModel": "Add another model to compare",
+      "recommended": "Recommended",
+      "recommendationReason": "{name} scores highest with balanced performance across all criteria",
+      "removeFromComparison": "Remove model from comparison",
+      "score": "Score",
+      "useThisModel": "Use This Model",
+      "selectModel": "Select Model",
+      "tabs": {
+        "cardView": "Card View",
+        "tableView": "Table View",
+        "criteria": "Criteria"
+      },
+      "criteria": {
+        "title": "Comparison Criteria",
+        "description": "Adjust the importance of each factor in the comparison",
+        "costImportance": "Cost Importance",
+        "speedImportance": "Speed Importance",
+        "qualityImportance": "Quality Importance",
+        "contextSizeImportance": "Context Size Importance"
+      },
+      "table": {
+        "attribute": "Attribute",
+        "overallScore": "Overall Score",
+        "priceInput": "Price (Input)",
+        "priceOutput": "Price (Output)",
+        "contextWindow": "Context Window",
+        "speed": "Speed",
+        "quality": "Quality",
+        "coding": "Coding",
+        "reasoning": "Reasoning",
+        "creative": "Creative",
+        "math": "Math",
+        "vision": "Vision",
+        "functionCalling": "Function Calling",
+        "avgLatency": "Avg Latency",
+        "yes": "Yes",
+        "no": "No"
+      },
+      "modelCard": {
+        "input": "Input",
+        "output": "Output",
+        "context": "Context",
+        "coding": "Coding",
+        "reasoning": "Reasoning",
+        "creative": "Creative",
+        "math": "Math",
+        "vision": "Vision",
+        "functions": "Functions",
+        "streaming": "Streaming"
+      },
+      "quickSummary": {
+        "title": "Quick Summary",
+        "bestForCoding": "Best for Coding",
+        "bestReasoning": "Best Reasoning",
+        "bestValue": "Best Value",
+        "fastest": "Fastest",
+        "largestContext": "Largest Context"
+      },
+      "pros": {
+        "stateOfArtQuality": "State of the art quality",
+        "excellentQuality": "Excellent quality",
+        "veryFastResponses": "Very fast responses",
+        "fastResponses": "Fast responses",
+        "veryAffordable": "Very affordable",
+        "largeContextWindow": "Large context window",
+        "visionCapable": "Vision capable",
+        "functionCalling": "Function calling support"
+      },
+      "cons": {
+        "basicQuality": "Basic quality tier",
+        "slowerResponses": "Slower responses",
+        "higherCost": "Higher cost",
+        "limitedContext": "Limited context"
+      }
+    }
+  },
+  "chat": {
+    "title": "AI Chat",
+    "heading": "AI Chat",
+    "emptyState": "No messages yet. Start a conversation!",
+    "inputPlaceholder": "Type your message... (Shift+Enter for new line)",
+    "promptPlaceholder": "Ask anything...",
+    "sendButton": "Send",
+    "sendingButton": "Sending...",
+    "clearButton": "Clear",
+    "thinkingIndicator": "Thinking...",
+    "modelLabel": "Model",
+    "modelPlaceholder": "Select a model...",
+    "newConversation": "New conversation",
+    "clearChat": "Clear chat",
+    "regenerate": "Regenerate response",
+    "copyCode": "Copy code",
+    "aiWorkspaceTitle": "AI Workspace",
+    "aiWorkspaceSubtitle": "Start a conversation with your AI assistant",
+    "costConfirmDialog": {
+      "title": "Confirm Expensive Request",
+      "description": "This message is estimated to use more than 500 tokens. Please review the cost estimate below.",
+      "modelLabel": "Model:",
+      "highTokenWarningTitle": "High token count detected",
+      "highTokenWarningDescription": "Estimated {tokenCount} tokens. This request may incur higher costs.",
+      "cancelButton": "Cancel",
+      "confirmButton": "Send Anyway"
+    }
+  },
+  "settings": {
+    "pageTitle": "Settings",
+    "pageDescription": "Configure your VibeCode preferences and application settings",
+    "title": "Settings",
+    "exportSettings": "Export Settings",
+    "importSettings": "Import Settings",
+    "importSettingsFileLabel": "Import settings file",
+    "resetToDefaults": "Reset to Defaults",
+    "setupWizard": "Setup Wizard",
+    "exportSuccess": "Settings exported successfully",
+    "exportFailed": "Failed to export settings",
+    "importSelectJson": "Please select a JSON file",
+    "importOverwriteConfirm": "This will overwrite your current settings. Continue?",
+    "importInvalidFormat": "Invalid settings file format",
+    "importInvalidSections": "Settings file does not contain valid settings sections",
+    "importParseFailed": "Failed to parse settings file. Ensure it contains valid JSON.",
+    "importSuccess": "Settings imported successfully",
+    "resetConfirm": "Reset all settings to defaults?",
+    "resetSuccess": "Settings reset to defaults",
+    "resetFailed": "Failed to reset settings",
+    "importLabel": "Import settings file",
+    "saveStatus": {
+      "saved": "Saved",
+      "error": "Error",
+      "unsavedChanges": "Unsaved changes",
+      "saving": "Saving...",
+      "pleaseFixErrors": "Please fix the following errors:"
+    },
+    "closeSettingsLabel": "Close settings",
+    "resetAllLabel": "Reset all settings to defaults",
+    "saveSettingsLabel": "Save settings",
+    "tabs": {
+      "general": "General",
+      "services": "Services",
+      "networking": "Network",
+      "environment": "Environment",
+      "ai": "AI",
+      "advanced": "Advanced"
+    },
+    "general": {
+      "title": "General Settings",
+      "resetLabel": "Reset general settings to defaults",
+      "theme": {
+        "label": "Theme",
+        "description": "Choose your preferred color scheme",
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System",
+        "ariaLabel": "Theme selection"
+      },
+      "launchAtLogin": {
+        "label": "Launch at Login",
+        "description": "Automatically start VibeCode when you log in"
+      },
+      "minimizeToTray": {
+        "label": "Minimize to Tray",
+        "description": "Keep VibeCode running in the system tray when closed"
+      },
+      "notifications": {
+        "label": "Notifications",
+        "description": "Show desktop notifications for important events"
+      },
+      "confirmOnClose": {
+        "label": "Confirm on Close",
+        "description": "Ask for confirmation before closing with unsaved changes"
+      },
+      "autoSaveInterval": {
+        "label": "Auto-save Interval",
+        "description": "Automatically save your work (in seconds, 0 to disable)"
+      },
+      "vimMode": {
+        "label": "Vim Mode",
+        "description": "Enable vim-style keyboard navigation (j/k for scrolling, etc.)"
+      }
+    },
+    "services": {
+      "title": "Service Settings",
+      "resetLabel": "Reset service settings to defaults",
+      "autoStartServices": {
+        "label": "Auto-start Services",
+        "description": "Automatically start background services on app launch"
+      },
+      "healthMonitoring": {
+        "label": "Health Monitoring",
+        "description": "Enable real-time service health checks"
+      },
+      "portConfiguration": {
+        "title": "Port Configuration",
+        "appPort": "Application Port",
+        "aiGatewayPort": "AI Gateway Port",
+        "databasePort": "Database Port",
+        "vmServicePort": "VM Service Port"
+      },
+      "timeoutConfiguration": {
+        "title": "Timeout Configuration (ms)",
+        "connectionTimeout": "Connection Timeout",
+        "requestTimeout": "Request Timeout"
+      },
+      "maxRetries": {
+        "label": "Max Retries",
+        "description": "Maximum retry attempts for failed connections"
+      }
+    },
+    "networking": {
+      "title": "Networking & Security",
+      "subtitle": "Zero-trust networking with Tailscale",
+      "connectionStatusTitle": "Connection Status",
+      "setupConfigTitle": "Setup & Configuration",
+      "aboutTailscale": {
+        "title": "About Tailscale",
+        "description": "Tailscale creates a secure network overlay that allows your devices to communicate safely over the internet without exposing services to the public.",
+        "keyFeatures": "Key Features:",
+        "features": {
+          "encryption": "End-to-end encryption for all traffic",
+          "zeroTrust": "Zero-trust security model",
+          "noPorts": "No open ports to the public internet",
+          "keyRotation": "Automatic key rotation and management",
+          "crossPlatform": "Cross-platform support"
+        }
+      }
+    },
+    "ai": {
+      "title": "AI Settings",
+      "resetLabel": "Reset AI settings to defaults",
+      "defaultModel": {
+        "label": "Default Model",
+        "description": "The AI model to use by default",
+        "placeholder": "Select a model"
+      },
+      "apiKeys": {
+        "title": "API Keys",
+        "description": "API keys are stored securely and never exposed in settings exports",
+        "openaiLabel": "OpenAI API Key",
+        "openaiPlaceholder": "sk-...",
+        "anthropicLabel": "Anthropic API Key",
+        "anthropicPlaceholder": "sk-ant-..."
+      },
+      "maxTokens": {
+        "label": "Max Tokens",
+        "description": "Maximum number of tokens in AI responses"
+      },
+      "temperature": {
+        "label": "Temperature",
+        "description": "Controls creativity: 0 is focused, 2 is highly creative"
+      },
+      "topP": {
+        "label": "Top P (Nucleus Sampling)"
+      },
+      "streamResponses": {
+        "label": "Stream Responses",
+        "description": "Show AI responses as they are generated"
+      },
+      "codeSuggestions": {
+        "label": "Code Suggestions",
+        "description": "Enable AI-powered code completions"
+      },
+      "autoCompleteDelay": {
+        "label": "Auto-complete Delay",
+        "description": "Delay before showing suggestions (in milliseconds)"
+      }
+    },
+    "advanced": {
+      "title": "Advanced Settings",
+      "resetLabel": "Reset advanced settings to defaults",
+      "agentSafety": {
+        "title": "Agent Safety & Confirmation",
+        "description": "Configure how agent actions are previewed and approved before execution",
+        "enableActionPreview": {
+          "label": "Enable Action Preview",
+          "description": "Show diff previews before applying changes"
+        },
+        "requireConfirmation": {
+          "label": "Require Confirmation",
+          "description": "Require explicit approval for agent actions"
+        },
+        "bulkApprovalMode": {
+          "label": "Bulk Approval Mode",
+          "description": "Allow approving multiple changes at once"
+        },
+        "showExplanations": {
+          "label": "Show Explanations",
+          "description": "Show why each change is proposed"
+        },
+        "autoApproveReadOnly": {
+          "label": "Auto-approve Read-only",
+          "description": "Skip confirmation for read-only operations"
+        }
+      },
+      "telemetry": {
+        "title": "Privacy & Telemetry",
+        "analytics": {
+          "label": "Anonymous Analytics",
+          "description": "Help improve VibeCode by sharing anonymous usage data"
+        },
+        "crashReporting": {
+          "label": "Crash Reporting",
+          "description": "Automatically send crash reports to help fix issues"
+        },
+        "performanceMonitoring": {
+          "label": "Performance Monitoring",
+          "description": "Track application performance metrics"
+        }
+      },
+      "debugMode": {
+        "label": "Debug Mode",
+        "description": "Enable extra logging and developer features"
+      },
+      "logLevel": {
+        "label": "Log Level",
+        "description": "Set the verbosity of application logs",
+        "options": {
+          "error": "Error",
+          "warn": "Warning",
+          "info": "Info",
+          "debug": "Debug",
+          "trace": "Trace"
+        }
+      },
+      "dataDirectory": {
+        "label": "Data Directory",
+        "description": "Custom path for application data storage",
+        "placeholder": "Default location"
+      },
+      "hardwareAcceleration": {
+        "label": "Hardware Acceleration",
+        "description": "Use GPU for improved performance"
+      },
+      "experimentalFeatures": {
+        "label": "Experimental Features",
+        "description": "Enable features that are still in development"
+      },
+      "proxy": {
+        "title": "Proxy Configuration",
+        "urlLabel": "Proxy URL",
+        "urlPlaceholder": "http://proxy.example.com:8080",
+        "bypassForLocal": {
+          "label": "Bypass for Local",
+          "description": "Skip proxy for local network addresses"
+        }
+      }
+    },
+    "maskedInput": {
+      "showValue": "Show value",
+      "hideValue": "Hide value"
+    }
+  },
+  "workspace": {
+    "title": "Workspaces",
+    "pageTitle": "Workspaces",
+    "e2eTestMode": "E2E Test Mode",
+    "create": "Create workspace",
+    "createWorkspace": "Create Workspace",
+    "clone": "Clone workspace",
+    "delete": "Delete workspace",
+    "open": "Open workspace",
+    "rename": "Rename workspace",
+    "useTemplate": "Use Template",
+    "searchPlaceholder": "Search workspaces...",
+    "searchAriaLabel": "Search workspaces",
+    "loadingAriaLabel": "Loading workspaces",
+    "emptyState": {
+      "title": "No workspaces found",
+      "description": "Create your first workspace to get started"
+    },
+    "workspaceCard": {
+      "createdLabel": "Created {date}",
+      "openButton": "Open",
+      "editButton": "Edit workspace",
+      "settingsButton": "Workspace settings"
+    },
+    "createModal": {
+      "title": "Create New Workspace",
+      "nameLabel": "Workspace Name",
+      "namePlaceholder": "Enter workspace name",
+      "descriptionLabel": "Description (Optional)",
+      "descriptionPlaceholder": "Enter workspace description",
+      "submitButton": "Create Workspace",
+      "creatingButton": "Creating...",
+      "cancelButton": "Cancel",
+      "nameRequired": "Workspace name is required",
+      "nameTooShort": "Workspace name must be at least 3 characters"
+    },
+    "templateModal": {
+      "title": "Choose Template",
+      "nextjsTypescript": "Next.js + TypeScript",
+      "nextjsTypescriptDescription": "Full-stack web application",
+      "reactVite": "React + Vite",
+      "reactViteDescription": "Fast frontend development",
+      "nodejsApi": "Node.js API",
+      "nodejsApiDescription": "Backend REST API",
+      "continueButton": "Continue",
+      "cancelButton": "Cancel"
+    }
+  },
+  "statusBar": {
+    "serviceHealth": "Service Health",
+    "lastUpdated": "Last updated: ",
+    "loadingHealth": "Loading health status",
+    "healthLabel": "Service health status bar",
+    "detailedHealthLabel": "Detailed service health information",
+    "healthy": "Healthy",
+    "degraded": "Degraded",
+    "unhealthy": "Unhealthy",
+    "unknown": "Unknown",
+    "collapseStatusBar": "Collapse status bar",
+    "expandStatusBar": "Expand status bar",
+    "ariaRegionLabel": "Service health status bar",
+    "healthyServicesCount": "{healthy} healthy services out of {total} total",
+    "connection": {
+      "liveUpdatesEnabled": "Live updates enabled",
+      "reconnecting": "Reconnecting to live updates",
+      "usingPolling": "Using polling for updates"
+    },
+    "overallStatus": {
+      "allSystemsOperational": "All systems operational",
+      "someSystemsDegraded": "Some systems degraded",
+      "systemIssuesDetected": "System issues detected",
+      "statusUnknown": "Status unknown"
+    }
+  },
+  "commandPalette": {
+    "searchPlaceholder": "Type a command or search...",
+    "searchAriaLabel": "Search commands",
+    "closeAriaLabel": "Close command palette",
+    "resultsAriaLabel": "Command results",
+    "noCommandsFound": "No commands found for \"{query}\"",
+    "typeToSearch": "Type to search for commands...",
+    "keyboardHints": {
+      "navigate": "Navigate",
+      "select": "Select",
+      "close": "Close"
+    },
+    "commands": {
+      "goDashboard": "Go to Dashboard",
+      "goDashboardDescription": "Navigate to the main dashboard",
+      "goVm": "Go to VM Management",
+      "goVmDescription": "Manage virtual machines",
+      "goAiChat": "Go to AI Chat",
+      "goAiChatDescription": "Open AI chat interface",
+      "openSettings": "Open Settings",
+      "openSettingsDescription": "Configure application settings",
+      "goMonitoring": "Go to Monitoring",
+      "goMonitoringDescription": "View system monitoring and metrics"
+    }
+  },
+  "auth": {
+    "signInTitle": "VibeCode Dev Login",
+    "signInSubtitle": "Simple sign-in for development environment",
+    "signUpTitle": "Create your account",
+    "email": "Email",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "Email address",
+    "password": "Password",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Password",
+    "confirmPassword": "Confirm password",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "signInWith": "Sign in with {provider}",
+    "orContinueWith": "Or continue with",
+    "signInButton": "Sign in",
+    "testUsersHeading": "Development Test Users:",
+    "adminUsersLabel": "Admin Users:",
+    "developersLabel": "Developers:",
+    "teamMembersLabel": "Team Members:",
+    "errors": {
+      "invalidCredentials": "Invalid credentials",
+      "authFailed": "Authentication failed - no session created",
+      "unexpectedError": "An unexpected error occurred",
+      "validEmail": "Enter a valid email address",
+      "passwordTooShort": "Password must be at least 6 characters long"
+    },
+    "errorPrefix": "Error: "
+  },
+  "onboarding": {
+    "welcomeTitle": "Welcome to VibeCode",
+    "subtitle": "Tweak your workspace and connect the services you rely on every day.",
+    "closeButton": "Close onboarding",
+    "themeTitle": "Theme",
+    "themeDescription": "Select the default appearance for the dashboard.",
+    "cliEditorTitle": "CLI Editor Preference",
+    "cliEditorDescription": "We'll tailor future tips for your favourite terminal editor.",
+    "editorLabel": "Editor",
+    "selectEditor": "Select an editor",
+    "extensionsTitle": "Recommended Extensions",
+    "extensionsDescription": "Install these VS Code extensions to match the VibeCode stack.",
+    "copyButton": "Copy",
+    "integrationsTitle": "Integrations",
+    "integrationsDescription": "Track which services you've connected.",
+    "setupButton": "Setup",
+    "integrationsIncompleteHint": "Check each integration off once you've connected the account or API key.",
+    "quickActionsTitle": "Quick Actions",
+    "codeiumPlayground": "Codeium Playground",
+    "aiConsole": "AI Console",
+    "activityLog": "Activity Log",
+    "github": "GitHub",
+    "themeOptions": {
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "cliEditorOptions": {
+      "vim": "Vim",
+      "neovim": "Neovim",
+      "codeServer": "code-server"
+    },
+    "integrationServices": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "linear": "Linear",
+      "jira": "Jira",
+      "openai": "OpenAI",
+      "anthropic": "Anthropic"
+    },
+    "errors": {
+      "failedToUpdate": "Failed to update preferences"
+    }
+  },
+  "offlineIndicator": {
+    "featureAvailabilityTitle": "Feature Availability",
+    "features": {
+      "browseLocalFiles": "Browse Local Files",
+      "browseLocalFilesDescription": "Access cached files",
+      "viewOrganizations": "View Organizations",
+      "viewOrganizationsDescription": "View cached organization data",
+      "viewProjects": "View Projects",
+      "viewProjectsDescription": "View cached project data",
+      "createTasks": "Create Tasks",
+      "createTasksDescription": "Requires server connection",
+      "syncData": "Sync Data",
+      "syncDataDescription": "Requires server connection",
+      "realTimeUpdates": "Real-time Updates",
+      "realTimeUpdatesDescription": "Requires server connection"
+    }
+  },
+  "errors": {
+    "notFound": "Page not found",
+    "notFoundDescription": "The page you're looking for doesn't exist or has been moved.",
+    "serverError": "Something went wrong",
+    "serverErrorDescription": "An unexpected error occurred. Please try again.",
+    "criticalError": "Critical Error",
+    "criticalErrorDescription": "A critical error occurred. The application needs to reload.",
+    "reloadApplication": "Reload Application",
+    "goHome": "Go Home",
+    "tryAgain": "Try Again",
+    "unauthorized": "Unauthorized",
+    "forbidden": "Forbidden",
+    "failedToFetchHealth": "Failed to fetch health data",
+    "failedToLoadModels": "Failed to load models",
+    "failedToGetRecommendation": "Failed to get recommendation",
+    "failedToApproveAction": "Failed to approve action",
+    "failedToRejectAction": "Failed to reject action",
+    "failedToBulkApproveActions": "Failed to bulk approve actions"
+  },
+  "notFound": {
+    "code": "404",
+    "title": "Page Not Found",
+    "description": "The page you are looking for does not exist.",
+    "goHome": "Go Home"
+  },
+  "health": {
+    "title": "Health Monitor",
+    "allServicesHealthy": "All services are healthy",
+    "servicesDown": "{count} services are experiencing issues",
+    "lastChecked": "Last checked",
+    "checkNow": "Check now",
+    "responseTime": "Response time",
+    "uptime": "Uptime"
+  },
+  "monitoring": {
+    "title": "Monitoring",
+    "metrics": "Metrics",
+    "traces": "Traces",
+    "logs": "Logs",
+    "alerts": "Alerts",
+    "dashboardTitle": "Monitoring Dashboard",
+    "dashboardSubtitle": "Real-time system monitoring and observability",
+    "customizeDashboard": "Customize Dashboard",
+    "refreshData": "Refresh Data",
+    "customizationModeEnabled": "Dashboard customization mode enabled",
+    "connectionError": "Connection error - unable to fetch latest data",
+    "systemHealth": "System Health",
+    "healthy": "Healthy",
+    "warning": "Warning",
+    "serviceApiGateway": "API Gateway",
+    "serviceDatabase": "Database",
+    "serviceRedis": "Redis",
+    "serviceAiService": "AI Service",
+    "keyMetrics": "Key Metrics",
+    "cpuUsage": "CPU Usage",
+    "memoryUsage": "Memory Usage",
+    "activeUsers": "Active Users",
+    "responseTime": "Response Time",
+    "recentAlerts": "Recent Alerts",
+    "specializedMonitoring": "Specialized Monitoring",
+    "websocket": "WebSocket",
+    "monitorConnections": "Monitor connections",
+    "rateLimit": "Rate Limit",
+    "trackApiLimits": "Track API limits",
+    "aiUsageLink": "AI Usage",
+    "modelAnalytics": "Model analytics",
+    "performanceMetrics": "Performance Metrics",
+    "requestsPerMin": "Requests/min",
+    "avgResponseTime": "Avg Response Time",
+    "activeConnections": "Active Connections",
+    "errorRate": "Error Rate",
+    "systemLogs": "System Logs",
+    "searchLogs": "Search logs...",
+    "allLevels": "All Levels",
+    "logLevelError": "Error",
+    "logLevelWarning": "Warning",
+    "logLevelInfo": "Info",
+    "distributedTraces": "Distributed Traces",
+    "searchTraces": "Search traces...",
+    "allServices": "All Services",
+    "rumStatus": "RUM Status",
+    "rumActive": "Active",
+    "realUserMonitoring": "Real User Monitoring",
+    "coreWebVitals": "Core Web Vitals",
+    "userSessions": "User Sessions",
+    "activeSessions": "Active Sessions",
+    "errorTracking": "Error Tracking",
+    "errorsInLastHour": "Errors in last hour",
+    "breadcrumbMonitoring": "Monitoring",
+    "database": {
+      "title": "Database Health Dashboard",
+      "subtitle": "Real-time monitoring of database connections and performance",
+      "loadingMetrics": "Loading database health metrics...",
+      "errorLoading": "Error loading database health",
+      "lastUpdated": "Last Updated",
+      "unknown": "Unknown",
+      "autoRefresh": "Auto Refresh",
+      "on": "ON",
+      "off": "OFF",
+      "activePoolAlerts": "Active Pool Alerts ({count})",
+      "utilization": "Utilization",
+      "active": "Active",
+      "available": "Available",
+      "total": "Total",
+      "connectionStatus": "Connection Status",
+      "latency": "Latency",
+      "activeConnections": "Active Connections",
+      "poolStatus": "Pool Status",
+      "cacheHitRate": "Cache Hit Rate",
+      "excellent": "Excellent",
+      "good": "Good",
+      "needsAttention": "Needs attention",
+      "vectorEmbeddings": "Vector Embeddings",
+      "notInstalled": "Not installed",
+      "tabConnectionPools": "Connection Pools",
+      "tabPerformance": "Performance",
+      "tabSystemInfo": "System Info",
+      "tabVectorData": "Vector Data",
+      "connectionPoolStatus": "Connection Pool Status",
+      "pending": "Pending",
+      "totalQueries": "Total Queries",
+      "lastUsed": "Last used",
+      "noConnectionPools": "No connection pools active",
+      "queryPerformance": "Query Performance",
+      "queriesPerSecond": "Queries/Second",
+      "avgQueryTime": "Avg Query Time",
+      "p95QueryTime": "P95 Query Time",
+      "errorRate": "Error Rate",
+      "databaseStatistics": "Database Statistics",
+      "committedTransactions": "Committed Transactions",
+      "rolledBackTransactions": "Rolled Back Transactions",
+      "rowsReturned": "Rows Returned",
+      "rowsInserted": "Rows Inserted",
+      "rowsUpdated": "Rows Updated",
+      "systemInformation": "Database System Information",
+      "databaseName": "Database Name",
+      "user": "User",
+      "serverStartTime": "Server Start Time",
+      "version": "Version",
+      "vectorEmbeddingsStatus": "Vector Embeddings Status",
+      "installed": "Installed",
+      "totalEmbeddings": "Total Embeddings",
+      "avgContentSize": "Avg Content Size",
+      "latestEmbedding": "Latest Embedding",
+      "embeddingsError": "Embeddings Error",
+      "footerRefreshNote": "Database health metrics refresh every 10 seconds when auto-refresh is enabled.",
+      "footerPoolNote": "Connection pool metrics are collected from all active database connections."
+    },
+    "llmOps": {
+      "title": "LLM Operations",
+      "subtitle": "Monitor LLM usage, costs, and performance across all providers",
+      "breadcrumb": "LLM Operations",
+      "loadingData": "Loading LLM operations data...",
+      "error": "Error",
+      "noData": "No data available",
+      "totalRequests": "Total Requests",
+      "tokensConsumed": "Tokens Consumed",
+      "totalCost30Days": "Total Cost (30 days)",
+      "performanceMetrics": "Performance Metrics",
+      "avgLatency": "Avg Latency",
+      "successRate": "Success Rate",
+      "errorRate": "Error Rate",
+      "providerStatistics": "Provider Statistics",
+      "provider": "Provider",
+      "requests": "Requests",
+      "tokens": "Tokens",
+      "cost": "Cost",
+      "status": "Status",
+      "model": "Model",
+      "modelUsageStatistics": "Model Usage Statistics",
+      "modelsActive30Days": "{count} models active in the last 30 days",
+      "recentRequests": "Recent LLM Requests",
+      "allStatus": "All Status",
+      "statusSuccess": "Success",
+      "statusError": "Error",
+      "allProviders": "All Providers",
+      "today": "Today",
+      "thisWeek": "This Week",
+      "thisMonth": "This Month",
+      "projected30Days": "Projected (30d)",
+      "costBreakdownByProvider": "Cost Breakdown by Provider"
+    },
+    "embeddings": {
+      "title": "Azure Embedding Service Monitoring",
+      "subtitle": "Real-time metrics and usage analytics",
+      "loadingMetrics": "Loading embedding metrics...",
+      "errorLoading": "Error loading metrics",
+      "lastUpdated": "Last Updated",
+      "unknown": "Unknown",
+      "autoRefresh": "Auto Refresh",
+      "on": "ON",
+      "off": "OFF",
+      "resetMetrics": "Reset Metrics",
+      "totalRequests": "Total Requests",
+      "errors": "Errors",
+      "totalTokens": "Total Tokens",
+      "cost": "Cost",
+      "totalCost": "Total Cost",
+      "since": "Since",
+      "avgLatency": "Avg Latency",
+      "highLatency": "High latency detected",
+      "performanceNormal": "Performance normal",
+      "tabRecentCalls": "Recent Calls",
+      "tabHourlyBreakdown": "Hourly Breakdown",
+      "tabErrorAnalysis": "Error Analysis",
+      "tabRecommendations": "Recommendations",
+      "recentApiCalls": "Recent API Calls",
+      "success": "Success",
+      "error": "Error",
+      "hourlyUsageBreakdown": "Hourly Usage Breakdown",
+      "requests": "{count} requests",
+      "errorsCount": "{count} errors",
+      "errorBreakdown": "Error Breakdown",
+      "occurrences": "{count} occurrences",
+      "noErrors": "No errors in the last 24 hours!",
+      "performanceRecommendations": "Performance Recommendations",
+      "allSystemsOptimal": "All systems performing optimally! No recommendations at this time.",
+      "footerDatadogNote": "Metrics are automatically sent to Datadog for comprehensive monitoring and alerting.",
+      "footerRefreshNote": "Dashboard refreshes every 30 seconds when auto-refresh is enabled."
+    },
+    "costBreakdown": {
+      "title": "Cost Breakdown",
+      "errorLoading": "Error Loading Cost Data",
+      "retry": "Retry",
+      "noData": "No cost data available for the selected period",
+      "lastHour": "Last Hour",
+      "last6Hours": "Last 6 Hours",
+      "last12Hours": "Last 12 Hours",
+      "last24Hours": "Last 24 Hours",
+      "last7Days": "Last 7 Days",
+      "last30Days": "Last 30 Days",
+      "exportCsv": "Export CSV",
+      "totalCost": "Total Cost",
+      "requestsCount": "{count} requests",
+      "avgCostPerRequest": "Avg Cost/Request",
+      "totalTokens": "{count} total tokens",
+      "costTrend": "Cost Trend",
+      "comparedToPrevious": "{trend} compared to previous period",
+      "costDistributionByModel": "Cost Distribution by Model",
+      "noModelData": "No model cost data available",
+      "costDistributionByProvider": "Cost Distribution by Provider",
+      "noProviderData": "No provider cost data available",
+      "costComparisonByModel": "Cost Comparison by Model",
+      "costAxis": "Cost ($)",
+      "noComparisonData": "No model comparison data available",
+      "detailedBreakdownByModel": "Detailed Breakdown by Model",
+      "model": "Model",
+      "requests": "Requests",
+      "avgPerRequest": "Avg/Request",
+      "percentOfTotal": "% of Total",
+      "lastUpdated": "Last updated"
+    },
+    "aiUsage": {
+      "title": "AI Usage Monitor",
+      "loadingDashboard": "Loading AI usage dashboard...",
+      "errorLoading": "Error loading dashboard",
+      "retry": "Retry",
+      "noData": "No AI usage data available",
+      "autoRefresh30s": "Auto-refresh (30s)",
+      "refreshNow": "Refresh Now",
+      "totalRequests": "Total Requests",
+      "totalCost": "Total Cost",
+      "trend24h": "24h",
+      "totalTokens": "Total Tokens",
+      "acrossAllModels": "Across all models",
+      "activeAlerts": "Active Alerts",
+      "criticalWarningCount": "{critical} critical, {warning} warning",
+      "avgResponseTime": "Avg Response Time",
+      "errorRate": "Error Rate",
+      "requestsPerMinute": "Requests/Minute",
+      "activeAlertsCount": "Active Alerts ({count})",
+      "recommendationsCount": "Recommendations ({count})",
+      "lastUpdated": "Last updated",
+      "inputTokens": "Input",
+      "outputTokens": "Output",
+      "costPer1kTokens": "Cost/1K Tokens",
+      "avgResponse": "Avg response",
+      "rpm": "RPM",
+      "action": "Action"
+    },
+    "websocketDashboard": {
+      "title": "WebSocket Monitor",
+      "loadingDashboard": "Loading WebSocket dashboard...",
+      "errorLoading": "Error loading dashboard",
+      "retry": "Retry",
+      "noData": "No WebSocket data available",
+      "autoRefresh30s": "Auto-refresh (30s)",
+      "refreshNow": "Refresh Now",
+      "activeConnections": "Active Connections",
+      "ofTotal": "of {total} total",
+      "averageLatency": "Average Latency",
+      "messages": "Messages",
+      "sentReceived": "{sent} sent, {received} recv",
+      "activeAlerts": "Active Alerts",
+      "criticalWarningCount": "{critical} critical, {warning} warning",
+      "activeAlertsCount": "Active Alerts ({count})",
+      "recommendationsCount": "Recommendations ({count})",
+      "lastUpdated": "Last updated",
+      "status": "Status",
+      "uptime": "Uptime",
+      "sent": "Sent",
+      "received": "Received",
+      "queued": "Queued",
+      "latency": "Latency",
+      "avg": "avg",
+      "ping": "Ping",
+      "errors": "Errors",
+      "reconnects": "Reconnects",
+      "action": "Action"
+    }
+  },
+  "editor": {
+    "title": "Code Editor",
+    "untitled": "Untitled",
+    "saveFile": "Save file",
+    "openFile": "Open file",
+    "newFile": "New file"
+  }
+}

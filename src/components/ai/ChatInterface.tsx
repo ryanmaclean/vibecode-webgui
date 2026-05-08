@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +60,7 @@ export function ChatInterface({
   initialMessages = [],
   defaultModel = 'anthropic/claude-3.5-sonnet',
 }: ChatInterfaceProps) {
+  const t = useTranslations();
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -358,7 +360,7 @@ export function ChatInterface({
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold">AI Chat</h2>
+          <h2 className="text-lg font-semibold">{t('chat.heading')}</h2>
           <ModelDisplay
             model={availableModels.find((m) => m.id === selectedModel)}
             compact
@@ -371,7 +373,7 @@ export function ChatInterface({
           disabled={messages.length === 0}
           data-testid="clear-button"
         >
-          Clear
+          {t('chat.clearButton')}
         </Button>
       </div>
 
@@ -385,8 +387,8 @@ export function ChatInterface({
           recentModelIds={recentModelIds}
           favoriteModelIds={favoriteModelIds}
           onFavoriteToggle={handleFavoriteToggle}
-          placeholder="Select a model..."
-          label="Model"
+          placeholder={t('chat.modelPlaceholder')}
+          label={t('chat.modelLabel')}
           disabled={isLoading || isStreaming}
           showDetails
         />
@@ -406,7 +408,7 @@ export function ChatInterface({
         <div className="space-y-4">
           {messages.length === 0 && (
             <div className="text-center text-gray-500 dark:text-gray-400">
-              <p data-testid="empty-state">No messages yet. Start a conversation!</p>
+              <p data-testid="empty-state">{t('chat.emptyState')}</p>
             </div>
           )}
           {messages.map((message) => (
@@ -450,7 +452,7 @@ export function ChatInterface({
                     style={{ animationDelay: '0.2s' }}
                   ></div>
                 </div>
-                <span className="text-sm">Thinking...</span>
+                <span className="text-sm">{t('chat.thinkingIndicator')}</span>
               </div>
             </div>
           )}
@@ -466,7 +468,7 @@ export function ChatInterface({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your message... (Shift+Enter for new line)"
+            placeholder={t('chat.inputPlaceholder')}
             disabled={isLoading || isStreaming}
             className="min-h-[60px] max-h-[200px] resize-none"
             data-testid="chat-input"
@@ -477,7 +479,7 @@ export function ChatInterface({
             className="self-end"
             data-testid="send-button"
           >
-            {isLoading ? 'Sending...' : 'Send'}
+            {isLoading ? t('chat.sendingButton') : t('chat.sendButton')}
           </Button>
         </div>
         {/* Cost Estimation Preview */}
@@ -495,16 +497,16 @@ export function ChatInterface({
       <Dialog open={showCostDialog} onOpenChange={setShowCostDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Expensive Request</DialogTitle>
+            <DialogTitle>{t('chat.costConfirmDialog.title')}</DialogTitle>
             <DialogDescription>
-              This message is estimated to use more than 500 tokens. Please review the cost estimate below.
+              {t('chat.costConfirmDialog.description')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             {/* Model Information */}
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Model:</span>
+              <span className="text-sm font-medium">{t('chat.costConfirmDialog.modelLabel')}</span>
               <ModelDisplay
                 data-testid="model-display"
                 model={availableModels.find((m) => m.id === selectedModel)}
@@ -542,11 +544,10 @@ export function ChatInterface({
               </svg>
               <div>
                 <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                  High token count detected
+                  {t('chat.costConfirmDialog.highTokenWarningTitle')}
                 </p>
                 <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                  Estimated {estimateTokens(pendingMessage, selectedModel)} tokens.
-                  This request may incur higher costs.
+                  {t('chat.costConfirmDialog.highTokenWarningDescription').replace('{tokenCount}', String(estimateTokens(pendingMessage, selectedModel)))}
                 </p>
               </div>
             </div>
@@ -558,13 +559,13 @@ export function ChatInterface({
               onClick={handleCancelSend}
               data-testid="cancel-send-button"
             >
-              Cancel
+              {t('chat.costConfirmDialog.cancelButton')}
             </Button>
             <Button
               onClick={handleConfirmSend}
               data-testid="confirm-send-button"
             >
-              Send Anyway
+              {t('chat.costConfirmDialog.confirmButton')}
             </Button>
           </DialogFooter>
         </DialogContent>

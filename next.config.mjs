@@ -1,13 +1,15 @@
+import createNextIntlPlugin from 'next-intl/plugin'
 import path from 'path'
 import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
+
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
 // Disable Next.js telemetry globally for every runtime invocation
 process.env.NEXT_TELEMETRY_DISABLED = process.env.NEXT_TELEMETRY_DISABLED || '1'
 
 const require = createRequire(import.meta.url)
 const webpack = require('webpack')
-const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -65,6 +67,7 @@ const datadogStubAliases = {
   './instrument': require.resolve('./src/stubs/instrument-browser.js'),
   './instrument.ts': require.resolve('./src/stubs/instrument-browser.js'),
   '@opentelemetry/sdk-node': require.resolve('./src/stubs/opentelemetry-sdk-node.js'),
+  '@opentelemetry/auto-instrumentations-node': require.resolve('./src/stubs/opentelemetry-auto.js'),
   '@opentelemetry/exporter-otlp-http': require.resolve('./src/stubs/opentelemetry-exporter-otlp-http.js'),
   '@opentelemetry/exporter-prometheus': require.resolve('./src/stubs/opentelemetry-exporter-prometheus.js'),
   '@opentelemetry/resources': require.resolve('./src/stubs/opentelemetry-resources.js'),
@@ -72,8 +75,6 @@ const datadogStubAliases = {
   '@opentelemetry/api': require.resolve('./src/stubs/opentelemetry-api.js'),
   '@opentelemetry/core': require.resolve('./src/stubs/opentelemetry-core.js'),
   '@opentelemetry/instrumentation': require.resolve('./src/stubs/opentelemetry-instrumentation.js'),
-  '@opentelemetry/instrumentation-http': require.resolve('./src/stubs/opentelemetry-instrumentation-http.js'),
-  '@opentelemetry/instrumentation-express': require.resolve('./src/stubs/opentelemetry-instrumentation-express.js'),
 }
 
 const serverExternalPackages = [
@@ -88,6 +89,8 @@ const serverExternalPackages = [
   '@opentelemetry/exporter-jaeger',
   // Native modules that need special handling
   'node-pty',
+  // tiktoken uses a WASM file that must be loaded from disk at runtime
+  'tiktoken',
   // Exclude Node.js built-ins from client bundles
   'child_process',
   'fs',
@@ -157,15 +160,6 @@ const nextConfig = {
       'lodash-es',
       // Monaco Editor - ensure proper code splitting
       '@monaco-editor/react',
-      // OpenTelemetry packages - enable tree shaking
-      '@opentelemetry/api',
-      '@opentelemetry/core',
-      '@opentelemetry/instrumentation',
-      '@opentelemetry/resources',
-      '@opentelemetry/semantic-conventions',
-      '@opentelemetry/sdk-node',
-      '@opentelemetry/exporter-otlp-http',
-      '@opentelemetry/exporter-prometheus',
     ],
   },
   trailingSlash: false,
@@ -273,9 +267,6 @@ const nextConfig = {
         '@opentelemetry/api': require.resolve('./src/stubs/opentelemetry-api.js'),
         '@opentelemetry/core': require.resolve('./src/stubs/opentelemetry-core.js'),
         '@opentelemetry/instrumentation': require.resolve('./src/stubs/opentelemetry-instrumentation.js'),
-        // Browser OTel packages are NOT disabled - they're needed for browser-telemetry.ts
-        // when NEXT_PUBLIC_OTEL_ENABLED is true. The browser-telemetry.ts module handles
-        // its own conditional loading based on that env var.
         '@prisma/client': false,
         '.prisma/client/index-browser': false,
         pg: false,
@@ -316,6 +307,7 @@ const nextConfig = {
         'ansi-color',
         '@opentelemetry/exporter-jaeger',
         '@opentelemetry/sdk-node',
+        '@opentelemetry/auto-instrumentations-node',
         '@opentelemetry/exporter-otlp-http',
         '@opentelemetry/exporter-prometheus',
         '@opentelemetry/resources',
@@ -339,57 +331,10 @@ const nextConfig = {
     // Monaco Editor optimization - split into separate chunks for lazy loading
     if (!isServer) {
       config.optimization = config.optimization || {}
-
-      // Enable tree-shaking to exclude unused Monaco features
-      config.optimization.usedExports = true
-      config.optimization.sideEffects = true
-
       config.optimization.splitChunks = {
         ...config.optimization.splitChunks,
         cacheGroups: {
           ...(config.optimization.splitChunks?.cacheGroups || {}),
-          // Isolate Monaco workers into separate chunks for optimal lazy loading
-          monacoWorkers: {
-            test: /[\\/]node_modules[\\/]monaco-editor[\\/].*\.worker\.js$/,
-            name: 'monaco-workers',
-            priority: 35,
-            reuseExistingChunk: true,
-          },
-          // Split TypeScript/JavaScript language support into separate chunk
-          monacoLanguageTypescript: {
-            test: /[\\/]node_modules[\\/]monaco-editor[\\/]esm[\\/]vs[\\/]language[\\/]typescript[\\/]/,
-            name: 'monaco-language-typescript',
-            priority: 34,
-            reuseExistingChunk: true,
-          },
-          // Split JSON language support into separate chunk
-          monacoLanguageJson: {
-            test: /[\\/]node_modules[\\/]monaco-editor[\\/]esm[\\/]vs[\\/]language[\\/]json[\\/]/,
-            name: 'monaco-language-json',
-            priority: 33,
-            reuseExistingChunk: true,
-          },
-          // Split CSS language support into separate chunk
-          monacoLanguageCss: {
-            test: /[\\/]node_modules[\\/]monaco-editor[\\/]esm[\\/]vs[\\/]language[\\/]css[\\/]/,
-            name: 'monaco-language-css',
-            priority: 32,
-            reuseExistingChunk: true,
-          },
-          // Split HTML language support into separate chunk
-          monacoLanguageHtml: {
-            test: /[\\/]node_modules[\\/]monaco-editor[\\/]esm[\\/]vs[\\/]language[\\/]html[\\/]/,
-            name: 'monaco-language-html',
-            priority: 32,
-            reuseExistingChunk: true,
-          },
-          // Split basic languages (markdown, yaml, etc.) into separate chunk
-          monacoBasicLanguages: {
-            test: /[\\/]node_modules[\\/]monaco-editor[\\/]esm[\\/]vs[\\/]basic-languages[\\/]/,
-            name: 'monaco-basic-languages',
-            priority: 31,
-            reuseExistingChunk: true,
-          },
           // Isolate Monaco Editor core into separate chunk
           monaco: {
             test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
@@ -406,22 +351,6 @@ const nextConfig = {
           },
         },
       }
-
-      // Set bundle size limits for Monaco Editor chunks
-      config.performance = {
-        ...config.performance,
-        hints: 'warning', // Warn but don't fail the build
-        maxAssetSize: 500000, // 500KB default limit for individual assets
-        maxEntrypointSize: 500000, // 500KB default limit for entrypoints
-        assetFilter: (assetFilename) => {
-          // Apply size limits to Monaco chunks
-          if (assetFilename.includes('monaco')) {
-            return true
-          }
-          // Apply limits to JavaScript and CSS files
-          return /\.(js|css)$/.test(assetFilename)
-        },
-      }
     }
 
     // Drop all Moment.js locales if Moment is used anywhere
@@ -433,17 +362,6 @@ const nextConfig = {
       config.plugins.push(new webpack.ContextReplacementPlugin(/moment[\\/]locale$/, /^$/))
     }
 
-    // Bundle analyzer - enabled when ANALYZE=true environment variable is set
-    if (process.env.ANALYZE === 'true') {
-      config.plugins.push(
-        new BundleAnalyzerPlugin({
-          analyzerMode: 'static',
-          reportFilename: isServer ? '../analyze/server.html' : './analyze/client.html',
-          openAnalyzer: true,
-        })
-      )
-    }
-
     // null-loader rules removed - caused 'hash' null reference in webpack 5
     // camelcase and opentelemetry vendor chunks handled by resolve.alias and externals
 
@@ -451,4 +369,4 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+export default withNextIntl(nextConfig)

@@ -51,11 +51,11 @@ export async function GET(request: NextRequest) {
 }
 
 async function getLLMCostData(timeframe: string) {
-  // TODO: Implement real data fetching from Datadog or metrics database
-  // For now, return structure that matches component expectations
   return {
     timestamp: new Date().toISOString(),
     timeRange: timeframe,
+    data_available: false,
+    message: 'Metrics collection requires a connected Datadog or metrics backend',
     totalCost: 0,
     totalInputCost: 0,
     totalOutputCost: 0,

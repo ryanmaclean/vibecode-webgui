@@ -86,6 +86,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
+    if (sourceVm.userId && sourceVm.userId !== session.user?.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     // Clone the VM
     const result = await poolManager.cloneVM(id, options);
 

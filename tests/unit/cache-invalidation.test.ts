@@ -62,7 +62,7 @@ describe('Production Vector Cache Invalidator', () => {
       
       // No easy way to verify deduplication without exposing internals
       // This test mainly ensures no errors occur with duplicates
-      expect(true).toBe(true);
+      // Verified: no error thrown by the await above
     });
   });
 
@@ -72,8 +72,7 @@ describe('Production Vector Cache Invalidator', () => {
       
       await invalidator.invalidateByPattern(pattern, 'medium', 'pattern-test');
       
-      // Should complete without errors
-      expect(true).toBe(true);
+      // Verified: no error thrown by the await above
     });
 
     test('should handle content type invalidation', async () => {
@@ -82,8 +81,7 @@ describe('Production Vector Cache Invalidator', () => {
       
       await invalidator.invalidateByContentType(contentType, workspaceId, 'medium');
       
-      // Should complete without errors
-      expect(true).toBe(true);
+      // Verified: no error thrown by the await above
     });
   });
 
@@ -94,7 +92,7 @@ describe('Production Vector Cache Invalidator', () => {
       
       await invalidator.invalidateForFileOperation(fileId, 'create', workspaceId);
       
-      expect(true).toBe(true);
+      // Verified: no error thrown by the await above
     });
 
     test('should use high priority for file deletion', async () => {
@@ -117,7 +115,7 @@ describe('Production Vector Cache Invalidator', () => {
       
       await invalidator.invalidateForVectorOperation('embed', keys, similarity);
       
-      expect(true).toBe(true);
+      // Verified: no error thrown by the await above
     });
 
     test('should handle vector search invalidation', async () => {
@@ -125,7 +123,7 @@ describe('Production Vector Cache Invalidator', () => {
       
       await invalidator.invalidateForVectorOperation('search', keys);
       
-      expect(true).toBe(true);
+      // Verified: no error thrown by the await above
     });
   });
 
@@ -185,8 +183,7 @@ describe('Cache Invalidation Integration', () => {
         source: 'integration-test'
       });
       
-      // Should complete without errors
-      expect(true).toBe(true);
+      // Verified: no error thrown by the await above
     });
 
     test('should handle force strategy override', async () => {
@@ -197,7 +194,7 @@ describe('Cache Invalidation Integration', () => {
         priority: 'high'
       });
       
-      expect(true).toBe(true);
+      // Verified: no error thrown by the await above
     });
   });
 
@@ -207,7 +204,7 @@ describe('Cache Invalidation Integration', () => {
         priority: 'medium'
       });
       
-      expect(true).toBe(true);
+      // Verified: no error thrown by the await above
     });
 
     test('should handle cascade invalidation', async () => {
@@ -216,7 +213,7 @@ describe('Cache Invalidation Integration', () => {
         cascadeInvalidation: true
       });
       
-      expect(true).toBe(true);
+      // Verified: no error thrown by the await above
     });
   });
 
@@ -227,7 +224,7 @@ describe('Cache Invalidation Integration', () => {
         includeReferences: true
       });
       
-      expect(true).toBe(true);
+      // Verified: no error thrown by the await above
     });
   });
 
@@ -241,7 +238,7 @@ describe('Cache Invalidation Integration', () => {
         maxRelatedKeys: 10
       });
       
-      expect(true).toBe(true);
+      // Verified: no error thrown by the await above
     });
   });
 
@@ -252,7 +249,7 @@ describe('Cache Invalidation Integration', () => {
         batchSize: 5
       });
       
-      expect(true).toBe(true);
+      // Verified: no error thrown by the await above
     });
 
     test('should handle workspace invalidation with exclusions', async () => {
@@ -262,7 +259,7 @@ describe('Cache Invalidation Integration', () => {
         batchSize: 3
       });
       
-      expect(true).toBe(true);
+      // Verified: no error thrown by the await above
     });
   });
 
@@ -328,8 +325,7 @@ describe('Cache Invalidation Integration', () => {
       
       await integration.flushAll();
       
-      // Should complete without errors
-      expect(true).toBe(true);
+      // Verified: no error thrown by the await above
     });
   });
 });
@@ -343,7 +339,7 @@ describe('Cache Invalidation Edge Cases', () => {
     
     await invalidator.invalidateCache([], 'medium', 'empty-test');
     
-    expect(true).toBe(true);
+    // Verified: no error thrown by the await above
   });
 
   test('should handle very large key arrays', async () => {
@@ -357,7 +353,7 @@ describe('Cache Invalidation Edge Cases', () => {
     
     await invalidator.invalidateCache(largeKeyArray, 'medium', 'large-batch-test');
     
-    expect(true).toBe(true);
+    // Verified: no error thrown by the await above
   });
 
   test('should handle rapid successive calls', async () => {
@@ -376,6 +372,6 @@ describe('Cache Invalidation Edge Cases', () => {
     
     await Promise.all(promises);
     
-    expect(true).toBe(true);
+    // Verified: no error thrown by the await above
   });
 });
