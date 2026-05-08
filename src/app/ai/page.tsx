@@ -1,5 +1,6 @@
 'use client'
 
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import {
@@ -19,16 +20,20 @@ import {
   Network,
 } from 'lucide-react'
 
-const recentActivity = [
-  { text: 'Used Claude 3.5 Sonnet for code review', time: '2 min ago' },
-  { text: 'Generated unit tests with GPT-4o', time: '15 min ago' },
-  { text: 'Refactored auth module via multi-agent', time: '1 hour ago' },
-  { text: 'Prompt template "API Design" saved', time: '3 hours ago' },
-  { text: 'Cost alert: daily budget 60% used', time: '5 hours ago' },
-]
-
 export default function AIPage() {
   const t = useTranslations()
+  const [recentActivity, setRecentActivity] = useState<Array<{ text: string; time: string }>>([])
+  const [usageData, setUsageData] = useState({ requestsToday: '0', avgResponseTime: '0s', topModel: 'N/A' })
+
+  useEffect(() => {
+    fetch('/api/ai/dashboard')
+      .then(res => res.ok ? res.json() : Promise.reject(res))
+      .then(data => {
+        if (data.recentActivity) setRecentActivity(data.recentActivity)
+        if (data.usageStats) setUsageData(data.usageStats)
+      })
+      .catch(() => {})
+  }, [])
 
   const overviewCards = [
     {
@@ -90,9 +95,9 @@ export default function AIPage() {
   ]
 
   const usageStats = [
-    { label: t('ai.dashboard.usageStats.requestsToday'), value: '47', icon: Zap },
-    { label: t('ai.dashboard.usageStats.avgResponseTime'), value: '1.2s', icon: Clock },
-    { label: t('ai.dashboard.usageStats.topModel'), value: 'Claude 3.5 Sonnet', icon: TrendingUp },
+    { label: t('ai.dashboard.usageStats.requestsToday'), value: usageData.requestsToday, icon: Zap },
+    { label: t('ai.dashboard.usageStats.avgResponseTime'), value: usageData.avgResponseTime, icon: Clock },
+    { label: t('ai.dashboard.usageStats.topModel'), value: usageData.topModel, icon: TrendingUp },
   ]
 
   return (

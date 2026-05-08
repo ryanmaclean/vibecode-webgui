@@ -85,45 +85,9 @@ export function TemplateMarketplace({
     setError(null);
 
     try {
-      // This would integrate with your template marketplace API
-      // For now, using mock data
-      const mockTemplates: Template[] = [
-        {
-          id: 'react-ts-vite',
-          name: 'React TypeScript Vite',
-          description: 'Modern React application with TypeScript and Vite build system',
-          author: 'VibeCode Team',
-          category: 'web',
-          language: 'typescript',
-          framework: 'react',
-          stars: 4.8,
-          downloads: 15420,
-          tags: ['react', 'typescript', 'vite', 'modern'],
-          complexity: 'intermediate',
-          pricing: 'free',
-          lastUpdated: '2024-01-15',
-          featured: true
-        },
-        {
-          id: 'nextjs-fullstack',
-          name: 'Next.js Full Stack',
-          description: 'Complete full-stack application with Next.js, API routes, and database',
-          author: 'Community',
-          category: 'web',
-          language: 'typescript',
-          framework: 'nextjs',
-          stars: 4.6,
-          downloads: 8930,
-          tags: ['nextjs', 'fullstack', 'api', 'database'],
-          complexity: 'advanced',
-          pricing: 'free',
-          lastUpdated: '2024-01-10',
-          featured: false
-        }
-      ];
-
-      // Apply search filters
-      let filteredTemplates = mockTemplates;
+      const res = await fetch('/api/marketplace/templates')
+      const data = res.ok ? await res.json() : { templates: [] }
+      let filteredTemplates: Template[] = data.templates || [];
 
       if (searchOptions.query) {
         const query = searchOptions.query.toLowerCase();
