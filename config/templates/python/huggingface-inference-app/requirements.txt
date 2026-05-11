@@ -5,4 +5,4 @@ huggingface_hub
 accelerate
 
 # Security: Pin urllib3 to address CVE vulnerabilities
-urllib3==2.6.3
+urllib3==2.7.0
