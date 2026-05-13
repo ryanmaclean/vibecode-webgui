@@ -435,10 +435,7 @@ describe('Accessibility Rule Testing', () => {
   
   describe('Color Contrast', () => {
     // Note: color-contrast doesn't work in JSDOM, so we'll skip real testing
-    it('should be noted that color contrast cannot be tested in JSDOM', () => {
-      // This is just a note that we can't test color contrast in JSDOM
-      expect(true).toBe(true);
-    });
+    it.todo('color contrast cannot be tested in JSDOM - requires real browser environment');
 
     it('should pass with sufficient color contrast', async () => {
       const goodContrastHTML = `

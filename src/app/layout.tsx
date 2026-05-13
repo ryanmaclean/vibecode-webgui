@@ -13,6 +13,9 @@ import { ModelSwitcher } from '@/components/ai/ModelSwitcher';
 import { GlobalCostAlerts } from '@/components/ai/GlobalCostAlerts';
 import { EnvironmentBadge } from '@/components/environment/EnvironmentBadge';
 import { UnifiedStatusBar } from '@/components/status-bar/UnifiedStatusBar';
+import { LocaleSwitcher } from '@/components/LocaleSwitcher';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
 // const geistSans = Geist({
@@ -30,13 +33,16 @@ export const metadata: Metadata = {
   description: "Modern web-based development environment with AI assistance",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <head>
         <link rel="manifest" href="/manifest.webmanifest" />
         <meta name="theme-color" content="#0f172a" />
@@ -89,6 +95,7 @@ export default function RootLayout({
         <OfflineIndicator className="fixed top-4 right-4 z-50" />
         {/* Environment badge - displays current environment with color coding */}
         <EnvironmentBadge className="fixed top-4 left-4 z-50" showIcon={true} />
+        <NextIntlClientProvider locale={locale} messages={messages}>
         <Providers>
           {/* Initialize OpenTelemetry browser instrumentation */}
           {process.env.NEXT_PUBLIC_OTEL_ENABLED !== 'false' && process.env.NEXT_PUBLIC_SKIP_MONITORING !== 'true' && (
@@ -96,6 +103,8 @@ export default function RootLayout({
           )}
           {/* Model switcher - fixed position for global access, keyboard shortcut: Cmd+M */}
           <ModelSwitcher className="fixed top-4 right-56 z-50" />
+          {/* Language switcher */}
+          <LocaleSwitcher className="fixed top-4 right-72 z-50 rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground" />
           <ErrorBoundary>
             <main id="main-content">
               {children}
@@ -108,6 +117,7 @@ export default function RootLayout({
           {/* Unified status bar - fixed bottom bar showing real-time service health, keyboard shortcut: Cmd+Shift+H */}
           <UnifiedStatusBar />
         </Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

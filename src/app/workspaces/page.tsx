@@ -6,10 +6,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { DemoBanner } from '@/components/ui/DemoBanner'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function WorkspacesPage() {
+  const t = useTranslations()
   const [workspaces, setWorkspaces] = useState([
     { id: 1, name: 'Frontend Project', description: 'React and Next.js frontend', createdAt: new Date() },
     { id: 2, name: 'Backend API', description: 'Node.js backend services', createdAt: new Date() },
@@ -54,12 +56,12 @@ export default function WorkspacesPage() {
     setFormError('')
 
     if (!createForm.name.trim()) {
-      setFormError('Workspace name is required')
+      setFormError(t('workspace.createModal.nameRequired'))
       return
     }
 
     if (createForm.name.trim().length < 3) {
-      setFormError('Workspace name must be at least 3 characters')
+      setFormError(t('workspace.createModal.nameTooShort'))
       return
     }
 
@@ -96,10 +98,10 @@ export default function WorkspacesPage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-3xl font-bold text-gray-900">Workspaces</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{t('workspace.title')}</h1>
               {isTestEnvironment && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  E2E Test Mode
+                  {t('workspace.e2eTestMode')}
                 </span>
               )}
             </div>
@@ -111,7 +113,7 @@ export default function WorkspacesPage() {
                 disabled={isLoading}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Use Template
+                {t('workspace.useTemplate')}
               </button>
               <button
                 data-testid="create-workspace-button"
@@ -119,7 +121,7 @@ export default function WorkspacesPage() {
                 disabled={isLoading}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create Workspace
+                {t('workspace.createWorkspace')}
               </button>
             </div>
           </div>
@@ -133,17 +135,17 @@ export default function WorkspacesPage() {
           <input
             data-testid="workspace-search"
             type="text"
-            placeholder="Search workspaces..."
+            placeholder={t('workspace.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={isLoading}
-            aria-label="Search workspaces"
+            aria-label={t('workspace.searchAriaLabel')}
           />
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" role="status" aria-label="Loading workspaces">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" role="status" aria-label={t('workspace.loadingAriaLabel')}>
             {[1, 2, 3].map((i) => (
               <div key={i} className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -165,8 +167,8 @@ export default function WorkspacesPage() {
         ) : filteredWorkspaces.length === 0 ? (
           <div data-testid="empty-workspaces" className="text-center py-12">
             <div className="text-gray-500">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No workspaces found</h3>
-              <p>Create your first workspace to get started</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t('workspace.emptyState.title')}</h3>
+              <p>{t('workspace.emptyState.description')}</p>
             </div>
           </div>
         ) : (
@@ -186,7 +188,7 @@ export default function WorkspacesPage() {
                       <button
                         data-testid="edit-workspace-button"
                         className="text-gray-400 hover:text-gray-600"
-                        aria-label="Edit workspace"
+                        aria-label={t('workspace.workspaceCard.editButton')}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -195,7 +197,7 @@ export default function WorkspacesPage() {
                       <button
                         data-testid="workspace-settings-button"
                         className="text-gray-400 hover:text-gray-600"
-                        aria-label="Workspace settings"
+                        aria-label={t('workspace.workspaceCard.settingsButton')}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -211,13 +213,13 @@ export default function WorkspacesPage() {
 
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">
-                      Created {workspace.createdAt.toLocaleDateString()}
+                      {t('workspace.workspaceCard.createdLabel', { date: workspace.createdAt.toLocaleDateString() })}
                     </span>
                     <a
                       href={`/workspaces/${workspace.id}`}
                       className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
                     >
-                      Open
+                      {t('workspace.workspaceCard.openButton')}
                     </a>
                   </div>
                 </div>
@@ -232,7 +234,7 @@ export default function WorkspacesPage() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Create New Workspace</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('workspace.createModal.title')}</h3>
 
               {formError && (
                 <div data-testid="error-message" className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -243,7 +245,7 @@ export default function WorkspacesPage() {
               <div className="space-y-4">
                 <div>
                   <label htmlFor="workspace-name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Workspace Name
+                    {t('workspace.createModal.nameLabel')}
                   </label>
                   <input
                     id="workspace-name"
@@ -252,14 +254,14 @@ export default function WorkspacesPage() {
                     value={createForm.name}
                     onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter workspace name"
+                    placeholder={t('workspace.createModal.namePlaceholder')}
                     disabled={isCreating}
                   />
                 </div>
 
                 <div>
                   <label htmlFor="workspace-description" className="block text-sm font-medium text-gray-700 mb-1">
-                    Description (Optional)
+                    {t('workspace.createModal.descriptionLabel')}
                   </label>
                   <textarea
                     id="workspace-description"
@@ -268,7 +270,7 @@ export default function WorkspacesPage() {
                     onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter workspace description"
+                    placeholder={t('workspace.createModal.descriptionPlaceholder')}
                     disabled={isCreating}
                   />
                 </div>
@@ -287,9 +289,9 @@ export default function WorkspacesPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Creating...
+                      {t('workspace.createModal.creatingButton')}
                     </span>
-                  ) : 'Create Workspace'}
+                  ) : t('workspace.createModal.submitButton')}
                 </button>
                 <button
                   onClick={() => {
@@ -300,7 +302,7 @@ export default function WorkspacesPage() {
                   disabled={isCreating}
                   className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Cancel
+                  {t('workspace.createModal.cancelButton')}
                 </button>
               </div>
             </div>
@@ -313,7 +315,7 @@ export default function WorkspacesPage() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Choose Template</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('workspace.templateModal.title')}</h3>
 
               <div className="space-y-3">
                 <button
@@ -325,22 +327,22 @@ export default function WorkspacesPage() {
                   }}
                   className="w-full text-left p-3 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <div className="font-medium">Next.js + TypeScript</div>
-                  <div className="text-sm text-gray-500">Full-stack web application</div>
+                  <div className="font-medium">{t('workspace.templateModal.nextjsTypescript')}</div>
+                  <div className="text-sm text-gray-500">{t('workspace.templateModal.nextjsTypescriptDescription')}</div>
                 </button>
 
                 <button
                   className="w-full text-left p-3 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <div className="font-medium">React + Vite</div>
-                  <div className="text-sm text-gray-500">Fast frontend development</div>
+                  <div className="font-medium">{t('workspace.templateModal.reactVite')}</div>
+                  <div className="text-sm text-gray-500">{t('workspace.templateModal.reactViteDescription')}</div>
                 </button>
 
                 <button
                   className="w-full text-left p-3 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <div className="font-medium">Node.js API</div>
-                  <div className="text-sm text-gray-500">Backend REST API</div>
+                  <div className="font-medium">{t('workspace.templateModal.nodejsApi')}</div>
+                  <div className="text-sm text-gray-500">{t('workspace.templateModal.nodejsApiDescription')}</div>
                 </button>
               </div>
 
@@ -353,13 +355,13 @@ export default function WorkspacesPage() {
                   }}
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  Continue
+                  {t('workspace.templateModal.continueButton')}
                 </button>
                 <button
                   onClick={() => setShowTemplateModal(false)}
                   className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
-                  Cancel
+                  {t('workspace.templateModal.cancelButton')}
                 </button>
               </div>
             </div>

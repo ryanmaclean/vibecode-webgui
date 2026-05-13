@@ -20,6 +20,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { createServiceLogger } from '@/lib/logging';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 import type { KubernetesHealthResult, KubernetesClusterHealth, KubernetesPodHealth } from '@/types/unified-status';
@@ -188,6 +190,11 @@ async function getPodHealth(): Promise<KubernetesPodHealth[]> {
  * GET handler for Kubernetes health endpoint
  */
 export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const startTime = Date.now();
   const requestId = randomUUID();
   const clientIp =

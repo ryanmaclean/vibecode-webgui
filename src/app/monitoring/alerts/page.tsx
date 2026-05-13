@@ -46,171 +46,6 @@ interface AlertRule {
   category: 'service' | 'budget' | 'performance' | 'resource'
 }
 
-// ── Mock Data ──────────────────────────────────────────────────────────────
-
-const MOCK_ALERTS: Alert[] = [
-  {
-    id: 'alert-001',
-    title: 'Database connection pool at 92% capacity',
-    message: 'PostgreSQL connection pool utilization has exceeded the 90% threshold. Consider scaling or reviewing long-running queries.',
-    severity: 'critical',
-    status: 'active',
-    source: 'PostgreSQL',
-    triggeredAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
-    rule: 'Connection Pool Capacity',
-  },
-  {
-    id: 'alert-002',
-    title: 'AI monthly spend approaching budget limit',
-    message: 'Current monthly AI spend is $847.20 of $1,000.00 budget (84.7%). Projected to exceed by end of billing period.',
-    severity: 'warning',
-    status: 'active',
-    source: 'AI Cost Tracking',
-    triggeredAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    rule: 'Monthly Budget Threshold',
-  },
-  {
-    id: 'alert-003',
-    title: 'API response time elevated',
-    message: 'Average API response time is 450ms, exceeding the 300ms threshold for the past 10 minutes.',
-    severity: 'warning',
-    status: 'acknowledged',
-    source: 'API Gateway',
-    triggeredAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-    acknowledgedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    rule: 'Response Time SLA',
-  },
-  {
-    id: 'alert-004',
-    title: 'Valkey memory usage above 75%',
-    message: 'Valkey in-memory cache is using 78% of allocated memory. Consider eviction policy review.',
-    severity: 'warning',
-    status: 'active',
-    source: 'Valkey',
-    triggeredAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    rule: 'Memory Usage Threshold',
-  },
-  {
-    id: 'alert-005',
-    title: 'SSH service restarted automatically',
-    message: 'Dropbear SSH service was unresponsive and restarted via health check recovery.',
-    severity: 'info',
-    status: 'resolved',
-    source: 'SSH (Dropbear)',
-    triggeredAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-    resolvedAt: new Date(Date.now() - 5.9 * 60 * 60 * 1000).toISOString(),
-    rule: 'Service Health Check',
-  },
-  {
-    id: 'alert-006',
-    title: 'Docker container OOM killed',
-    message: 'Container "test-runner" was terminated by OOM killer. Peak memory: 512MB, limit: 256MB.',
-    severity: 'critical',
-    status: 'resolved',
-    source: 'Docker',
-    triggeredAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    resolvedAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(),
-    rule: 'Container Resource Limit',
-  },
-  {
-    id: 'alert-007',
-    title: 'Daily AI spend exceeded $50 threshold',
-    message: 'Today\'s AI API spend has reached $62.30, exceeding the $50 daily alert threshold.',
-    severity: 'warning',
-    status: 'acknowledged',
-    source: 'AI Cost Tracking',
-    triggeredAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-    acknowledgedAt: new Date(Date.now() - 3.5 * 60 * 60 * 1000).toISOString(),
-    rule: 'Daily Budget Threshold',
-  },
-  {
-    id: 'alert-008',
-    title: 'OpenVSCode service health degraded',
-    message: 'OpenVSCode server response time spiked to 2.3s. Service may be under heavy load.',
-    severity: 'info',
-    status: 'resolved',
-    source: 'OpenVSCode',
-    triggeredAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-    resolvedAt: new Date(Date.now() - 7.5 * 60 * 60 * 1000).toISOString(),
-    rule: 'Service Health Check',
-  },
-]
-
-const MOCK_RULES: AlertRule[] = [
-  {
-    id: 'rule-001',
-    name: 'Service Health Check',
-    description: 'Alert when any service is unresponsive for more than 60 seconds',
-    severity: 'critical',
-    enabled: true,
-    condition: 'Service down > 60s',
-    category: 'service',
-  },
-  {
-    id: 'rule-002',
-    name: 'Connection Pool Capacity',
-    description: 'Alert when database connection pool exceeds 90% utilization',
-    severity: 'critical',
-    enabled: true,
-    condition: 'Pool usage > 90%',
-    category: 'resource',
-  },
-  {
-    id: 'rule-003',
-    name: 'Monthly Budget Threshold',
-    description: 'Alert when monthly AI spend exceeds 80% of budget',
-    severity: 'warning',
-    enabled: true,
-    condition: 'Monthly spend > 80% of budget',
-    category: 'budget',
-  },
-  {
-    id: 'rule-004',
-    name: 'Daily Budget Threshold',
-    description: 'Alert when daily AI spend exceeds $50',
-    severity: 'warning',
-    enabled: true,
-    condition: 'Daily spend > $50',
-    category: 'budget',
-  },
-  {
-    id: 'rule-005',
-    name: 'Response Time SLA',
-    description: 'Alert when average API response time exceeds 300ms for 10 minutes',
-    severity: 'warning',
-    enabled: true,
-    condition: 'Avg response > 300ms for 10m',
-    category: 'performance',
-  },
-  {
-    id: 'rule-006',
-    name: 'Memory Usage Threshold',
-    description: 'Alert when any service memory usage exceeds 75%',
-    severity: 'warning',
-    enabled: true,
-    condition: 'Memory > 75%',
-    category: 'resource',
-  },
-  {
-    id: 'rule-007',
-    name: 'Container Resource Limit',
-    description: 'Alert when a Docker container is OOM killed or exceeds CPU limit',
-    severity: 'critical',
-    enabled: true,
-    condition: 'OOM kill or CPU > 95%',
-    category: 'resource',
-  },
-  {
-    id: 'rule-008',
-    name: 'Disk Usage Warning',
-    description: 'Alert when disk usage exceeds 85%',
-    severity: 'info',
-    enabled: false,
-    condition: 'Disk > 85%',
-    category: 'resource',
-  },
-]
-
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function severityIcon(severity: Severity, className?: string) {
@@ -269,13 +104,38 @@ function formatTimestamp(iso: string): string {
 type Tab = 'active' | 'history' | 'rules'
 
 export default function MonitoringAlertsPage() {
-  const [alerts, setAlerts] = useState<Alert[]>(MOCK_ALERTS)
-  const [rules] = useState<AlertRule[]>(MOCK_RULES)
+  const [alerts, setAlerts] = useState<Alert[]>([])
+  const [rules, setRules] = useState<AlertRule[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('active')
   const [severityFilter, setSeverityFilter] = useState<Severity | 'all'>('all')
   const [statusFilter, setStatusFilter] = useState<AlertStatus | 'all'>('all')
   const [showFilters, setShowFilters] = useState(false)
   const [poolAlertStatus, setPoolAlertStatus] = useState<string | null>(null)
+
+  // Fetch alerts and rules from API
+  const fetchAlerts = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/monitoring/alerts')
+      if (!res.ok) {
+        throw new Error(`Failed to fetch alerts (${res.status})`)
+      }
+      const data = await res.json()
+      setAlerts(data.alerts ?? [])
+      setRules(data.rules ?? [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load alerts')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchAlerts()
+  }, [fetchAlerts])
 
   // Fetch pool alerts API status on mount
   useEffect(() => {
@@ -387,33 +247,57 @@ export default function MonitoringAlertsPage() {
         </div>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-12 text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-500 dark:border-gray-600 dark:border-t-blue-400" />
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading alerts...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+          <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+          <p className="text-sm font-medium text-red-800 dark:text-red-300">{error}</p>
+          <button
+            onClick={fetchAlerts}
+            className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <SummaryCard
-          label="Critical"
-          value={counts.critical}
-          icon={<AlertCircle className="h-5 w-5 text-red-500" />}
-          className="border-red-200 dark:border-red-800"
-        />
-        <SummaryCard
-          label="Active"
-          value={counts.active}
-          icon={<Bell className="h-5 w-5 text-orange-500" />}
-          className="border-orange-200 dark:border-orange-800"
-        />
-        <SummaryCard
-          label="Acknowledged"
-          value={counts.acknowledged}
-          icon={<Eye className="h-5 w-5 text-yellow-500" />}
-          className="border-yellow-200 dark:border-yellow-800"
-        />
-        <SummaryCard
-          label="Resolved"
-          value={counts.resolved}
-          icon={<Check className="h-5 w-5 text-green-500" />}
-          className="border-green-200 dark:border-green-800"
-        />
-      </div>
+      {!loading && !error && (
+        <>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <SummaryCard
+            label="Critical"
+            value={counts.critical}
+            icon={<AlertCircle className="h-5 w-5 text-red-500" />}
+            className="border-red-200 dark:border-red-800"
+          />
+          <SummaryCard
+            label="Active"
+            value={counts.active}
+            icon={<Bell className="h-5 w-5 text-orange-500" />}
+            className="border-orange-200 dark:border-orange-800"
+          />
+          <SummaryCard
+            label="Acknowledged"
+            value={counts.acknowledged}
+            icon={<Eye className="h-5 w-5 text-yellow-500" />}
+            className="border-yellow-200 dark:border-yellow-800"
+          />
+          <SummaryCard
+            label="Resolved"
+            value={counts.resolved}
+            icon={<Check className="h-5 w-5 text-green-500" />}
+            className="border-green-200 dark:border-green-800"
+          />
+        </div>
 
       {/* Filters */}
       {showFilters && (
@@ -524,29 +408,35 @@ export default function MonitoringAlertsPage() {
 
       {activeTab === 'rules' && (
         <div className="space-y-4">
-          {(['service', 'budget', 'performance', 'resource'] as const).map((category) => {
-            const categoryRules = rules.filter((r) => r.category === category)
-            if (categoryRules.length === 0) return null
-            return (
-              <div key={category}>
-                <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                  {category === 'service'
-                    ? 'Service Health'
-                    : category === 'budget'
-                      ? 'Budget Alerts'
-                      : category === 'performance'
-                        ? 'Performance'
-                        : 'Resource Usage'}
-                </h3>
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg divide-y divide-gray-100 dark:divide-gray-800">
-                  {categoryRules.map((rule) => (
-                    <RuleRow key={rule.id} rule={rule} />
-                  ))}
+          {rules.length === 0 ? (
+            <EmptyState message="No alert rules configured." />
+          ) : (
+            (['service', 'budget', 'performance', 'resource'] as const).map((category) => {
+              const categoryRules = rules.filter((r) => r.category === category)
+              if (categoryRules.length === 0) return null
+              return (
+                <div key={category}>
+                  <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                    {category === 'service'
+                      ? 'Service Health'
+                      : category === 'budget'
+                        ? 'Budget Alerts'
+                        : category === 'performance'
+                          ? 'Performance'
+                          : 'Resource Usage'}
+                  </h3>
+                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg divide-y divide-gray-100 dark:divide-gray-800">
+                    {categoryRules.map((rule) => (
+                      <RuleRow key={rule.id} rule={rule} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })
+          )}
         </div>
+      )}
+        </>
       )}
     </div>
   )

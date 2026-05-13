@@ -7,5 +7,5 @@ numpy
 
 # Security: Pin urllib3 to address CVE vulnerabilities
 urllib3==2.6.3
-python-multipart==0.0.22
+python-multipart==0.0.26
 starlette==0.49.1

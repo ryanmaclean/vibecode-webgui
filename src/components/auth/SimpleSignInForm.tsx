@@ -6,6 +6,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { z } from '@/lib/zod-compat'
@@ -16,6 +17,7 @@ const credentialsSchema = z.object({
 })
 
 export default function SimpleSignInForm() {
+  const t = useTranslations()
   const [email, setEmail] = useState('developer@vibecode.dev')
   const [password, setPassword] = useState('dev123')
   const [error, setError] = useState<string | null>(null)
@@ -54,11 +56,11 @@ export default function SimpleSignInForm() {
         if (session) {
           router.push('/')
         } else {
-          setError('Authentication failed - no session created')
+          setError(t('auth.errors.authFailed'))
         }
       }
     } catch (_err) {
-      setError('An unexpected error occurred')
+      setError(t('auth.errors.unexpectedError'))
     } finally {
       setIsSubmitting(false)
     }
@@ -84,16 +86,16 @@ export default function SimpleSignInForm() {
             </svg>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            VibeCode Dev Login
+            {t('auth.signInTitle')}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Simple sign-in for development environment
+            {t('auth.signInSubtitle')}
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-              <strong className="font-bold">Error: </strong>
+              <strong className="font-bold">{t('auth.errorPrefix')}</strong>
               <span className="block sm:inline">{error}</span>
             </div>
           )}
@@ -101,7 +103,7 @@ export default function SimpleSignInForm() {
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="email-address" className="sr-only">
-                Email address
+                {t('auth.emailLabel')}
               </label>
               <input
                 id="email-address"
@@ -112,12 +114,12 @@ export default function SimpleSignInForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
+                placeholder={t('auth.emailPlaceholder')}
               />
             </div>
             <div>
               <label htmlFor="password" className="sr-only">
-                Password
+                {t('auth.passwordLabel')}
               </label>
               <input
                 id="password"
@@ -128,7 +130,7 @@ export default function SimpleSignInForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
+                placeholder={t('auth.passwordPlaceholder')}
               />
             </div>
           </div>
@@ -142,29 +144,29 @@ export default function SimpleSignInForm() {
               {isSubmitting ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
               ) : (
-                'Sign in'
+                t('auth.signInButton')
               )}
             </button>
           </div>
 
           <div className="text-center">
             <p className="text-sm text-gray-600 mb-4">
-              <strong>Development Test Users:</strong>
+              <strong>{t('auth.testUsersHeading')}</strong>
             </p>
             <div className="bg-gray-100 rounded-lg p-4 text-left">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-mono">
                 <div className="space-y-1">
-                  <p><strong>Admin Users:</strong></p>
+                  <p><strong>{t('auth.adminUsersLabel')}</strong></p>
                   <p>admin@vibecode.dev / admin123</p>
                   <p>lead@vibecode.dev / lead123</p>
                   <br />
-                  <p><strong>Developers:</strong></p>
+                  <p><strong>{t('auth.developersLabel')}</strong></p>
                   <p>developer@vibecode.dev / dev123</p>
                   <p>frontend@vibecode.dev / frontend123</p>
                   <p>backend@vibecode.dev / backend123</p>
                 </div>
                 <div className="space-y-1">
-                  <p><strong>Team Members:</strong></p>
+                  <p><strong>{t('auth.teamMembersLabel')}</strong></p>
                   <p>fullstack@vibecode.dev / fullstack123</p>
                   <p>designer@vibecode.dev / design123</p>
                   <p>tester@vibecode.dev / test123</p>

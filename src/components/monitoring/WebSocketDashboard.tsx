@@ -5,7 +5,8 @@
 
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react'
+import React, { useState, useEffect, useCallback, memo } from 'react'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle, Wifi, Activity, TrendingUp, Clock, Zap, Send, Download } from 'lucide-react'
@@ -87,7 +88,7 @@ interface DashboardData {
 }
 
 // Memoized helper functions to avoid recreating on each render
-const getHealthStatusColor = (status: string) => {
+const getHealthStatusColor = (status: string): string => {
   switch (status) {
     case 'healthy': return 'bg-green-500'
     case 'warning': return 'bg-yellow-500'
@@ -96,7 +97,7 @@ const getHealthStatusColor = (status: string) => {
   }
 }
 
-const getConnectionStatusColor = (status: string) => {
+const getConnectionStatusColor = (status: string): string => {
   switch (status) {
     case 'connected': return 'text-green-600'
     case 'connecting': return 'text-blue-600'
@@ -106,13 +107,13 @@ const getConnectionStatusColor = (status: string) => {
   }
 }
 
-const getLatencyColor = (latency: number) => {
+const getLatencyColor = (latency: number): string => {
   if (latency >= 500) return 'text-red-600'
   if (latency >= 200) return 'text-yellow-600'
   return 'text-green-600'
 }
 
-const getPriorityColor = (priority: string) => {
+const getPriorityColor = (priority: string): string => {
   switch (priority) {
     case 'high': return 'border-red-500 bg-red-50'
     case 'medium': return 'border-yellow-500 bg-yellow-50'
@@ -139,6 +140,7 @@ const formatUptime = (seconds: number): string => {
 
 // Memoized WebSocket Connection Card component to prevent unnecessary re-renders
 const ConnectionCard = memo(function ConnectionCard({ connection }: { connection: WebSocketMetrics & { alerts: Alert[] } }) {
+  const t = useTranslations('monitoring')
   return (
     <Card>
       <CardHeader>
@@ -156,13 +158,13 @@ const ConnectionCard = memo(function ConnectionCard({ connection }: { connection
         {/* Connection Status */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-gray-600">Status</p>
+            <p className="text-sm text-gray-600">{t('websocketDashboard.status')}</p>
             <p className={`font-semibold ${getConnectionStatusColor(connection.status)}`}>
               {connection.status.toUpperCase()}
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Uptime</p>
+            <p className="text-sm text-gray-600">{t('websocketDashboard.uptime')}</p>
             <p className="font-semibold">
               {formatUptime(connection.uptime_seconds)}
             </p>
@@ -172,15 +174,15 @@ const ConnectionCard = memo(function ConnectionCard({ connection }: { connection
         {/* Message Metrics */}
         <div className="grid grid-cols-3 gap-3 text-sm">
           <div>
-            <p className="text-gray-600">Sent</p>
+            <p className="text-gray-600">{t('websocketDashboard.sent')}</p>
             <p className="font-medium">{connection.messages_sent}</p>
           </div>
           <div>
-            <p className="text-gray-600">Received</p>
+            <p className="text-gray-600">{t('websocketDashboard.received')}</p>
             <p className="font-medium">{connection.messages_received}</p>
           </div>
           <div>
-            <p className="text-gray-600">Queued</p>
+            <p className="text-gray-600">{t('websocketDashboard.queued')}</p>
             <p className={`font-medium ${connection.messages_queued > 10 ? 'text-yellow-600' : ''}`}>
               {connection.messages_queued}
             </p>
@@ -191,12 +193,12 @@ const ConnectionCard = memo(function ConnectionCard({ connection }: { connection
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="flex items-center">
             <Send className="h-3 w-3 mr-1 text-gray-500" />
-            <span className="text-gray-600">Sent:</span>
+            <span className="text-gray-600">{t('websocketDashboard.sent')}:</span>
             <span className="ml-1 font-medium">{formatBytes(connection.bytes_sent)}</span>
           </div>
           <div className="flex items-center">
             <Download className="h-3 w-3 mr-1 text-gray-500" />
-            <span className="text-gray-600">Received:</span>
+            <span className="text-gray-600">{t('websocketDashboard.received')}:</span>
             <span className="ml-1 font-medium">{formatBytes(connection.bytes_received)}</span>
           </div>
         </div>
@@ -205,14 +207,14 @@ const ConnectionCard = memo(function ConnectionCard({ connection }: { connection
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center">
             <Clock className="h-4 w-4 mr-1 text-gray-500" />
-            <span className="text-gray-600">Latency:</span>
+            <span className="text-gray-600">{t('websocketDashboard.latency')}:</span>
             <span className={`ml-1 font-medium ${getLatencyColor(connection.average_latency_ms)}`}>
-              {connection.average_latency_ms}ms avg
+              {connection.average_latency_ms}ms {t('websocketDashboard.avg')}
             </span>
           </div>
           <div className="flex items-center">
             <Zap className="h-4 w-4 mr-1 text-gray-500" />
-            <span className="text-gray-600">Ping:</span>
+            <span className="text-gray-600">{t('websocketDashboard.ping')}:</span>
             <span className={`ml-1 font-medium ${getLatencyColor(connection.last_ping_ms)}`}>
               {connection.last_ping_ms}ms
             </span>
@@ -223,13 +225,13 @@ const ConnectionCard = memo(function ConnectionCard({ connection }: { connection
         {(connection.error_count > 0 || connection.reconnection_attempts > 0) && (
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <p className="text-gray-600">Errors</p>
+              <p className="text-gray-600">{t('websocketDashboard.errors')}</p>
               <p className={`font-medium ${connection.error_count > 0 ? 'text-red-600' : 'text-green-600'}`}>
                 {connection.error_count}
               </p>
             </div>
             <div>
-              <p className="text-gray-600">Reconnects</p>
+              <p className="text-gray-600">{t('websocketDashboard.reconnects')}</p>
               <p className={`font-medium ${connection.reconnection_attempts > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
                 {connection.reconnection_attempts}
               </p>
@@ -282,6 +284,7 @@ const AlertItem = memo(function AlertItem({ alert }: { alert: Alert }) {
 
 // Memoized Recommendation Item component
 const RecommendationItem = memo(function RecommendationItem({ rec }: { rec: Recommendation }) {
+  const t = useTranslations('monitoring')
   return (
     <div className={`p-3 rounded-lg border ${getPriorityColor(rec.priority)}`}>
       <div className="flex justify-between items-start">
@@ -292,14 +295,15 @@ const RecommendationItem = memo(function RecommendationItem({ rec }: { rec: Reco
             {rec.connection_name && <span className="text-sm font-medium">{rec.connection_name}</span>}
           </div>
           <p className="text-sm mb-1">{rec.message}</p>
-          <p className="text-xs text-gray-600">Action: {rec.action}</p>
+          <p className="text-xs text-gray-600">{t('websocketDashboard.action')}: {rec.action}</p>
         </div>
       </div>
     </div>
   )
 })
 
-function WebSocketDashboard() {
+function WebSocketDashboard(): React.JSX.Element {
+  const t = useTranslations('monitoring')
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -345,7 +349,7 @@ function WebSocketDashboard() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2">Loading WebSocket dashboard...</span>
+        <span className="ml-2">{t('websocketDashboard.loadingDashboard')}</span>
       </div>
     )
   }
@@ -355,13 +359,13 @@ function WebSocketDashboard() {
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <div className="flex items-center">
           <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-          <span className="text-red-700">Error loading dashboard: {error}</span>
+          <span className="text-red-700">{t('websocketDashboard.errorLoading')}: {error}</span>
         </div>
         <button
           onClick={fetchDashboardData}
           className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
         >
-          Retry
+          {t('websocketDashboard.retry')}
         </button>
       </div>
     )
@@ -371,7 +375,7 @@ function WebSocketDashboard() {
     return (
       <div className="text-center py-8">
         <Wifi className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-600">No WebSocket data available</p>
+        <p className="text-gray-600">{t('websocketDashboard.noData')}</p>
       </div>
     )
   }
@@ -380,7 +384,7 @@ function WebSocketDashboard() {
     <div className="space-y-6">
       {/* Header Controls */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">WebSocket Monitor</h2>
+        <h2 className="text-2xl font-bold">{t('websocketDashboard.title')}</h2>
         <div className="flex items-center gap-4">
           <label className="flex items-center">
             <input
@@ -389,13 +393,13 @@ function WebSocketDashboard() {
               onChange={handleAutoRefreshChange}
               className="mr-2"
             />
-            Auto-refresh (30s)
+            {t('websocketDashboard.autoRefresh30s')}
           </label>
           <button
             onClick={fetchDashboardData}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
-            Refresh Now
+            {t('websocketDashboard.refreshNow')}
           </button>
         </div>
       </div>
@@ -406,9 +410,9 @@ function WebSocketDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Active Connections</p>
+                <p className="text-sm text-gray-600">{t('websocketDashboard.activeConnections')}</p>
                 <p className="text-2xl font-bold">{data.overview.active_connections}</p>
-                <p className="text-xs text-gray-500">of {data.overview.total_connections} total</p>
+                <p className="text-xs text-gray-500">{t('websocketDashboard.ofTotal', { total: data.overview.total_connections })}</p>
               </div>
               <Wifi className="h-8 w-8 text-blue-500" />
             </div>
@@ -419,7 +423,7 @@ function WebSocketDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Average Latency</p>
+                <p className="text-sm text-gray-600">{t('websocketDashboard.averageLatency')}</p>
                 <p className={`text-2xl font-bold ${getLatencyColor(data.overview.average_latency_ms)}`}>
                   {data.overview.average_latency_ms}ms
                 </p>
@@ -433,10 +437,10 @@ function WebSocketDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Messages</p>
+                <p className="text-sm text-gray-600">{t('websocketDashboard.messages')}</p>
                 <p className="text-2xl font-bold">{data.overview.total_messages_sent + data.overview.total_messages_received}</p>
                 <p className="text-xs text-gray-500">
-                  {data.overview.total_messages_sent} sent, {data.overview.total_messages_received} recv
+                  {t('websocketDashboard.sentReceived', { sent: data.overview.total_messages_sent, received: data.overview.total_messages_received })}
                 </p>
               </div>
               <Send className="h-8 w-8 text-purple-500" />
@@ -448,12 +452,12 @@ function WebSocketDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Active Alerts</p>
+                <p className="text-sm text-gray-600">{t('websocketDashboard.activeAlerts')}</p>
                 <p className={`text-2xl font-bold ${data.overview.active_alerts > 0 ? 'text-red-600' : 'text-green-600'}`}>
                   {data.overview.active_alerts}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {data.overview.critical_alerts} critical, {data.overview.warning_alerts} warning
+                  {t('websocketDashboard.criticalWarningCount', { critical: data.overview.critical_alerts, warning: data.overview.warning_alerts })}
                 </p>
               </div>
               <AlertCircle className={`h-8 w-8 ${data.overview.active_alerts > 0 ? 'text-red-500' : 'text-gray-400'}`} />
@@ -468,7 +472,7 @@ function WebSocketDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center">
               <AlertCircle className="h-5 w-5 mr-2 text-red-500" />
-              Active Alerts ({data.alerts.active.length})
+              {t('websocketDashboard.activeAlertsCount', { count: data.alerts.active.length })}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -494,7 +498,7 @@ function WebSocketDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center">
               <TrendingUp className="h-5 w-5 mr-2 text-blue-500" />
-              Recommendations ({data.recommendations.length})
+              {t('websocketDashboard.recommendationsCount', { count: data.recommendations.length })}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -509,7 +513,7 @@ function WebSocketDashboard() {
 
       {/* Last Updated */}
       <div className="text-center text-sm text-gray-500">
-        Last updated: {new Date(data.timestamp).toLocaleString()}
+        {t('websocketDashboard.lastUpdated')}: {new Date(data.timestamp).toLocaleString()}
       </div>
     </div>
   )

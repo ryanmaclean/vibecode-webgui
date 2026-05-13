@@ -5,7 +5,8 @@
 
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react'
+import React, { useState, useEffect, useCallback, memo } from 'react'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle, Brain, Activity, TrendingUp, Clock, DollarSign } from 'lucide-react'
@@ -88,7 +89,7 @@ interface DashboardData {
 }
 
 // Memoized helper functions to avoid recreating on each render
-const getHealthStatusColor = (status: string) => {
+const getHealthStatusColor = (status: string): string => {
   switch (status) {
     case 'healthy': return 'bg-green-500'
     case 'warning': return 'bg-yellow-500'
@@ -97,13 +98,13 @@ const getHealthStatusColor = (status: string) => {
   }
 }
 
-const getErrorRateColor = (errorRate: number) => {
+const getErrorRateColor = (errorRate: number): string => {
   if (errorRate >= 10) return 'text-red-600'
   if (errorRate >= 5) return 'text-yellow-600'
   return 'text-green-600'
 }
 
-const getCostTrendColor = (trend: string) => {
+const getCostTrendColor = (trend: string): string => {
   switch (trend) {
     case 'increasing': return 'text-red-600'
     case 'decreasing': return 'text-green-600'
@@ -112,7 +113,7 @@ const getCostTrendColor = (trend: string) => {
   }
 }
 
-const getPriorityColor = (priority: string) => {
+const getPriorityColor = (priority: string): string => {
   switch (priority) {
     case 'high': return 'border-red-500 bg-red-50'
     case 'medium': return 'border-yellow-500 bg-yellow-50'
@@ -121,11 +122,11 @@ const getPriorityColor = (priority: string) => {
   }
 }
 
-const formatCost = (cost: number) => {
+const formatCost = (cost: number): string => {
   return `$${cost.toFixed(4)}`
 }
 
-const formatNumber = (num: number) => {
+const formatNumber = (num: number): string => {
   if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
   if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
   return num.toString()
@@ -133,6 +134,7 @@ const formatNumber = (num: number) => {
 
 // Memoized Model Card component to prevent unnecessary re-renders
 const ModelCard = memo(function ModelCard({ model }: { model: ModelMetrics & { alerts: Alert[] } }) {
+  const t = useTranslations('monitoring')
   return (
     <Card>
       <CardHeader>
@@ -150,11 +152,11 @@ const ModelCard = memo(function ModelCard({ model }: { model: ModelMetrics & { a
         {/* Request Status */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-gray-600">Total Requests</p>
+            <p className="text-sm text-gray-600">{t('aiUsage.totalRequests')}</p>
             <p className="font-semibold">{formatNumber(model.total_requests)}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Error Rate</p>
+            <p className="text-sm text-gray-600">{t('aiUsage.errorRate')}</p>
             <p className={`font-semibold ${getErrorRateColor(model.error_rate_percent)}`}>
               {model.error_rate_percent.toFixed(2)}%
             </p>
@@ -164,15 +166,15 @@ const ModelCard = memo(function ModelCard({ model }: { model: ModelMetrics & { a
         {/* Token Usage */}
         <div className="grid grid-cols-3 gap-3 text-sm">
           <div>
-            <p className="text-gray-600">Total Tokens</p>
+            <p className="text-gray-600">{t('aiUsage.totalTokens')}</p>
             <p className="font-medium">{formatNumber(model.total_tokens)}</p>
           </div>
           <div>
-            <p className="text-gray-600">Input</p>
+            <p className="text-gray-600">{t('aiUsage.inputTokens')}</p>
             <p className="font-medium">{formatNumber(model.input_tokens)}</p>
           </div>
           <div>
-            <p className="text-gray-600">Output</p>
+            <p className="text-gray-600">{t('aiUsage.outputTokens')}</p>
             <p className="font-medium">{formatNumber(model.output_tokens)}</p>
           </div>
         </div>
@@ -180,11 +182,11 @@ const ModelCard = memo(function ModelCard({ model }: { model: ModelMetrics & { a
         {/* Cost Metrics */}
         <div className="grid grid-cols-2 gap-4 pt-2 border-t">
           <div>
-            <p className="text-sm text-gray-600">Total Cost</p>
+            <p className="text-sm text-gray-600">{t('aiUsage.totalCost')}</p>
             <p className="font-semibold text-blue-600">{formatCost(model.total_cost)}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Cost/1K Tokens</p>
+            <p className="text-sm text-gray-600">{t('aiUsage.costPer1kTokens')}</p>
             <p className="font-semibold text-blue-600">{formatCost(model.cost_per_1k_tokens)}</p>
           </div>
         </div>
@@ -193,14 +195,14 @@ const ModelCard = memo(function ModelCard({ model }: { model: ModelMetrics & { a
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center text-sm">
             <Clock className="h-4 w-4 mr-1 text-gray-500" />
-            <span className="text-gray-600">Avg response:</span>
+            <span className="text-gray-600">{t('aiUsage.avgResponse')}:</span>
             <span className={`ml-1 font-medium ${model.average_response_time_ms > 2000 ? 'text-red-600' : 'text-green-600'}`}>
               {model.average_response_time_ms}ms
             </span>
           </div>
           <div className="flex items-center text-sm">
             <Activity className="h-4 w-4 mr-1 text-gray-500" />
-            <span className="text-gray-600">RPM:</span>
+            <span className="text-gray-600">{t('aiUsage.rpm')}:</span>
             <span className="ml-1 font-medium">{model.requests_per_minute.toFixed(1)}</span>
           </div>
         </div>
@@ -250,6 +252,7 @@ const AlertItem = memo(function AlertItem({ alert }: { alert: Alert }) {
 
 // Memoized Recommendation Item component
 const RecommendationItem = memo(function RecommendationItem({ rec }: { rec: Recommendation }) {
+  const t = useTranslations('monitoring')
   return (
     <div className={`p-3 rounded-lg border ${getPriorityColor(rec.priority)}`}>
       <div className="flex justify-between items-start">
@@ -260,14 +263,15 @@ const RecommendationItem = memo(function RecommendationItem({ rec }: { rec: Reco
             {rec.model_name && <span className="text-sm font-medium">{rec.model_name}</span>}
           </div>
           <p className="text-sm mb-1">{rec.message}</p>
-          <p className="text-xs text-gray-600">Action: {rec.action}</p>
+          <p className="text-xs text-gray-600">{t('aiUsage.action')}: {rec.action}</p>
         </div>
       </div>
     </div>
   )
 })
 
-function AIUsageDashboard() {
+function AIUsageDashboard(): React.JSX.Element {
+  const t = useTranslations('monitoring')
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -313,7 +317,7 @@ function AIUsageDashboard() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2">Loading AI usage dashboard...</span>
+        <span className="ml-2">{t('aiUsage.loadingDashboard')}</span>
       </div>
     )
   }
@@ -323,13 +327,13 @@ function AIUsageDashboard() {
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <div className="flex items-center">
           <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-          <span className="text-red-700">Error loading dashboard: {error}</span>
+          <span className="text-red-700">{t('aiUsage.errorLoading')}: {error}</span>
         </div>
         <button
           onClick={fetchDashboardData}
           className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
         >
-          Retry
+          {t('aiUsage.retry')}
         </button>
       </div>
     )
@@ -339,7 +343,7 @@ function AIUsageDashboard() {
     return (
       <div className="text-center py-8">
         <Brain className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-600">No AI usage data available</p>
+        <p className="text-gray-600">{t('aiUsage.noData')}</p>
       </div>
     )
   }
@@ -348,7 +352,7 @@ function AIUsageDashboard() {
     <div className="space-y-6">
       {/* Header Controls */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">AI Usage Monitor</h2>
+        <h2 className="text-2xl font-bold">{t('aiUsage.title')}</h2>
         <div className="flex items-center gap-4">
           <label className="flex items-center">
             <input
@@ -357,13 +361,13 @@ function AIUsageDashboard() {
               onChange={handleAutoRefreshChange}
               className="mr-2"
             />
-            Auto-refresh (30s)
+            {t('aiUsage.autoRefresh30s')}
           </label>
           <button
             onClick={fetchDashboardData}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
-            Refresh Now
+            {t('aiUsage.refreshNow')}
           </button>
         </div>
       </div>
@@ -374,7 +378,7 @@ function AIUsageDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Requests</p>
+                <p className="text-sm text-gray-600">{t('aiUsage.totalRequests')}</p>
                 <p className="text-2xl font-bold">{formatNumber(data.overview.total_requests)}</p>
               </div>
               <Brain className="h-8 w-8 text-blue-500" />
@@ -386,10 +390,10 @@ function AIUsageDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Cost</p>
+                <p className="text-sm text-gray-600">{t('aiUsage.totalCost')}</p>
                 <p className="text-2xl font-bold text-blue-600">{formatCost(data.overview.total_cost)}</p>
                 <p className={`text-xs ${getCostTrendColor(data.overview.cost_trend_24h)}`}>
-                  24h: {data.overview.cost_trend_24h}
+                  {t('aiUsage.trend24h')}: {data.overview.cost_trend_24h}
                 </p>
               </div>
               <DollarSign className="h-8 w-8 text-green-500" />
@@ -401,9 +405,9 @@ function AIUsageDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Tokens</p>
+                <p className="text-sm text-gray-600">{t('aiUsage.totalTokens')}</p>
                 <p className="text-2xl font-bold">{formatNumber(data.overview.total_tokens)}</p>
-                <p className="text-xs text-gray-500">Across all models</p>
+                <p className="text-xs text-gray-500">{t('aiUsage.acrossAllModels')}</p>
               </div>
               <Activity className="h-8 w-8 text-purple-500" />
             </div>
@@ -414,12 +418,12 @@ function AIUsageDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Active Alerts</p>
+                <p className="text-sm text-gray-600">{t('aiUsage.activeAlerts')}</p>
                 <p className={`text-2xl font-bold ${data.overview.active_alerts > 0 ? 'text-red-600' : 'text-green-600'}`}>
                   {data.overview.active_alerts}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {data.overview.critical_alerts} critical, {data.overview.warning_alerts} warning
+                  {t('aiUsage.criticalWarningCount', { critical: data.overview.critical_alerts, warning: data.overview.warning_alerts })}
                 </p>
               </div>
               <AlertCircle className={`h-8 w-8 ${data.overview.active_alerts > 0 ? 'text-red-500' : 'text-gray-400'}`} />
@@ -434,7 +438,7 @@ function AIUsageDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Avg Response Time</p>
+                <p className="text-sm text-gray-600">{t('aiUsage.avgResponseTime')}</p>
                 <p className={`text-xl font-bold ${data.overview.average_response_time_ms > 2000 ? 'text-red-600' : 'text-green-600'}`}>
                   {data.overview.average_response_time_ms}ms
                 </p>
@@ -448,7 +452,7 @@ function AIUsageDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Error Rate</p>
+                <p className="text-sm text-gray-600">{t('aiUsage.errorRate')}</p>
                 <p className={`text-xl font-bold ${getErrorRateColor(data.overview.error_rate_percent)}`}>
                   {data.overview.error_rate_percent.toFixed(2)}%
                 </p>
@@ -462,7 +466,7 @@ function AIUsageDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Requests/Minute</p>
+                <p className="text-sm text-gray-600">{t('aiUsage.requestsPerMinute')}</p>
                 <p className="text-xl font-bold">{data.overview.requests_per_minute.toFixed(1)}</p>
               </div>
               <TrendingUp className="h-6 w-6 text-gray-400" />
@@ -484,7 +488,7 @@ function AIUsageDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center">
               <AlertCircle className="h-5 w-5 mr-2 text-red-500" />
-              Active Alerts ({data.alerts.active.length})
+              {t('aiUsage.activeAlertsCount', { count: data.alerts.active.length })}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -510,7 +514,7 @@ function AIUsageDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center">
               <TrendingUp className="h-5 w-5 mr-2 text-blue-500" />
-              Recommendations ({data.recommendations.length})
+              {t('aiUsage.recommendationsCount', { count: data.recommendations.length })}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -525,7 +529,7 @@ function AIUsageDashboard() {
 
       {/* Last Updated */}
       <div className="text-center text-sm text-gray-500">
-        Last updated: {new Date(data.timestamp).toLocaleString()}
+        {t('aiUsage.lastUpdated')}: {new Date(data.timestamp).toLocaleString()}
       </div>
     </div>
   )

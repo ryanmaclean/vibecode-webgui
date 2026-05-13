@@ -7,6 +7,8 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,37 +20,73 @@ export interface CommandPaletteProps {
   className?: string;
 }
 
-// Sample commands for demonstration (will be replaced with actual command registry)
-const SAMPLE_COMMANDS: Searchable[] = [
+interface Command extends Searchable {
+  action: { type: 'navigate'; href: string } | { type: 'callback'; fn: () => void };
+}
+
+const COMMANDS: Command[] = [
   {
     id: 'go-dashboard',
     label: 'Go to Dashboard',
     description: 'Navigate to the main dashboard',
     keywords: ['home', 'overview'],
+    action: { type: 'navigate', href: '/' },
   },
   {
     id: 'go-vm',
     label: 'Go to VM Management',
     description: 'Manage virtual machines',
     keywords: ['virtual', 'machine', 'vms'],
+    action: { type: 'navigate', href: '/vm' },
   },
   {
     id: 'go-ai-chat',
     label: 'Go to AI Chat',
     description: 'Open AI chat interface',
     keywords: ['assistant', 'conversation'],
+    action: { type: 'navigate', href: '/chat' },
+  },
+  {
+    id: 'go-ai-models',
+    label: 'Go to AI Models',
+    description: 'Browse and compare AI models',
+    keywords: ['model', 'llm', 'compare'],
+    action: { type: 'navigate', href: '/ai/models' },
   },
   {
     id: 'go-settings',
     label: 'Open Settings',
     description: 'Configure application settings',
     keywords: ['preferences', 'config', 'configuration'],
+    action: { type: 'navigate', href: '/settings' },
   },
   {
     id: 'go-monitoring',
     label: 'Go to Monitoring',
     description: 'View system monitoring and metrics',
     keywords: ['metrics', 'performance', 'stats'],
+    action: { type: 'navigate', href: '/monitoring' },
+  },
+  {
+    id: 'go-health',
+    label: 'Go to Health Monitor',
+    description: 'View service health status',
+    keywords: ['health', 'status', 'uptime'],
+    action: { type: 'navigate', href: '/health' },
+  },
+  {
+    id: 'go-workspaces',
+    label: 'Go to Workspaces',
+    description: 'Manage development workspaces',
+    keywords: ['workspace', 'project'],
+    action: { type: 'navigate', href: '/workspaces' },
+  },
+  {
+    id: 'go-editor',
+    label: 'Open Code Editor',
+    description: 'Open the code editor',
+    keywords: ['code', 'edit', 'ide'],
+    action: { type: 'navigate', href: '/editor' },
   },
 ];
 
@@ -60,18 +98,41 @@ export function CommandPalette({
   onClose,
   className,
 }: CommandPaletteProps) {
+  const t = useTranslations();
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const selectedItemRef = React.useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedIndex, setSelectedIndex] = React.useState(0);
 
+  const router = useRouter();
+
+  // Build translated commands (only translate keys that exist in en.json)
+  const translatedCommands = React.useMemo<Command[]>(() => {
+    return COMMANDS.map((cmd) => {
+      switch (cmd.id) {
+        case 'go-dashboard':
+          return { ...cmd, label: t('commandPalette.commands.goDashboard'), description: t('commandPalette.commands.goDashboardDescription') };
+        case 'go-vm':
+          return { ...cmd, label: t('commandPalette.commands.goVm'), description: t('commandPalette.commands.goVmDescription') };
+        case 'go-ai-chat':
+          return { ...cmd, label: t('commandPalette.commands.goAiChat'), description: t('commandPalette.commands.goAiChatDescription') };
+        case 'go-settings':
+          return { ...cmd, label: t('commandPalette.commands.openSettings'), description: t('commandPalette.commands.openSettingsDescription') };
+        case 'go-monitoring':
+          return { ...cmd, label: t('commandPalette.commands.goMonitoring'), description: t('commandPalette.commands.goMonitoringDescription') };
+        default:
+          return cmd;
+      }
+    });
+  }, [t]);
+
   // Fuzzy search results
   const searchResults = React.useMemo(() => {
-    return fuzzySearch(SAMPLE_COMMANDS, searchQuery, {
+    return fuzzySearch(translatedCommands, searchQuery, {
       limit: 10,
       threshold: 0,
     });
-  }, [searchQuery]);
+  }, [translatedCommands, searchQuery]);
 
   // Reset selected index when search results change
   React.useEffect(() => {
@@ -88,12 +149,17 @@ export function CommandPalette({
     }
   }, [selectedIndex]);
 
-  // Handle command selection
   const handleSelectCommand = React.useCallback((commandId: string) => {
-    // TODO: Execute the command based on commandId
-    // For now, just close the palette
+    const command = translatedCommands.find(c => c.id === commandId);
+    if (command) {
+      if (command.action.type === 'navigate') {
+        router.push(command.action.href);
+      } else {
+        command.action.fn();
+      }
+    }
     onClose();
-  }, [onClose]);
+  }, [onClose, router, translatedCommands]);
 
   // Handle keyboard navigation
   React.useEffect(() => {
@@ -244,7 +310,7 @@ export function CommandPalette({
                   <input
                     ref={searchInputRef}
                     type="text"
-                    placeholder="Type a command or search..."
+                    placeholder={t('commandPalette.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className={cn(
@@ -254,7 +320,7 @@ export function CommandPalette({
                       'focus:outline-none',
                       'text-base'
                     )}
-                    aria-label="Search commands"
+                    aria-label={t('commandPalette.searchAriaLabel')}
                     id="command-palette-title"
                   />
                   <button
@@ -267,7 +333,7 @@ export function CommandPalette({
                       'transition-colors',
                       'focus:outline-none focus:ring-2 focus:ring-blue-500'
                     )}
-                    aria-label="Close command palette"
+                    aria-label={t('commandPalette.closeAriaLabel')}
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -281,7 +347,7 @@ export function CommandPalette({
                   'p-2'
                 )}
                 role="listbox"
-                aria-label="Command results"
+                aria-label={t('commandPalette.resultsAriaLabel')}
               >
                 {searchResults.length > 0 ? (
                   <div className="space-y-1">
@@ -340,13 +406,13 @@ export function CommandPalette({
                 ) : searchQuery ? (
                   <div className="p-8 text-center text-neutral-500 dark:text-neutral-400">
                     <p className="text-sm">
-                      No commands found for &quot;{searchQuery}&quot;
+                      {t('commandPalette.noCommandsFound').replace('{query}', searchQuery)}
                     </p>
                   </div>
                 ) : (
                   <div className="p-8 text-center text-neutral-500 dark:text-neutral-400">
                     <p className="text-sm">
-                      Type to search for commands...
+                      {t('commandPalette.typeToSearch')}
                     </p>
                   </div>
                 )}
@@ -360,20 +426,20 @@ export function CommandPalette({
                       <kbd className="px-1.5 py-0.5 rounded border border-neutral-300 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800 font-mono text-xs">
                         ↑↓
                       </kbd>
-                      <span>Navigate</span>
+                      <span>{t('commandPalette.keyboardHints.navigate')}</span>
                     </span>
                     <span className="flex items-center gap-1">
                       <kbd className="px-1.5 py-0.5 rounded border border-neutral-300 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800 font-mono text-xs">
                         ↵
                       </kbd>
-                      <span>Select</span>
+                      <span>{t('commandPalette.keyboardHints.select')}</span>
                     </span>
                   </div>
                   <span className="flex items-center gap-1">
                     <kbd className="px-1.5 py-0.5 rounded border border-neutral-300 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800 font-mono text-xs">
                       Esc
                     </kbd>
-                    <span>Close</span>
+                    <span>{t('commandPalette.keyboardHints.close')}</span>
                   </span>
                 </div>
               </div>

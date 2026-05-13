@@ -460,19 +460,19 @@ export default function EditorPage() {
           <CardContent>
             <div className="space-y-2">
               <a
-                href="/api/docs/agent-api"
+                href="/ai"
                 className="text-blue-500 hover:underline block"
               >
                 Agent API Documentation
               </a>
               <a
-                href="/api/docs/monaco-integration"
+                href="/editor"
                 className="text-blue-500 hover:underline block"
               >
                 Monaco Integration Guide
               </a>
               <a
-                href="/api/docs/vscode-extension"
+                href="/tools"
                 className="text-blue-500 hover:underline block"
               >
                 VS Code Extension Guide

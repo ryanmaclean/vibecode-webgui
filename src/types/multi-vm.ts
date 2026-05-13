@@ -129,6 +129,8 @@ export interface VMInstance {
   id: string;
   /** Human-readable name */
   name: string;
+  /** Owner user ID */
+  userId?: string;
   /** Instance status */
   status: VMInstanceStatus;
   /** Configuration used to create this VM */
@@ -281,6 +283,8 @@ export interface VMPoolState {
 export interface CreateVMOptions {
   /** VM name (will be auto-generated if not provided) */
   name?: string;
+  /** Owner user ID */
+  userId?: string;
   /** Profile ID to use */
   profileId?: string;
   /** Custom configuration (merged with profile) */

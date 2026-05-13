@@ -6,6 +6,8 @@
  */
 
 import { NextResponse, NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { checkDocker } from '@/lib/setup/checks';
 import { createServiceLogger } from '@/lib/logging';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
@@ -21,6 +23,11 @@ const apiRateLimit = createAPIRateLimit(60); // 60 requests per minute - setup c
  * Returns Docker installation and runtime status for setup wizard
  */
 export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   // Rate limiting
   const rateLimitResult = await apiRateLimit(request);
   if (!rateLimitResult.success) {

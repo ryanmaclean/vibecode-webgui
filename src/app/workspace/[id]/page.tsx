@@ -6,6 +6,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -44,6 +45,7 @@ interface WorkspaceInfo {
 }
 
 export default function WorkspacePage() {
+  const t = useTranslations()
   const params = useParams()
   const workspaceId = params?.id as string
 
@@ -172,11 +174,11 @@ export default function WorkspacePage() {
             </TabsTrigger>
             <TabsTrigger value="ai">
               <Bot className="w-4 h-4 mr-2" />
-              AI Chat
+              {t('chat.heading')}
             </TabsTrigger>
             <TabsTrigger value="code">
               <Code className="w-4 h-4 mr-2" />
-              Code Editor
+              {t('editor.title')}
             </TabsTrigger>
           </TabsList>
 

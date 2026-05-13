@@ -6,7 +6,31 @@
  */
 
 import React from 'react';
+import { render } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { EmbeddingVisualizer, Embedding, SimilarityScore } from '../EmbeddingVisualizer';
+
+jest.mock('recharts', () => ({
+  BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
+  Bar: () => null,
+  XAxis: () => null,
+  YAxis: () => null,
+  CartesianGrid: () => null,
+  Tooltip: () => null,
+  ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
+  LineChart: ({ children }: any) => <div data-testid="line-chart">{children}</div>,
+  Line: () => null,
+  ScatterChart: ({ children }: any) => <div data-testid="scatter-chart">{children}</div>,
+  Scatter: () => null,
+  Cell: () => null,
+}));
+
+describe('EmbeddingVisualizer', () => {
+  it('renders without crashing with empty embeddings', () => {
+    const { container } = render(<EmbeddingVisualizer embeddings={[]} />);
+    expect(container).toBeInTheDocument();
+  });
+});
 
 // Mock embedding data for testing
 export const mockEmbeddings: Embedding[] = [

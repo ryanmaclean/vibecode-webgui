@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -40,6 +41,7 @@ type OnboardingDrawerProps = {
 }
 
 export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
+  const t = useTranslations()
   const { preferences, save, isLoading, error } = useUserPreferences()
   const [saving, setSaving] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
@@ -92,15 +94,15 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
       <aside className="relative w-full max-w-md overflow-y-auto border-l border-border bg-card shadow-xl">
         <header className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur p-6 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-foreground">Welcome to VibeCode</h2>
+            <h2 className="text-xl font-semibold text-foreground">{t('onboarding.welcomeTitle')}</h2>
             <p className="text-sm text-muted-foreground">
-              Tweak your workspace and connect the services you rely on every day.
+              {t('onboarding.subtitle')}
             </p>
             {(error || localError) && (
               <p className="text-xs text-red-500">{localError ?? error}</p>
             )}
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close onboarding">
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label={t('onboarding.closeButton')}>
             ✕
           </Button>
         </header>
@@ -108,8 +110,8 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
         <div className="space-y-6 p-6 pb-24">
           <Card>
             <CardHeader>
-              <CardTitle>Theme</CardTitle>
-              <CardDescription>Select the default appearance for the dashboard.</CardDescription>
+              <CardTitle>{t('onboarding.themeTitle')}</CardTitle>
+              <CardDescription>{t('onboarding.themeDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="flex gap-4">
               {(['light', 'dark'] as const).map((value) => (
@@ -120,7 +122,7 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
                   className="flex-1"
                   disabled={saving || isLoading}
                 >
-                  {value === 'light' ? 'Light' : 'Dark'}
+                  {value === 'light' ? t('onboarding.themeOptions.light') : t('onboarding.themeOptions.dark')}
                 </Button>
               ))}
             </CardContent>
@@ -128,11 +130,11 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>CLI Editor Preference</CardTitle>
-              <CardDescription>We&apos;ll tailor future tips for your favourite terminal editor.</CardDescription>
+              <CardTitle>{t('onboarding.cliEditorTitle')}</CardTitle>
+              <CardDescription>{t('onboarding.cliEditorDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Label htmlFor="cli-editor" className="text-sm text-muted-foreground">Editor</Label>
+              <Label htmlFor="cli-editor" className="text-sm text-muted-foreground">{t('onboarding.editorLabel')}</Label>
               <select
                 id="cli-editor"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -140,10 +142,10 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
                 onChange={(event) => handleUpdate({ cliEditor: event.target.value })}
                 disabled={saving || isLoading}
               >
-                <option value="">Select an editor</option>
+                <option value="">{t('onboarding.selectEditor')}</option>
                 {cliEditors.map((editor) => (
                   <option key={editor.value} value={editor.value}>
-                    {editor.label}
+                    {t(`onboarding.cliEditorOptions.${editor.value === 'code-server' ? 'codeServer' : editor.value}`)}
                   </option>
                 ))}
               </select>
@@ -152,8 +154,8 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Recommended Extensions</CardTitle>
-              <CardDescription>Install these VS Code extensions to match the VibeCode stack.</CardDescription>
+              <CardTitle>{t('onboarding.extensionsTitle')}</CardTitle>
+              <CardDescription>{t('onboarding.extensionsDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {recommendedExtensions.map((ext) => (
@@ -167,7 +169,7 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
                     size="sm"
                     onClick={() => navigator.clipboard.writeText(`vscode:extension/${ext.id}`)}
                   >
-                    Copy
+                    {t('onboarding.copyButton')}
                   </Button>
                 </div>
               ))}
@@ -176,8 +178,8 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Integrations</CardTitle>
-              <CardDescription>Track which services you&apos;ve connected.</CardDescription>
+              <CardTitle>{t('onboarding.integrationsTitle')}</CardTitle>
+              <CardDescription>{t('onboarding.integrationsDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {integrations.map((item) => (
@@ -197,7 +199,7 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
                       }
                       disabled={saving || isLoading}
                     />
-                    <span className="text-sm text-foreground">{item.label}</span>
+                    <span className="text-sm text-foreground">{t(`onboarding.integrationServices.${item.id}`)}</span>
                   </div>
                   <Button variant="ghost" size="sm" asChild>
                     <a
@@ -205,14 +207,14 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Setup
+                      {t('onboarding.setupButton')}
                     </a>
                   </Button>
                 </label>
               ))}
               {!integrationsComplete && (
                 <p className="text-xs text-muted-foreground">
-                  Check each integration off once you&apos;ve connected the account or API key.
+                  {t('onboarding.integrationsIncompleteHint')}
                 </p>
               )}
             </CardContent>
@@ -220,23 +222,23 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>{t('onboarding.quickActionsTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2">
               <Badge variant="secondary">
-                <a href="/tools/codeium" className="no-underline">Codeium Playground</a>
+                <a href="/tools/codeium" className="no-underline">{t('onboarding.codeiumPlayground')}</a>
               </Badge>
               <Badge variant="secondary">
-                <a href="/console" className="no-underline">AI Console</a>
+                <a href="/chat" className="no-underline">{t('onboarding.aiConsole')}</a>
               </Badge>
               <Badge variant="secondary">
                 <a href="/docs/logs/AGENT_ACTIVITY_LOG.md" target="_blank" rel="noreferrer" className="no-underline">
-                  Activity Log
+                  {t('onboarding.activityLog')}
                 </a>
               </Badge>
               <Badge variant="secondary">
                 <a href="https://github.com/ryanmaclean/vibecode-webgui" target="_blank" rel="noreferrer" className="no-underline">
-                  GitHub
+                  {t('onboarding.github')}
                 </a>
               </Badge>
             </CardContent>

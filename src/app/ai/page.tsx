@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import {
   Brain,
   MessageSquare,
@@ -18,65 +19,6 @@ import {
   Network,
 } from 'lucide-react'
 
-const overviewCards = [
-  {
-    title: 'Chat',
-    icon: MessageSquare,
-    stat: 'Active Conversations: 3',
-    description: 'Start or continue AI conversations',
-    href: '/ai/chat',
-    gradient: 'from-blue-500 to-blue-700',
-  },
-  {
-    title: 'Agents',
-    icon: Bot,
-    stat: '6 Agents Available',
-    description: 'Multi-agent workspace',
-    href: '/ai/agents',
-    gradient: 'from-purple-500 to-purple-700',
-  },
-  {
-    title: 'Models',
-    icon: Cpu,
-    stat: '340+ Models',
-    description: 'Compare and select AI models',
-    href: '/ai/models',
-    gradient: 'from-indigo-500 to-indigo-700',
-  },
-  {
-    title: 'Costs',
-    icon: DollarSign,
-    stat: 'Today: $2.47',
-    description: 'Track AI usage costs',
-    href: '/ai/costs',
-    gradient: 'from-green-500 to-green-700',
-  },
-  {
-    title: 'Prompts',
-    icon: BookOpen,
-    stat: '33 Templates',
-    description: 'Browse prompt library',
-    href: '/ai/prompts',
-    gradient: 'from-amber-500 to-amber-700',
-  },
-  {
-    title: 'History',
-    icon: History,
-    stat: '142 Conversations',
-    description: 'View past conversations',
-    href: '/ai/conversations',
-    gradient: 'from-rose-500 to-rose-700',
-  },
-  {
-    title: 'Vector Explorer',
-    icon: Network,
-    stat: 'Explore Embeddings',
-    description: 'Visualize vector similarities',
-    href: '/ai/vector-explorer',
-    gradient: 'from-teal-500 to-teal-700',
-  },
-]
-
 const recentActivity = [
   { text: 'Used Claude 3.5 Sonnet for code review', time: '2 min ago' },
   { text: 'Generated unit tests with GPT-4o', time: '15 min ago' },
@@ -85,13 +27,74 @@ const recentActivity = [
   { text: 'Cost alert: daily budget 60% used', time: '5 hours ago' },
 ]
 
-const usageStats = [
-  { label: 'Requests Today', value: '47', icon: Zap },
-  { label: 'Avg Response Time', value: '1.2s', icon: Clock },
-  { label: 'Top Model', value: 'Claude 3.5 Sonnet', icon: TrendingUp },
-]
-
 export default function AIPage() {
+  const t = useTranslations()
+
+  const overviewCards = [
+    {
+      title: t('ai.dashboard.cards.chat'),
+      icon: MessageSquare,
+      stat: t('ai.dashboard.cards.chatStat'),
+      description: t('ai.dashboard.cards.chatDescription'),
+      href: '/ai/chat',
+      gradient: 'from-blue-500 to-blue-700',
+    },
+    {
+      title: t('ai.dashboard.cards.agents'),
+      icon: Bot,
+      stat: t('ai.dashboard.cards.agentsStat'),
+      description: t('ai.dashboard.cards.agentsDescription'),
+      href: '/ai/agents',
+      gradient: 'from-purple-500 to-purple-700',
+    },
+    {
+      title: t('ai.dashboard.cards.models'),
+      icon: Cpu,
+      stat: t('ai.dashboard.cards.modelsStat'),
+      description: t('ai.dashboard.cards.modelsDescription'),
+      href: '/ai/models',
+      gradient: 'from-indigo-500 to-indigo-700',
+    },
+    {
+      title: t('ai.dashboard.cards.costs'),
+      icon: DollarSign,
+      stat: t('ai.dashboard.cards.costsStat'),
+      description: t('ai.dashboard.cards.costsDescription'),
+      href: '/ai/costs',
+      gradient: 'from-green-500 to-green-700',
+    },
+    {
+      title: t('ai.dashboard.cards.prompts'),
+      icon: BookOpen,
+      stat: t('ai.dashboard.cards.promptsStat'),
+      description: t('ai.dashboard.cards.promptsDescription'),
+      href: '/ai/prompts',
+      gradient: 'from-amber-500 to-amber-700',
+    },
+    {
+      title: t('ai.dashboard.cards.history'),
+      icon: History,
+      stat: t('ai.dashboard.cards.historyStat'),
+      description: t('ai.dashboard.cards.historyDescription'),
+      href: '/ai/conversations',
+      gradient: 'from-rose-500 to-rose-700',
+    },
+    {
+      title: t('ai.dashboard.cards.vectorExplorer'),
+      icon: Network,
+      stat: t('ai.dashboard.cards.vectorExplorerStat'),
+      description: t('ai.dashboard.cards.vectorExplorerDescription'),
+      href: '/ai/vector-explorer',
+      gradient: 'from-teal-500 to-teal-700',
+    },
+  ]
+
+  const usageStats = [
+    { label: t('ai.dashboard.usageStats.requestsToday'), value: '47', icon: Zap },
+    { label: t('ai.dashboard.usageStats.avgResponseTime'), value: '1.2s', icon: Clock },
+    { label: t('ai.dashboard.usageStats.topModel'), value: 'Claude 3.5 Sonnet', icon: TrendingUp },
+  ]
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -100,10 +103,10 @@ export default function AIPage() {
           <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-700 flex items-center justify-center">
             <Brain className="h-5 w-5 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">AI Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('ai.dashboard.title')}</h1>
         </div>
         <p className="text-gray-600">
-          Access 340+ AI models, manage agents, track costs, and browse prompt templates -- all from one place.
+          {t('ai.dashboard.description')}
         </p>
       </div>
 
@@ -133,28 +136,28 @@ export default function AIPage() {
 
       {/* Quick Actions */}
       <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h2>
+        <h2 className="text-sm font-semibold text-gray-900 mb-3">{t('ai.dashboard.quickActions')}</h2>
         <div className="flex flex-wrap gap-3">
           <Link
             href="/ai/chat"
             className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
           >
             <Plus className="h-4 w-4" />
-            New Chat
+            {t('ai.dashboard.newChat')}
           </Link>
           <Link
             href="/ai/models"
             className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
           >
             <Cpu className="h-4 w-4" />
-            Compare Models
+            {t('ai.dashboard.compareModels')}
           </Link>
           <Link
             href="/ai/prompts"
             className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
           >
             <BookOpen className="h-4 w-4" />
-            Browse Prompts
+            {t('ai.dashboard.browsePrompts')}
           </Link>
         </div>
       </div>
@@ -182,7 +185,7 @@ export default function AIPage() {
       <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <Activity className="h-4 w-4 text-gray-400" />
-          <h2 className="text-sm font-semibold text-gray-900">Recent Activity</h2>
+          <h2 className="text-sm font-semibold text-gray-900">{t('ai.dashboard.recentActivity')}</h2>
         </div>
         <div className="space-y-3">
           {recentActivity.map((item, index) => (

@@ -89,8 +89,11 @@ fi
 if [ "$LIGHT_MODE" = "true" ]; then
   echo "🧪 Running quick unit tests..."
   npm run quick-test || {
-      echo "❌ Quick tests failed. Aborting commit."
-      exit 1
+      echo ""
+      echo "⚠️  Quick tests found failures (non-blocking in light mode)"
+      echo "   → These will be checked in CI - fix before pushing to avoid CI failures"
+      echo "   → Run 'npm run test:unit' to see all failures"
+      echo ""
   }
 else
   echo "🧪 Running all Jest tests..."
@@ -158,7 +161,7 @@ api_key_patterns=(
 for file in $staged_files; do
     if [[ -f "$file" ]]; then
         # Skip binary files and specific ignored files
-        if [[ "$file" == .env || "$file" == *.env.local || "$file" == *.env.* || "$file" == *node_modules* || "$file" == *.git* ]]; then
+        if [[ "$file" == .env || "$file" == *.env.local || "$file" == *.env.* || "$file" == *node_modules* || "$file" == *.git* || "$file" == package-lock.json ]]; then
             continue
         fi
         

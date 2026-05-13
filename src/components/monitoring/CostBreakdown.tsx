@@ -6,7 +6,8 @@
 
 'use client'
 
-import { useEffect, useState, useCallback, useMemo, memo } from 'react'
+import React, { useEffect, useState, useCallback, useMemo, memo } from 'react'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -116,7 +117,24 @@ const CostSummary = memo(function CostSummary({
 })
 
 // Memoized custom pie chart tooltip
-const PieTooltip = memo(function PieTooltip({ active, payload }: any) {
+interface PieTooltipPayloadEntry {
+  payload: {
+    name?: string
+    model?: string
+    provider?: string
+    totalCost?: number
+    cost?: number
+    costPercentage?: number
+    requestCount?: number
+  }
+}
+
+interface PieTooltipProps {
+  active?: boolean
+  payload?: PieTooltipPayloadEntry[]
+}
+
+const PieTooltip = memo(function PieTooltip({ active, payload }: PieTooltipProps): React.JSX.Element | null {
   if (!active || !payload || !payload.length) return null
 
   const data = payload[0].payload
@@ -144,7 +162,22 @@ const PieTooltip = memo(function PieTooltip({ active, payload }: any) {
 })
 
 // Memoized custom bar chart tooltip
-const BarTooltip = memo(function BarTooltip({ active, payload }: any) {
+interface BarTooltipPayloadEntry {
+  color: string
+  value: number
+  payload: {
+    model: string
+    requestCount: number
+    avgCostPerRequest: number
+  }
+}
+
+interface BarTooltipProps {
+  active?: boolean
+  payload?: BarTooltipPayloadEntry[]
+}
+
+const BarTooltip = memo(function BarTooltip({ active, payload }: BarTooltipProps): React.JSX.Element | null {
   if (!active || !payload || !payload.length) return null
 
   return (
@@ -211,7 +244,8 @@ function CostBreakdownInner({
   period = '24h',
   refreshInterval = 60000,
   className = ''
-}: CostBreakdownProps) {
+}: CostBreakdownProps): React.JSX.Element {
+  const t = useTranslations('monitoring')
   const [data, setData] = useState<CostData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -318,7 +352,7 @@ function CostBreakdownInner({
   }), [])
 
   // Get trend icon
-  const getTrendIcon = () => {
+  const getTrendIcon = (): React.JSX.Element | null => {
     if (!data?.overview) return null
     const trend = data.overview.costTrend
     if (trend === 'increasing') {
@@ -329,20 +363,11 @@ function CostBreakdownInner({
     return null
   }
 
-  // Get trend color
-  const getTrendColor = () => {
-    if (!data?.overview) return 'text-gray-600'
-    const trend = data.overview.costTrend
-    if (trend === 'increasing') return 'text-red-600'
-    if (trend === 'decreasing') return 'text-green-600'
-    return 'text-blue-600'
-  }
-
   if (loading) {
     return (
       <Card className={className}>
         <CardHeader>
-          <CardTitle>Cost Breakdown</CardTitle>
+          <CardTitle>{t('costBreakdown.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse">
@@ -365,7 +390,7 @@ function CostBreakdownInner({
     return (
       <Card className={`${className} border-red-300`}>
         <CardHeader>
-          <CardTitle className="text-red-700">Cost Breakdown</CardTitle>
+          <CardTitle className="text-red-700">{t('costBreakdown.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center text-red-700">
@@ -373,7 +398,7 @@ function CostBreakdownInner({
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
             </svg>
             <div>
-              <p className="font-semibold">Error Loading Cost Data</p>
+              <p className="font-semibold">{t('costBreakdown.errorLoading')}</p>
               <p className="text-sm mt-1">{error}</p>
             </div>
           </div>
@@ -381,7 +406,7 @@ function CostBreakdownInner({
             onClick={fetchCostData}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
           >
-            Retry
+            {t('costBreakdown.retry')}
           </button>
         </CardContent>
       </Card>
@@ -392,12 +417,12 @@ function CostBreakdownInner({
     return (
       <Card className={className}>
         <CardHeader>
-          <CardTitle>Cost Breakdown</CardTitle>
+          <CardTitle>{t('costBreakdown.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12 text-gray-500">
             <DollarSign className="mx-auto h-12 w-12 mb-3" />
-            <p className="text-sm">No cost data available for the selected period</p>
+            <p className="text-sm">{t('costBreakdown.noData')}</p>
           </div>
         </CardContent>
       </Card>
@@ -408,19 +433,19 @@ function CostBreakdownInner({
     <Card className={className}>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Cost Breakdown</CardTitle>
+          <CardTitle>{t('costBreakdown.title')}</CardTitle>
           <div className="flex items-center gap-2">
             <select
               value={selectedPeriod}
               onChange={(e) => handlePeriodChange(e.target.value)}
               className="px-3 py-1 rounded-md text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="1h">Last Hour</option>
-              <option value="6h">Last 6 Hours</option>
-              <option value="12h">Last 12 Hours</option>
-              <option value="24h">Last 24 Hours</option>
-              <option value="7d">Last 7 Days</option>
-              <option value="30d">Last 30 Days</option>
+              <option value="1h">{t('costBreakdown.lastHour')}</option>
+              <option value="6h">{t('costBreakdown.last6Hours')}</option>
+              <option value="12h">{t('costBreakdown.last12Hours')}</option>
+              <option value="24h">{t('costBreakdown.last24Hours')}</option>
+              <option value="7d">{t('costBreakdown.last7Days')}</option>
+              <option value="30d">{t('costBreakdown.last30Days')}</option>
             </select>
             <Button
               onClick={handleExport}
@@ -429,7 +454,7 @@ function CostBreakdownInner({
               className="flex items-center gap-1"
             >
               <Download className="h-4 w-4" />
-              Export CSV
+              {t('costBreakdown.exportCsv')}
             </Button>
           </div>
         </div>
@@ -438,22 +463,22 @@ function CostBreakdownInner({
         {/* Summary Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <CostSummary
-            label="Total Cost"
+            label={t('costBreakdown.totalCost')}
             value={formatCost(data.overview.totalCost)}
-            subtext={`${data.overview.totalRequests.toLocaleString()} requests`}
+            subtext={t('costBreakdown.requestsCount', { count: data.overview.totalRequests.toLocaleString() })}
             colorClass="bg-gradient-to-br from-blue-50 to-blue-100 text-blue-900"
             icon={<DollarSign className="h-5 w-5" />}
           />
           <CostSummary
-            label="Avg Cost/Request"
+            label={t('costBreakdown.avgCostPerRequest')}
             value={formatCost(data.overview.avgCostPerRequest)}
-            subtext={`${data.overview.totalTokens.toLocaleString()} total tokens`}
+            subtext={t('costBreakdown.totalTokens', { count: data.overview.totalTokens.toLocaleString() })}
             colorClass="bg-gradient-to-br from-green-50 to-green-100 text-green-900"
           />
           <CostSummary
-            label="Cost Trend"
+            label={t('costBreakdown.costTrend')}
             value={data.overview.costChangePercent >= 0 ? `+${data.overview.costChangePercent.toFixed(1)}%` : `${data.overview.costChangePercent.toFixed(1)}%`}
-            subtext={`${data.overview.costTrend} compared to previous period`}
+            subtext={t('costBreakdown.comparedToPrevious', { trend: data.overview.costTrend })}
             colorClass={`bg-gradient-to-br ${
               data.overview.costTrend === 'increasing'
                 ? 'from-red-50 to-red-100 text-red-900'
@@ -469,7 +494,7 @@ function CostBreakdownInner({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Cost by Model Pie Chart */}
           <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">Cost Distribution by Model</h4>
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">{t('costBreakdown.costDistributionByModel')}</h4>
             {modelPieData.length > 0 ? (
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -479,7 +504,7 @@ function CostBreakdownInner({
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={(entry: any) =>
+                      label={(entry: { costPercentage: number; name: string }) =>
                         entry.costPercentage > 5 ? `${entry.name} (${entry.costPercentage.toFixed(1)}%)` : ''
                       }
                       outerRadius={80}
@@ -497,14 +522,14 @@ function CostBreakdownInner({
               </div>
             ) : (
               <div className="h-64 flex items-center justify-center text-gray-500 text-sm">
-                No model cost data available
+                {t('costBreakdown.noModelData')}
               </div>
             )}
           </div>
 
           {/* Cost by Provider Pie Chart */}
           <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">Cost Distribution by Provider</h4>
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">{t('costBreakdown.costDistributionByProvider')}</h4>
             {providerPieData.length > 0 ? (
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -514,7 +539,7 @@ function CostBreakdownInner({
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={(entry: any) =>
+                      label={(entry: { costPercentage: number; name: string }) =>
                         entry.costPercentage > 5 ? `${entry.name} (${entry.costPercentage.toFixed(1)}%)` : ''
                       }
                       outerRadius={80}
@@ -532,7 +557,7 @@ function CostBreakdownInner({
               </div>
             ) : (
               <div className="h-64 flex items-center justify-center text-gray-500 text-sm">
-                No provider cost data available
+                {t('costBreakdown.noProviderData')}
               </div>
             )}
           </div>
@@ -540,7 +565,7 @@ function CostBreakdownInner({
 
         {/* Bar Chart: Cost Comparison by Model */}
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">Cost Comparison by Model</h4>
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">{t('costBreakdown.costComparisonByModel')}</h4>
           {barChartData.length > 0 ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -555,7 +580,7 @@ function CostBreakdownInner({
                   />
                   <YAxis
                     tick={{ fontSize: 11 }}
-                    label={{ value: 'Cost ($)', angle: -90, position: 'insideLeft' }}
+                    label={{ value: t('costBreakdown.costAxis'), angle: -90, position: 'insideLeft' }}
                     tickFormatter={(value) => `$${value.toFixed(3)}`}
                   />
                   <Tooltip
@@ -565,7 +590,7 @@ function CostBreakdownInner({
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Bar
                     dataKey="totalCost"
-                    name="Total Cost"
+                    name={t('costBreakdown.totalCost')}
                     fill="#3b82f6"
                     radius={[4, 4, 0, 0]}
                   />
@@ -574,7 +599,7 @@ function CostBreakdownInner({
             </div>
           ) : (
             <div className="h-64 flex items-center justify-center text-gray-500 text-sm">
-              No model comparison data available
+              {t('costBreakdown.noComparisonData')}
             </div>
           )}
         </div>
@@ -582,25 +607,25 @@ function CostBreakdownInner({
         {/* Detailed Model Breakdown Table */}
         {data.byModel && data.byModel.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">Detailed Breakdown by Model</h4>
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">{t('costBreakdown.detailedBreakdownByModel')}</h4>
             <div className="overflow-hidden border rounded-lg">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="py-2 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Model
+                      {t('costBreakdown.model')}
                     </th>
                     <th className="py-2 px-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Total Cost
+                      {t('costBreakdown.totalCost')}
                     </th>
                     <th className="py-2 px-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Requests
+                      {t('costBreakdown.requests')}
                     </th>
                     <th className="py-2 px-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Avg/Request
+                      {t('costBreakdown.avgPerRequest')}
                     </th>
                     <th className="py-2 px-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      % of Total
+                      {t('costBreakdown.percentOfTotal')}
                     </th>
                   </tr>
                 </thead>
@@ -623,7 +648,7 @@ function CostBreakdownInner({
 
         {lastUpdate && (
           <div className="text-xs text-gray-500 text-right">
-            Last updated: {lastUpdate.toLocaleTimeString()}
+            {t('costBreakdown.lastUpdated')}: {lastUpdate.toLocaleTimeString()}
           </div>
         )}
       </CardContent>

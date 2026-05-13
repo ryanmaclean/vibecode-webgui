@@ -142,6 +142,18 @@ export async function POST(
       return response
     }
 
+    if (sourceWorkspace.user_id !== parseInt(session.user.id, 10)) {
+      log.warn('Forbidden workspace clone attempt', {
+        requestId: requestContext.requestId,
+        workspaceId,
+        ownerId: sourceWorkspace.user_id,
+        requestingUserId: session.user.id
+      })
+      const response = NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      apiLogger.logResponse(requestContext, response, startTime)
+      return response
+    }
+
     // Extract configuration from source workspace
     // Framework and language are stored in the database
     // Files, dependencies, and environment are not stored in DB (only exist in K8s workspace)

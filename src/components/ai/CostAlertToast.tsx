@@ -14,6 +14,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { X, Info, AlertTriangle, AlertCircle, DollarSign, TrendingUp } from 'lucide-react';
 import { CostAlert, AlertSeverity } from '@/types/cost-estimation';
 
@@ -58,6 +59,7 @@ export function CostAlertToast({
   onClose,
   onAcknowledge,
 }: CostAlertToastProps) {
+  const t = useTranslations();
   const [isVisible, setIsVisible] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
 
@@ -143,7 +145,7 @@ export function CostAlertToast({
             <div className="ml-3 w-0 flex-1">
               {/* Alert Title */}
               <p className={`text-sm font-semibold ${config.text} mb-1`}>
-                {getAlertTitle(alert.type)}
+                {getAlertTitle(alert.type, t)}
               </p>
 
               {/* Alert Message */}
@@ -156,13 +158,13 @@ export function CostAlertToast({
                 <div className="flex items-center space-x-1">
                   <DollarSign className="h-3 w-3" />
                   <span className={`font-medium ${config.text}`}>
-                    Current: {formatCost(alert.current)}
+                    {t('ai.costs.alerts.currentLabel').replace('{cost}', formatCost(alert.current))}
                   </span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <TrendingUp className="h-3 w-3" />
                   <span className={`font-medium ${config.text}`}>
-                    Limit: {formatCost(alert.threshold)}
+                    {t('ai.costs.alerts.limitLabel').replace('{cost}', formatCost(alert.threshold))}
                   </span>
                 </div>
               </div>
@@ -172,7 +174,7 @@ export function CostAlertToast({
                 <div className="mt-2">
                   <div className="flex justify-between items-center mb-1">
                     <span className={`text-xs ${config.text}`}>
-                      {percentage.toFixed(0)}% of limit
+                      {t('ai.costs.alerts.percentOfLimit').replace('{percent}', percentage.toFixed(0))}
                     </span>
                   </div>
                   <div className="w-full bg-white/50 rounded-full h-1.5">
@@ -191,7 +193,7 @@ export function CostAlertToast({
                   onClick={handleAcknowledge}
                   className={`mt-3 text-xs font-medium ${config.text} hover:underline focus:outline-none`}
                 >
-                  Acknowledge
+                  {t('ai.costs.alerts.acknowledgeButton')}
                 </button>
               )}
             </div>
@@ -201,7 +203,7 @@ export function CostAlertToast({
               <button
                 onClick={handleClose}
                 className="inline-flex text-gray-400 hover:text-gray-500 focus:outline-none transition-colors"
-                aria-label="Close notification"
+                aria-label={t('ai.costs.alerts.closeNotification')}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -244,13 +246,13 @@ export function CostAlertToast({
 // Helper Functions
 // ============================================================================
 
-function getAlertTitle(type: CostAlert['type']): string {
+function getAlertTitle(type: CostAlert['type'], t: (key: string) => string): string {
   const titles: Record<CostAlert['type'], string> = {
-    budget_threshold: 'Budget Threshold Reached',
-    daily_limit: 'Daily Limit Reached',
-    session_limit: 'Session Limit Reached',
-    rate_spike: 'Unusual Cost Spike Detected',
-    unusual_usage: 'Unusual Usage Pattern',
+    budget_threshold: t('ai.costs.alerts.budgetThresholdTitle'),
+    daily_limit: t('ai.costs.alerts.dailyLimitTitle'),
+    session_limit: t('ai.costs.alerts.sessionLimitTitle'),
+    rate_spike: t('ai.costs.alerts.rateSpikeTitle'),
+    unusual_usage: t('ai.costs.alerts.unusualUsageTitle'),
   };
   return titles[type];
 }

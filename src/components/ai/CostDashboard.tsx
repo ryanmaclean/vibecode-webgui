@@ -14,6 +14,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -47,15 +48,11 @@ import {
   BarChart3,
 } from 'lucide-react';
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   PieChart as RechartsPieChart,
   Pie,
   Cell,
@@ -70,7 +67,6 @@ import {
   CostAlert,
   CostSettings,
   TimePeriod,
-  ModelPricing,
   AlertType,
   AlertSeverity,
 } from '@/types/cost-estimation';
@@ -183,7 +179,7 @@ interface StatCardProps {
   testId?: string;
 }
 
-function StatCard({ title, value, description, icon, trend, trendLabel, variant = 'default', testId }: StatCardProps) {
+function StatCard({ title, value, description, icon, trend, trendLabel, variant = 'default', testId }: StatCardProps): React.JSX.Element {
   const variantStyles = {
     default: 'bg-card',
     success: 'bg-green-50 border-green-200',
@@ -229,7 +225,8 @@ interface AlertBannerProps {
   onDismiss: (alertId: string) => void;
 }
 
-function AlertBanner({ alerts, onDismiss }: AlertBannerProps) {
+function AlertBanner({ alerts, onDismiss }: AlertBannerProps): React.JSX.Element | null {
+  const t = useTranslations('ai');
   const triggeredAlerts = alerts.filter((a) => a.triggered && a.enabled);
 
   if (triggeredAlerts.length === 0) return null;
@@ -260,12 +257,12 @@ function AlertBanner({ alerts, onDismiss }: AlertBannerProps) {
             <div>
               <p className="font-medium">{alert.message}</p>
               <p className="text-sm text-muted-foreground">
-                Current: {formatCost(alert.current)} / Threshold: {formatCost(alert.threshold)}
+                {t('costDashboard.alerts.current', { cost: formatCost(alert.current) })} / {t('costDashboard.alerts.threshold', { cost: formatCost(alert.threshold) })}
               </p>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={() => onDismiss(alert.id)}>
-            Dismiss
+            {t('costDashboard.alerts.dismiss')}
           </Button>
         </div>
       ))}
@@ -277,7 +274,8 @@ interface ModelBreakdownChartProps {
   data: Record<string, { totalCost: number; requests: number }>;
 }
 
-function ModelBreakdownChart({ data }: ModelBreakdownChartProps) {
+function ModelBreakdownChart({ data }: ModelBreakdownChartProps): React.JSX.Element {
+  const t = useTranslations('ai');
   const chartData = useMemo(() => {
     return Object.entries(data)
       .map(([modelId, stats]) => {
@@ -296,7 +294,7 @@ function ModelBreakdownChart({ data }: ModelBreakdownChartProps) {
   if (chartData.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
-        <p>No model usage data yet</p>
+        <p>{t('costDashboard.models.noModelDataChart')}</p>
       </div>
     );
   }
@@ -338,7 +336,8 @@ interface UsageChartProps {
   metric: 'cost' | 'tokens' | 'requests';
 }
 
-function UsageChart({ data, period, metric }: UsageChartProps) {
+function UsageChart({ data, period, metric }: UsageChartProps): React.JSX.Element {
+  const t = useTranslations('ai');
   const chartData = useMemo(() => {
     return data.map((point) => ({
       timestamp: formatTimestamp(point.timestamp, period),
@@ -351,7 +350,7 @@ function UsageChart({ data, period, metric }: UsageChartProps) {
   if (chartData.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
-        <p>No usage data for this period</p>
+        <p>{t('costDashboard.noUsageData')}</p>
       </div>
     );
   }
@@ -406,7 +405,8 @@ interface PredictionCardProps {
   settings: CostSettings;
 }
 
-function PredictionCard({ sessionCost, dailyData, settings }: PredictionCardProps) {
+function PredictionCard({ sessionCost, dailyData, settings }: PredictionCardProps): React.JSX.Element {
+  const t = useTranslations('ai');
   const predictions = useMemo(() => {
     // Calculate average daily spending from last 7 days
     const recentDays = dailyData.slice(-7);
@@ -443,24 +443,24 @@ function PredictionCard({ sessionCost, dailyData, settings }: PredictionCardProp
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <TrendingUp className="h-5 w-5" />
-          <span>Cost Predictions</span>
+          <span>{t('costDashboard.overview.costPredictions')}</span>
         </CardTitle>
         <CardDescription>
-          Based on your usage patterns over the last 7 days
+          {t('costDashboard.overview.costPredictionsDesc')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center">
-            <p className="text-sm text-muted-foreground">Daily</p>
+            <p className="text-sm text-muted-foreground">{t('costDashboard.overview.daily')}</p>
             <p className="text-xl font-bold">{formatCost(predictions.daily)}</p>
           </div>
           <div className="text-center">
-            <p className="text-sm text-muted-foreground">Weekly</p>
+            <p className="text-sm text-muted-foreground">{t('costDashboard.overview.weekly')}</p>
             <p className="text-xl font-bold">{formatCost(predictions.weekly)}</p>
           </div>
           <div className="text-center">
-            <p className="text-sm text-muted-foreground">Monthly</p>
+            <p className="text-sm text-muted-foreground">{t('costDashboard.overview.monthly')}</p>
             <p className="text-xl font-bold">{formatCost(predictions.monthly)}</p>
           </div>
         </div>
@@ -468,7 +468,7 @@ function PredictionCard({ sessionCost, dailyData, settings }: PredictionCardProp
         {settings.monthlyBudget > 0 && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span>Monthly Budget Progress</span>
+              <span>{t('costDashboard.overview.monthlyBudgetProgress')}</span>
               <span>{predictions.budgetUsed.toFixed(1)}%</span>
             </div>
             <Progress
@@ -483,8 +483,7 @@ function PredictionCard({ sessionCost, dailyData, settings }: PredictionCardProp
             />
             {predictions.daysUntilBudgetExhausted && (
               <p className="text-xs text-muted-foreground">
-                At current rate, budget will be exhausted in{' '}
-                {predictions.daysUntilBudgetExhausted} days
+                {t('costDashboard.overview.budgetWillExhaust', { days: predictions.daysUntilBudgetExhausted })}
               </p>
             )}
           </div>
@@ -504,7 +503,8 @@ export default function CostDashboard({
   refreshInterval = 30000,
   showSettings = true,
   compact = false,
-}: CostDashboardProps) {
+}: CostDashboardProps): React.JSX.Element {
+  const t = useTranslations('ai');
   const tracker = customTracker || getCostTracker();
   const [data, setData] = useState<DashboardData | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('daily');
@@ -662,15 +662,15 @@ export default function CostDashboard({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">AI Cost Dashboard</h2>
+          <h2 className="text-2xl font-bold">{t('costDashboard.title')}</h2>
           <p className="text-muted-foreground">
-            Track and manage your AI spending across {Object.keys(MODEL_PRICING).length}+ models
+            {t('costDashboard.description', { count: Object.keys(MODEL_PRICING).length })}
           </p>
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" onClick={() => loadData()}>
             <RefreshCw className="h-4 w-4 mr-1" />
-            Refresh
+            {t('costDashboard.refresh')}
           </Button>
           <Select
             value="csv"
@@ -678,11 +678,11 @@ export default function CostDashboard({
           >
             <SelectTrigger className="w-[140px]">
               <Download className="h-4 w-4 mr-1" />
-              <SelectValue placeholder="Export" />
+              <SelectValue placeholder={t('costDashboard.export')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="csv">Export CSV</SelectItem>
-              <SelectItem value="json">Export JSON</SelectItem>
+              <SelectItem value="csv">{t('costDashboard.exportCsv')}</SelectItem>
+              <SelectItem value="json">{t('costDashboard.exportJson')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -694,30 +694,30 @@ export default function CostDashboard({
       {/* Stats Grid */}
       <div className={`grid gap-4 ${compact ? 'grid-cols-2' : 'grid-cols-4'}`}>
         <StatCard
-          title="Session Cost"
+          title={t('costDashboard.stats.sessionCost')}
           value={formatCost(session.totalCost)}
-          description={`${session.requests} requests`}
+          description={t('costDashboard.stats.sessionCostDesc', { count: session.requests })}
           icon={<DollarSign className="h-5 w-5" />}
           testId="session-cost"
         />
         <StatCard
-          title="Today's Cost"
+          title={t('costDashboard.stats.todayCost')}
           value={formatCost(todayCost)}
           description={`${formatTokens(history.daily[history.daily.length - 1]?.tokens || session.totalTokens)} tokens`}
           icon={<Activity className="h-5 w-5" />}
           trend={dailyTrend}
-          trendLabel="vs yesterday"
+          trendLabel={t('costDashboard.stats.vsYesterday')}
         />
         <StatCard
-          title="Total Tokens"
+          title={t('costDashboard.stats.totalTokens')}
           value={formatTokens(session.totalTokens)}
-          description="This session"
+          description={t('costDashboard.stats.totalTokensDesc')}
           icon={<Zap className="h-5 w-5" />}
         />
         <StatCard
-          title="All-Time Cost"
+          title={t('costDashboard.stats.allTimeCost')}
           value={formatCost(history.allTime.totalCost)}
-          description={`${history.allTime.totalRequests} total requests`}
+          description={t('costDashboard.stats.allTimeCostDesc', { count: history.allTime.totalRequests })}
           icon={<Clock className="h-5 w-5" />}
         />
       </div>
@@ -727,15 +727,15 @@ export default function CostDashboard({
         <TabsList>
           <TabsTrigger value="overview">
             <BarChart3 className="h-4 w-4 mr-1" />
-            Overview
+            {t('costDashboard.tabs.overview')}
           </TabsTrigger>
           <TabsTrigger value="models" data-testid="models-tab">
             <PieChart className="h-4 w-4 mr-1" />
-            By Model
+            {t('costDashboard.tabs.byModel')}
           </TabsTrigger>
           <TabsTrigger value="alerts" data-testid="alerts-tab">
             <Bell className="h-4 w-4 mr-1" />
-            Alerts
+            {t('costDashboard.tabs.alerts')}
             {alerts.filter((a) => a.triggered).length > 0 && (
               <Badge variant="destructive" className="ml-1">
                 {alerts.filter((a) => a.triggered).length}
@@ -745,7 +745,7 @@ export default function CostDashboard({
           {showSettings && (
             <TabsTrigger value="settings" data-testid="settings-tab">
               <Settings className="h-4 w-4 mr-1" />
-              Settings
+              {t('costDashboard.tabs.settings')}
             </TabsTrigger>
           )}
         </TabsList>
@@ -756,7 +756,7 @@ export default function CostDashboard({
             <Card className="lg:col-span-2">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Usage Over Time</CardTitle>
+                  <CardTitle>{t('costDashboard.overview.usageOverTime')}</CardTitle>
                   <div className="flex items-center space-x-2">
                     <Select
                       value={selectedPeriod}
@@ -766,10 +766,10 @@ export default function CostDashboard({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="hourly">Hourly</SelectItem>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="hourly">{t('modelUsage.periodSelect.hourly')}</SelectItem>
+                        <SelectItem value="daily">{t('modelUsage.periodSelect.daily')}</SelectItem>
+                        <SelectItem value="weekly">{t('modelUsage.periodSelect.weekly')}</SelectItem>
+                        <SelectItem value="monthly">{t('modelUsage.periodSelect.monthly')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select
@@ -780,9 +780,9 @@ export default function CostDashboard({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="cost">Cost</SelectItem>
-                        <SelectItem value="tokens">Tokens</SelectItem>
-                        <SelectItem value="requests">Requests</SelectItem>
+                        <SelectItem value="cost">{t('costDashboard.metricSelect.cost')}</SelectItem>
+                        <SelectItem value="tokens">{t('costDashboard.metricSelect.tokens')}</SelectItem>
+                        <SelectItem value="requests">{t('costDashboard.metricSelect.requests')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -810,9 +810,9 @@ export default function CostDashboard({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle>Cost by Model</CardTitle>
+                <CardTitle>{t('costDashboard.models.costByModel')}</CardTitle>
                 <CardDescription>
-                  Breakdown of spending across different AI models
+                  {t('costDashboard.models.costByModelDesc')}
                 </CardDescription>
               </CardHeader>
               <CardContent data-testid="model-breakdown">
@@ -822,9 +822,9 @@ export default function CostDashboard({
 
             <Card>
               <CardHeader>
-                <CardTitle>Model Usage Details</CardTitle>
+                <CardTitle>{t('costDashboard.models.modelUsageDetails')}</CardTitle>
                 <CardDescription>
-                  Detailed statistics for each model used
+                  {t('costDashboard.models.modelUsageDetailsDesc')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -851,14 +851,14 @@ export default function CostDashboard({
                                 {pricing?.displayName || modelId}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                {stats.requests} requests
+                                {t('costDashboard.models.requestsLabel', { count: stats.requests })}
                               </p>
                             </div>
                           </div>
                           <div className="text-right">
                             <p className="font-medium">{formatCost(stats.totalCost)}</p>
                             <p className="text-sm text-muted-foreground">
-                              {formatTokens(stats.promptTokens + stats.completionTokens)} tokens
+                              {t('costDashboard.models.tokensLabel', { tokens: formatTokens(stats.promptTokens + stats.completionTokens) })}
                             </p>
                           </div>
                         </div>
@@ -866,7 +866,7 @@ export default function CostDashboard({
                     })}
                   {Object.keys(session.byModel).length === 0 && (
                     <p className="text-center text-muted-foreground py-8">
-                      No model usage data in this session
+                      {t('costDashboard.models.noModelData')}
                     </p>
                   )}
                 </div>
@@ -881,14 +881,14 @@ export default function CostDashboard({
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Cost Alerts</CardTitle>
+                  <CardTitle>{t('costDashboard.alerts.title')}</CardTitle>
                   <CardDescription>
-                    Configure alerts to monitor your AI spending
+                    {t('costDashboard.alerts.description')}
                   </CardDescription>
                 </div>
                 <Button onClick={() => setIsCreateAlertOpen(true)}>
                   <Bell className="h-4 w-4 mr-2" />
-                  Create Alert
+                  {t('costDashboard.alerts.createAlert')}
                 </Button>
               </div>
             </CardHeader>
@@ -897,9 +897,9 @@ export default function CostDashboard({
                 <div className="text-center py-8">
                   <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">
-                    No alerts configured. Set up alerts to monitor your spending.
+                    {t('costDashboard.alerts.noAlerts')}
                   </p>
-                  <Button onClick={() => setIsCreateAlertOpen(true)}>Create Alert</Button>
+                  <Button onClick={() => setIsCreateAlertOpen(true)}>{t('costDashboard.alerts.createAlert')}</Button>
                 </div>
               ) : (
                 <div data-testid="alert-list" className="space-y-4">
@@ -929,14 +929,13 @@ export default function CostDashboard({
                         <div>
                           <p className="font-medium">{alert.message}</p>
                           <p className="text-sm text-muted-foreground">
-                            Threshold: {formatCost(alert.threshold)} | Current:{' '}
-                            {formatCost(alert.current)}
+                            {t('costDashboard.alerts.thresholdCurrent', { threshold: formatCost(alert.threshold), current: formatCost(alert.current) })}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Badge variant={alert.enabled ? 'default' : 'secondary'}>
-                          {alert.enabled ? 'Active' : 'Disabled'}
+                          {alert.enabled ? t('costDashboard.alerts.active') : t('costDashboard.alerts.disabled')}
                         </Badge>
                         {alert.triggered && (
                           <Button
@@ -944,7 +943,7 @@ export default function CostDashboard({
                             size="sm"
                             onClick={() => handleDismissAlert(alert.id)}
                           >
-                            Acknowledge
+                            {t('costDashboard.alerts.acknowledge')}
                           </Button>
                         )}
                       </div>
@@ -971,15 +970,15 @@ export default function CostDashboard({
       <Dialog open={isCreateAlertOpen} onOpenChange={setIsCreateAlertOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Create Cost Alert</DialogTitle>
+            <DialogTitle>{t('costDashboard.createAlertDialog.title')}</DialogTitle>
             <DialogDescription>
-              Set up a new alert to monitor your AI spending
+              {t('costDashboard.createAlertDialog.description')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="alert-type">Alert Type</Label>
+              <Label htmlFor="alert-type">{t('costDashboard.createAlertDialog.alertType')}</Label>
               <Select
                 value={newAlertType}
                 onValueChange={(v) => setNewAlertType(v as AlertType)}
@@ -988,17 +987,17 @@ export default function CostDashboard({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="budget_threshold">Budget Threshold</SelectItem>
-                  <SelectItem value="daily_limit">Daily Limit</SelectItem>
-                  <SelectItem value="session_limit">Session Limit</SelectItem>
-                  <SelectItem value="rate_spike">Rate Spike</SelectItem>
-                  <SelectItem value="unusual_usage">Unusual Usage</SelectItem>
+                  <SelectItem value="budget_threshold">{t('costDashboard.createAlertDialog.alertTypes.budget_threshold')}</SelectItem>
+                  <SelectItem value="daily_limit">{t('costDashboard.createAlertDialog.alertTypes.daily_limit')}</SelectItem>
+                  <SelectItem value="session_limit">{t('costDashboard.createAlertDialog.alertTypes.session_limit')}</SelectItem>
+                  <SelectItem value="rate_spike">{t('costDashboard.createAlertDialog.alertTypes.rate_spike')}</SelectItem>
+                  <SelectItem value="unusual_usage">{t('costDashboard.createAlertDialog.alertTypes.unusual_usage')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="alert-threshold">Threshold (USD)</Label>
+              <Label htmlFor="alert-threshold">{t('costDashboard.createAlertDialog.threshold')}</Label>
               <Input
                 data-testid="alert-threshold"
                 id="alert-threshold"
@@ -1012,7 +1011,7 @@ export default function CostDashboard({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="alert-severity">Severity</Label>
+              <Label htmlFor="alert-severity">{t('costDashboard.createAlertDialog.severity')}</Label>
               <Select
                 value={newAlertSeverity}
                 onValueChange={(v) => setNewAlertSeverity(v as AlertSeverity)}
@@ -1021,15 +1020,15 @@ export default function CostDashboard({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="info">Info</SelectItem>
-                  <SelectItem value="warning">Warning</SelectItem>
-                  <SelectItem value="critical">Critical</SelectItem>
+                  <SelectItem value="info">{t('costDashboard.createAlertDialog.severities.info')}</SelectItem>
+                  <SelectItem value="warning">{t('costDashboard.createAlertDialog.severities.warning')}</SelectItem>
+                  <SelectItem value="critical">{t('costDashboard.createAlertDialog.severities.critical')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="alert-reset-period">Reset Period</Label>
+              <Label htmlFor="alert-reset-period">{t('costDashboard.createAlertDialog.resetPeriod')}</Label>
               <Select
                 value={newAlertResetPeriod}
                 onValueChange={(v) => setNewAlertResetPeriod(v as TimePeriod)}
@@ -1038,10 +1037,10 @@ export default function CostDashboard({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="hourly">Hourly</SelectItem>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="hourly">{t('modelUsage.periodSelect.hourly')}</SelectItem>
+                  <SelectItem value="daily">{t('modelUsage.periodSelect.daily')}</SelectItem>
+                  <SelectItem value="weekly">{t('modelUsage.periodSelect.weekly')}</SelectItem>
+                  <SelectItem value="monthly">{t('modelUsage.periodSelect.monthly')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1053,7 +1052,7 @@ export default function CostDashboard({
                 onCheckedChange={setNewAlertEnabled}
               />
               <Label htmlFor="alert-enabled" className="cursor-pointer">
-                Enable alert immediately
+                {t('costDashboard.createAlertDialog.enableImmediately')}
               </Label>
             </div>
 
@@ -1064,23 +1063,23 @@ export default function CostDashboard({
                 onCheckedChange={setNewAlertNotify}
               />
               <Label htmlFor="alert-notify" className="cursor-pointer">
-                Send notifications when triggered
+                {t('costDashboard.createAlertDialog.sendNotifications')}
               </Label>
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateAlertOpen(false)}>
-              Cancel
+              {t('costDashboard.createAlertDialog.cancel')}
             </Button>
-            <Button onClick={handleCreateAlert}>Create Alert</Button>
+            <Button onClick={handleCreateAlert}>{t('costDashboard.createAlertDialog.create')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Footer */}
       <div className="text-xs text-muted-foreground text-center">
-        Last updated: {lastUpdated.toLocaleTimeString()}
+        {t('costDashboard.lastUpdated', { time: lastUpdated.toLocaleTimeString() })}
       </div>
     </div>
   );

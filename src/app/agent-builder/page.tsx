@@ -35,7 +35,7 @@ export default function AgentBuilderPage() {
           <Link href="/auth/signin">
             <Button>Sign in</Button>
           </Link>
-          <Link href="/auth/register">
+          <Link href="/auth/signin">
             <Button variant="outline">Create account</Button>
           </Link>
         </div>

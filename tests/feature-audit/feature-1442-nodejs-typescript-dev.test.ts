@@ -77,8 +77,7 @@ describe('Feature Audit #1442: Node.js/JavaScript/TypeScript Development', () =>
         return fs.existsSync(configPath);
       });
 
-      // This is optional - some projects use a single tsconfig
-      expect(true).toBe(true); // Always pass, this is an audit item
+      // This is optional - some projects use a single tsconfig (audit item, not enforced)
     });
 
     it('has extension-specific tsconfigs', () => {
@@ -112,8 +111,7 @@ describe('Feature Audit #1442: Node.js/JavaScript/TypeScript Development', () =>
       const hasEslintConfig = fs.existsSync(flatConfigPath) ||
         legacyConfigPaths.some(p => fs.existsSync(p));
 
-      // ESLint config is optional - some projects rely on IDE defaults
-      expect(true).toBe(true); // Audit item, not strict requirement
+      // ESLint config is optional - some projects rely on IDE defaults (audit item, not enforced)
     });
 
     it('has package.json with development scripts', () => {
@@ -178,8 +176,7 @@ describe('Feature Audit #1442: Node.js/JavaScript/TypeScript Development', () =>
         fs.existsSync(playwrightConfigJsPath) ||
         fs.existsSync(cypressConfigPath);
 
-      // E2E config is optional for unit-test focused projects
-      expect(true).toBe(true); // Audit item
+      // E2E config is optional for unit-test focused projects (audit item, not enforced)
     });
 
     it('has test directories', () => {
@@ -346,13 +343,11 @@ describe('Feature Audit #1442: Node.js/JavaScript/TypeScript Development', () =>
       // Either instrumentation file or monitoring config should exist
       const hasMonitoring = fs.existsSync(instrumentPath) || fs.existsSync(datadogConfigPath);
       
-      // Monitoring is optional, so we just log the result
+      // Monitoring is optional - assert presence only if found
       if (hasMonitoring) {
         expect(hasMonitoring).toBe(true);
-      } else {
-        // Mark as optional by not failing
-        expect(true).toBe(true);
       }
+      // else: monitoring not configured, audit item only - no failure
     });
   });
 });
