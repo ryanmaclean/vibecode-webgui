@@ -105,135 +105,14 @@ export class TemplateMarketplaceService {
   }
 
   /**
-   * Initialize with sample templates
+   * Initialize templates store.
+   * Templates are populated dynamically via the API routes
+   * (/api/marketplace/templates and /api/projects/templates),
+   * not hardcoded here.
    */
   private initializeTemplates(): void {
-    const sampleTemplates: MarketplaceTemplate[] = [
-      {
-        id: 'react-ts-vite',
-        name: 'React TypeScript Vite',
-        description: 'Modern React application with TypeScript and Vite build system',
-        author: 'VibeCode Team',
-        category: 'frontend',
-        language: 'typescript',
-        framework: 'react',
-        complexity: 'intermediate',
-        tags: ['react', 'typescript', 'vite', 'modern'],
-        stars: 4.8,
-        downloads: 15420,
-        pricing: 'free',
-        lastUpdated: '2024-01-15',
-        featured: true,
-        dependencies: {
-          'react': '^18.2.0',
-          'react-dom': '^18.2.0',
-          'typescript': '^4.9.5'
-        },
-        scripts: {
-          'dev': 'vite',
-          'build': 'tsc && vite build',
-          'preview': 'vite preview',
-          'test': 'vitest'
-        },
-        envVars: [
-          {
-            name: 'VITE_API_URL',
-            defaultValue: 'http://localhost:3001',
-            description: 'API server URL'
-          }
-        ],
-        documentation: {
-          setup: [
-            'Install dependencies: npm install',
-            'Start development server: npm run dev',
-            'Open http://localhost:5173 in your browser'
-          ],
-          usage: [
-            'Edit src/App.tsx to customize your application',
-            'Add new components in src/components/',
-            'Use TypeScript for type safety'
-          ],
-          deployment: [
-            'Build for production: npm run build',
-            'Deploy dist/ folder to your hosting provider',
-            'Configure environment variables in production'
-          ]
-        },
-        dockerSupport: true,
-        kubernetesSupport: false,
-        cicdTemplate: true,
-        testingSetup: true,
-        monitoringSetup: false
-      },
-      {
-        id: 'nextjs-fullstack',
-        name: 'Next.js Full Stack',
-        description: 'Complete full-stack application with Next.js, API routes, and database',
-        author: 'Community',
-        category: 'fullstack',
-        language: 'typescript',
-        framework: 'nextjs',
-        complexity: 'advanced',
-        tags: ['nextjs', 'fullstack', 'api', 'database'],
-        stars: 4.6,
-        downloads: 8930,
-        pricing: 'free',
-        lastUpdated: '2024-01-10',
-        featured: false,
-        dependencies: {
-          'next': '^14.0.0',
-          'react': '^18.2.0',
-          'react-dom': '^18.2.0',
-          'prisma': '^5.0.0',
-          '@prisma/client': '^5.0.0'
-        },
-        scripts: {
-          'dev': 'next dev',
-          'build': 'prisma generate && next build',
-          'start': 'next start',
-          'db:generate': 'prisma generate',
-          'db:push': 'prisma db push',
-          'db:studio': 'prisma studio'
-        },
-        envVars: [
-          {
-            name: 'DATABASE_URL',
-            defaultValue: 'postgresql://user:password@localhost:5432/mydb',
-            description: 'Database connection URL'
-          },
-          {
-            name: 'NEXTAUTH_SECRET',
-            description: 'NextAuth.js secret for JWT encryption'
-          }
-        ],
-        documentation: {
-          setup: [
-            'Install dependencies: npm install',
-            'Set up database: npm run db:push',
-            'Start development server: npm run dev'
-          ],
-          usage: [
-            'API routes are in pages/api/',
-            'Database models are in prisma/schema.prisma',
-            'Authentication is handled by NextAuth.js'
-          ],
-          deployment: [
-            'Build for production: npm run build',
-            'Deploy to Vercel or your preferred platform',
-            'Set DATABASE_URL in production environment'
-          ]
-        },
-        dockerSupport: true,
-        kubernetesSupport: true,
-        cicdTemplate: true,
-        testingSetup: true,
-        monitoringSetup: true
-      }
-    ];
-
-    sampleTemplates.forEach(template => {
-      this.templates.set(template.id, template);
-    });
+    // No-op: start with an empty store. Templates are fetched/submitted
+    // through the marketplace API at runtime.
   }
 
   /**
