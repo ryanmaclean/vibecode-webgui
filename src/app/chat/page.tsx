@@ -80,7 +80,7 @@ export default function ChatPage(): React.JSX.Element {
   }, []);
 
   // Handle bulk approval of all bulk-approvable actions
-  const handleBulkApprove = useCallback(async () => {
+  const _handleBulkApprove = useCallback(async () => {
     setIsProcessing(true);
     try {
       const bulkApprovableIds = pendingConfirmations
@@ -128,13 +128,11 @@ export default function ChatPage(): React.JSX.Element {
 
       {/* Confirmation Dialog for agent actions */}
       <ConfirmationDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        confirmations={pendingConfirmations}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        confirmation={pendingConfirmations[0] ?? null}
         onApprove={handleApprove}
         onReject={handleReject}
-        onBulkApprove={handleBulkApprove}
-        bulkApprovalEnabled={true}
         isProcessing={isProcessing}
       />
     </div>

@@ -8,10 +8,10 @@ import { collaborationManager as sharedCollaborationManager, CollaborationManage
 import io from 'socket.io-client';
 
 export interface CollaborationSocket {
-  emit: (event: string, ...args: any[]) => void;
-  on?: (event: string, handler: (...args: any[]) => void) => void;
-  off?: (event: string, handler?: (...args: any[]) => void) => void;
-  once?: (event: string, handler: (...args: any[]) => void) => void;
+  emit: (event: string, ...args: unknown[]) => void;
+  on?: (event: string, handler: (...args: unknown[]) => void) => void;
+  off?: (event: string, handler?: (...args: unknown[]) => void) => void;
+  once?: (event: string, handler: (...args: unknown[]) => void) => void;
   disconnect?: () => void;
   connected?: boolean;
   id?: string;
@@ -135,7 +135,7 @@ export interface UseCollaborationReturn extends CollaborationState, Collaboratio
   cursors: CursorState[];
   socket: CollaborationSocket | null;
   collaborationManager: CollaborationManager | null;
-  awareness: any;
+  awareness: unknown;
   getUserById: (userId: string) => CollaborativeUser | undefined;
 }
 
@@ -152,7 +152,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     autoConnect = true,
     enableChat = true,
     enableActivityTracking = true,
-    enableCursorTracking = true,
+    enableCursorTracking: _enableCursorTracking = true,
     onUserJoin,
     onUserLeave,
     onMessage,
@@ -189,10 +189,10 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
       return;
     }
 
-    let socket: any = null;
+    let socket: CollaborationSocket | null = null;
     let mounted = true;
 
-    const initializeSocket = async () => {
+    const initializeSocket = async (): Promise<void> => {
       try {
         // Check API availability
         const response = await fetch('/api/collaboration/socket');
@@ -230,9 +230,9 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
           setActiveUsers([]);
         });
 
-        socket.on('connect_error', (error: any) => {
+        socket.on('connect_error', (error: unknown) => {
           if (!mounted) return;
-          const errorMessage = error?.message || 'Connection failed';
+          const errorMessage = error instanceof Error ? error.message : 'Connection failed';
           console.error('❌ Collaboration connection error:', error);
           setIsConnected(false);
           setConnectionError(errorMessage);
@@ -600,7 +600,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
   /**
    * Edit file
    */
-  const editFile = useCallback((filePath: string, content: string) => {
+  const editFile = useCallback((filePath: string, _content: string) => {
     if (currentUser && enableActivityTracking) {
       addActivity({
         type: 'file_edited',
@@ -707,7 +707,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
   /**
    * Simulate connection (replace with real collaboration service)
    */
-  const simulateConnection = async (wsId: string): Promise<void> => {
+  const simulateConnection = async (_wsId: string): Promise<void> => {
     // Simulate connection delay
     await new Promise(resolve => setTimeout(resolve, 500));
 

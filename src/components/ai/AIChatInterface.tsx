@@ -337,7 +337,7 @@ const AIChatInterfaceContent = ({
     }
   }
 
-  const formatTimestamp = (date: Date) => {
+  const formatTimestamp = (date: Date): string => {
     return new Date(date).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit'
@@ -363,7 +363,6 @@ const AIChatInterfaceContent = ({
   */
 
   const currentModel = availableModels.find(m => m.id === selectedModel)
-  const currentModelName = currentModel?.name || 'AI Model'
 
   return (
     <div className={`flex flex-col h-full bg-white dark:bg-gray-900 ${className}`} role="region" aria-label="AI Chat Interface">
@@ -707,7 +706,7 @@ const AIChatInterfaceContent = ({
  * AI Chat Interface with Error Boundary
  * Wraps the interface with AI-specific error handling
  */
-export const AIChatInterface = (props: AIChatInterfaceProps) => {
+export const AIChatInterface = (props: AIChatInterfaceProps): React.JSX.Element => {
   return (
     <AIErrorBoundary
       componentName="AIChatInterface"
