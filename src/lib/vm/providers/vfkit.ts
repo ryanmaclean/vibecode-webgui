@@ -345,7 +345,8 @@ export class VfkitProvider implements VMProvider {
         }
       );
       sLaunch.finish();
-      span.finish();
+    } catch (error: unknown) {
+      sLaunch.finish();
       // Provide helpful context about VM creation failures
       if (error instanceof Error && error.message.includes('VM name')) {
         // Re-throw validation errors as-is (already user-friendly)
