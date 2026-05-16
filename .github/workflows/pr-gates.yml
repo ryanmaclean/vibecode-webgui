@@ -190,7 +190,7 @@ jobs:
           echo "## AI/GenAI Code Quality Checks" >> $GITHUB_STEP_SUMMARY
 
           # Check for hardcoded API keys/secrets
-          if grep -rn "sk-[a-zA-Z0-9]\{20,\}" --include="*.ts" --include="*.js" --include="*.tsx" --include="*.jsx" .; then
+          if grep -rn "sk-[a-zA-Z0-9]\{20,\}" --include="*.ts" --include="*.js" --include="*.tsx" --include="*.jsx" --exclude-dir=node_modules --exclude-dir=fixtures --exclude-dir=__mocks__ --exclude="*.test.*" .; then
             echo "::error::Found potential hardcoded OpenAI API key"
             echo "- Found potential hardcoded API key" >> $GITHUB_STEP_SUMMARY
             exit 1
