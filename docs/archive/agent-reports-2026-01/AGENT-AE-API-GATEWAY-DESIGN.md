@@ -1180,7 +1180,7 @@ Kubernetes Cluster
 │   └── egressgateway
 ├── monitoring namespace
 │   ├── prometheus
-│   ├── grafana
+│   ├── datadog
 │   ├── jaeger
 │   └── kiali
 └── default namespace
@@ -1225,7 +1225,7 @@ Kubernetes Cluster
 - [ ] Setup OAuth/OIDC integration
 
 ### Phase 6: Monitoring & Operations (Week 6)
-- [ ] Build dashboards (Grafana)
+- [ ] Build dashboards (Datadog)
 - [ ] Configure alerting rules
 - [ ] Setup log aggregation
 - [ ] Create runbooks and documentation

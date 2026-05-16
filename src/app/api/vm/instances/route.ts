@@ -155,6 +155,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const options: CreateVMOptions = {
       name: body.name,
+      userId: session.user?.id,
       profileId: body.profileId,
       config: body.config,
       resources: body.resources,

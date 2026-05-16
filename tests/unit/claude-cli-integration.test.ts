@@ -51,8 +51,7 @@ describe('Claude CLI Integration', () => {
     jest.clearAllMocks();
     mockSpawn.mockReturnValue(mockChildProcess)})
 
-  test('should initialize CLI integration', () => {
-    expect(true).toBe(true)})
+  it.todo('should initialize CLI integration')
 
   test('should handle CLI commands', () => {
     expect(mockSpawn).toBeDefined()})});

@@ -13,6 +13,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,23 +28,17 @@ import {
   CheckCircle,
   Edit3,
   RefreshCw,
-  Star,
   BarChart3,
   AlertTriangle,
 } from 'lucide-react';
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   Area,
   AreaChart,
-  Legend,
 } from 'recharts';
 
 // ============================================================================
@@ -166,7 +161,7 @@ function getHealthStatusColor(status: string): string {
   return HEALTH_STATUS_COLORS[status as keyof typeof HEALTH_STATUS_COLORS] || 'bg-gray-500';
 }
 
-function getTrendIcon(trend: string) {
+function getTrendIcon(trend: string): React.JSX.Element {
   switch (trend) {
     case 'improving':
     case 'up':
@@ -194,7 +189,7 @@ interface StatCardProps {
   testId?: string;
 }
 
-function StatCard({ title, value, description, icon, trend, trendLabel, variant = 'default', testId }: StatCardProps) {
+function StatCard({ title, value, description, icon, trend, trendLabel, variant = 'default', testId }: StatCardProps): React.JSX.Element {
   const variantStyles = {
     default: 'bg-card',
     success: 'bg-green-50 border-green-200',
@@ -240,7 +235,8 @@ interface AlertBannerProps {
   onDismiss?: (alertId: string) => void;
 }
 
-function AlertBanner({ alerts, onDismiss }: AlertBannerProps) {
+function AlertBanner({ alerts, onDismiss }: AlertBannerProps): React.JSX.Element | null {
+  const t = useTranslations('ai');
   const activeAlerts = alerts.filter((a) => !a.resolved);
 
   if (activeAlerts.length === 0) return null;
@@ -277,7 +273,7 @@ function AlertBanner({ alerts, onDismiss }: AlertBannerProps) {
           </div>
           {onDismiss && (
             <Button variant="ghost" size="sm" onClick={() => onDismiss(alert.id)}>
-              Dismiss
+              {t('qualityDashboard.dismiss')}
             </Button>
           )}
         </div>
@@ -290,7 +286,8 @@ interface ModelCardProps {
   model: ModelMetrics;
 }
 
-function ModelCard({ model }: ModelCardProps) {
+function ModelCard({ model }: ModelCardProps): React.JSX.Element {
+  const t = useTranslations('ai');
   return (
     <Card>
       <CardHeader>
@@ -308,11 +305,11 @@ function ModelCard({ model }: ModelCardProps) {
         {/* Acceptance Metrics */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-gray-600">Acceptance Rate</p>
+            <p className="text-sm text-gray-600">{t('qualityDashboard.modelCard.acceptanceRate')}</p>
             <p className="font-semibold text-green-600">{formatPercentage(model.acceptanceRate)}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Total Suggestions</p>
+            <p className="text-sm text-gray-600">{t('qualityDashboard.modelCard.totalSuggestions')}</p>
             <p className="font-semibold">{formatNumber(model.totalSuggestions)}</p>
           </div>
         </div>
@@ -320,16 +317,16 @@ function ModelCard({ model }: ModelCardProps) {
         {/* Quality Metrics */}
         <div className="grid grid-cols-3 gap-3 text-sm">
           <div>
-            <p className="text-gray-600">Edit Distance</p>
+            <p className="text-gray-600">{t('qualityDashboard.modelCard.editDistance')}</p>
             <p className="font-medium">{model.avgEditDistance.toFixed(1)}</p>
           </div>
           <div>
-            <p className="text-gray-600">Similarity</p>
+            <p className="text-gray-600">{t('qualityDashboard.modelCard.similarity')}</p>
             <p className="font-medium">{formatPercentage(model.avgSimilarity)}</p>
           </div>
           <div>
-            <p className="text-gray-600">Rating</p>
-            <p className="font-medium">{model.avgRating ? model.avgRating.toFixed(1) : 'N/A'}</p>
+            <p className="text-gray-600">{t('qualityDashboard.modelCard.rating')}</p>
+            <p className="font-medium">{model.avgRating ? model.avgRating.toFixed(1) : t('qualityDashboard.modelCard.notAvailable')}</p>
           </div>
         </div>
 
@@ -337,7 +334,7 @@ function ModelCard({ model }: ModelCardProps) {
         <div className="grid grid-cols-2 gap-4 pt-2 border-t">
           <div className="flex items-center text-sm">
             <Clock className="h-4 w-4 mr-1 text-gray-500" />
-            <span className="text-gray-600">Avg time:</span>
+            <span className="text-gray-600">{t('qualityDashboard.modelCard.avgTime')}</span>
             <span className="ml-1 font-medium">{formatTime(model.avgTimeToAccept)}</span>
           </div>
           <div className="flex items-center text-sm">
@@ -350,11 +347,11 @@ function ModelCard({ model }: ModelCardProps) {
         <div className="grid grid-cols-2 gap-4">
           <div className="text-sm">
             <span className="text-green-600">✓ {model.acceptedSuggestions}</span>
-            <span className="text-gray-500 ml-2">accepted</span>
+            <span className="text-gray-500 ml-2">{t('qualityDashboard.modelCard.accepted')}</span>
           </div>
           <div className="text-sm">
             <span className="text-red-600">✗ {model.rejectedSuggestions}</span>
-            <span className="text-gray-500 ml-2">rejected</span>
+            <span className="text-gray-500 ml-2">{t('qualityDashboard.modelCard.rejected')}</span>
           </div>
         </div>
       </CardContent>
@@ -367,7 +364,8 @@ interface TrendChartProps {
   metric: 'acceptanceRate' | 'editDistance' | 'similarity' | 'rating';
 }
 
-function TrendChart({ data, metric }: TrendChartProps) {
+function TrendChart({ data, metric }: TrendChartProps): React.JSX.Element {
+  const t = useTranslations('ai');
   const chartData = useMemo(() => {
     return data.map((point) => ({
       timestamp: formatTimestamp(point.timestamp),
@@ -382,16 +380,16 @@ function TrendChart({ data, metric }: TrendChartProps) {
   }, [data, metric]);
 
   const metricLabels = {
-    acceptanceRate: 'Acceptance Rate (%)',
-    editDistance: 'Edit Distance',
-    similarity: 'Similarity (%)',
-    rating: 'Rating',
+    acceptanceRate: t('qualityDashboard.trends.metricSelect.acceptanceRate'),
+    editDistance: t('qualityDashboard.trends.metricSelect.editDistance'),
+    similarity: t('qualityDashboard.trends.metricSelect.similarity'),
+    rating: t('qualityDashboard.trends.metricSelect.rating'),
   };
 
   if (chartData.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
-        <p>No trend data available</p>
+        <p>{t('qualityDashboard.trends.noTrendData')}</p>
       </div>
     );
   }
@@ -443,7 +441,8 @@ export default function QualityDashboard({
   className = '',
   refreshInterval = 30000,
   compact = false,
-}: QualityDashboardProps) {
+}: QualityDashboardProps): React.JSX.Element {
+  const t = useTranslations('ai');
   const [data, setData] = useState<DashboardData | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>('all');
   const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month'>('week');
@@ -517,14 +516,14 @@ export default function QualityDashboard({
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center">
             <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-            <span className="text-red-700">Error loading dashboard: {error}</span>
+            <span className="text-red-700">{t('qualityDashboard.errorLoading', { error })}</span>
           </div>
           <Button
             onClick={loadData}
             variant="outline"
             className="mt-2"
           >
-            Retry
+            {t('qualityDashboard.retry')}
           </Button>
         </div>
       </div>
@@ -535,7 +534,7 @@ export default function QualityDashboard({
     return (
       <div className={`text-center py-8 ${className}`}>
         <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-600">No quality data available</p>
+        <p className="text-gray-600">{t('qualityDashboard.noQualityData')}</p>
       </div>
     );
   }
@@ -545,9 +544,9 @@ export default function QualityDashboard({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">AI Quality Metrics Dashboard</h2>
+          <h2 className="text-2xl font-bold">{t('qualityDashboard.title')}</h2>
           <p className="text-muted-foreground">
-            Track AI suggestion quality, acceptance rates, and model performance
+            {t('qualityDashboard.description')}
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -556,17 +555,17 @@ export default function QualityDashboard({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="day">Daily</SelectItem>
-              <SelectItem value="week">Weekly</SelectItem>
-              <SelectItem value="month">Monthly</SelectItem>
+              <SelectItem value="day">{t('qualityDashboard.periodSelect.daily')}</SelectItem>
+              <SelectItem value="week">{t('qualityDashboard.periodSelect.weekly')}</SelectItem>
+              <SelectItem value="month">{t('qualityDashboard.periodSelect.monthly')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={selectedModel} onValueChange={setSelectedModel}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Models" />
+              <SelectValue placeholder={t('qualityDashboard.allModels')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Models</SelectItem>
+              <SelectItem value="all">{t('qualityDashboard.allModels')}</SelectItem>
               {data.models.map((model: ModelMetrics) => (
                 <SelectItem key={model.modelId} value={model.modelId}>
                   {model.modelId}
@@ -576,7 +575,7 @@ export default function QualityDashboard({
           </Select>
           <Button variant="outline" size="sm" onClick={loadData}>
             <RefreshCw className="h-4 w-4 mr-1" />
-            Refresh
+            {t('qualityDashboard.refresh')}
           </Button>
         </div>
       </div>
@@ -587,32 +586,32 @@ export default function QualityDashboard({
       {/* Stats Grid */}
       <div className={`grid gap-4 ${compact ? 'grid-cols-2' : 'grid-cols-4'}`}>
         <StatCard
-          title="Acceptance Rate"
+          title={t('qualityDashboard.stats.acceptanceRate')}
           value={formatPercentage(data.overall.acceptanceRate)}
-          description={`${formatNumber(data.overall.totalSuggestions)} suggestions`}
+          description={t('qualityDashboard.stats.acceptanceRateDesc', { count: formatNumber(data.overall.totalSuggestions) })}
           icon={<CheckCircle className="h-5 w-5" />}
           testId="acceptance-rate"
           variant={data.overall.acceptanceRate >= 0.7 ? 'success' : data.overall.acceptanceRate >= 0.5 ? 'default' : 'warning'}
         />
         <StatCard
-          title="Avg Edit Distance"
+          title={t('qualityDashboard.stats.avgEditDistance')}
           value={data.overall.avgEditDistance.toFixed(1)}
-          description="Characters changed"
+          description={t('qualityDashboard.stats.avgEditDistanceDesc')}
           icon={<Edit3 className="h-5 w-5" />}
           testId="edit-distance"
           variant={data.overall.avgEditDistance <= 10 ? 'success' : data.overall.avgEditDistance <= 20 ? 'default' : 'warning'}
         />
         <StatCard
-          title="Avg Similarity"
+          title={t('qualityDashboard.stats.avgSimilarity')}
           value={formatPercentage(data.overall.avgSimilarity)}
-          description="To original suggestion"
+          description={t('qualityDashboard.stats.avgSimilarityDesc')}
           icon={<Activity className="h-5 w-5" />}
           testId="similarity"
         />
         <StatCard
-          title="Avg Time to Accept"
+          title={t('qualityDashboard.stats.avgTimeToAccept')}
           value={formatTime(data.overall.avgTimeToAccept)}
-          description={data.overall.avgRating ? `Rating: ${data.overall.avgRating.toFixed(1)}★` : undefined}
+          description={data.overall.avgRating ? t('qualityDashboard.stats.ratingDesc', { rating: data.overall.avgRating.toFixed(1) }) : undefined}
           icon={<Clock className="h-5 w-5" />}
           testId="time-to-accept"
         />
@@ -626,11 +625,11 @@ export default function QualityDashboard({
               <div className="flex items-center space-x-2">
                 <AlertTriangle className="h-5 w-5 text-yellow-500" />
                 <span className="font-medium">
-                  {data.alerts.filter(a => !a.resolved).length} Active Quality Alerts
+                  {t('qualityDashboard.activeAlerts', { count: data.alerts.filter(a => !a.resolved).length })}
                 </span>
               </div>
               <Badge variant="destructive">
-                {data.alerts.filter((a: Alert) => a.severity === 'critical' && !a.resolved).length} Critical
+                {t('qualityDashboard.criticalAlerts', { count: data.alerts.filter((a: Alert) => a.severity === 'critical' && !a.resolved).length })}
               </Badge>
             </div>
           </CardContent>
@@ -642,19 +641,19 @@ export default function QualityDashboard({
         <TabsList>
           <TabsTrigger value="overview">
             <BarChart3 className="h-4 w-4 mr-1" />
-            Overview
+            {t('qualityDashboard.tabs.overview')}
           </TabsTrigger>
           <TabsTrigger value="models" data-testid="models-tab">
             <Activity className="h-4 w-4 mr-1" />
-            By Model
+            {t('qualityDashboard.tabs.byModel')}
           </TabsTrigger>
           <TabsTrigger value="trends" data-testid="trends-tab">
             <TrendingUp className="h-4 w-4 mr-1" />
-            Trends
+            {t('qualityDashboard.tabs.trends')}
           </TabsTrigger>
           <TabsTrigger value="alerts" data-testid="alerts-tab">
             <AlertCircle className="h-4 w-4 mr-1" />
-            Alerts
+            {t('qualityDashboard.tabs.alerts')}
             {data.alerts.filter((a: Alert) => !a.resolved).length > 0 && (
               <Badge variant="destructive" className="ml-1">
                 {data.alerts.filter((a: Alert) => !a.resolved).length}
@@ -668,8 +667,8 @@ export default function QualityDashboard({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Latest model performance</CardDescription>
+                <CardTitle>{t('qualityDashboard.overview.recentActivity')}</CardTitle>
+                <CardDescription>{t('qualityDashboard.overview.recentActivityDesc')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -684,12 +683,12 @@ export default function QualityDashboard({
                       </div>
                       <div className="text-right">
                         <p className="font-medium">{formatPercentage(activity.acceptanceRate)}</p>
-                        <p className="text-sm text-muted-foreground">{activity.suggestions} suggestions</p>
+                        <p className="text-sm text-muted-foreground">{t('qualityDashboard.overview.suggestions', { count: activity.suggestions })}</p>
                       </div>
                     </div>
                   ))}
                   {data.recentActivity.length === 0 && (
-                    <p className="text-center text-muted-foreground py-8">No recent activity</p>
+                    <p className="text-center text-muted-foreground py-8">{t('qualityDashboard.overview.noRecentActivity')}</p>
                   )}
                 </div>
               </CardContent>
@@ -697,8 +696,8 @@ export default function QualityDashboard({
 
             <Card>
               <CardHeader>
-                <CardTitle>Model Health Summary</CardTitle>
-                <CardDescription>Status of all monitored models</CardDescription>
+                <CardTitle>{t('qualityDashboard.overview.modelHealthSummary')}</CardTitle>
+                <CardDescription>{t('qualityDashboard.overview.modelHealthSummaryDesc')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -709,7 +708,7 @@ export default function QualityDashboard({
                         <div>
                           <p className="font-medium">{model.modelId}</p>
                           <p className="text-sm text-muted-foreground">
-                            {formatNumber(model.totalSuggestions)} suggestions
+                            {t('qualityDashboard.overview.suggestions', { count: formatNumber(model.totalSuggestions) })}
                           </p>
                         </div>
                       </div>
@@ -721,7 +720,7 @@ export default function QualityDashboard({
                     </div>
                   ))}
                   {data.models.length === 0 && (
-                    <p className="text-center text-muted-foreground py-8">No models tracked yet</p>
+                    <p className="text-center text-muted-foreground py-8">{t('qualityDashboard.overview.noModelsTracked')}</p>
                   )}
                 </div>
               </CardContent>
@@ -740,7 +739,7 @@ export default function QualityDashboard({
             <Card>
               <CardContent className="p-8 text-center">
                 <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No model data available for the selected period</p>
+                <p className="text-gray-600">{t('qualityDashboard.modelTab.noModelData')}</p>
               </CardContent>
             </Card>
           )}
@@ -751,16 +750,16 @@ export default function QualityDashboard({
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Quality Trends Over Time</CardTitle>
+                <CardTitle>{t('qualityDashboard.trends.title')}</CardTitle>
                 <Select value={selectedMetric} onValueChange={(v: string) => setSelectedMetric(v as 'acceptanceRate' | 'editDistance' | 'similarity' | 'rating')}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="acceptanceRate">Acceptance Rate</SelectItem>
-                    <SelectItem value="editDistance">Edit Distance</SelectItem>
-                    <SelectItem value="similarity">Similarity</SelectItem>
-                    <SelectItem value="rating">Rating</SelectItem>
+                    <SelectItem value="acceptanceRate">{t('qualityDashboard.trends.metricSelect.acceptanceRate')}</SelectItem>
+                    <SelectItem value="editDistance">{t('qualityDashboard.trends.metricSelect.editDistance')}</SelectItem>
+                    <SelectItem value="similarity">{t('qualityDashboard.trends.metricSelect.similarity')}</SelectItem>
+                    <SelectItem value="rating">{t('qualityDashboard.trends.metricSelect.rating')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -770,7 +769,7 @@ export default function QualityDashboard({
                 <TrendChart data={data.trends} metric={selectedMetric} />
               ) : (
                 <div className="flex items-center justify-center h-64 text-muted-foreground">
-                  <p>No trend data available for the selected period</p>
+                  <p>{t('qualityDashboard.trends.noTrendData')}</p>
                 </div>
               )}
             </CardContent>
@@ -781,14 +780,14 @@ export default function QualityDashboard({
         <TabsContent value="alerts" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Quality Degradation Alerts</CardTitle>
-              <CardDescription>Monitor quality issues across all models</CardDescription>
+              <CardTitle>{t('qualityDashboard.alertsTab.title')}</CardTitle>
+              <CardDescription>{t('qualityDashboard.alertsTab.description')}</CardDescription>
             </CardHeader>
             <CardContent>
               {data.alerts.length === 0 ? (
                 <div className="text-center py-8">
                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-gray-600">No quality alerts. All models performing well!</p>
+                  <p className="text-gray-600">{t('qualityDashboard.alertsTab.noAlerts')}</p>
                 </div>
               ) : (
                 <div data-testid="alert-list" className="space-y-3">
@@ -813,13 +812,13 @@ export default function QualityDashboard({
                           </div>
                           <p className="text-sm mt-1">{alert.message}</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Detected: {formatTimestamp(alert.detectedAt)}
+                            {t('qualityDashboard.alertsTab.detected', { time: formatTimestamp(alert.detectedAt) })}
                           </p>
                         </div>
                       </div>
                       <div className="text-right text-sm">
-                        <p className="font-medium">Current: {alert.currentValue.toFixed(2)}</p>
-                        <p className="text-muted-foreground">Threshold: {alert.threshold.toFixed(2)}</p>
+                        <p className="font-medium">{t('qualityDashboard.alertsTab.current', { value: alert.currentValue.toFixed(2) })}</p>
+                        <p className="text-muted-foreground">{t('qualityDashboard.alertsTab.threshold', { value: alert.threshold.toFixed(2) })}</p>
                       </div>
                     </div>
                   ))}
@@ -832,7 +831,7 @@ export default function QualityDashboard({
 
       {/* Footer */}
       <div className="text-xs text-muted-foreground text-center">
-        Last updated: {lastUpdated.toLocaleTimeString()}
+        {t('qualityDashboard.lastUpdated', { time: lastUpdated.toLocaleTimeString() })}
       </div>
     </div>
   );

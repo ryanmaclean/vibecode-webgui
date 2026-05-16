@@ -394,11 +394,11 @@ PGHBA
   echo "  Port:     5432"
   echo "  Database: vibecode"
   echo "  User:     vibecode"
-  echo "  Password: vibecode_prod_2024"
+  echo "  Password: (set via VIBECODE_DB_PASSWORD environment variable)"
   echo ""
   echo "Admin Credentials:"
   echo "  User:     postgres"
-  echo "  Password: postgres_admin_2024"
+  echo "  Password: (set via POSTGRES_PASSWORD environment variable)"
   echo ""
   echo "SSL/TLS:  Enabled (self-signed certificate)"
   echo "pgvector: Installed and ready"
@@ -409,7 +409,7 @@ PGHBA
   echo ""
   echo "Next Steps:"
   echo "  1. Connect from host: psql -h localhost -p 5432 -U vibecode -d vibecode"
-  echo "  2. Update your .env: DATABASE_URL=postgresql://vibecode:vibecode_prod_2024@localhost:5432/vibecode?sslmode=require"
+  echo "  2. Update your .env: DATABASE_URL=postgresql://vibecode:\${VIBECODE_DB_PASSWORD}@localhost:5432/vibecode?sslmode=require"
   echo "  3. Run Prisma migrations: npx prisma migrate deploy"
   echo "=========================================="
 
@@ -417,10 +417,14 @@ PGHBA
   tail -f /var/log/postgresql/postgresql.log
 
 # Environment variables for PostgreSQL
+# IMPORTANT: POSTGRES_PASSWORD and VIBECODE_DB_PASSWORD must be set via
+# environment variables or secrets management (e.g., .env file, vault, or
+# deploy-time substitution). Never hardcode passwords in version control.
 environment:
   POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
   PGDATA: "/var/lib/postgresql/data"
-  POSTGRES_PASSWORD: "postgres_admin_2024"
+  POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+  VIBECODE_DB_PASSWORD: "${VIBECODE_DB_PASSWORD}"
   TZ: "UTC"
 
 # Health check

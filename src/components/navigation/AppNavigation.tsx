@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useAuth } from '@/hooks/useAuth'
 import {
   LayoutDashboard,
@@ -32,65 +33,65 @@ import { KeyboardHint } from '@/components/ui/KeyboardHint'
 import { createRovingTabIndex } from '@/lib/keyboard/focus-management'
 
 interface NavItem {
-  title: string
+  titleKey: string
   href: string
   icon: React.ElementType
-  children?: { title: string; href: string; icon: React.ElementType }[]
+  children?: { titleKey: string; href: string; icon: React.ElementType }[]
 }
 
 const NAV_ITEMS: NavItem[] = [
   {
-    title: 'Dashboard',
+    titleKey: 'dashboard',
     href: '/',
     icon: LayoutDashboard,
   },
   {
-    title: 'VM',
+    titleKey: 'vm',
     href: '/vm',
     icon: Monitor,
     children: [
-      { title: 'Dashboard', href: '/vm', icon: Monitor },
-      { title: 'Snapshots', href: '/vm/snapshots', icon: Camera },
+      { titleKey: 'vmDashboard', href: '/vm', icon: Monitor },
+      { titleKey: 'vmSnapshots', href: '/vm/snapshots', icon: Camera },
     ],
   },
   {
-    title: 'AI',
+    titleKey: 'ai',
     href: '/ai',
     icon: Bot,
     children: [
-      { title: 'Chat', href: '/chat', icon: MessageSquare },
-      { title: 'Models', href: '/ai/models', icon: Cpu },
-      { title: 'Costs', href: '/ai/costs', icon: DollarSign },
-      { title: 'Prompts', href: '/ai/prompts', icon: BookOpen },
+      { titleKey: 'aiChat', href: '/chat', icon: MessageSquare },
+      { titleKey: 'aiModels', href: '/ai/models', icon: Cpu },
+      { titleKey: 'aiCosts', href: '/ai/costs', icon: DollarSign },
+      { titleKey: 'aiPrompts', href: '/ai/prompts', icon: BookOpen },
     ],
   },
   {
-    title: 'Health',
+    titleKey: 'health',
     href: '/health',
     icon: HeartPulse,
   },
   {
-    title: 'Monitoring',
+    titleKey: 'monitoring',
     href: '/monitoring',
     icon: Activity,
   },
   {
-    title: 'Workspaces',
+    titleKey: 'workspaces',
     href: '/workspaces',
     icon: Layers,
   },
   {
-    title: 'Experiments',
+    titleKey: 'experiments',
     href: '/experiments',
     icon: FlaskConical,
   },
   {
-    title: 'Tutorials',
+    titleKey: 'tutorials',
     href: '/tutorials',
     icon: GraduationCap,
   },
   {
-    title: 'Settings',
+    titleKey: 'settings',
     href: '/settings',
     icon: Settings,
   },
@@ -116,9 +117,11 @@ function isChildActive(pathname: string, children: NavItem['children']): boolean
 function DropdownMenu({
   item,
   pathname,
+  t,
 }: {
   item: NavItem
   pathname: string
+  t: (key: string) => string
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -190,6 +193,12 @@ function DropdownMenu({
   const Icon = item.icon
   const active = isActive(pathname, item.href) || isChildActive(pathname, item.children)
   const shortcut = NAV_SHORTCUTS[item.href]
+  const itemTitle = t(`navigation.${item.titleKey}`)
+  const ariaMenuLabel = item.titleKey === 'vm'
+    ? t('navigation.ariaLabel.vmMenu')
+    : item.titleKey === 'ai'
+      ? t('navigation.ariaLabel.aiMenu')
+      : `${itemTitle} menu`
 
   return (
     <div ref={ref} className="relative">
@@ -216,7 +225,7 @@ function DropdownMenu({
         }`}
       >
         <Icon className="h-4 w-4" />
-        {item.title}
+        {itemTitle}
         <ChevronDown className={`h-3 w-3 transition-transform ${open ? 'rotate-180' : ''}`} />
         {shortcut && (
           <div className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -230,7 +239,7 @@ function DropdownMenu({
           ref={dropdownRef}
           className="absolute left-0 top-full mt-1 w-48 rounded-md border border-border bg-card shadow-lg z-50"
           role="menu"
-          aria-label={`${item.title} menu`}
+          aria-label={ariaMenuLabel}
         >
           <div className="py-1">
             {item.children?.map((child, index) => {
@@ -253,7 +262,7 @@ function DropdownMenu({
                   }`}
                 >
                   <ChildIcon className="h-4 w-4" />
-                  {child.title}
+                  {t(`navigation.${child.titleKey}`)}
                 </Link>
               )
             })}
@@ -265,6 +274,7 @@ function DropdownMenu({
 }
 
 export function AppNavigation() {
+  const t = useTranslations()
   const pathname = usePathname() ?? '/'
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -297,7 +307,7 @@ export function AppNavigation() {
                 />
               </svg>
             </div>
-            <span className="text-lg font-bold text-foreground">VibeCode</span>
+            <span className="text-lg font-bold text-foreground">{t('common.appName')}</span>
           </Link>
         </div>
 
@@ -305,7 +315,7 @@ export function AppNavigation() {
         <nav className="hidden md:flex items-center gap-1">
           {NAV_ITEMS.map((item) => {
             if (item.children) {
-              return <DropdownMenu key={item.title} item={item} pathname={pathname} />
+              return <DropdownMenu key={item.titleKey} item={item} pathname={pathname} t={t} />
             }
 
             const Icon = item.icon
@@ -323,7 +333,7 @@ export function AppNavigation() {
                 }`}
               >
                 <Icon className="h-4 w-4" />
-                {item.title}
+                {t(`navigation.${item.titleKey}`)}
                 {shortcut && (
                   <div className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <KeyboardHint keys={shortcut} size="sm" variant="muted" />
@@ -339,8 +349,8 @@ export function AppNavigation() {
           <button
             onClick={() => setIsShortcutsOpen(true)}
             className="hidden md:flex items-center gap-1.5 p-2 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-            aria-label="Show keyboard shortcuts"
-            title="Keyboard shortcuts (⌘/)"
+            aria-label={t('navigation.showKeyboardShortcuts')}
+            title={t('navigation.keyboardShortcutsHint')}
           >
             <Keyboard className="h-4 w-4" />
           </button>
@@ -353,14 +363,14 @@ export function AppNavigation() {
                 onClick={() => logout()}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                Sign Out
+                {t('navigation.signOut')}
               </button>
             </div>
           )}
           <button
             className="md:hidden p-2 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             onClick={() => setMobileOpen((prev) => !prev)}
-            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            aria-label={mobileOpen ? t('navigation.closeMenu') : t('navigation.openMenu')}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -377,7 +387,7 @@ export function AppNavigation() {
             if (item.children) {
               const groupActive = isActive(pathname, item.href) || isChildActive(pathname, item.children)
               return (
-                <div key={item.title}>
+                <div key={item.titleKey}>
                   <div
                     className={`flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md ${
                       groupActive ? 'text-primary' : 'text-muted-foreground'
@@ -385,7 +395,7 @@ export function AppNavigation() {
                   >
                     <div className="flex items-center gap-2">
                       <Icon className="h-4 w-4" />
-                      {item.title}
+                      {t(`navigation.${item.titleKey}`)}
                     </div>
                     {shortcut && (
                       <KeyboardHint keys={shortcut} size="sm" variant="muted" />
@@ -406,7 +416,7 @@ export function AppNavigation() {
                           }`}
                         >
                           <ChildIcon className="h-4 w-4" />
-                          {child.title}
+                          {t(`navigation.${child.titleKey}`)}
                         </Link>
                       )
                     })}
@@ -428,7 +438,7 @@ export function AppNavigation() {
               >
                 <div className="flex items-center gap-2">
                   <Icon className="h-4 w-4" />
-                  {item.title}
+                  {t(`navigation.${item.titleKey}`)}
                 </div>
                 {shortcut && (
                   <KeyboardHint keys={shortcut} size="sm" variant="muted" />
@@ -444,7 +454,7 @@ export function AppNavigation() {
                 onClick={() => logout()}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                Sign Out
+                {t('navigation.signOut')}
               </button>
             </div>
           )}

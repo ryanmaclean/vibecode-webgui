@@ -13,6 +13,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,8 +36,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   PieChart as RechartsPieChart,
   Pie,
   Cell,
@@ -176,7 +175,8 @@ interface UsageChartProps {
   metric: 'tokens' | 'requests';
 }
 
-function UsageChart({ data, period, metric }: UsageChartProps) {
+function UsageChart({ data, period, metric }: UsageChartProps): React.JSX.Element {
+  const t = useTranslations('ai');
   const chartData = useMemo(() => {
     return data.map((point) => ({
       timestamp: formatTimestamp(point.timestamp, period),
@@ -188,7 +188,7 @@ function UsageChart({ data, period, metric }: UsageChartProps) {
   if (chartData.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
-        <p>No usage data for this period</p>
+        <p>{t('modelUsage.noUsageDataForPeriod')}</p>
       </div>
     );
   }
@@ -247,7 +247,8 @@ interface TokenConsumptionChartProps {
   period: TimePeriod;
 }
 
-function TokenConsumptionChart({ data, period }: TokenConsumptionChartProps) {
+function TokenConsumptionChart({ data, period }: TokenConsumptionChartProps): React.JSX.Element {
+  const t = useTranslations('ai');
   const chartData = useMemo(() => {
     return data.map((point) => ({
       timestamp: formatTimestamp(point.timestamp, period),
@@ -260,7 +261,7 @@ function TokenConsumptionChart({ data, period }: TokenConsumptionChartProps) {
   if (chartData.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
-        <p>No token consumption data for this period</p>
+        <p>{t('modelUsage.noTokenConsumptionData')}</p>
       </div>
     );
   }
@@ -292,7 +293,7 @@ function TokenConsumptionChart({ data, period }: TokenConsumptionChartProps) {
         <Tooltip
           formatter={(value: number, name: string) => [
             formatTokens(value),
-            name === 'prompt' ? 'Prompt Tokens' : 'Completion Tokens',
+            name === 'prompt' ? t('modelUsage.tokenConsumption.promptTokens') : t('modelUsage.tokenConsumption.completionTokens'),
           ]}
           contentStyle={{
             backgroundColor: 'hsl(var(--card))',
@@ -307,7 +308,7 @@ function TokenConsumptionChart({ data, period }: TokenConsumptionChartProps) {
           stackId="1"
           stroke="#10B981"
           fill="url(#colorPrompt)"
-          name="Prompt"
+          name={t('modelUsage.tokenConsumption.prompt')}
         />
         <Area
           type="monotone"
@@ -315,7 +316,7 @@ function TokenConsumptionChart({ data, period }: TokenConsumptionChartProps) {
           stackId="1"
           stroke="#3B82F6"
           fill="url(#colorCompletion)"
-          name="Completion"
+          name={t('modelUsage.tokenConsumption.completion')}
         />
       </AreaChart>
     </ResponsiveContainer>
@@ -338,7 +339,7 @@ interface StatCardProps {
   testId?: string;
 }
 
-function StatCard({ title, value, description, icon, testId }: StatCardProps) {
+function StatCard({ title, value, description, icon, testId }: StatCardProps): React.JSX.Element {
   return (
     <Card>
       <CardContent className="p-6">
@@ -369,7 +370,8 @@ interface ModelBreakdownChartProps {
   chartType: 'pie' | 'bar';
 }
 
-function ModelBreakdownChart({ data, chartType }: ModelBreakdownChartProps) {
+function ModelBreakdownChart({ data, chartType }: ModelBreakdownChartProps): React.JSX.Element {
+  const t = useTranslations('ai');
   const chartData = useMemo(() => {
     return Object.entries(data)
       .map(([modelId, stats]) => {
@@ -390,7 +392,7 @@ function ModelBreakdownChart({ data, chartType }: ModelBreakdownChartProps) {
   if (chartData.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
-        <p>No model usage data yet</p>
+        <p>{t('modelUsage.noModelUsageYet')}</p>
       </div>
     );
   }
@@ -419,7 +421,7 @@ function ModelBreakdownChart({ data, chartType }: ModelBreakdownChartProps) {
           </Pie>
           <Tooltip
             formatter={(value: number, name: string) => [
-              `${value} requests`,
+              t('modelUsage.table.requestsLabel', { count: value }),
               name,
             ]}
             contentStyle={{
@@ -449,10 +451,10 @@ function ModelBreakdownChart({ data, chartType }: ModelBreakdownChartProps) {
         <YAxis
           tick={{ fontSize: 12 }}
           className="text-muted-foreground"
-          label={{ value: 'Requests', angle: -90, position: 'insideLeft' }}
+          label={{ value: t('modelUsage.table.requests'), angle: -90, position: 'insideLeft' }}
         />
         <Tooltip
-          formatter={(value: number) => [`${value} requests`, 'Requests']}
+          formatter={(value: number) => [t('modelUsage.table.requestsLabel', { count: value }), t('modelUsage.table.requests')]}
           contentStyle={{
             backgroundColor: 'hsl(var(--card))',
             border: '1px solid hsl(var(--border))',
@@ -486,7 +488,8 @@ interface ModelUsageTableProps {
   data: ModelUsageBreakdown[];
 }
 
-function ModelUsageTable({ data }: ModelUsageTableProps) {
+function ModelUsageTable({ data }: ModelUsageTableProps): React.JSX.Element {
+  const t = useTranslations('ai');
   const [sortField, setSortField] = useState<SortField>('requests');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
@@ -549,7 +552,7 @@ function ModelUsageTable({ data }: ModelUsageTableProps) {
     return sorted;
   }, [data, sortField, sortDirection]);
 
-  const SortIndicator = ({ field }: { field: SortField }) => {
+  const SortIndicator = ({ field }: { field: SortField }): React.JSX.Element => {
     if (sortField !== field) {
       return <span className="text-muted-foreground ml-1">⇅</span>;
     }
@@ -559,7 +562,7 @@ function ModelUsageTable({ data }: ModelUsageTableProps) {
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center h-32 text-muted-foreground">
-        <p>No model usage data yet</p>
+        <p>{t('modelUsage.noModelUsageYet')}</p>
       </div>
     );
   }
@@ -573,37 +576,37 @@ function ModelUsageTable({ data }: ModelUsageTableProps) {
               className="text-left py-3 px-2 font-medium cursor-pointer hover:bg-muted/50"
               onClick={() => handleSort('model')}
             >
-              Model <SortIndicator field="model" />
+              {t('modelUsage.table.model')} <SortIndicator field="model" />
             </th>
             <th
               className="text-right py-3 px-2 font-medium cursor-pointer hover:bg-muted/50"
               onClick={() => handleSort('requests')}
             >
-              Requests <SortIndicator field="requests" />
+              {t('modelUsage.table.requests')} <SortIndicator field="requests" />
             </th>
             <th
               className="text-right py-3 px-2 font-medium cursor-pointer hover:bg-muted/50"
               onClick={() => handleSort('promptTokens')}
             >
-              Prompt <SortIndicator field="promptTokens" />
+              {t('modelUsage.table.prompt')} <SortIndicator field="promptTokens" />
             </th>
             <th
               className="text-right py-3 px-2 font-medium cursor-pointer hover:bg-muted/50"
               onClick={() => handleSort('completionTokens')}
             >
-              Completion <SortIndicator field="completionTokens" />
+              {t('modelUsage.table.completion')} <SortIndicator field="completionTokens" />
             </th>
             <th
               className="text-right py-3 px-2 font-medium cursor-pointer hover:bg-muted/50"
               onClick={() => handleSort('tokens')}
             >
-              Total <SortIndicator field="tokens" />
+              {t('modelUsage.table.total')} <SortIndicator field="tokens" />
             </th>
             <th
               className="text-right py-3 px-2 font-medium cursor-pointer hover:bg-muted/50"
               onClick={() => handleSort('cost')}
             >
-              Cost <SortIndicator field="cost" />
+              {t('modelUsage.table.cost')} <SortIndicator field="cost" />
             </th>
           </tr>
         </thead>
@@ -654,9 +657,11 @@ export default function ModelUsageHistory({
   className = '',
   costTracker,
   refreshInterval = 30000,
-  compact = false,
+  compact: _compact = false,
   showAllTime = true,
-}: ModelUsageHistoryProps) {
+}: ModelUsageHistoryProps): React.JSX.Element {
+  const t = useTranslations('ai');
+
   // ============================================================================
   // State Management
   // ============================================================================
@@ -821,7 +826,7 @@ export default function ModelUsageHistory({
         <Card>
           <CardContent className="p-12 text-center">
             <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Loading usage history...</p>
+            <p className="text-sm text-muted-foreground">{t('modelUsage.loadingHistory')}</p>
           </CardContent>
         </Card>
       </div>
@@ -834,9 +839,9 @@ export default function ModelUsageHistory({
         <Card>
           <CardContent className="p-12 text-center">
             <Activity className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-lg font-medium mb-2">No Usage Data</p>
+            <p className="text-lg font-medium mb-2">{t('modelUsage.noUsageData')}</p>
             <p className="text-sm text-muted-foreground">
-              Start using AI models to see usage statistics
+              {t('modelUsage.noUsageDataDescription')}
             </p>
           </CardContent>
         </Card>
@@ -853,10 +858,10 @@ export default function ModelUsageHistory({
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5" />
-                Model Usage History
+                {t('modelUsage.title')}
               </CardTitle>
               <CardDescription>
-                Track AI model usage, token consumption, and patterns over time
+                {t('modelUsage.description')}
               </CardDescription>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -865,10 +870,10 @@ export default function ModelUsageHistory({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="hourly">Hourly</SelectItem>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="hourly">{t('modelUsage.periodSelect.hourly')}</SelectItem>
+                  <SelectItem value="daily">{t('modelUsage.periodSelect.daily')}</SelectItem>
+                  <SelectItem value="weekly">{t('modelUsage.periodSelect.weekly')}</SelectItem>
+                  <SelectItem value="monthly">{t('modelUsage.periodSelect.monthly')}</SelectItem>
                 </SelectContent>
               </Select>
               <Button
@@ -889,23 +894,23 @@ export default function ModelUsageHistory({
         <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 gap-1">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
-            <span className="hidden sm:inline">Overview</span>
-            <span className="sm:hidden">Stats</span>
+            <span className="hidden sm:inline">{t('modelUsage.tabs.overview')}</span>
+            <span className="sm:hidden">{t('modelUsage.tabs.overviewShort')}</span>
           </TabsTrigger>
           <TabsTrigger value="trends" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
-            <span className="hidden sm:inline">Usage Trends</span>
-            <span className="sm:hidden">Trends</span>
+            <span className="hidden sm:inline">{t('modelUsage.tabs.trends')}</span>
+            <span className="sm:hidden">{t('modelUsage.tabs.trendsShort')}</span>
           </TabsTrigger>
           <TabsTrigger value="models" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">Model Breakdown</span>
-            <span className="sm:hidden">Models</span>
+            <span className="hidden sm:inline">{t('modelUsage.tabs.models')}</span>
+            <span className="sm:hidden">{t('modelUsage.tabs.modelsShort')}</span>
           </TabsTrigger>
           <TabsTrigger value="details" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            <span className="hidden sm:inline">Details</span>
-            <span className="sm:hidden">More</span>
+            <span className="hidden sm:inline">{t('modelUsage.tabs.details')}</span>
+            <span className="sm:hidden">{t('modelUsage.tabs.detailsShort')}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -914,30 +919,30 @@ export default function ModelUsageHistory({
           {/* Stats Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard
-              title="Total Tokens"
+              title={t('modelUsage.stats.totalTokens')}
               value={formatTokens(totalTokensUsed)}
-              description="Current session"
+              description={t('modelUsage.stats.totalTokensDesc')}
               icon={<Zap className="h-6 w-6 text-primary" />}
               testId="total-tokens"
             />
             <StatCard
-              title="Total Requests"
+              title={t('modelUsage.stats.totalRequests')}
               value={totalRequests.toString()}
-              description="API calls made"
+              description={t('modelUsage.stats.totalRequestsDesc')}
               icon={<Activity className="h-6 w-6 text-primary" />}
               testId="total-requests"
             />
             <StatCard
-              title="Avg Tokens/Request"
+              title={t('modelUsage.stats.avgTokensPerRequest')}
               value={formatTokens(averageTokensPerRequest)}
-              description="Average per call"
+              description={t('modelUsage.stats.avgTokensPerRequestDesc')}
               icon={<TrendingUp className="h-6 w-6 text-primary" />}
               testId="avg-tokens"
             />
             <StatCard
-              title="Most Used Model"
+              title={t('modelUsage.stats.mostUsedModel')}
               value={mostUsedModel}
-              description="Top choice"
+              description={t('modelUsage.stats.mostUsedModelDesc')}
               icon={<BarChart3 className="h-6 w-6 text-primary" />}
               testId="most-used-model"
             />
@@ -949,7 +954,7 @@ export default function ModelUsageHistory({
               <CardContent className="p-6">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-muted-foreground">Prompt Tokens</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('modelUsage.stats.promptTokens')}</p>
                     <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
                       <Zap className="h-5 w-5 text-green-500" />
                     </div>
@@ -978,7 +983,7 @@ export default function ModelUsageHistory({
               <CardContent className="p-6">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-muted-foreground">Completion Tokens</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('modelUsage.stats.completionTokens')}</p>
                     <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
                       <Zap className="h-5 w-5 text-blue-500" />
                     </div>
@@ -1007,7 +1012,7 @@ export default function ModelUsageHistory({
               <CardContent className="p-6">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-muted-foreground">Token Ratio</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('modelUsage.stats.tokenRatio')}</p>
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                       <BarChart3 className="h-5 w-5 text-primary" />
                     </div>
@@ -1018,7 +1023,7 @@ export default function ModelUsageHistory({
                       : '0.00'}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Completion/Prompt ratio
+                    {t('modelUsage.stats.completionPromptRatio')}
                   </p>
                 </div>
               </CardContent>
@@ -1029,23 +1034,23 @@ export default function ModelUsageHistory({
           {showAllTime && data.history.allTime && (
             <Card>
               <CardHeader>
-                <CardTitle>All-Time Statistics</CardTitle>
+                <CardTitle>{t('modelUsage.allTimeStats.title')}</CardTitle>
                 <CardDescription>
-                  Lifetime usage metrics since {new Date(data.history.allTime.firstUsageDate || Date.now()).toLocaleDateString()}
+                  {t('modelUsage.allTimeStats.description', { date: new Date(data.history.allTime.firstUsageDate || Date.now()).toLocaleDateString() })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Total Tokens</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('modelUsage.allTimeStats.totalTokens')}</p>
                     <p className="text-2xl font-bold">{formatTokens(data.history.allTime.totalTokens)}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Total Requests</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('modelUsage.allTimeStats.totalRequests')}</p>
                     <p className="text-2xl font-bold">{data.history.allTime.totalRequests.toLocaleString()}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Total Cost</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('modelUsage.allTimeStats.totalCost')}</p>
                     <p className="text-2xl font-bold">{formatCost(data.history.allTime.totalCost)}</p>
                   </div>
                 </div>
@@ -1065,10 +1070,10 @@ export default function ModelUsageHistory({
                     <div>
                       <CardTitle className="flex items-center gap-2">
                         <Zap className="h-5 w-5" />
-                        Token Consumption
+                        {t('modelUsage.tokenConsumption.title')}
                       </CardTitle>
                       <CardDescription>
-                        Prompt vs completion token usage over time
+                        {t('modelUsage.tokenConsumption.description')}
                       </CardDescription>
                     </div>
                   </div>
@@ -1088,10 +1093,10 @@ export default function ModelUsageHistory({
                     <div>
                       <CardTitle className="flex items-center gap-2">
                         <TrendingUp className="h-5 w-5" />
-                        Usage Trends
+                        {t('modelUsage.usageTrends.title')}
                       </CardTitle>
                       <CardDescription>
-                        {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)} usage patterns over time
+                        {t('modelUsage.usageTrends.description', { period: selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1) })}
                       </CardDescription>
                     </div>
                     <Select value={selectedMetric} onValueChange={handleMetricChange}>
@@ -1099,8 +1104,8 @@ export default function ModelUsageHistory({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="tokens">Tokens</SelectItem>
-                        <SelectItem value="requests">Requests</SelectItem>
+                        <SelectItem value="tokens">{t('modelUsage.metricSelect.tokens')}</SelectItem>
+                        <SelectItem value="requests">{t('modelUsage.metricSelect.requests')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1118,9 +1123,9 @@ export default function ModelUsageHistory({
             <Card>
               <CardContent className="p-12 text-center">
                 <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">No Trend Data</p>
+                <p className="text-lg font-medium mb-2">{t('modelUsage.noTrendData')}</p>
                 <p className="text-sm text-muted-foreground">
-                  No usage data available for the selected {selectedPeriod} period
+                  {t('modelUsage.noTrendDataDescription', { period: selectedPeriod })}
                 </p>
               </CardContent>
             </Card>
@@ -1136,9 +1141,9 @@ export default function ModelUsageHistory({
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle>Model Usage Breakdown</CardTitle>
+                        <CardTitle>{t('modelUsage.modelBreakdown.title')}</CardTitle>
                         <CardDescription>
-                          Usage distribution across different AI models
+                          {t('modelUsage.modelBreakdown.description')}
                         </CardDescription>
                       </div>
                       <Button
@@ -1162,9 +1167,9 @@ export default function ModelUsageHistory({
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Model Usage Details</CardTitle>
+                    <CardTitle>{t('modelUsage.modelBreakdown.detailsTitle')}</CardTitle>
                     <CardDescription>
-                      Detailed statistics for each model used (click headers to sort)
+                      {t('modelUsage.modelBreakdown.detailsDescription')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent data-testid="model-usage-table">
@@ -1176,14 +1181,14 @@ export default function ModelUsageHistory({
               {/* Top Models Summary */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Top Models Summary</CardTitle>
+                  <CardTitle>{t('modelUsage.topModelsSummary.title')}</CardTitle>
                   <CardDescription>
-                    Quick overview of most frequently used models
+                    {t('modelUsage.topModelsSummary.description')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4 md:grid-cols-3">
-                    {modelBreakdown.slice(0, 3).map((model, index) => {
+                    {modelBreakdown.slice(0, 3).map((model) => {
                       const pricing = MODEL_PRICING[model.modelId];
                       const provider = pricing?.provider || 'unknown';
                       const totalTokens = model.promptTokens + model.completionTokens;
@@ -1200,15 +1205,15 @@ export default function ModelUsageHistory({
                             </div>
                             <div className="space-y-2 text-sm">
                               <div className="flex justify-between">
-                                <span className="text-muted-foreground">Requests:</span>
+                                <span className="text-muted-foreground">{t('modelUsage.topModelsSummary.requests')}</span>
                                 <span className="font-medium">{model.requests}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-muted-foreground">Tokens:</span>
+                                <span className="text-muted-foreground">{t('modelUsage.topModelsSummary.tokens')}</span>
                                 <span className="font-medium">{formatTokens(totalTokens)}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-muted-foreground">Share:</span>
+                                <span className="text-muted-foreground">{t('modelUsage.topModelsSummary.share')}</span>
                                 <Badge variant="secondary" className="text-xs">
                                   {model.percentage.toFixed(1)}%
                                 </Badge>
@@ -1226,9 +1231,9 @@ export default function ModelUsageHistory({
             <Card>
               <CardContent className="p-12 text-center">
                 <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">No Model Data</p>
+                <p className="text-lg font-medium mb-2">{t('modelUsage.noModelData')}</p>
                 <p className="text-sm text-muted-foreground">
-                  No AI models have been used yet
+                  {t('modelUsage.noModelDataDescription')}
                 </p>
               </CardContent>
             </Card>
@@ -1243,10 +1248,10 @@ export default function ModelUsageHistory({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="h-5 w-5" />
-                  Recent {selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)} Activity
+                  {t('modelUsage.recentActivity.title', { period: selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1) })}
                 </CardTitle>
                 <CardDescription>
-                  Last 5 data points from {currentPeriodData.length} total
+                  {t('modelUsage.recentActivity.description', { total: currentPeriodData.length })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1258,7 +1263,7 @@ export default function ModelUsageHistory({
                           {formatTimestamp(dataPoint.timestamp, selectedPeriod)}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {dataPoint.requests} requests
+                          {t('modelUsage.recentActivity.requests', { count: dataPoint.requests })}
                         </p>
                       </div>
                       <div className="text-right space-y-1">
@@ -1278,9 +1283,9 @@ export default function ModelUsageHistory({
             <Card>
               <CardContent className="p-12 text-center">
                 <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">No Activity Data</p>
+                <p className="text-lg font-medium mb-2">{t('modelUsage.noActivityData')}</p>
                 <p className="text-sm text-muted-foreground">
-                  No recent activity in the selected {selectedPeriod} period
+                  {t('modelUsage.noActivityDataDescription', { period: selectedPeriod })}
                 </p>
               </CardContent>
             </Card>
@@ -1289,16 +1294,16 @@ export default function ModelUsageHistory({
           {/* Session Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Session Information</CardTitle>
+              <CardTitle>{t('modelUsage.sessionInfo.title')}</CardTitle>
               <CardDescription>
-                Current usage session details
+                {t('modelUsage.sessionInfo.description')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Session Start:</span>
+                    <span className="text-sm text-muted-foreground">{t('modelUsage.sessionInfo.sessionStart')}</span>
                     <span className="text-sm font-medium">
                       {data.session.sessionStart
                         ? new Date(data.session.sessionStart).toLocaleString()
@@ -1306,27 +1311,27 @@ export default function ModelUsageHistory({
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Last Updated:</span>
+                    <span className="text-sm text-muted-foreground">{t('modelUsage.sessionInfo.lastUpdated')}</span>
                     <span className="text-sm font-medium">
                       {new Date(lastUpdate).toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Total Requests:</span>
+                    <span className="text-sm text-muted-foreground">{t('modelUsage.sessionInfo.totalRequests')}</span>
                     <Badge variant="secondary">{totalRequests}</Badge>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Total Tokens:</span>
+                    <span className="text-sm text-muted-foreground">{t('modelUsage.sessionInfo.totalTokens')}</span>
                     <Badge variant="secondary">{formatTokens(totalTokensUsed)}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Models Used:</span>
+                    <span className="text-sm text-muted-foreground">{t('modelUsage.sessionInfo.modelsUsed')}</span>
                     <Badge variant="secondary">{modelBreakdown.length}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Data Points:</span>
+                    <span className="text-sm text-muted-foreground">{t('modelUsage.sessionInfo.dataPoints')}</span>
                     <Badge variant="secondary">
                       {currentPeriodData.length} {selectedPeriod}
                     </Badge>

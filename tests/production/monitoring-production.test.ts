@@ -96,8 +96,7 @@ describe('Production Monitoring Validation', () => {
       // Generate some monitoring activity
       monitoring.trackUserAction('test_action', { test: true });
 
-      // Verify we can track metrics without errors
-      expect(true).toBe(true);
+      // Verified: trackUserAction completed without throwing
     });
   });
 });
@@ -124,8 +123,7 @@ describe('Chaos Engineering - Monitoring Resilience', () => {
       monitoring.trackUserAction('resilience_test', { iteration: i });
     }
 
-    // Test completes without throwing
-    expect(true).toBe(true);
+    // Verified: 50 trackUserAction calls completed without throwing
   });
 });
 

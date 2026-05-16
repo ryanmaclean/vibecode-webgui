@@ -47,9 +47,15 @@ setInterval(() => {
 }, 30 * 60 * 1000)
 
 export async function GET(request: NextRequest) {
+  // SECURITY: Authenticate before allowing WebSocket upgrade
+  const session = await getServerSession(authOptions)
+  if (!session) {
+    return new Response('Unauthorized', { status: 401 })
+  }
+
   const { searchParams } = new URL(request.url)
   const workspaceId = searchParams.get('workspaceId')
-  
+
   if (!workspaceId) {
     return new Response('Workspace ID required', { status: 400 })
   }
@@ -70,10 +76,15 @@ export async function GET(request: NextRequest) {
 }
 
 // WebSocket handler (this would be handled by your WebSocket server)
+// NOTE: Authentication is enforced in the GET handler before the WebSocket upgrade.
+// The userId must be sourced from the validated server session, not from client query params.
 const webSocketHandler = (ws: any, request: any) => {
   const url = new URL(request.url, 'http://localhost')
   const workspaceId = url.searchParams.get('workspaceId')
-  const userId = url.searchParams.get('userId') || 'anonymous'
+  // SECURITY: Do not trust client-supplied userId. This handler is only reached after the
+  // GET handler validates the session. The session-derived userId should be passed here
+  // via a server-side mechanism (e.g. a short-lived token or server-side map), not query params.
+  const userId = url.searchParams.get('userId')
   
   let currentSession: string | null = null
 
@@ -131,12 +142,21 @@ const webSocketHandler = (ws: any, request: any) => {
   })
 
   // Handle create terminal
-  async function handleCreateTerminal(ws: any, message: any, workspaceId: string | null, userId: string) {
+  async function handleCreateTerminal(ws: any, message: any, workspaceId: string | null, userId: string | null) {
     try {
       if (!workspaceId) {
         ws.send(JSON.stringify({
           type: 'error',
           message: 'Workspace ID is required'
+        }))
+        return
+      }
+
+      // SECURITY: Reject if userId is missing — anonymous PTY sessions are not permitted
+      if (!userId) {
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: 'Unauthorized'
         }))
         return
       }

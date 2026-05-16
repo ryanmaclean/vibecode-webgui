@@ -475,11 +475,17 @@ cmd_ssh() {
         exit 1
     fi
 
+    local ssh_password="${VM_SSH_PASSWORD:-}"
+
     print_info "Connecting to root@localhost:$SSH_PORT..."
-    print_warning "Default password: vibecode"
+    if [ -n "$ssh_password" ]; then
+        print_info "Using password from \$VM_SSH_PASSWORD"
+    else
+        print_warning "No \$VM_SSH_PASSWORD set. You may be prompted for a password."
+    fi
     echo ""
 
-    ssh -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" -p "$SSH_PORT" root@localhost
+    ssh -o "StrictHostKeyChecking=accept-new" -p "$SSH_PORT" root@localhost
 }
 
 cmd_logs() {

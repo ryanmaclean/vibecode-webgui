@@ -8,6 +8,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +41,6 @@ import type {
   ModelComparisonScore,
   QualityTier,
   SpeedTier,
-  DEFAULT_COMPARISON_CRITERIA,
 } from '@/types/model-comparison';
 
 // ============================================================================
@@ -109,7 +109,7 @@ interface CapabilityBarProps {
   color?: string;
 }
 
-const CapabilityBar: React.FC<CapabilityBarProps> = ({ label, value, icon, color = 'bg-blue-500' }) => (
+const CapabilityBar: React.FC<CapabilityBarProps> = ({ label, value, icon, color: _color = 'bg-blue-500' }) => (
   <div className="space-y-1">
     <div className="flex items-center justify-between text-sm">
       <div className="flex items-center gap-1.5 text-gray-600">
@@ -137,13 +137,14 @@ const ModelCard: React.FC<ModelCardProps> = ({
   onRemove,
   onSelect,
 }) => {
+  const t = useTranslations('ai');
   return (
     <Card className={`relative ${isWinner ? 'ring-2 ring-green-500 shadow-lg' : ''}`}>
       {isWinner && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
           <Badge className="bg-green-500 text-white">
             <Trophy className="h-3 w-3 mr-1" />
-            Recommended
+            {t('modelComparison.recommended')}
           </Badge>
         </div>
       )}
@@ -152,7 +153,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
         <button
           onClick={onRemove}
           className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Remove model from comparison"
+          aria-label={t('modelComparison.removeFromComparison')}
         >
           <X className="h-4 w-4 text-gray-400" />
         </button>
@@ -171,7 +172,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
               <div className="text-2xl font-bold text-gray-900">
                 {score.overallScore.toFixed(1)}
               </div>
-              <div className="text-xs text-gray-500">Score</div>
+              <div className="text-xs text-gray-500">{t('modelComparison.score')}</div>
             </div>
           )}
         </div>
@@ -190,11 +191,11 @@ const ModelCard: React.FC<ModelCardProps> = ({
         {/* Pricing */}
         <div className="grid grid-cols-2 gap-2 p-3 bg-gray-50 rounded-lg">
           <div>
-            <div className="text-xs text-gray-500">Input</div>
+            <div className="text-xs text-gray-500">{t('modelComparison.modelCard.input')}</div>
             <div className="font-medium text-sm">{formatPrice(model.pricing.inputPer1K)}</div>
           </div>
           <div>
-            <div className="text-xs text-gray-500">Output</div>
+            <div className="text-xs text-gray-500">{t('modelComparison.modelCard.output')}</div>
             <div className="font-medium text-sm">{formatPrice(model.pricing.outputPer1K)}</div>
           </div>
         </div>
@@ -203,7 +204,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
         <div className="flex items-center justify-between p-2 border rounded-lg">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Database className="h-4 w-4" />
-            <span>Context</span>
+            <span>{t('modelComparison.modelCard.context')}</span>
           </div>
           <span className="font-medium">{formatContext(model.limits.contextWindow)}</span>
         </div>
@@ -211,22 +212,22 @@ const ModelCard: React.FC<ModelCardProps> = ({
         {/* Capabilities */}
         <div className="space-y-3">
           <CapabilityBar
-            label="Coding"
+            label={t('modelComparison.modelCard.coding')}
             value={model.capabilities.coding}
             icon={<Code className="h-3.5 w-3.5" />}
           />
           <CapabilityBar
-            label="Reasoning"
+            label={t('modelComparison.modelCard.reasoning')}
             value={model.capabilities.reasoning}
             icon={<Brain className="h-3.5 w-3.5" />}
           />
           <CapabilityBar
-            label="Creative"
+            label={t('modelComparison.modelCard.creative')}
             value={model.capabilities.creative}
             icon={<Sparkles className="h-3.5 w-3.5" />}
           />
           <CapabilityBar
-            label="Math"
+            label={t('modelComparison.modelCard.math')}
             value={model.capabilities.math}
             icon={<Calculator className="h-3.5 w-3.5" />}
           />
@@ -275,7 +276,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
         {/* Select Button */}
         {onSelect && (
           <Button onClick={onSelect} className="w-full" variant={isWinner ? 'default' : 'outline'}>
-            {isWinner ? 'Use This Model' : 'Select Model'}
+            {isWinner ? t('modelComparison.useThisModel') : t('modelComparison.selectModel')}
           </Button>
         )}
       </CardContent>
@@ -292,7 +293,8 @@ const CriteriaAdjuster: React.FC<CriteriaAdjusterProps> = ({
   criteria,
   onCriteriaChange,
 }) => {
-  const handleChange = (key: keyof ComparisonCriteria, value: number) => {
+  const t = useTranslations('ai');
+  const handleChange = (key: keyof ComparisonCriteria, value: number): void => {
     const newCriteria = { ...criteria, [key]: value };
     // Normalize weights to sum to 1
     const total = newCriteria.cost + newCriteria.speed + newCriteria.quality + newCriteria.context_size;
@@ -311,7 +313,7 @@ const CriteriaAdjuster: React.FC<CriteriaAdjusterProps> = ({
         <div className="flex items-center justify-between">
           <Label className="flex items-center gap-2">
             <DollarSign className="h-4 w-4" />
-            Cost Importance
+            {t('modelComparison.criteria.costImportance')}
           </Label>
           <span className="text-sm text-gray-500">{Math.round(criteria.cost * 100)}%</span>
         </div>
@@ -327,7 +329,7 @@ const CriteriaAdjuster: React.FC<CriteriaAdjusterProps> = ({
         <div className="flex items-center justify-between">
           <Label className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            Speed Importance
+            {t('modelComparison.criteria.speedImportance')}
           </Label>
           <span className="text-sm text-gray-500">{Math.round(criteria.speed * 100)}%</span>
         </div>
@@ -343,7 +345,7 @@ const CriteriaAdjuster: React.FC<CriteriaAdjusterProps> = ({
         <div className="flex items-center justify-between">
           <Label className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
-            Quality Importance
+            {t('modelComparison.criteria.qualityImportance')}
           </Label>
           <span className="text-sm text-gray-500">{Math.round(criteria.quality * 100)}%</span>
         </div>
@@ -359,7 +361,7 @@ const CriteriaAdjuster: React.FC<CriteriaAdjusterProps> = ({
         <div className="flex items-center justify-between">
           <Label className="flex items-center gap-2">
             <Database className="h-4 w-4" />
-            Context Size Importance
+            {t('modelComparison.criteria.contextSizeImportance')}
           </Label>
           <span className="text-sm text-gray-500">{Math.round(criteria.context_size * 100)}%</span>
         </div>
@@ -385,19 +387,20 @@ const ComparisonTable: React.FC<ComparisonTableProps> = ({
   scores,
   winnerId,
 }) => {
+  const t = useTranslations('ai');
   const attributes = [
-    { key: 'pricing', label: 'Price (Input)', getValue: (m: ModelProfile) => formatPrice(m.pricing.inputPer1K) },
-    { key: 'pricingOut', label: 'Price (Output)', getValue: (m: ModelProfile) => formatPrice(m.pricing.outputPer1K) },
-    { key: 'context', label: 'Context Window', getValue: (m: ModelProfile) => formatContext(m.limits.contextWindow) },
-    { key: 'speed', label: 'Speed', getValue: (m: ModelProfile) => m.performance.speedTier.replace('_', ' ') },
-    { key: 'quality', label: 'Quality', getValue: (m: ModelProfile) => m.qualityTier.replace('_', ' ') },
-    { key: 'coding', label: 'Coding', getValue: (m: ModelProfile) => m.capabilities.coding.toString() },
-    { key: 'reasoning', label: 'Reasoning', getValue: (m: ModelProfile) => m.capabilities.reasoning.toString() },
-    { key: 'creative', label: 'Creative', getValue: (m: ModelProfile) => m.capabilities.creative.toString() },
-    { key: 'math', label: 'Math', getValue: (m: ModelProfile) => m.capabilities.math.toString() },
-    { key: 'vision', label: 'Vision', getValue: (m: ModelProfile) => m.capabilities.vision > 0 ? 'Yes' : 'No' },
-    { key: 'functions', label: 'Function Calling', getValue: (m: ModelProfile) => m.capabilities.function_calling ? 'Yes' : 'No' },
-    { key: 'latency', label: 'Avg Latency', getValue: (m: ModelProfile) => `${m.performance.avgLatencyMs}ms` },
+    { key: 'pricing', label: t('modelComparison.table.priceInput'), getValue: (m: ModelProfile) => formatPrice(m.pricing.inputPer1K) },
+    { key: 'pricingOut', label: t('modelComparison.table.priceOutput'), getValue: (m: ModelProfile) => formatPrice(m.pricing.outputPer1K) },
+    { key: 'context', label: t('modelComparison.table.contextWindow'), getValue: (m: ModelProfile) => formatContext(m.limits.contextWindow) },
+    { key: 'speed', label: t('modelComparison.table.speed'), getValue: (m: ModelProfile) => m.performance.speedTier.replace('_', ' ') },
+    { key: 'quality', label: t('modelComparison.table.quality'), getValue: (m: ModelProfile) => m.qualityTier.replace('_', ' ') },
+    { key: 'coding', label: t('modelComparison.table.coding'), getValue: (m: ModelProfile) => m.capabilities.coding.toString() },
+    { key: 'reasoning', label: t('modelComparison.table.reasoning'), getValue: (m: ModelProfile) => m.capabilities.reasoning.toString() },
+    { key: 'creative', label: t('modelComparison.table.creative'), getValue: (m: ModelProfile) => m.capabilities.creative.toString() },
+    { key: 'math', label: t('modelComparison.table.math'), getValue: (m: ModelProfile) => m.capabilities.math.toString() },
+    { key: 'vision', label: t('modelComparison.table.vision'), getValue: (m: ModelProfile) => m.capabilities.vision > 0 ? t('modelComparison.table.yes') : t('modelComparison.table.no') },
+    { key: 'functions', label: t('modelComparison.table.functionCalling'), getValue: (m: ModelProfile) => m.capabilities.function_calling ? t('modelComparison.table.yes') : t('modelComparison.table.no') },
+    { key: 'latency', label: t('modelComparison.table.avgLatency'), getValue: (m: ModelProfile) => `${m.performance.avgLatencyMs}ms` },
   ];
 
   return (
@@ -406,7 +409,7 @@ const ComparisonTable: React.FC<ComparisonTableProps> = ({
         <thead>
           <tr>
             <th className="text-left p-3 bg-gray-50 border-b font-medium text-gray-600">
-              Attribute
+              {t('modelComparison.table.attribute')}
             </th>
             {models.map(model => (
               <th
@@ -441,7 +444,7 @@ const ComparisonTable: React.FC<ComparisonTableProps> = ({
           ))}
           {scores && (
             <tr className="bg-gray-100 font-medium">
-              <td className="p-3 border-b">Overall Score</td>
+              <td className="p-3 border-b">{t('modelComparison.table.overallScore')}</td>
               {models.map(model => {
                 const score = scores.find(s => s.modelId === model.id);
                 return (
@@ -475,6 +478,7 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
   className = '',
   availableModels = [],
 }) => {
+  const t = useTranslations('ai');
   const [models, setModels] = useState<ModelProfile[]>(initialModels);
   const [criteria, setCriteria] = useState<ComparisonCriteria>({
     cost: 0.25,
@@ -515,21 +519,21 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
       const pros: string[] = [];
       const cons: string[] = [];
 
-      if (model.qualityTier === 'state_of_art') pros.push('State of the art quality');
-      else if (model.qualityTier === 'excellent') pros.push('Excellent quality');
+      if (model.qualityTier === 'state_of_art') pros.push(t('modelComparison.pros.stateOfArtQuality'));
+      else if (model.qualityTier === 'excellent') pros.push(t('modelComparison.pros.excellentQuality'));
 
-      if (model.performance.speedTier === 'very_fast') pros.push('Very fast responses');
-      else if (model.performance.speedTier === 'fast') pros.push('Fast responses');
+      if (model.performance.speedTier === 'very_fast') pros.push(t('modelComparison.pros.veryFastResponses'));
+      else if (model.performance.speedTier === 'fast') pros.push(t('modelComparison.pros.fastResponses'));
 
-      if (model.pricing.inputPer1K < 0.001) pros.push('Very affordable');
-      if (model.limits.contextWindow >= 100000) pros.push('Large context window');
-      if (model.capabilities.vision > 0) pros.push('Vision capable');
-      if (model.capabilities.function_calling) pros.push('Function calling support');
+      if (model.pricing.inputPer1K < 0.001) pros.push(t('modelComparison.pros.veryAffordable'));
+      if (model.limits.contextWindow >= 100000) pros.push(t('modelComparison.pros.largeContextWindow'));
+      if (model.capabilities.vision > 0) pros.push(t('modelComparison.pros.visionCapable'));
+      if (model.capabilities.function_calling) pros.push(t('modelComparison.pros.functionCalling'));
 
-      if (model.qualityTier === 'basic') cons.push('Basic quality tier');
-      if (model.performance.speedTier === 'slow') cons.push('Slower responses');
-      if (model.pricing.inputPer1K >= 0.01) cons.push('Higher cost');
-      if (model.limits.contextWindow < 16000) cons.push('Limited context');
+      if (model.qualityTier === 'basic') cons.push(t('modelComparison.cons.basicQuality'));
+      if (model.performance.speedTier === 'slow') cons.push(t('modelComparison.cons.slowerResponses'));
+      if (model.pricing.inputPer1K >= 0.01) cons.push(t('modelComparison.cons.higherCost'));
+      if (model.limits.contextWindow < 16000) cons.push(t('modelComparison.cons.limitedContext'));
 
       return {
         modelId: model.id,
@@ -559,13 +563,13 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
     });
 
     const winnerId = scores[0].modelId;
-    const winner = models.find(m => m.id === winnerId)!;
+    const winner = models.find(m => m.id === winnerId);
 
     return {
       models,
       scores,
       recommendation: winnerId,
-      recommendationReason: `${winner.name} scores highest with balanced performance across all criteria`,
+      recommendationReason: t('modelComparison.recommendationReason', { name: winner?.name ?? winnerId }),
       criteria,
       generatedAt: new Date().toISOString(),
       summary: {
@@ -620,15 +624,15 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Model Comparison</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('modelComparison.title')}</h2>
           <p className="text-gray-600">
-            Compare up to {maxModels} models side by side
+            {t('modelComparison.description', { max: maxModels })}
           </p>
         </div>
         {models.length < maxModels && availableToAdd.length > 0 && (
           <Button onClick={() => setShowAddModal(true)} variant="outline">
             <Plus className="h-4 w-4 mr-2" />
-            Add Model
+            {t('modelComparison.addModel')}
           </Button>
         )}
       </div>
@@ -637,8 +641,8 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
       {showAddModal && (
         <Card className="border-2 border-dashed">
           <CardHeader>
-            <CardTitle className="text-lg">Add Model to Compare</CardTitle>
-            <CardDescription>Select a model to add to the comparison</CardDescription>
+            <CardTitle className="text-lg">{t('modelComparison.addModelToCompare')}</CardTitle>
+            <CardDescription>{t('modelComparison.addModelDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto">
@@ -663,7 +667,7 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
             </div>
             <div className="mt-4 flex justify-end">
               <Button variant="ghost" onClick={() => setShowAddModal(false)}>
-                Cancel
+                {t('modelComparison.cancel')}
               </Button>
             </div>
           </CardContent>
@@ -678,15 +682,15 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
               <TrendingUp className="h-12 w-12 mx-auto" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No models to compare
+              {t('modelComparison.noModelsTitle')}
             </h3>
             <p className="text-gray-500 mb-4">
-              Add at least 2 models to start comparing
+              {t('modelComparison.noModelsDescription')}
             </p>
             {availableModels.length > 0 && (
               <Button onClick={() => setShowAddModal(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add First Model
+                {t('modelComparison.addFirstModel')}
               </Button>
             )}
           </CardContent>
@@ -699,11 +703,11 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
           />
           <Card className="border-2 border-dashed flex items-center justify-center">
             <CardContent className="text-center py-8">
-              <p className="text-gray-500 mb-4">Add another model to compare</p>
+              <p className="text-gray-500 mb-4">{t('modelComparison.addAnotherModel')}</p>
               {availableToAdd.length > 0 && (
                 <Button onClick={() => setShowAddModal(true)} variant="outline">
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Model
+                  {t('modelComparison.addModel')}
                 </Button>
               )}
             </CardContent>
@@ -712,9 +716,9 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
       ) : (
         <Tabs defaultValue="cards" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-4">
-            <TabsTrigger value="cards">Card View</TabsTrigger>
-            <TabsTrigger value="table">Table View</TabsTrigger>
-            <TabsTrigger value="settings">Criteria</TabsTrigger>
+            <TabsTrigger value="cards">{t('modelComparison.tabs.cardView')}</TabsTrigger>
+            <TabsTrigger value="table">{t('modelComparison.tabs.tableView')}</TabsTrigger>
+            <TabsTrigger value="settings">{t('modelComparison.tabs.criteria')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="cards">
@@ -729,7 +733,7 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
                       </div>
                       <div>
                         <div className="font-medium text-green-800">
-                          Recommended: {models.find(m => m.id === comparisonResult.recommendation)?.name}
+                          {t('modelComparison.recommended')}: {models.find(m => m.id === comparisonResult.recommendation)?.name}
                         </div>
                         <div className="text-sm text-green-600">
                           {comparisonResult.recommendationReason}
@@ -743,7 +747,7 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
                       }}
                       className="bg-green-600 hover:bg-green-700"
                     >
-                      Use This Model
+                      {t('modelComparison.useThisModel')}
                     </Button>
                   </div>
                 </CardContent>
@@ -789,9 +793,9 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
           <TabsContent value="settings">
             <Card>
               <CardHeader>
-                <CardTitle>Comparison Criteria</CardTitle>
+                <CardTitle>{t('modelComparison.criteria.title')}</CardTitle>
                 <CardDescription>
-                  Adjust the importance of each factor in the comparison
+                  {t('modelComparison.criteria.description')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -809,14 +813,14 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
       {comparisonResult && comparisonResult.summary && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Quick Summary</CardTitle>
+            <CardTitle className="text-lg">{t('modelComparison.quickSummary.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {comparisonResult.summary.bestForCoding && (
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <Code className="h-5 w-5 mx-auto mb-2 text-blue-600" />
-                  <div className="text-xs text-gray-500">Best for Coding</div>
+                  <div className="text-xs text-gray-500">{t('modelComparison.quickSummary.bestForCoding')}</div>
                   <div className="font-medium text-sm truncate">
                     {models.find(m => m.id === comparisonResult.summary.bestForCoding)?.name}
                   </div>
@@ -825,7 +829,7 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
               {comparisonResult.summary.bestForReasoning && (
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <Brain className="h-5 w-5 mx-auto mb-2 text-purple-600" />
-                  <div className="text-xs text-gray-500">Best Reasoning</div>
+                  <div className="text-xs text-gray-500">{t('modelComparison.quickSummary.bestReasoning')}</div>
                   <div className="font-medium text-sm truncate">
                     {models.find(m => m.id === comparisonResult.summary.bestForReasoning)?.name}
                   </div>
@@ -834,7 +838,7 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
               {comparisonResult.summary.bestValue && (
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <DollarSign className="h-5 w-5 mx-auto mb-2 text-green-600" />
-                  <div className="text-xs text-gray-500">Best Value</div>
+                  <div className="text-xs text-gray-500">{t('modelComparison.quickSummary.bestValue')}</div>
                   <div className="font-medium text-sm truncate">
                     {models.find(m => m.id === comparisonResult.summary.bestValue)?.name}
                   </div>
@@ -843,7 +847,7 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
               {comparisonResult.summary.fastest && (
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <Zap className="h-5 w-5 mx-auto mb-2 text-yellow-600" />
-                  <div className="text-xs text-gray-500">Fastest</div>
+                  <div className="text-xs text-gray-500">{t('modelComparison.quickSummary.fastest')}</div>
                   <div className="font-medium text-sm truncate">
                     {models.find(m => m.id === comparisonResult.summary.fastest)?.name}
                   </div>
@@ -852,7 +856,7 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
               {comparisonResult.summary.largestContext && (
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <Database className="h-5 w-5 mx-auto mb-2 text-indigo-600" />
-                  <div className="text-xs text-gray-500">Largest Context</div>
+                  <div className="text-xs text-gray-500">{t('modelComparison.quickSummary.largestContext')}</div>
                   <div className="font-medium text-sm truncate">
                     {models.find(m => m.id === comparisonResult.summary.largestContext)?.name}
                   </div>

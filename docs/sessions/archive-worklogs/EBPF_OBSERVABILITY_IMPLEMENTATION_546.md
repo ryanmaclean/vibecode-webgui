@@ -579,7 +579,7 @@ The eBPF programs (`vm_lifecycle.bpf.c` and `network_monitor.bpf.c`) and README.
 ### Medium-term (Week 4-5)
 1. Add HTTP request tracing with protocol parsing
 2. Implement distributed tracing correlation
-3. Create custom Grafana dashboards
+3. Create custom Datadog dashboards
 4. Deploy Parca for continuous profiling
 
 ### Long-term (Beyond Week 5)

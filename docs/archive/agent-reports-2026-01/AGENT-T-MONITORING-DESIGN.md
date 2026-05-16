@@ -870,7 +870,7 @@ The monitoring integrates seamlessly with:
 
 3. **Set up dashboards**
    - Datadog (optional)
-   - Prometheus/Grafana (optional)
+   - Datadog + Prometheus (optional)
    - Local console output (built-in)
 
 4. **Log rotation**

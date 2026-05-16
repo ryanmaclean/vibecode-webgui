@@ -1,0 +1,5 @@
+node_modules/
+
+# Environment files contain infrastructure details - use *.env.example as templates
+*.env
+!*.env.example

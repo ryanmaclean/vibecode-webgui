@@ -675,7 +675,7 @@ Apple's official containerization framework represents a **game-changing opportu
 **Monitoring:**
 - Datadog APM + RUM (existing)
 - Custom metrics for container operations
-- Prometheus + Grafana (optional backup)
+- Datadog dashboards for visualization
 
 ### Security Considerations
 

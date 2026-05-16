@@ -553,7 +553,7 @@ jq . /tmp/integration-test-results.json
 
 3. **Monitoring Integration**
    - Prometheus metrics export
-   - Grafana dashboard creation
+   - Datadog dashboard creation
    - Alert rule configuration
    - Slack/email notifications
 

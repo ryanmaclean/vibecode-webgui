@@ -9,6 +9,8 @@
  */
 
 import { EventEmitter } from 'events';
+import { promises as dns } from 'dns';
+import { isIPv4, isIPv6 } from 'net';
 import {
   WorkflowDefinition,
   WorkflowExecution,
@@ -158,22 +160,152 @@ function getContextValue(path: string, context: WorkflowContext): unknown {
 }
 
 /**
+ * Safely evaluate an expression, blocking dangerous patterns
+ */
+function safeEvaluate(expression: string, context: Record<string, unknown>): unknown {
+  // Only allow safe characters: alphanumeric, dots, brackets, comparisons, math, logical
+  const safePattern = /^[\w\s.[\]()><=!&|+\-*/%,'"?:]+$/;
+  if (!safePattern.test(expression)) {
+    throw new Error(`Unsafe expression: ${expression}`);
+  }
+
+  // Block dangerous patterns
+  const blocked = /\b(eval|Function|import|require|process|globalThis|window|document|fetch|XMLHttpRequest|__proto__|constructor|prototype)\b/;
+  if (blocked.test(expression)) {
+    throw new Error(`Blocked expression pattern: ${expression}`);
+  }
+
+  const func = new Function(...Object.keys(context), `"use strict"; return (${expression})`);
+  return func(...Object.values(context));
+}
+
+/**
  * Evaluate JavaScript expression safely
  */
 function evaluateExpression(expression: string, context: WorkflowContext): unknown {
   try {
     // Create function with context variables as parameters
     // Pass input, nodes, and globals as separate objects
-    const contextVars = {
+    const contextVars: Record<string, unknown> = {
       input: context.input,
       nodes: context.nodes,
       globals: context.globals,
       loops: context.loops
     };
-    const func = new Function(...Object.keys(contextVars), `return ${expression}`);
-    return func(...Object.values(contextVars));
+    return safeEvaluate(expression, contextVars);
   } catch (error) {
     throw new Error(`Expression evaluation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+// ============================================================================
+// SSRF Protection
+// ============================================================================
+
+/**
+ * Check if an IP address belongs to a private/internal range.
+ * Blocks: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8,
+ *         169.254.0.0/16 (link-local/cloud metadata), 0.0.0.0,
+ *         ::1, fc00::/7, fe80::/10
+ */
+function isPrivateIP(ip: string): boolean {
+  // Normalize IPv4-mapped IPv6 addresses (e.g. ::ffff:127.0.0.1)
+  const normalizedIp = ip.replace(/^::ffff:/, '');
+
+  if (isIPv4(normalizedIp)) {
+    const parts = normalizedIp.split('.').map(Number);
+    const [a, b] = parts;
+
+    // 0.0.0.0
+    if (normalizedIp === '0.0.0.0') return true;
+    // 127.0.0.0/8 (loopback)
+    if (a === 127) return true;
+    // 10.0.0.0/8
+    if (a === 10) return true;
+    // 172.16.0.0/12
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    // 192.168.0.0/16
+    if (a === 192 && b === 168) return true;
+    // 169.254.0.0/16 (link-local, cloud metadata)
+    if (a === 169 && b === 254) return true;
+
+    return false;
+  }
+
+  if (isIPv6(ip)) {
+    const lower = ip.toLowerCase();
+    // ::1 (loopback)
+    if (lower === '::1' || lower === '0000:0000:0000:0000:0000:0000:0000:0001') return true;
+    // fc00::/7 (unique local) — covers fc00:: through fdff::
+    if (lower.startsWith('fc') || lower.startsWith('fd')) return true;
+    // fe80::/10 (link-local)
+    if (lower.startsWith('fe80')) return true;
+
+    return false;
+  }
+
+  // If it doesn't parse as IPv4 or IPv6, treat as unsafe
+  return true;
+}
+
+/**
+ * Validate a webhook URL to prevent SSRF attacks.
+ * Throws if the URL targets internal/private resources.
+ */
+async function validateWebhookUrl(url: string): Promise<void> {
+  // 1. Parse the URL
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`Invalid webhook URL: ${url}`);
+  }
+
+  // 2. Reject non-HTTP(S) protocols
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error(`Webhook URL must use HTTP or HTTPS protocol, got: ${parsed.protocol}`);
+  }
+
+  // 3. Block localhost hostname
+  const hostname = parsed.hostname.toLowerCase();
+  if (hostname === 'localhost') {
+    throw new Error('Webhook URL must not target localhost');
+  }
+
+  // 4. If the hostname is already an IP literal, check it directly
+  if (isIPv4(hostname) || isIPv6(hostname)) {
+    if (isPrivateIP(hostname)) {
+      throw new Error(`Webhook URL must not target private/internal IP address: ${hostname}`);
+    }
+  }
+
+  // 5. Resolve DNS and check all resolved addresses to prevent DNS rebinding
+  try {
+    const addresses = await dns.resolve4(hostname).catch(() => [] as string[]);
+    const addresses6 = await dns.resolve6(hostname).catch(() => [] as string[]);
+    const allAddresses = [...addresses, ...addresses6];
+
+    if (allAddresses.length === 0) {
+      throw new Error(`Could not resolve webhook URL hostname: ${hostname}`);
+    }
+
+    for (const addr of allAddresses) {
+      if (isPrivateIP(addr)) {
+        throw new Error(
+          `Webhook URL hostname "${hostname}" resolves to private/internal IP address: ${addr}`
+        );
+      }
+    }
+  } catch (err) {
+    // Re-throw our own validation errors
+    if (err instanceof Error && (
+      err.message.includes('private/internal IP') ||
+      err.message.includes('Could not resolve')
+    )) {
+      throw err;
+    }
+    // For other DNS errors, reject the request to be safe
+    throw new Error(`DNS resolution failed for webhook URL hostname "${hostname}": ${err instanceof Error ? err.message : 'Unknown error'}`);
   }
 }
 
@@ -181,16 +313,37 @@ function evaluateExpression(expression: string, context: WorkflowContext): unkno
 // Workflow Engine
 // ============================================================================
 
+/** Maximum number of executions to retain in the store */
+const MAX_EXECUTIONS = 1000;
+
+/** Time-to-live for completed/failed/cancelled executions (30 minutes) */
+const EXECUTION_TTL_MS = 30 * 60 * 1000;
+
+/** Interval between automatic cleanup sweeps (5 minutes) */
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
+/** Statuses that indicate an execution is finished and eligible for cleanup */
+const TERMINAL_STATUSES: ReadonlySet<WorkflowStatus> = new Set<WorkflowStatus>([
+  'completed',
+  'failed',
+  'cancelled',
+]);
+
 export class WorkflowEngine extends EventEmitter {
   private executions = new Map<string, WorkflowExecution>();
   private agentExecutor?: (config: AgentTaskConfig, context: WorkflowContext) => Promise<unknown>;
   private auditTrail: AuditTrail;
   private rollbackManager: RollbackManager;
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     super();
     this.auditTrail = new AuditTrail();
     this.rollbackManager = new RollbackManager();
+    this.cleanupTimer = setInterval(() => this.cleanupExpiredExecutions(), CLEANUP_INTERVAL_MS);
+    if (this.cleanupTimer && typeof this.cleanupTimer === 'object' && 'unref' in this.cleanupTimer) {
+      this.cleanupTimer.unref();
+    }
   }
 
   /**
@@ -301,6 +454,8 @@ export class WorkflowEngine extends EventEmitter {
       return execution;
     } catch (error) {
       execution.status = 'failed';
+      execution.metadata.completedAt = new Date();
+      execution.metadata.duration = Date.now() - startTime.valueOf();
       execution.error = {
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
@@ -620,6 +775,10 @@ export class WorkflowEngine extends EventEmitter {
     execution: WorkflowExecution
   ): Promise<unknown> {
     const url = evaluateTemplate(config.url, execution.context);
+
+    // Validate URL to prevent SSRF attacks
+    await validateWebhookUrl(url);
+
     const body = config.body ? evaluateTemplate(config.body, execution.context) : undefined;
 
     const response = await fetch(url, {
@@ -727,10 +886,12 @@ export class WorkflowEngine extends EventEmitter {
     }
 
     execution.status = 'cancelled';
+    execution.metadata.completedAt = new Date();
     this.emitEvent(executionId, WorkflowEventType.WORKFLOW_CANCELLED);
   }
 
   /**
+<<<<<<< HEAD
    * Create a checkpoint for an execution
    */
   createCheckpoint(executionId: string, description?: string): Checkpoint {
@@ -824,6 +985,46 @@ export class WorkflowEngine extends EventEmitter {
    */
   getRollbackManager(): RollbackManager {
     return this.rollbackManager;
+  }
+
+  cleanupExpiredExecutions(): void {
+    const now = Date.now();
+
+    for (const [id, execution] of this.executions) {
+      if (!TERMINAL_STATUSES.has(execution.status)) continue;
+
+      const completedAt = execution.metadata.completedAt;
+      if (completedAt && now - completedAt.getTime() > EXECUTION_TTL_MS) {
+        this.executions.delete(id);
+      }
+    }
+
+    if (this.executions.size > MAX_EXECUTIONS) {
+      const terminal: { id: string; completedAt: number }[] = [];
+      for (const [id, execution] of this.executions) {
+        if (!TERMINAL_STATUSES.has(execution.status)) continue;
+        terminal.push({
+          id,
+          completedAt: execution.metadata.completedAt?.getTime() ?? 0,
+        });
+      }
+
+      terminal.sort((a, b) => a.completedAt - b.completedAt);
+
+      let toRemove = this.executions.size - MAX_EXECUTIONS;
+      for (const entry of terminal) {
+        if (toRemove <= 0) break;
+        this.executions.delete(entry.id);
+        toRemove--;
+      }
+    }
+  }
+
+  dispose(): void {
+    if (this.cleanupTimer !== null) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
   }
 }
 

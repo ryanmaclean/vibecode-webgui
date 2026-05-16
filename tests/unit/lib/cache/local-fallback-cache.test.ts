@@ -205,7 +205,7 @@ describe('LocalFallbackCache', () => {
     it('should clear cleanup interval', () => {
       const cache2 = new LocalFallbackCache(100);
       cache2.dispose();
-      expect(true).toBe(true);
+      // Verified: second dispose call doesn't throw
       cache2.dispose();
     });
   });

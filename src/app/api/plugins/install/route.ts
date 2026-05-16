@@ -38,10 +38,12 @@ const ALLOWED_MIME_TYPES = [
  */
 const installRequestSchema = z.object({
   pluginId: z.string().optional(), // Optional plugin ID for reference
-  source: z.string().min(1, 'Plugin source is required'),
+  source: z
+    .string()
+    .url('Plugin source must be a valid URL')
+    .refine((url) => url.startsWith('https://'), 'Only HTTPS URLs are allowed'),
   version: z.string().optional(),
   force: z.boolean().optional(),
-  skipValidation: z.boolean().optional(),
   autoEnable: z.boolean().optional(),
 });
 
@@ -128,7 +130,6 @@ export async function POST(request: NextRequest) {
     let installOptions: {
       version?: string;
       force?: boolean;
-      skipValidation?: boolean;
       autoEnable?: boolean;
     } = {};
 
@@ -188,7 +189,6 @@ export async function POST(request: NextRequest) {
       // Get install options from form data
       installOptions = {
         force: formData.get('force') === 'true',
-        skipValidation: formData.get('skipValidation') === 'true',
         autoEnable: formData.get('autoEnable') === 'true',
       };
 
@@ -215,9 +215,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const { source, version, force, skipValidation, autoEnable } = parseResult.data;
+      const { source, version, force, autoEnable } = parseResult.data;
       pluginSource = source;
-      installOptions = { version, force, skipValidation, autoEnable };
+      installOptions = { version, force, autoEnable };
 
       logger.info('Plugin installation requested', {
         source,

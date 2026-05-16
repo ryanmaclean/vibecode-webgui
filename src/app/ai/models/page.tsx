@@ -8,6 +8,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -59,18 +60,18 @@ interface RecommendationResult {
   }>;
 }
 
-const TASK_TYPES: { value: TaskType; label: string }[] = [
-  { value: 'code_generation', label: 'Code Generation' },
-  { value: 'code_review', label: 'Code Review' },
-  { value: 'debugging', label: 'Debugging' },
-  { value: 'chat', label: 'Chat' },
-  { value: 'analysis', label: 'Analysis' },
-  { value: 'creative_writing', label: 'Creative Writing' },
-  { value: 'summarization', label: 'Summarization' },
-  { value: 'translation', label: 'Translation' },
-  { value: 'math', label: 'Math' },
-  { value: 'research', label: 'Research' },
-  { value: 'general', label: 'General' },
+const TASK_TYPE_VALUES: TaskType[] = [
+  'code_generation',
+  'code_review',
+  'debugging',
+  'chat',
+  'analysis',
+  'creative_writing',
+  'summarization',
+  'translation',
+  'math',
+  'research',
+  'general',
 ];
 
 // ============================================================================
@@ -78,6 +79,7 @@ const TASK_TYPES: { value: TaskType; label: string }[] = [
 // ============================================================================
 
 export default function AIModelsPage() {
+  const t = useTranslations();
   const [allModels, setAllModels] = useState<ModelProfile[]>([]);
   const [selectedModels, setSelectedModels] = useState<ModelProfile[]>([]);
   const [detailModel, setDetailModel] = useState<ModelProfile | null>(null);
@@ -192,6 +194,11 @@ export default function AIModelsPage() {
     }
   }, [selectedTask]);
 
+  const TASK_TYPES = TASK_TYPE_VALUES.map((value) => ({
+    value,
+    label: t(`ai.models.taskTypes.${value}`),
+  }));
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -200,7 +207,7 @@ export default function AIModelsPage() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <Brain className="h-8 w-8 text-purple-600" />
-              <h1 className="text-3xl font-bold text-gray-900">AI Models</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{t('ai.models.pageTitle')}</h1>
             </div>
             <Button
               variant="outline"
@@ -213,11 +220,11 @@ export default function AIModelsPage() {
               ) : (
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
-              Refresh
+              {t('ai.models.refreshButton')}
             </Button>
           </div>
           <p className="text-gray-600">
-            Browse, compare, and get recommendations for AI models
+            {t('ai.models.pageDescription')}
           </p>
         </div>
 
@@ -238,7 +245,7 @@ export default function AIModelsPage() {
             </div>
             <Button variant="outline" size="sm" onClick={fetchModels}>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Retry
+              {t('common.retry')}
             </Button>
           </div>
         )}
@@ -247,7 +254,7 @@ export default function AIModelsPage() {
         {loading && (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-            <span className="ml-3 text-gray-600">Loading models...</span>
+            <span className="ml-3 text-gray-600">{t('ai.models.loadingModels')}</span>
           </div>
         )}
 
@@ -261,13 +268,13 @@ export default function AIModelsPage() {
                   onModelSelect={handleModelSelect}
                   favoriteModelIds={favoriteIds}
                   onFavoriteToggle={handleFavoriteToggle}
-                  placeholder="Search and select models to compare..."
-                  label="Add Model to Comparison"
+                  placeholder={t('ai.models.searchPlaceholder')}
+                  label={t('ai.models.addModelToComparison')}
                   showDetails
                 />
                 {selectedModels.length > 0 && (
                   <p className="mt-2 text-sm text-gray-500">
-                    {selectedModels.length} of 4 models selected for comparison
+                    {t('ai.models.modelsSelectedForComparison', { count: selectedModels.length })}
                   </p>
                 )}
               </div>
@@ -277,24 +284,24 @@ export default function AIModelsPage() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-yellow-500" />
-                    Get Recommendation
+                    {t('ai.models.getRecommendation.title')}
                   </CardTitle>
                   <CardDescription>
-                    Find the best model for your task
+                    {t('ai.models.getRecommendation.description')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                      Task Type
+                      {t('ai.models.getRecommendation.taskTypeLabel')}
                     </label>
                     <select
                       value={selectedTask}
                       onChange={(e) => setSelectedTask(e.target.value as TaskType)}
                       className="w-full p-2 border border-gray-300 rounded-lg text-sm"
                     >
-                      {TASK_TYPES.map(t => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
+                      {TASK_TYPES.map(taskType => (
+                        <option key={taskType.value} value={taskType.value}>{taskType.label}</option>
                       ))}
                     </select>
                   </div>
@@ -306,12 +313,12 @@ export default function AIModelsPage() {
                     {recommendLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Finding...
+                        {t('ai.models.getRecommendation.findingButton')}
                       </>
                     ) : (
                       <>
                         <Sparkles className="h-4 w-4 mr-2" />
-                        Get Recommendation
+                        {t('ai.models.getRecommendation.getRecommendationButton')}
                       </>
                     )}
                   </Button>
@@ -333,11 +340,11 @@ export default function AIModelsPage() {
                         </div>
                         <div className="flex items-center gap-2 mt-2">
                           <Badge variant="outline" className="text-xs">
-                            Confidence: {Math.round(recommendation.confidence * 100)}%
+                            {t('ai.models.getRecommendation.confidenceLabel', { percent: Math.round(recommendation.confidence * 100) })}
                           </Badge>
                           {recommendation.estimatedCost && (
                             <Badge variant="outline" className="text-xs">
-                              ~${recommendation.estimatedCost.monthly?.toFixed(2) ?? '?'}/mo
+                              {t('ai.models.getRecommendation.monthlyCostLabel', { cost: recommendation.estimatedCost.monthly?.toFixed(2) ?? '?' })}
                             </Badge>
                           )}
                         </div>
@@ -346,7 +353,7 @@ export default function AIModelsPage() {
                       {recommendation.alternatives.length > 0 && (
                         <div>
                           <div className="text-xs font-medium text-gray-500 mb-2">
-                            Alternatives
+                            {t('ai.models.getRecommendation.alternativesLabel')}
                           </div>
                           {recommendation.alternatives.slice(0, 3).map((alt, i) => (
                             <div

@@ -73,7 +73,7 @@ The Container Team has successfully optimized the VibeCode WebGUI project's cont
 **Enterprise Deployment:**
 - **Network Segmentation**: Frontend, backend, monitoring networks
 - **Resource Management**: CPU/memory limits and reservations
-- **Monitoring Stack**: Datadog Agent, optional Prometheus/Grafana
+- **Monitoring Stack**: Datadog Agent, Prometheus
 - **Reverse Proxy**: Traefik with SSL termination
 - **Health Monitoring**: All services with health checks
 - **Scaling Support**: Horizontal scaling configuration
@@ -86,7 +86,7 @@ redis:           # Cache with persistence
 datadog-agent:   # Full APM and monitoring
 traefik:         # Reverse proxy (optional)
 prometheus:      # Metrics (optional)
-grafana:         # Dashboards (optional)
+# Dashboards via Datadog (app.datadoghq.com)
 ```
 
 ### 6. Validation Framework (`scripts/validate-container-optimizations.sh`)

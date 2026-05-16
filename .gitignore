@@ -1,3 +1,11 @@
+# Private keys and certificates (security)
+fast-openvscode-vm/certs/openvscode-local-key.pem
+gitea/data/jwt/private.pem
+*.key
+*.p12
+*.pfx
+*.jks
+
 # Dependencies
 node_modules/
 .pnp
@@ -511,9 +519,10 @@ PROMISE_VERIFICATION_REPORT.md
 .auto-claude/
 
 # Auto Claude generated files
-.auto-claude-security.json
 .auto-claude-status
+.auto-claude-security.json
 .claude_settings.json
+.auto-claude/*.env
 .worktrees/
 .security-key
 logs/security/

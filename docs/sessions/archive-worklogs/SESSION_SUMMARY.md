@@ -217,7 +217,7 @@ daddf2ec1 chore: remove duplicate/backup files and reorganize archives
 ### Production Deployment
 1. Create multi-VM setup (dev, db, services)
 2. Configure VM networking
-3. Set up monitoring (Prometheus, Grafana)
+3. Set up monitoring (Datadog, Prometheus)
 4. Automate backups
 5. Document production procedures
 

@@ -17,7 +17,7 @@ groups:
           summary: "VibeCode application is down"
           description: "VibeCode WebGUI application has been down for more than 1 minute"
           runbook_url: "https://docs.vibecode.dev/runbooks/application-down"
-          dashboard: "https://grafana.vibecode.dev/d/app-overview"
+          dashboard: "https://app.datadoghq.com/dashboard/vibecode-app-overview"
 
       - alert: HighErrorRate
         expr: rate(http_requests_total{job="vibecode-webgui",status=~"5.."}[5m]) / rate(http_requests_total{job="vibecode-webgui"}[5m]) > 0.1

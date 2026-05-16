@@ -602,7 +602,7 @@ describe('FileWatcher', () => {
       });
 
       fileWatcher.on('ready', () => {
-        expect(true).toBe(true);
+        // 'ready' event fires with no arguments - registration verified by callback being called
       });
     });
   });

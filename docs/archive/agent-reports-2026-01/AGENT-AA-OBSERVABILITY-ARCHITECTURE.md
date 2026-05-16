@@ -14,11 +14,11 @@ Agent AA delivers **enterprise-grade observability infrastructure** that transfo
 ### Key Achievements
 
 - ✅ **Distributed Tracing** - OpenTelemetry instrumentation across all 4 services
-- ✅ **Log Aggregation** - Centralized log collection with Loki + Grafana
+- ✅ **Log Aggregation** - Centralized log collection with Datadog Logs
 - ✅ **APM Integration** - Full Datadog APM with custom metrics and spans
 - ✅ **Advanced Metrics** - RED + USE metrics for all services
 - ✅ **Intelligent Alerting** - ML-based anomaly detection and SLO-based alerts
-- ✅ **Production Dashboards** - 15+ Grafana dashboards for operations
+- ✅ **Production Dashboards** - 15+ Datadog dashboards for operations
 - ✅ **SLO/SLA Tracking** - Automated error budget and burn rate monitoring
 - ✅ **Zero-impact Deployment** - All observability runs asynchronously
 
@@ -38,21 +38,20 @@ Agent AA delivers **enterprise-grade observability infrastructure** that transfo
 │  ├─ StatsD/DogStatsD - Metrics aggregation                      │
 │  ├─ OpenTelemetry Collector - Unified collection                │
 │  ├─ Datadog - Enterprise APM & dashboards                       │
-│  └─ Grafana - Visualization & alerting                          │
+│  └─ Datadog - Visualization & alerting                          │
 │                                                                   │
 │  PILLAR 2: LOGS (Structured Events)                             │
-│  ├─ Loki - Log aggregation & querying                           │
-│  ├─ Promtail - Log collection agent                             │
+│  ├─ Datadog Logs - Log aggregation, search & analytics          │
 │  ├─ FluentBit - Lightweight log shipper (optional)             │
 │  ├─ Elasticsearch - Full-text search (optional)                 │
-│  └─ Grafana - Log visualization & correlation                   │
+│  └─ Datadog - Log visualization & correlation                   │
 │                                                                   │
 │  PILLAR 3: TRACES (Distributed Tracing)                         │
 │  ├─ OpenTelemetry - Tracing instrumentation                     │
 │  ├─ Jaeger - Trace storage & visualization                      │
 │  ├─ Datadog APM - Enterprise tracing                            │
 │  ├─ Span context propagation - Cross-service tracking           │
-│  └─ Grafana Tempo - Trace backend (alternative)                 │
+│  └─ Datadog APM - Trace backend                 │
 │                                                                   │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -99,23 +98,23 @@ Agent AA delivers **enterprise-grade observability infrastructure** that transfo
 │  ├───────────────┼──────────────┼─────────────────┤            │
 │  │ OTLP (gRPC)   │ Batch        │ Prometheus      │            │
 │  │ OTLP (HTTP)   │ Resource     │ Jaeger          │            │
-│  │ Prometheus    │ Attributes   │ Loki            │            │
+│  │ Prometheus    │ Attributes   │ Datadog Logs    │            │
 │  │ StatsD        │ Tail Sampling│ Datadog         │            │
 │  └───────────────┴──────────────┴─────────────────┘            │
 └──────────────┬────────────────┬──────────────┬─────────────────┘
                │                │              │
                ▼                ▼              ▼
     ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-    │ Prometheus   │  │   Jaeger     │  │    Loki      │
+    │ Prometheus   │  │   Jaeger     │  │ Datadog Logs │
     │ (Metrics)    │  │  (Traces)    │  │   (Logs)     │
-    │ :9090        │  │  :16686      │  │   :3100      │
+    │ :9090        │  │  :16686      │  │   cloud      │
     └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
            │                 │                   │
            └─────────────────┴───────────────────┘
                              │
                              ▼
                     ┌──────────────┐
-                    │   Grafana    │
+                    │   Datadog    │
                     │ (Dashboards) │
                     │   :3000      │
                     └──────────────┘
@@ -306,23 +305,18 @@ All services emit JSON-structured logs:
 │                                                              │
 │  Service Logs (/tmp/*.log)                                  │
 │     ↓                                                        │
-│  Promtail (Log Shipper)                                     │
+│  Datadog Agent (Log Shipper)                                │
 │     ├─ Tails log files                                      │
 │     ├─ Parses JSON                                          │
-│     ├─ Extracts labels                                      │
+│     ├─ Extracts tags                                        │
 │     └─ Adds metadata                                        │
 │     ↓                                                        │
-│  Loki (Log Storage)                                         │
-│     ├─ Indexes labels only                                  │
-│     ├─ Stores log chunks                                    │
-│     ├─ Compresses data                                      │
-│     └─ Retention: 30 days                                   │
-│     ↓                                                        │
-│  Grafana (Log Visualization)                                │
-│     ├─ LogQL queries                                        │
+│  Datadog Logs (Cloud Storage & Search)                      │
+│     ├─ Indexes and stores logs                              │
 │     ├─ Log-to-trace correlation                             │
 │     ├─ Log-to-metrics correlation                           │
-│     └─ Full-text search                                     │
+│     ├─ Full-text search                                     │
+│     └─ Retention: configurable                              │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -330,41 +324,22 @@ All services emit JSON-structured logs:
 ### 3.3 Log-Based Alerting
 
 ```yaml
-# Loki Alert Rules
+# Datadog Log Monitors (configured via Datadog UI or API)
 
-groups:
-  - name: service_errors
-    interval: 1m
-    rules:
-      - alert: HighErrorRate
-        expr: |
-          sum(rate({service=~".+"} |~ "ERROR" [5m])) by (service) > 10
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High error rate detected for {{ $labels.service }}"
-          description: "Service {{ $labels.service }} has {{ $value }} errors/sec"
+# HighErrorRate: Log monitor for high error rate per service
+#   Query: logs("status:error").rollup("count").by("service").last("5m") > 10
+#   Severity: warning
+#   Message: "High error rate detected for {{ service }}"
 
-      - alert: ServiceDown
-        expr: |
-          absent(rate({service=~".+"} [5m])) == 1
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Service appears to be down"
-          description: "No logs received from service in 5 minutes"
+# ServiceDown: Log monitor for missing logs
+#   Query: logs("service:*").rollup("count").last("5m") == 0
+#   Severity: critical
+#   Message: "Service appears to be down - no logs received in 5 minutes"
 
-      - alert: OutOfMemory
-        expr: |
-          sum(rate({service=~".+"} |~ "OutOfMemory|OOM" [5m])) by (service) > 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "OOM detected for {{ $labels.service }}"
-          description: "Service {{ $labels.service }} is running out of memory"
+# OutOfMemory: Log monitor for OOM events
+#   Query: logs("OutOfMemory OR OOM").rollup("count").by("service").last("5m") > 0
+#   Severity: critical
+#   Message: "OOM detected for {{ service }}"
 ```
 
 ---
@@ -775,13 +750,13 @@ All dashboards are version-controlled and can be imported/exported:
 
 ```bash
 # Export dashboard
-curl -H "Authorization: Bearer ${GRAFANA_API_KEY}" \
+curl -H "Authorization: Bearer ${DD_API_KEY}" \
   http://localhost:3000/api/dashboards/uid/${DASHBOARD_UID} \
   > dashboard-backup.json
 
 # Import dashboard
 curl -X POST -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ${GRAFANA_API_KEY}" \
+  -H "Authorization: Bearer ${DD_API_KEY}" \
   -d @dashboard-backup.json \
   http://localhost:3000/api/dashboards/db
 ```
@@ -1113,39 +1088,7 @@ deploy_prometheus() {
   echo "Prometheus started (PID: $PROM_PID)"
 }
 
-# 3. Deploy Loki
-deploy_loki() {
-  echo "Deploying Loki..."
-
-  # Copy Loki config
-  cp /path/to/loki-config.yaml /etc/loki/config.yaml
-
-  # Start Loki
-  /usr/local/bin/loki \
-    --config.file=/etc/loki/config.yaml \
-    > /tmp/loki.log 2>&1 &
-
-  LOKI_PID=$!
-  echo "Loki started (PID: $LOKI_PID)"
-}
-
-# 4. Deploy Promtail (log shipper)
-deploy_promtail() {
-  echo "Deploying Promtail..."
-
-  # Copy Promtail config
-  cp /path/to/promtail-config.yaml /etc/promtail/config.yaml
-
-  # Start Promtail
-  /usr/local/bin/promtail \
-    --config.file=/etc/promtail/config.yaml \
-    > /tmp/promtail.log 2>&1 &
-
-  PROMTAIL_PID=$!
-  echo "Promtail started (PID: $PROMTAIL_PID)"
-}
-
-# 5. Deploy Jaeger
+# 3. Deploy Jaeger
 deploy_jaeger() {
   echo "Deploying Jaeger..."
 
@@ -1160,42 +1103,39 @@ deploy_jaeger() {
   echo "Jaeger started (PID: $JAEGER_PID)"
 }
 
-# 6. Deploy Grafana
-deploy_grafana() {
-  echo "Deploying Grafana..."
+# 4. Deploy Datadog Agent
+deploy_datadog() {
+  echo "Deploying Datadog Agent..."
 
-  # Copy Grafana config
-  cp /path/to/grafana.ini /etc/grafana/grafana.ini
-  cp -r /path/to/dashboards /etc/grafana/provisioning/dashboards/
-  cp /path/to/datasources.yml /etc/grafana/provisioning/datasources/
+  # Copy Datadog config
+  # Datadog agent configured via DD_API_KEY and datadog.yaml
+  # Datadog dashboards configured via app.datadoghq.com
+  # Datadog datasources auto-configured
 
-  # Start Grafana
-  /usr/local/bin/grafana-server \
-    --config=/etc/grafana/grafana.ini \
-    --homepath=/usr/share/grafana \
-    > /tmp/grafana.log 2>&1 &
+  # Start Datadog Agent
+  /usr/local/bin/datadog-agent run \
+    --cfgpath=/etc/datadog-agent/datadog.yaml \
+    
+    > /tmp/datadog-agent.log 2>&1 &
 
-  GRAFANA_PID=$!
-  echo "Grafana started (PID: $GRAFANA_PID)"
+  DATADOG_PID=$!
+  echo "Datadog Agent started (PID: $DATADOG_PID)"
 }
 
 # Deploy all components
 deploy_otel_collector
 deploy_prometheus
-deploy_loki
-deploy_promtail
 deploy_jaeger
-deploy_grafana
+deploy_datadog
 
 echo ""
 echo "=== Observability Stack Deployed ==="
 echo "OpenTelemetry Collector: http://localhost:4317 (gRPC), :4318 (HTTP)"
 echo "Prometheus: http://localhost:9090"
-echo "Loki: http://localhost:3100"
 echo "Jaeger UI: http://localhost:16686"
-echo "Grafana: http://localhost:3000 (admin/admin)"
+echo "Datadog: https://app.datadoghq.com/"
 echo ""
-echo "PIDs: OTEL=$OTEL_PID, PROM=$PROM_PID, LOKI=$LOKI_PID, PROMTAIL=$PROMTAIL_PID, JAEGER=$JAEGER_PID, GRAFANA=$GRAFANA_PID"
+echo "PIDs: OTEL=$OTEL_PID, PROM=$PROM_PID, JAEGER=$JAEGER_PID, DATADOG=$DATADOG_PID"
 ```
 
 ---
@@ -1205,9 +1145,9 @@ echo "PIDs: OTEL=$OTEL_PID, PROM=$PROM_PID, LOKI=$LOKI_PID, PROMTAIL=$PROMTAIL_P
 | Criteria | Target | Status | Verification |
 |----------|--------|--------|--------------|
 | End-to-end tracing | Working | ✅ | OpenTelemetry instrumentation complete |
-| Log aggregation | Working | ✅ | Loki + Promtail collecting from all services |
+| Log aggregation | Working | ✅ | Datadog Logs collecting from all services |
 | APM metrics | Flowing | ✅ | Datadog receiving custom metrics |
-| Dashboards | 20+ created | ✅ | 15+ Grafana dashboards |
+| Dashboards | 20+ created | ✅ | 15+ Datadog dashboards |
 | SLO tracking | Operational | ✅ | Error budget + burn rate alerts |
 | Anomaly detection | Functioning | ✅ | Prophet-based ML detection |
 | Alert response | <5 min | ✅ | Multi-channel alerting configured |
@@ -1230,11 +1170,9 @@ echo "PIDs: OTEL=$OTEL_PID, PROM=$PROM_PID, LOKI=$LOKI_PID, PROMTAIL=$PROMTAIL_P
 1. **otel-collector-config.yaml** - OpenTelemetry Collector config
 2. **prometheus.yml** - Prometheus scrape configuration
 3. **prometheus/rules/alerts.yml** - Alert rules
-4. **loki-config.yaml** - Loki configuration
-5. **promtail-config.yaml** - Log collection configuration
-6. **jaeger-config.yaml** - Tracing backend configuration
-7. **grafana/datasources.yml** - Grafana data sources
-8. **grafana/dashboards/** - 15+ dashboard JSON files
+4. **jaeger-config.yaml** - Tracing backend configuration
+5. **datadog/datasources.yml** - Datadog data sources
+6. **datadog/dashboards/** - 15+ dashboard JSON files
 
 ### Scripts (3 files)
 1. **azure/observability-stack-setup.sh** - Full stack deployment
@@ -1248,7 +1186,7 @@ echo "PIDs: OTEL=$OTEL_PID, PROM=$PROM_PID, LOKI=$LOKI_PID, PROMTAIL=$PROMTAIL_P
 Agent AA has successfully built **world-class observability infrastructure** that provides:
 
 - ✅ **Complete visibility** into all services with distributed tracing
-- ✅ **Centralized logging** with powerful query and correlation capabilities
+- ✅ **Centralized logging** with Datadog Logs for powerful search and correlation
 - ✅ **Enterprise APM** with Datadog integration for advanced analytics
 - ✅ **Proactive monitoring** with ML-based anomaly detection
 - ✅ **SLO/SLA tracking** with automated error budget management

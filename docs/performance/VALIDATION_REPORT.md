@@ -543,7 +543,7 @@ k6 run --vus 50 --duration 60s scripts/performance/load-test.k6.js
 ### 6.2 Continuous Monitoring
 
 **Recommended Tools:**
-- Prometheus + Grafana for metrics visualization
+- Datadog + Prometheus for metrics visualization
 - pgBadger for PostgreSQL log analysis
 - Redis Insights for cache monitoring
 - Application Performance Monitoring (APM) tool

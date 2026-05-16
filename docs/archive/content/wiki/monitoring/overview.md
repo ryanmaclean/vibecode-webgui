@@ -19,7 +19,7 @@ graph TD
     B --> F[Custom Backends]
     C --> E
     D --> G[Prometheus Storage]
-    G --> H[Grafana Dashboards]
+    G --> H[Datadog Dashboards]
     
     E --> I[Datadog UI]
     H --> J[Open Source UI]
@@ -48,13 +48,13 @@ graph TD
 - **Use Case**: Vendor-neutral telemetry collection
 - **Benefits**: CNCF standard, works with any backend
 
-### Grafana
+### Datadog Dashboards
 - **License**: AGPL v3 (open source with copyleft)
 - **Use Case**: Visualization layer for Prometheus data
 - **Benefits**: Rich dashboards, alerting, plugin ecosystem
 
 ### Full Open Source Stack
-Combine **Prometheus + OpenTelemetry + Vector + Grafana** for a completely open source monitoring solution.
+Combine **Datadog + Prometheus + OpenTelemetry + Vector** for a completely open source monitoring solution.
 
 ## Security Analysis
 

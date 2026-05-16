@@ -218,7 +218,7 @@ This document outlines the comprehensive data pipeline and ETL infrastructure fo
 │  ├─────────────────────────────────────────────────────────────┤  │
 │  │                                                             │  │
 │  │  • Prometheus metrics collection                           │  │
-│  │  • Grafana dashboards                                      │  │
+│  │  • Datadog dashboards                                      │  │
 │  │  • Datadog APM integration                                 │  │
 │  │  • OpenTelemetry traces                                    │  │
 │  │  • Data lineage visualization                              │  │
@@ -1048,7 +1048,7 @@ Internal Network → Kafka/Redpanda → MinIO
 - PostgreSQL metrics (connections, queries, replication lag)
 - dbt metrics (model runtime, test failures)
 
-**Grafana dashboards**:
+**Datadog dashboards**:
 - Pipeline health overview
 - Data freshness SLAs
 - Resource utilization

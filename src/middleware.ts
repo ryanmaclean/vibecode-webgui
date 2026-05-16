@@ -15,6 +15,22 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     response.headers.set('X-Frame-Options', 'DENY');
     response.headers.set('X-XSS-Protection', '1; mode=block');
     response.headers.set('Referrer-Policy', 'origin-when-cross-origin');
+    response.headers.set(
+      'Content-Security-Policy',
+      [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-eval'",       // Monaco editor requires unsafe-eval
+        "style-src 'self' 'unsafe-inline'",       // React inline styles + Monaco/xterm themes
+        "img-src 'self' data: blob:",
+        "font-src 'self' data:",
+        "connect-src 'self' wss: https:",         // WebSocket connections + external AI API calls
+        "worker-src 'self' blob:",                // Monaco editor web workers
+        "frame-src 'none'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ].join('; ')
+    );
   }
   return response;
 }
@@ -47,8 +63,24 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // Public API routes that don't require authentication.
+  // All other /api/ routes require a valid session token.
+  const publicApiPrefixes = [
+    '/api/auth/',        // NextAuth endpoints (login, callback, CSRF, etc.)
+    '/api/health',       // Health/readiness checks (also caught by early return above)
+    '/api/healthz',      // Health check (also caught by early return above)
+    '/api/readyz',       // Readiness check (also caught by early return above)
+    '/api/webhooks/',    // Incoming webhooks (use their own auth mechanisms)
+    '/api/security/csp-report', // CSP violation reports sent by browsers
+    '/api/locale',       // Locale switching (no auth needed)
+  ];
+
+  const isPublicApiRoute = publicApiPrefixes.some((prefix) =>
+    pathname.startsWith(prefix)
+  );
+
   // Check authentication for protected routes
-  const isProtectedRoute = !pathname.startsWith('/api/') &&
+  const isProtectedRoute = !(isPublicApiRoute) &&
                           !pathname.startsWith('/auth/') &&
                           !pathname.startsWith('/_next/') &&
                           pathname !== '/';

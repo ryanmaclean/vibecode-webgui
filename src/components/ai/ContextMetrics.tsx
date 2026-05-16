@@ -14,24 +14,18 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Activity,
   TrendingUp,
   TrendingDown,
   Gauge,
   Target,
   AlertCircle,
-  CheckCircle,
   RefreshCw,
-  Download,
-  BarChart3,
-  PieChart,
   Clock,
   Layers,
 } from 'lucide-react';
@@ -43,8 +37,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   PieChart as RechartsPieChart,
   Pie,
   Cell,
@@ -56,9 +48,6 @@ import {
   AggregatedContextMetrics,
   ContextQualitySnapshot,
   ContextEvent,
-  RelevanceStats,
-  PriorityDistribution,
-  TypeDistribution,
 } from '@/lib/ai/context/context-metrics';
 
 // ============================================================================
@@ -86,17 +75,6 @@ interface MetricsDashboardData {
 // ============================================================================
 // Chart Colors
 // ============================================================================
-
-const CHART_COLORS = [
-  '#3B82F6', // blue
-  '#10B981', // emerald
-  '#F59E0B', // amber
-  '#EF4444', // red
-  '#8B5CF6', // violet
-  '#EC4899', // pink
-  '#06B6D4', // cyan
-  '#84CC16', // lime
-];
 
 const PRIORITY_COLORS: Record<string, string> = {
   critical: '#EF4444',
@@ -173,7 +151,7 @@ function StatCard({
   trend,
   trendLabel,
   variant = 'default',
-}: StatCardProps) {
+}: StatCardProps): React.JSX.Element {
   const variantStyles = {
     default: 'bg-card',
     success: 'bg-green-50 border-green-200',
@@ -222,8 +200,9 @@ export function ContextMetrics({
   className,
   sessionId = 'default',
   refreshInterval = 5000,
-  compact = false,
-}: ContextMetricsProps) {
+  compact: _compact = false,
+}: ContextMetricsProps): React.JSX.Element {
+  const t = useTranslations('ai');
   const [data, setData] = useState<MetricsDashboardData>({
     aggregated: null,
     snapshot: null,
@@ -232,7 +211,7 @@ export function ContextMetrics({
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<'1h' | '24h' | '7d' | 'all'>(
+  const [_selectedPeriod, _setSelectedPeriod] = useState<'1h' | '24h' | '7d' | 'all'>(
     '24h'
   );
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -370,7 +349,7 @@ export function ContextMetrics({
         <CardContent className="p-6">
           <div className="flex items-center space-x-2 text-red-500">
             <AlertCircle className="h-5 w-5" />
-            <span>Error loading metrics: {error}</span>
+            <span>{t('contextMetrics.errorLoading', { error })}</span>
           </div>
         </CardContent>
       </Card>
@@ -384,9 +363,9 @@ export function ContextMetrics({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold">Context Metrics</h2>
+          <h2 className="text-2xl font-bold">{t('contextMetrics.title')}</h2>
           <p className="text-sm text-muted-foreground">
-            Context window quality and utilization metrics
+            {t('contextMetrics.description')}
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -398,11 +377,11 @@ export function ContextMetrics({
             <RefreshCw
               className={`h-4 w-4 mr-2 ${autoRefresh ? 'animate-spin' : ''}`}
             />
-            {autoRefresh ? 'Auto-refresh On' : 'Auto-refresh Off'}
+            {autoRefresh ? t('contextMetrics.autoRefreshOn') : t('contextMetrics.autoRefreshOff')}
           </Button>
           <Button variant="outline" size="sm" onClick={fetchMetrics}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+            {t('contextMetrics.refresh')}
           </Button>
         </div>
       </div>
@@ -420,31 +399,31 @@ export function ContextMetrics({
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
-              title="Context Utilization"
+              title={t('contextMetrics.stats.contextUtilization')}
               value={formatPercent(snapshot?.utilizationPercent || 0)}
-              description={`${formatNumber(snapshot?.totalTokens || 0)} / ${formatNumber(snapshot?.availableTokens || 0)} tokens`}
+              description={t('contextMetrics.stats.contextUtilizationDesc', { tokens: formatNumber(snapshot?.totalTokens || 0), available: formatNumber(snapshot?.availableTokens || 0) })}
               icon={<Gauge className="h-6 w-6" />}
               variant={getUtilizationVariant(snapshot?.utilizationPercent || 0)}
             />
             <StatCard
-              title="Avg Relevance Score"
+              title={t('contextMetrics.stats.avgRelevanceScore')}
               value={(snapshot?.averageRelevanceScore || 0).toFixed(3)}
-              description={`${snapshot?.itemsIncluded || 0} items included`}
+              description={t('contextMetrics.stats.avgRelevanceScoreDesc', { count: snapshot?.itemsIncluded || 0 })}
               icon={<Target className="h-6 w-6" />}
               variant={
                 (snapshot?.averageRelevanceScore || 0) > 0.7 ? 'success' : 'warning'
               }
             />
             <StatCard
-              title="Items Included"
+              title={t('contextMetrics.stats.itemsIncluded')}
               value={formatNumber(snapshot?.itemsIncluded || 0)}
-              description={`${snapshot?.itemsExcluded || 0} excluded`}
+              description={t('contextMetrics.stats.itemsIncludedDesc', { count: snapshot?.itemsExcluded || 0 })}
               icon={<Layers className="h-6 w-6" />}
             />
             <StatCard
-              title="Avg Build Time"
+              title={t('contextMetrics.stats.avgBuildTime')}
               value={formatDuration(aggregated?.averageBuildTimeMs || 0)}
-              description={`${aggregated?.contextBuilds || 0} builds`}
+              description={t('contextMetrics.stats.avgBuildTimeDesc', { count: aggregated?.contextBuilds || 0 })}
               icon={<Clock className="h-6 w-6" />}
               variant={
                 (aggregated?.averageBuildTimeMs || 0) < 1000 ? 'success' : 'warning'
@@ -456,15 +435,15 @@ export function ContextMetrics({
           {snapshot && (
             <Card>
               <CardHeader>
-                <CardTitle>Current Context Window</CardTitle>
+                <CardTitle>{t('contextMetrics.currentContext.title')}</CardTitle>
                 <CardDescription>
-                  Strategy: {snapshot.strategy} | Model: {snapshot.model}
+                  {t('contextMetrics.currentContext.description', { strategy: snapshot.strategy, model: snapshot.model })}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Token Utilization</span>
+                    <span className="text-sm font-medium">{t('contextMetrics.currentContext.tokenUtilization')}</span>
                     <span
                       className={`text-sm font-bold ${getUtilizationColor(snapshot.utilizationPercent)}`}
                     >
@@ -476,25 +455,25 @@ export function ContextMetrics({
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Total Tokens:</span>
+                    <span className="text-muted-foreground">{t('contextMetrics.currentContext.totalTokens')}</span>
                     <span className="ml-2 font-medium">
                       {formatNumber(snapshot.totalTokens)}
                     </span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Available:</span>
+                    <span className="text-muted-foreground">{t('contextMetrics.currentContext.available')}</span>
                     <span className="ml-2 font-medium">
                       {formatNumber(snapshot.availableTokens)}
                     </span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Exclusion Rate:</span>
+                    <span className="text-muted-foreground">{t('contextMetrics.currentContext.exclusionRate')}</span>
                     <span className="ml-2 font-medium">
                       {formatPercent(snapshot.exclusionRate)}
                     </span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Build Time:</span>
+                    <span className="text-muted-foreground">{t('contextMetrics.currentContext.buildTime')}</span>
                     <span className="ml-2 font-medium">
                       {formatDuration(snapshot.buildDurationMs || 0)}
                     </span>
@@ -507,19 +486,19 @@ export function ContextMetrics({
           {/* Charts */}
           <Tabs defaultValue="utilization" className="space-y-4">
             <TabsList>
-              <TabsTrigger value="utilization">Utilization</TabsTrigger>
-              <TabsTrigger value="priority">Priority</TabsTrigger>
-              <TabsTrigger value="types">Types</TabsTrigger>
-              <TabsTrigger value="relevance">Relevance</TabsTrigger>
+              <TabsTrigger value="utilization">{t('contextMetrics.tabs.utilization')}</TabsTrigger>
+              <TabsTrigger value="priority">{t('contextMetrics.tabs.priority')}</TabsTrigger>
+              <TabsTrigger value="types">{t('contextMetrics.tabs.types')}</TabsTrigger>
+              <TabsTrigger value="relevance">{t('contextMetrics.tabs.relevance')}</TabsTrigger>
             </TabsList>
 
             {/* Utilization History */}
             <TabsContent value="utilization">
               <Card>
                 <CardHeader>
-                  <CardTitle>Utilization History</CardTitle>
+                  <CardTitle>{t('contextMetrics.utilizationHistory.title')}</CardTitle>
                   <CardDescription>
-                    Context window utilization over recent builds
+                    {t('contextMetrics.utilizationHistory.description')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -546,9 +525,9 @@ export function ContextMetrics({
             <TabsContent value="priority">
               <Card>
                 <CardHeader>
-                  <CardTitle>Priority Distribution</CardTitle>
+                  <CardTitle>{t('contextMetrics.priorityDistribution.title')}</CardTitle>
                   <CardDescription>
-                    Breakdown of context items by priority level
+                    {t('contextMetrics.priorityDistribution.description')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -579,9 +558,9 @@ export function ContextMetrics({
             <TabsContent value="types">
               <Card>
                 <CardHeader>
-                  <CardTitle>Item Type Distribution</CardTitle>
+                  <CardTitle>{t('contextMetrics.typeDistribution.title')}</CardTitle>
                   <CardDescription>
-                    Breakdown of context items by type
+                    {t('contextMetrics.typeDistribution.description')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -606,9 +585,9 @@ export function ContextMetrics({
             <TabsContent value="relevance">
               <Card>
                 <CardHeader>
-                  <CardTitle>Relevance Score Distribution</CardTitle>
+                  <CardTitle>{t('contextMetrics.relevanceScores.title')}</CardTitle>
                   <CardDescription>
-                    Distribution of item relevance scores
+                    {t('contextMetrics.relevanceScores.description')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -616,31 +595,31 @@ export function ContextMetrics({
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                         <div>
-                          <span className="text-muted-foreground">Min:</span>
+                          <span className="text-muted-foreground">{t('contextMetrics.relevanceScores.min')}</span>
                           <span className="ml-2 font-medium">
                             {snapshot.relevanceStats.min.toFixed(3)}
                           </span>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Max:</span>
+                          <span className="text-muted-foreground">{t('contextMetrics.relevanceScores.max')}</span>
                           <span className="ml-2 font-medium">
                             {snapshot.relevanceStats.max.toFixed(3)}
                           </span>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Mean:</span>
+                          <span className="text-muted-foreground">{t('contextMetrics.relevanceScores.mean')}</span>
                           <span className="ml-2 font-medium">
                             {snapshot.relevanceStats.mean.toFixed(3)}
                           </span>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Median:</span>
+                          <span className="text-muted-foreground">{t('contextMetrics.relevanceScores.median')}</span>
                           <span className="ml-2 font-medium">
                             {snapshot.relevanceStats.median.toFixed(3)}
                           </span>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">P95:</span>
+                          <span className="text-muted-foreground">{t('contextMetrics.relevanceScores.p95')}</span>
                           <span className="ml-2 font-medium">
                             {snapshot.relevanceStats.p95.toFixed(3)}
                           </span>
@@ -666,29 +645,29 @@ export function ContextMetrics({
           {aggregated && (
             <Card>
               <CardHeader>
-                <CardTitle>Session Statistics</CardTitle>
+                <CardTitle>{t('contextMetrics.sessionStats.title')}</CardTitle>
                 <CardDescription>
-                  Aggregated metrics for session {sessionId}
+                  {t('contextMetrics.sessionStats.description', { sessionId })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Total Events:</span>
+                    <span className="text-muted-foreground">{t('contextMetrics.sessionStats.totalEvents')}</span>
                     <span className="ml-2 font-medium">{aggregated.totalEvents}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Context Builds:</span>
+                    <span className="text-muted-foreground">{t('contextMetrics.sessionStats.contextBuilds')}</span>
                     <span className="ml-2 font-medium">{aggregated.contextBuilds}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Avg Tokens:</span>
+                    <span className="text-muted-foreground">{t('contextMetrics.sessionStats.avgTokens')}</span>
                     <span className="ml-2 font-medium">
                       {formatNumber(aggregated.averageTokens)}
                     </span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Avg Exclusion:</span>
+                    <span className="text-muted-foreground">{t('contextMetrics.sessionStats.avgExclusion')}</span>
                     <span className="ml-2 font-medium">
                       {formatPercent(aggregated.averageExclusionRate)}
                     </span>

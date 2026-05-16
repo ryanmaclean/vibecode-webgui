@@ -1,0 +1,1678 @@
+{
+  "common": {
+    "appName": "VibeCode",
+    "appFullName": "VibeCode WebGUI",
+    "appTitle": "VibeCode WebGUI - AI搭載開発プラットフォーム",
+    "appDescription": "AIアシスタント機能を備えた、モダンなWebベースの開発環境",
+    "loading": "読み込み中...",
+    "loadingWorkspace": "ワークスペースを読み込み中…",
+    "preparingWorkspace": "AIワークスペースを準備中…",
+    "loadingModels": "モデルを読み込み中...",
+    "loadingSettings": "設定を読み込み中...",
+    "loadingHealth": "稼働状況を読み込み中",
+    "saving": "保存中...",
+    "saved": "保存済み",
+    "save": "保存",
+    "saveChanges": "変更を保存",
+    "cancel": "キャンセル",
+    "close": "閉じる",
+    "reset": "リセット",
+    "resetAll": "すべてリセット",
+    "resetToDefaults": "デフォルトにリセット",
+    "refresh": "更新",
+    "retry": "再試行",
+    "send": "送信",
+    "sending": "送信中...",
+    "search": "検索",
+    "clear": "クリア",
+    "copy": "コピー",
+    "open": "開く",
+    "continue": "続ける",
+    "delete": "削除",
+    "edit": "編集",
+    "create": "作成",
+    "back": "戻る",
+    "goHome": "ホームへ",
+    "tryAgain": "再試行",
+    "acknowledge": "確認しました",
+    "skipToMainContent": "メインコンテンツへスキップ",
+    "signIn": "ログイン",
+    "signOut": "ログアウト",
+    "createAccount": "アカウントを作成",
+    "getStarted": "はじめる",
+    "confirm": "確認",
+    "next": "次へ",
+    "submit": "送信",
+    "export": "エクスポート",
+    "import": "インポート",
+    "online": "オンライン",
+    "offlineMode": "オフラインモード",
+    "allFeaturesAvailable": "すべての機能が利用可能です",
+    "limitedFeaturesOffline": "オフラインモードでは機能が制限されます",
+    "available": "利用可能",
+    "unavailable": "利用不可",
+    "error": "エラー",
+    "warning": "警告",
+    "info": "情報",
+    "success": "成功",
+    "switchLanguage": "言語を切り替え"
+  },
+  "meta": {
+    "title": "VibeCode WebGUI - AI搭載開発プラットフォーム",
+    "description": "AIアシスタント機能を備えた、モダンなWebベースの開発環境",
+    "signinTitle": "ログイン - VibeCode WebGUI",
+    "signinDescription": "VibeCodeアカウントにログインしてください"
+  },
+  "navigation": {
+    "dashboard": "ダッシュボード",
+    "vm": "VM",
+    "vmDashboard": "ダッシュボード",
+    "vmSnapshots": "スナップショット",
+    "ai": "AI",
+    "aiChat": "チャット",
+    "aiModels": "モデル",
+    "aiCosts": "コスト",
+    "aiPrompts": "プロンプト",
+    "health": "ヘルス",
+    "monitoring": "モニタリング",
+    "workspaces": "ワークスペース",
+    "experiments": "実験",
+    "tutorials": "チュートリアル",
+    "settings": "設定",
+    "signOut": "ログアウト",
+    "openMenu": "メニューを開く",
+    "closeMenu": "メニューを閉じる",
+    "showKeyboardShortcuts": "キーボードショートカットを表示",
+    "keyboardShortcutsHint": "キーボードショートカット (⌘/)",
+    "ariaLabel": {
+      "vmMenu": "VMメニュー",
+      "aiMenu": "AIメニュー"
+    }
+  },
+  "landing": {
+    "heroTitle": "VibeCodeへようこそ",
+    "heroSubtitle": "現代のための、AI搭載開発環境",
+    "buildFaster": "AIでより速く開発する",
+    "buildFasterDescription": "人工知能を活用した次世代の開発ツールをご体験ください。これまでにない速度と精度でコードを書き、デバッグし、デプロイできます。",
+    "lightningFast": "超高速",
+    "lightningFastDescription": "即時フィードバックと迅速な開発のために最適化されたパフォーマンス",
+    "aiPowered": "AI搭載",
+    "aiPoweredDescription": "インテリジェントなコード提案と自動化されたワークフロー",
+    "secure": "セキュア",
+    "secureDescription": "コードとデータを守るエンタープライズグレードのセキュリティ"
+  },
+  "dashboard": {
+    "title": "ダッシュボード",
+    "getStarted": "はじめる",
+    "vmManagement": "VM管理",
+    "vmManagementDescription": "仮想マシンを管理する",
+    "aiStudio": "AIスタジオ",
+    "aiStudioDescription": "モデル、コスト、プロンプト",
+    "healthMonitor": "ヘルスモニター",
+    "healthMonitorDescription": "サービスの稼働状況",
+    "monitoring": "モニタリング",
+    "monitoringDescription": "メトリクスとトレース",
+    "settings": "設定",
+    "settingsDescription": "アプリの設定",
+    "editor": "エディター",
+    "editorDescription": "コードエディター"
+  },
+  "ai": {
+    "dashboard": {
+      "title": "AIダッシュボード",
+      "description": "340以上のAIモデルへのアクセス、エージェント管理、コスト追跡、プロンプトテンプレートの閲覧 -- すべて一箇所から。",
+      "quickActions": "クイックアクション",
+      "newChat": "新しいチャット",
+      "compareModels": "モデルを比較",
+      "browsePrompts": "プロンプトを閲覧",
+      "recentActivity": "最近のアクティビティ",
+      "cards": {
+        "chat": "チャット",
+        "chatStat": "アクティブな会話: 3",
+        "chatDescription": "AIとの会話を開始または再開する",
+        "agents": "エージェント",
+        "agentsStat": "6つのエージェントが利用可能",
+        "agentsDescription": "マルチエージェントワークスペース",
+        "models": "モデル",
+        "modelsStat": "340以上のモデル",
+        "modelsDescription": "AIモデルを比較・選択する",
+        "costs": "コスト",
+        "costsStat": "本日: $2.47",
+        "costsDescription": "AI使用コストを追跡する",
+        "prompts": "プロンプト",
+        "promptsStat": "33テンプレート",
+        "promptsDescription": "プロンプトライブラリを閲覧する",
+        "history": "履歴",
+        "historyStat": "142件の会話",
+        "historyDescription": "過去の会話を表示する",
+        "vectorExplorer": "ベクターエクスプローラー",
+        "vectorExplorerStat": "埋め込みを探索",
+        "vectorExplorerDescription": "ベクターの類似性を可視化する"
+      },
+      "usageStats": {
+        "requestsToday": "本日のリクエスト数",
+        "avgResponseTime": "平均応答時間",
+        "topModel": "トップモデル"
+      }
+    },
+    "models": {
+      "pageTitle": "AIモデル",
+      "pageDescription": "AIモデルの閲覧、比較、推奨モデルの取得",
+      "refreshButton": "更新",
+      "loadingModels": "モデルを読み込み中...",
+      "addModelToComparison": "比較にモデルを追加",
+      "searchPlaceholder": "比較するモデルを検索・選択...",
+      "modelsSelectedForComparison": "{count} / 4モデルが比較用に選択済み",
+      "getRecommendation": {
+        "title": "推奨モデルを取得",
+        "description": "タスクに最適なモデルを見つける",
+        "taskTypeLabel": "タスクの種類",
+        "getRecommendationButton": "推奨モデルを取得",
+        "findingButton": "検索中...",
+        "confidenceLabel": "信頼度: {percent}%",
+        "monthlyCostLabel": "月額約${cost}",
+        "alternativesLabel": "代替モデル"
+      },
+      "taskTypes": {
+        "code_generation": "コード生成",
+        "code_review": "コードレビュー",
+        "debugging": "デバッグ",
+        "chat": "チャット",
+        "analysis": "分析",
+        "creative_writing": "クリエイティブライティング",
+        "summarization": "要約",
+        "translation": "翻訳",
+        "math": "数学",
+        "research": "リサーチ",
+        "general": "汎用"
+      },
+      "selector": {
+        "searchPlaceholder": "モデルを検索...",
+        "noModelsFound": "モデルが見つかりません",
+        "noModelsFoundHint": "検索条件やフィルターを変更してみてください",
+        "moreFilters": "その他のフィルター",
+        "modelsCount": "{count}件のモデル",
+        "clearFilters": "クリア",
+        "minQuality": "最低品質",
+        "minSpeed": "最低速度",
+        "vision": "ビジョン",
+        "functionCalling": "関数呼び出し",
+        "recentlyUsed": "最近使用したもの",
+        "groups": {
+          "favorites": "お気に入り",
+          "recent": "最近",
+          "localModels": "ローカルモデル"
+        },
+        "qualityOptions": {
+          "any": "すべて",
+          "good": "良い以上",
+          "excellent": "優秀以上",
+          "stateOfArt": "最先端"
+        },
+        "speedOptions": {
+          "any": "すべて",
+          "medium": "中速以上",
+          "fast": "高速以上",
+          "veryFast": "超高速"
+        }
+      },
+      "quickFilters": {
+        "bestForCoding": "コーディング向け最適",
+        "bestForCodingDescription": "コード生成とデバッグに優れたトップモデル",
+        "bestValue": "コスパ最高",
+        "bestValueDescription": "手頃な価格で高品質",
+        "fastest": "最速",
+        "fastestDescription": "速度に最適化されたモデル",
+        "largestContext": "最大コンテキスト",
+        "largestContextDescription": "100K以上のコンテキストウィンドウを持つモデル",
+        "vision": "ビジョン",
+        "visionDescription": "画像を理解できるモデル",
+        "freeModels": "無料モデル",
+        "freeModelsDescription": "無料で使えるAIモデル"
+      },
+      "badges": {
+        "free": "無料",
+        "low": "低",
+        "medium": "中",
+        "high": "高",
+        "slow": "低速",
+        "fast": "高速",
+        "basic": "基本",
+        "good": "良い",
+        "excellent": "優秀",
+        "notApplicable": "N/A"
+      },
+      "switcherPanel": {
+        "title": "モデルを切り替え",
+        "viewAll": "すべて表示",
+        "searchPlaceholder": "モデルを検索...",
+        "currentModel": "現在のモデル",
+        "favorites": "お気に入り",
+        "recent": "最近",
+        "allModels": "すべてのモデル ({count})",
+        "noModelsFound": "\"{query}\" に一致するモデルが見つかりません",
+        "addToFavorites": "お気に入りに追加",
+        "removeFromFavorites": "お気に入りから削除"
+      },
+      "switcherButton": {
+        "selectModel": "モデルを選択",
+        "ariaLabel": "AIモデルを切り替え"
+      }
+    },
+    "costs": {
+      "pageTitle": "AIコスト",
+      "pageDescription": "支出の監視、予算設定、AIモデル全体のコスト見積もり",
+      "costEstimatorButton": "コスト見積もり",
+      "closeEstimatorButton": "見積もりを閉じる",
+      "quickCostEstimate": "クイックコスト見積もり",
+      "modelLabel": "モデル",
+      "sampleMessageLabel": "サンプルメッセージ",
+      "sampleMessagePlaceholder": "サンプルプロンプトを貼り付けてコストを見積もる...",
+      "alerts": {
+        "budgetThresholdTitle": "予算しきい値に達しました",
+        "dailyLimitTitle": "デイリーリミットに達しました",
+        "sessionLimitTitle": "セッションリミットに達しました",
+        "rateSpikeTitle": "異常なコストスパイクを検出しました",
+        "unusualUsageTitle": "異常な使用パターン",
+        "currentLabel": "現在: {cost}",
+        "limitLabel": "上限: {cost}",
+        "percentOfLimit": "上限の{percent}%",
+        "acknowledgeButton": "確認しました",
+        "closeNotification": "通知を閉じる"
+      }
+    },
+    "prompts": {
+      "pageTitle": "プロンプトライブラリ",
+      "pageDescription": "{categories}カテゴリにわたる、AI搭載コードアシスタンス向けの{count}件の再利用可能なプロンプトテンプレート",
+      "searchPlaceholder": "名前、説明、またはタグでテンプレートを検索...",
+      "allTemplates": "すべてのテンプレート",
+      "noTemplatesFound": "テンプレートが見つかりません",
+      "categories": {
+        "codeReview": "コードレビュー",
+        "explainCode": "コードの説明",
+        "refactor": "リファクタリング",
+        "generateTests": "テスト生成",
+        "documentation": "ドキュメント"
+      },
+      "templateCard": {
+        "recommendedModels": "推奨モデル",
+        "variables": "変数 ({required}件が必須{optional})",
+        "systemPrompt": "システムプロンプト",
+        "userPromptTemplate": "ユーザープロンプトテンプレート",
+        "tags": "タグ",
+        "useTemplate": "テンプレートを使用",
+        "required": "必須",
+        "type": "型: {type}",
+        "default": "デフォルト: {value}",
+        "vars": "{count}個の変数",
+        "varsPlural": "{count}個の変数"
+      }
+    },
+    "agents": {
+      "pageTitle": "AIエージェント",
+      "agentsList": "エージェント",
+      "selectAgent": "エージェントを選択",
+      "messageCount": "{count}件のメッセージ",
+      "youLabel": "あなた",
+      "sendButton": "送信",
+      "messagePlaceholder": "{agentName}にメッセージ...",
+      "statusLabels": {
+        "active": "アクティブ",
+        "idle": "待機中",
+        "busy": "ビジー"
+      },
+      "agentList": {
+        "codeAssistant": "コードアシスタント",
+        "codeAssistantRole": "フルスタック開発者",
+        "codeAssistantDescription": "複数の言語にわたってコードを生成、リファクタリング、説明します。",
+        "debugHelper": "デバッグヘルパー",
+        "debugHelperRole": "バグハンター",
+        "debugHelperDescription": "スタックトレースを分析し、根本原因を特定し、修正案を提案します。",
+        "architect": "アーキテクト",
+        "architectRole": "システムデザイナー",
+        "architectDescription": "システムアーキテクチャ、API、データベーススキーマを設計します。",
+        "reviewer": "レビュアー",
+        "reviewerRole": "コードレビュアー",
+        "reviewerDescription": "品質、セキュリティ、ベストプラクティスの観点でコードをレビューします。",
+        "tester": "テスター",
+        "testerRole": "QAエンジニア",
+        "testerDescription": "ユニットテスト、インテグレーションテスト、テスト戦略を作成します。",
+        "devops": "DevOps",
+        "devopsRole": "インフラエンジニア",
+        "devopsDescription": "CI/CDパイプライン、Docker、Kubernetes、クラウドインフラを管理します。"
+      }
+    },
+    "modelUsage": {
+      "title": "モデル利用履歴",
+      "description": "AIモデルの使用状況、トークン消費量、傾向を時系列で追跡します",
+      "loadingHistory": "利用履歴を読み込み中...",
+      "noUsageData": "利用データなし",
+      "noUsageDataDescription": "AIモデルを使用すると統計が表示されます",
+      "noUsageDataForPeriod": "この期間のデータがありません",
+      "noTokenConsumptionData": "この期間のトークン消費データがありません",
+      "noModelUsageYet": "モデル利用データがまだありません",
+      "noModelData": "モデルデータなし",
+      "noModelDataDescription": "まだAIモデルは使用されていません",
+      "noTrendData": "トレンドデータなし",
+      "noTrendDataDescription": "選択した{period}の期間に利用データがありません",
+      "noActivityData": "アクティビティデータなし",
+      "noActivityDataDescription": "選択した{period}の期間に最近のアクティビティがありません",
+      "periodSelect": {
+        "hourly": "時間別",
+        "daily": "日別",
+        "weekly": "週別",
+        "monthly": "月別"
+      },
+      "metricSelect": {
+        "tokens": "トークン",
+        "requests": "リクエスト"
+      },
+      "tabs": {
+        "overview": "概要",
+        "overviewShort": "統計",
+        "trends": "利用傾向",
+        "trendsShort": "傾向",
+        "models": "モデル別内訳",
+        "modelsShort": "モデル",
+        "details": "詳細",
+        "detailsShort": "その他"
+      },
+      "stats": {
+        "totalTokens": "総トークン数",
+        "totalTokensDesc": "現在のセッション",
+        "totalRequests": "総リクエスト数",
+        "totalRequestsDesc": "API呼び出し数",
+        "avgTokensPerRequest": "リクエストあたり平均トークン",
+        "avgTokensPerRequestDesc": "呼び出しあたりの平均",
+        "mostUsedModel": "最も使用されたモデル",
+        "mostUsedModelDesc": "トップの選択",
+        "promptTokens": "プロンプトトークン",
+        "completionTokens": "コンプリーショントークン",
+        "tokenRatio": "トークン比率",
+        "completionPromptRatio": "コンプリーション/プロンプト比"
+      },
+      "allTimeStats": {
+        "title": "全期間統計",
+        "description": "{date}以降の累計利用メトリクス",
+        "totalTokens": "総トークン数",
+        "totalRequests": "総リクエスト数",
+        "totalCost": "総コスト"
+      },
+      "tokenConsumption": {
+        "title": "トークン消費量",
+        "description": "時系列のプロンプトとコンプリーショントークンの使用状況",
+        "promptTokens": "プロンプトトークン",
+        "completionTokens": "コンプリーショントークン",
+        "prompt": "プロンプト",
+        "completion": "コンプリーション"
+      },
+      "usageTrends": {
+        "title": "利用傾向",
+        "description": "{period}の利用パターン"
+      },
+      "modelBreakdown": {
+        "title": "モデル別利用内訳",
+        "description": "異なるAIモデル間の利用分布",
+        "detailsTitle": "モデル別利用詳細",
+        "detailsDescription": "各モデルの詳細な統計（ヘッダーをクリックして並べ替え）"
+      },
+      "topModelsSummary": {
+        "title": "上位モデルのサマリー",
+        "description": "最も頻繁に使用されたモデルの概要",
+        "requests": "リクエスト:",
+        "tokens": "トークン:",
+        "share": "シェア:"
+      },
+      "table": {
+        "model": "モデル",
+        "requests": "リクエスト",
+        "prompt": "プロンプト",
+        "completion": "コンプリーション",
+        "total": "合計",
+        "cost": "コスト",
+        "requestsLabel": "{count}リクエスト"
+      },
+      "recentActivity": {
+        "title": "最近の{period}アクティビティ",
+        "description": "{total}件中の最新5件",
+        "requests": "{count}リクエスト"
+      },
+      "sessionInfo": {
+        "title": "セッション情報",
+        "description": "現在の利用セッションの詳細",
+        "sessionStart": "セッション開始:",
+        "lastUpdated": "最終更新:",
+        "totalRequests": "総リクエスト数:",
+        "totalTokens": "総トークン数:",
+        "modelsUsed": "使用モデル数:",
+        "dataPoints": "データポイント数:"
+      }
+    },
+    "costDashboard": {
+      "title": "AIコストダッシュボード",
+      "description": "{count}以上のモデルにわたるAI支出を追跡・管理します",
+      "refresh": "更新",
+      "exportCsv": "CSVでエクスポート",
+      "exportJson": "JSONでエクスポート",
+      "export": "エクスポート",
+      "lastUpdated": "最終更新: {time}",
+      "stats": {
+        "sessionCost": "セッションコスト",
+        "sessionCostDesc": "{count}リクエスト",
+        "todayCost": "本日のコスト",
+        "vsYesterday": "昨日比",
+        "totalTokens": "総トークン数",
+        "totalTokensDesc": "このセッション",
+        "allTimeCost": "累計コスト",
+        "allTimeCostDesc": "合計{count}リクエスト"
+      },
+      "tabs": {
+        "overview": "概要",
+        "byModel": "モデル別",
+        "alerts": "アラート",
+        "settings": "設定"
+      },
+      "overview": {
+        "usageOverTime": "時系列利用状況",
+        "costPredictions": "コスト予測",
+        "costPredictionsDesc": "過去7日間の利用パターンに基づく",
+        "daily": "日別",
+        "weekly": "週別",
+        "monthly": "月別",
+        "monthlyBudgetProgress": "月次予算の進捗",
+        "budgetWillExhaust": "現在のペースでは、予算は{days}日で使い切ります"
+      },
+      "metricSelect": {
+        "cost": "コスト",
+        "tokens": "トークン",
+        "requests": "リクエスト"
+      },
+      "models": {
+        "costByModel": "モデル別コスト",
+        "costByModelDesc": "異なるAIモデル間の支出内訳",
+        "modelUsageDetails": "モデル別利用詳細",
+        "modelUsageDetailsDesc": "各モデルの詳細な統計",
+        "noModelData": "このセッションにモデル利用データがありません",
+        "noModelDataChart": "モデル利用データがまだありません",
+        "requestsLabel": "{count}リクエスト",
+        "tokensLabel": "{tokens}トークン"
+      },
+      "alerts": {
+        "title": "コストアラート",
+        "description": "AI支出を監視するアラートを設定します",
+        "createAlert": "アラートを作成",
+        "noAlerts": "アラートが設定されていません。支出を監視するアラートを設定してください。",
+        "active": "有効",
+        "disabled": "無効",
+        "acknowledge": "確認",
+        "threshold": "しきい値: {cost}",
+        "current": "現在: {cost}",
+        "thresholdCurrent": "しきい値: {threshold} | 現在: {current}",
+        "dismiss": "閉じる"
+      },
+      "createAlertDialog": {
+        "title": "コストアラートの作成",
+        "description": "AI支出を監視する新しいアラートを設定します",
+        "alertType": "アラートタイプ",
+        "threshold": "しきい値 (USD)",
+        "severity": "重大度",
+        "resetPeriod": "リセット期間",
+        "enableImmediately": "すぐにアラートを有効にする",
+        "sendNotifications": "トリガー時に通知を送信する",
+        "cancel": "キャンセル",
+        "create": "アラートを作成",
+        "alertTypes": {
+          "budget_threshold": "予算しきい値",
+          "daily_limit": "日次制限",
+          "session_limit": "セッション制限",
+          "rate_spike": "レートスパイク",
+          "unusual_usage": "異常な使用"
+        },
+        "severities": {
+          "info": "情報",
+          "warning": "警告",
+          "critical": "重大"
+        }
+      },
+      "noUsageData": "この期間のデータがありません"
+    },
+    "modelDetails": {
+      "removeFavorite": "お気に入りから削除",
+      "addFavorite": "お気に入りに追加",
+      "close": "閉じる",
+      "addToComparison": "比較に追加",
+      "useThisModel": "このモデルを使用",
+      "tabs": {
+        "overview": "概要",
+        "capabilities": "機能",
+        "benchmarks": "ベンチマーク",
+        "pricing": "価格"
+      },
+      "overview": {
+        "description": "説明",
+        "noDescription": "説明がありません。",
+        "keyMetrics": "主要メトリクス",
+        "qualityTier": "品質ティア",
+        "avgLatency": "平均レイテンシ",
+        "tokensPerSec": "トークン/秒",
+        "benchmarkScore": "ベンチマークスコア",
+        "tokenLimits": "トークン制限",
+        "contextWindow": "コンテキストウィンドウ",
+        "maxInput": "最大入力",
+        "maxOutput": "最大出力",
+        "tags": "タグ",
+        "provider": "プロバイダー",
+        "tier": "ティア: {tier}",
+        "apiDocs": "APIドキュメント"
+      },
+      "capabilities": {
+        "featureSupport": "機能サポート",
+        "functionCalling": "関数呼び出し",
+        "streaming": "ストリーミング",
+        "vision": "ビジョン",
+        "deprecated": "非推奨",
+        "active": "アクティブ"
+      },
+      "benchmarks": {
+        "overallScore": "総合ベンチマークスコア",
+        "aggregatedFrom": "{count}件のベンチマークから集計",
+        "scoresByCategory": "カテゴリ別スコア",
+        "individualBenchmarks": "個別ベンチマーク",
+        "noBenchmarkData": "ベンチマークデータなし",
+        "noBenchmarkDataDesc": "このモデルのベンチマークデータはまだ利用できません。"
+      },
+      "pricing": {
+        "basePricing": "基本価格",
+        "inputTokens": "入力トークン",
+        "outputTokens": "出力トークン",
+        "per1kTokens": "1,000トークンあたり",
+        "costCalculator": "コスト計算機",
+        "inputTokensLabel": "入力トークン",
+        "outputTokensLabel": "出力トークン",
+        "requestsPerDay": "リクエスト/日",
+        "perRequest": "リクエストあたり",
+        "dailyCost": "日次コスト",
+        "monthlyCost": "月次コスト",
+        "freeTierAvailable": "無料ティアあり"
+      },
+      "quality": {
+        "basic": "基本",
+        "basicDesc": "シンプルなタスクや基本的な会話に適しています",
+        "good": "良好",
+        "goodDesc": "日常的なユースケースの多くに対して信頼性があります",
+        "excellent": "優秀",
+        "excellentDesc": "複雑なタスクに対する高いパフォーマンス",
+        "stateOfArt": "最先端",
+        "stateOfArtDesc": "最先端のパフォーマンス、クラス最高"
+      },
+      "speed": {
+        "slow": "低速",
+        "slowDesc": "応答時間が長く、時間的な制約がないタスクに最適",
+        "medium": "中速",
+        "mediumDesc": "ほとんどのユースケースに対してバランスの取れた応答時間",
+        "fast": "高速",
+        "fastDesc": "インタラクティブな使用に適した迅速な応答",
+        "veryFast": "超高速",
+        "veryFastDesc": "リアルタイムアプリケーション向けのほぼ瞬時の応答"
+      }
+    },
+    "qualityDashboard": {
+      "title": "AI品質メトリクスダッシュボード",
+      "description": "AI提案の品質、承認率、モデルのパフォーマンスを追跡します",
+      "refresh": "更新",
+      "allModels": "すべてのモデル",
+      "lastUpdated": "最終更新: {time}",
+      "errorLoading": "ダッシュボードの読み込みエラー: {error}",
+      "retry": "再試行",
+      "noQualityData": "品質データがありません",
+      "periodSelect": {
+        "daily": "日別",
+        "weekly": "週別",
+        "monthly": "月別"
+      },
+      "stats": {
+        "acceptanceRate": "承認率",
+        "acceptanceRateDesc": "{count}件の提案",
+        "avgEditDistance": "平均編集距離",
+        "avgEditDistanceDesc": "変更された文字数",
+        "avgSimilarity": "平均類似度",
+        "avgSimilarityDesc": "元の提案との比較",
+        "avgTimeToAccept": "平均承認時間",
+        "ratingDesc": "評価: {rating}★"
+      },
+      "activeAlerts": "{count}件のアクティブな品質アラート",
+      "criticalAlerts": "{count}件の重大",
+      "tabs": {
+        "overview": "概要",
+        "byModel": "モデル別",
+        "trends": "傾向",
+        "alerts": "アラート"
+      },
+      "overview": {
+        "recentActivity": "最近のアクティビティ",
+        "recentActivityDesc": "最新のモデルパフォーマンス",
+        "modelHealthSummary": "モデルヘルスサマリー",
+        "modelHealthSummaryDesc": "監視中のすべてのモデルの状態",
+        "noRecentActivity": "最近のアクティビティなし",
+        "noModelsTracked": "まだモデルが追跡されていません",
+        "suggestions": "{count}件の提案"
+      },
+      "modelCard": {
+        "acceptanceRate": "承認率",
+        "totalSuggestions": "総提案数",
+        "editDistance": "編集距離",
+        "similarity": "類似度",
+        "rating": "評価",
+        "avgTime": "平均時間:",
+        "accepted": "承認済み",
+        "rejected": "拒否済み",
+        "notAvailable": "N/A"
+      },
+      "modelTab": {
+        "noModelData": "選択した期間にモデルデータがありません"
+      },
+      "trends": {
+        "title": "時系列の品質傾向",
+        "noTrendData": "選択した期間のトレンドデータがありません",
+        "metricSelect": {
+          "acceptanceRate": "承認率",
+          "editDistance": "編集距離",
+          "similarity": "類似度",
+          "rating": "評価"
+        }
+      },
+      "alertsTab": {
+        "title": "品質劣化アラート",
+        "description": "すべてのモデルの品質問題を監視します",
+        "noAlerts": "品質アラートはありません。すべてのモデルは正常に動作しています！",
+        "detected": "検出日時: {time}",
+        "current": "現在: {value}",
+        "threshold": "しきい値: {value}",
+        "dismiss": "閉じる",
+        "resolved": "解決済み"
+      },
+      "dismiss": "閉じる"
+    },
+    "contextMetrics": {
+      "title": "コンテキストメトリクス",
+      "description": "コンテキストウィンドウの品質と利用率のメトリクス",
+      "autoRefreshOn": "自動更新オン",
+      "autoRefreshOff": "自動更新オフ",
+      "refresh": "更新",
+      "errorLoading": "メトリクスの読み込みエラー: {error}",
+      "stats": {
+        "contextUtilization": "コンテキスト利用率",
+        "contextUtilizationDesc": "{tokens} / {available} トークン",
+        "avgRelevanceScore": "平均関連性スコア",
+        "avgRelevanceScoreDesc": "{count}件のアイテムが含まれています",
+        "itemsIncluded": "含まれるアイテム",
+        "itemsIncludedDesc": "{count}件が除外",
+        "avgBuildTime": "平均ビルド時間",
+        "avgBuildTimeDesc": "{count}回のビルド"
+      },
+      "currentContext": {
+        "title": "現在のコンテキストウィンドウ",
+        "description": "ストラテジー: {strategy} | モデル: {model}",
+        "tokenUtilization": "トークン利用率",
+        "totalTokens": "総トークン数:",
+        "available": "利用可能:",
+        "exclusionRate": "除外率:",
+        "buildTime": "ビルド時間:"
+      },
+      "tabs": {
+        "utilization": "利用率",
+        "priority": "優先度",
+        "types": "タイプ",
+        "relevance": "関連性"
+      },
+      "utilizationHistory": {
+        "title": "利用率履歴",
+        "description": "最近のビルドにおけるコンテキストウィンドウの利用率"
+      },
+      "priorityDistribution": {
+        "title": "優先度分布",
+        "description": "優先度レベル別のコンテキストアイテムの内訳"
+      },
+      "typeDistribution": {
+        "title": "アイテムタイプ分布",
+        "description": "タイプ別のコンテキストアイテムの内訳"
+      },
+      "relevanceScores": {
+        "title": "関連性スコアの分布",
+        "description": "アイテムの関連性スコアの分布",
+        "min": "最小:",
+        "max": "最大:",
+        "mean": "平均:",
+        "median": "中央値:",
+        "p95": "P95:"
+      },
+      "sessionStats": {
+        "title": "セッション統計",
+        "description": "セッション{sessionId}の集計メトリクス",
+        "totalEvents": "総イベント数:",
+        "contextBuilds": "コンテキストビルド数:",
+        "avgTokens": "平均トークン数:",
+        "avgExclusion": "平均除外率:"
+      }
+    },
+    "vectorExplorer": {
+      "title": "ベクトル類似度エクスプローラー",
+      "description": "AIエンベディングを使用して意味的に類似したコンテンツを検索します",
+      "searchQuery": "検索クエリ",
+      "searchQueryPlaceholder": "類似したコンテンツを検索するテキストを入力... (Cmd/Ctrl + Enterで検索)",
+      "searchQueryHint": "テキストを入力すると、データベースから意味的に類似したコンテンツを検索します",
+      "contentType": "コンテンツタイプ",
+      "resultLimit": "結果件数の上限",
+      "similarityThreshold": "類似度のしきい値",
+      "search": "類似コンテンツを検索",
+      "searching": "検索中...",
+      "errorPrefix": "エラー: {error}",
+      "searchResults": "検索結果",
+      "cached": "キャッシュ済み",
+      "embeddingCached": "エンベディングキャッシュ済み",
+      "resultsCount": "{count}件の結果",
+      "foundResults": "{count}件の類似{type}アイテムが見つかりました",
+      "foundResultsWithThreshold": "類似度 ≥ {threshold}%",
+      "noSimilarContent": "類似したコンテンツが見つかりません",
+      "noSimilarContentHint": "類似度のしきい値を下げるか、コンテンツタイプを変更してみてください",
+      "matchPercent": "{percent}%一致",
+      "language": "言語: {lang}",
+      "framework": "フレームワーク: {fw}",
+      "created": "作成日: {date}",
+      "embeddingAnalysis": "エンベディング分析",
+      "embeddingAnalysisDesc": "ベクトルエンベディングと類似度スコアの視覚的表現",
+      "howItWorks": "使い方:",
+      "howItWorksSteps": {
+        "step1": "上のテキストエリアに検索クエリを入力します",
+        "step2": "検索するコンテンツタイプを選択します（コード、ドキュメント、またはチャット）",
+        "step3": "必要に応じて結果件数の上限と類似度のしきい値を調整します",
+        "step4": "「検索」をクリックするか、Cmd/Ctrl + Enterを押して類似コンテンツを検索します",
+        "step5": "類似度スコアとエンベディング可視化を含む詳細な結果を確認します"
+      },
+      "contentTypes": {
+        "code": "コード",
+        "documentation": "ドキュメント",
+        "chat": "チャット"
+      },
+      "limits": {
+        "five": "5件",
+        "ten": "10件",
+        "twenty": "20件",
+        "fifty": "50件"
+      },
+      "thresholds": {
+        "low": "50%（低）",
+        "mediumLow": "60%（中低）",
+        "medium": "70%（中）",
+        "high": "80%（高）",
+        "veryHigh": "90%（非常に高い）"
+      }
+    },
+    "modelComparison": {
+      "title": "モデル比較",
+      "description": "最大{max}件のモデルを並べて比較",
+      "addModel": "モデルを追加",
+      "addModelToCompare": "比較するモデルを追加",
+      "addModelDescription": "比較に追加するモデルを選択します",
+      "cancel": "キャンセル",
+      "noModelsTitle": "比較するモデルがありません",
+      "noModelsDescription": "比較を開始するには少なくとも2つのモデルを追加してください",
+      "addFirstModel": "最初のモデルを追加",
+      "addAnotherModel": "比較するモデルをもう一つ追加",
+      "recommended": "推奨",
+      "recommendationReason": "{name}はすべての基準においてバランスの取れたパフォーマンスで最高スコアを獲得しています",
+      "removeFromComparison": "比較からモデルを削除",
+      "score": "スコア",
+      "useThisModel": "このモデルを使用",
+      "selectModel": "このモデルを選択",
+      "tabs": {
+        "cardView": "カード表示",
+        "tableView": "テーブル表示",
+        "criteria": "基準"
+      },
+      "criteria": {
+        "title": "比較基準",
+        "description": "比較における各要素の重要度を調整します",
+        "costImportance": "コストの重要度",
+        "speedImportance": "速度の重要度",
+        "qualityImportance": "品質の重要度",
+        "contextSizeImportance": "コンテキストサイズの重要度"
+      },
+      "table": {
+        "attribute": "属性",
+        "overallScore": "総合スコア",
+        "priceInput": "価格（入力）",
+        "priceOutput": "価格（出力）",
+        "contextWindow": "コンテキストウィンドウ",
+        "speed": "速度",
+        "quality": "品質",
+        "coding": "コーディング",
+        "reasoning": "推論",
+        "creative": "創造性",
+        "math": "数学",
+        "vision": "ビジョン",
+        "functionCalling": "関数呼び出し",
+        "avgLatency": "平均レイテンシ",
+        "yes": "はい",
+        "no": "いいえ"
+      },
+      "modelCard": {
+        "input": "入力",
+        "output": "出力",
+        "context": "コンテキスト",
+        "coding": "コーディング",
+        "reasoning": "推論",
+        "creative": "創造性",
+        "math": "数学",
+        "vision": "ビジョン",
+        "functions": "関数",
+        "streaming": "ストリーミング"
+      },
+      "quickSummary": {
+        "title": "クイックサマリー",
+        "bestForCoding": "コーディングに最適",
+        "bestReasoning": "最高の推論",
+        "bestValue": "最高のコスパ",
+        "fastest": "最速",
+        "largestContext": "最大のコンテキスト"
+      },
+      "pros": {
+        "stateOfArtQuality": "最先端の品質",
+        "excellentQuality": "優秀な品質",
+        "veryFastResponses": "非常に高速な応答",
+        "fastResponses": "高速な応答",
+        "veryAffordable": "非常に手頃な価格",
+        "largeContextWindow": "大きなコンテキストウィンドウ",
+        "visionCapable": "ビジョン対応",
+        "functionCalling": "関数呼び出しサポート"
+      },
+      "cons": {
+        "basicQuality": "基本的な品質ティア",
+        "slowerResponses": "遅い応答",
+        "higherCost": "高いコスト",
+        "limitedContext": "限られたコンテキスト"
+      }
+    }
+  },
+  "chat": {
+    "title": "AIチャット",
+    "heading": "AIチャット",
+    "emptyState": "まだメッセージがありません。会話を始めましょう！",
+    "inputPlaceholder": "メッセージを入力... (Shift+Enterで改行)",
+    "promptPlaceholder": "何でも聞いてください...",
+    "sendButton": "送信",
+    "sendingButton": "送信中...",
+    "clearButton": "クリア",
+    "thinkingIndicator": "考え中...",
+    "modelLabel": "モデル",
+    "modelPlaceholder": "モデルを選択...",
+    "newConversation": "新しい会話",
+    "clearChat": "チャットをクリア",
+    "regenerate": "応答を再生成",
+    "copyCode": "コードをコピー",
+    "aiWorkspaceTitle": "AIワークスペース",
+    "aiWorkspaceSubtitle": "AIアシスタントとの会話を始めましょう",
+    "costConfirmDialog": {
+      "title": "高コストなリクエストの確認",
+      "description": "このメッセージは500トークン以上を使用すると見積もられています。以下のコスト見積もりをご確認ください。",
+      "modelLabel": "モデル:",
+      "highTokenWarningTitle": "高いトークン数が検出されました",
+      "highTokenWarningDescription": "推定{tokenCount}トークンです。このリクエストはより高いコストがかかる場合があります。",
+      "cancelButton": "キャンセル",
+      "confirmButton": "このまま送信"
+    }
+  },
+  "settings": {
+    "pageTitle": "設定",
+    "pageDescription": "VibeCodeの設定とアプリケーション設定を構成する",
+    "title": "設定",
+    "exportSettings": "設定をエクスポート",
+    "importSettings": "設定をインポート",
+    "importSettingsFileLabel": "設定ファイルをインポート",
+    "resetToDefaults": "デフォルトにリセット",
+    "setupWizard": "セットアップウィザード",
+    "exportSuccess": "設定のエクスポートに成功しました",
+    "exportFailed": "設定のエクスポートに失敗しました",
+    "importSelectJson": "JSONファイルを選択してください",
+    "importOverwriteConfirm": "現在の設定が上書きされます。続行しますか？",
+    "importInvalidFormat": "無効な設定ファイルの形式です",
+    "importInvalidSections": "設定ファイルに有効な設定セクションが含まれていません",
+    "importParseFailed": "設定ファイルの解析に失敗しました。有効なJSONが含まれているか確認してください。",
+    "importSuccess": "設定のインポートに成功しました",
+    "resetConfirm": "すべての設定をデフォルトにリセットしますか？",
+    "resetSuccess": "設定をデフォルトにリセットしました",
+    "resetFailed": "設定のリセットに失敗しました",
+    "importLabel": "設定ファイルをインポート",
+    "saveStatus": {
+      "saved": "保存済み",
+      "error": "エラー",
+      "unsavedChanges": "未保存の変更",
+      "saving": "保存中...",
+      "pleaseFixErrors": "以下のエラーを修正してください:"
+    },
+    "closeSettingsLabel": "設定を閉じる",
+    "resetAllLabel": "すべての設定をデフォルトにリセット",
+    "saveSettingsLabel": "設定を保存",
+    "tabs": {
+      "general": "一般",
+      "services": "サービス",
+      "networking": "ネットワーク",
+      "environment": "環境",
+      "ai": "AI",
+      "advanced": "詳細"
+    },
+    "general": {
+      "title": "一般設定",
+      "resetLabel": "一般設定をデフォルトにリセット",
+      "theme": {
+        "label": "テーマ",
+        "description": "お好みのカラースキームを選択してください",
+        "light": "ライト",
+        "dark": "ダーク",
+        "system": "システム",
+        "ariaLabel": "テーマ選択"
+      },
+      "launchAtLogin": {
+        "label": "ログイン時に起動",
+        "description": "ログイン時にVibeCodeを自動的に起動する"
+      },
+      "minimizeToTray": {
+        "label": "トレイに最小化",
+        "description": "閉じたときにVibeCodeをシステムトレイで実行し続ける"
+      },
+      "notifications": {
+        "label": "通知",
+        "description": "重要なイベントのデスクトップ通知を表示する"
+      },
+      "confirmOnClose": {
+        "label": "閉じる前に確認",
+        "description": "未保存の変更がある状態で閉じる前に確認を求める"
+      },
+      "autoSaveInterval": {
+        "label": "自動保存の間隔",
+        "description": "作業を自動保存する間隔（秒、0で無効）"
+      },
+      "vimMode": {
+        "label": "Vimモード",
+        "description": "Vimスタイルのキーボードナビゲーションを有効にする（スクロールにj/kなど）"
+      }
+    },
+    "services": {
+      "title": "サービス設定",
+      "resetLabel": "サービス設定をデフォルトにリセット",
+      "autoStartServices": {
+        "label": "サービスの自動起動",
+        "description": "アプリ起動時にバックグラウンドサービスを自動的に開始する"
+      },
+      "healthMonitoring": {
+        "label": "ヘルスモニタリング",
+        "description": "リアルタイムのサービスヘルスチェックを有効にする"
+      },
+      "portConfiguration": {
+        "title": "ポート設定",
+        "appPort": "アプリケーションポート",
+        "aiGatewayPort": "AIゲートウェイポート",
+        "databasePort": "データベースポート",
+        "vmServicePort": "VMサービスポート"
+      },
+      "timeoutConfiguration": {
+        "title": "タイムアウト設定（ms）",
+        "connectionTimeout": "接続タイムアウト",
+        "requestTimeout": "リクエストタイムアウト"
+      },
+      "maxRetries": {
+        "label": "最大再試行回数",
+        "description": "接続失敗時の最大再試行回数"
+      }
+    },
+    "networking": {
+      "title": "ネットワーキングとセキュリティ",
+      "subtitle": "Tailscaleによるゼロトラストネットワーキング",
+      "connectionStatusTitle": "接続状態",
+      "setupConfigTitle": "セットアップと設定",
+      "aboutTailscale": {
+        "title": "Tailscaleについて",
+        "description": "Tailscaleは、サービスをインターネットに公開せずにデバイス間で安全に通信できるセキュアなネットワークオーバーレイを作成します。",
+        "keyFeatures": "主な機能:",
+        "features": {
+          "encryption": "すべてのトラフィックのエンドツーエンド暗号化",
+          "zeroTrust": "ゼロトラストセキュリティモデル",
+          "noPorts": "パブリックインターネットへの開放ポートなし",
+          "keyRotation": "自動鍵ローテーションと管理",
+          "crossPlatform": "クロスプラットフォームサポート"
+        }
+      }
+    },
+    "ai": {
+      "title": "AI設定",
+      "resetLabel": "AI設定をデフォルトにリセット",
+      "defaultModel": {
+        "label": "デフォルトモデル",
+        "description": "デフォルトで使用するAIモデル",
+        "placeholder": "モデルを選択"
+      },
+      "apiKeys": {
+        "title": "APIキー",
+        "description": "APIキーは安全に保存され、設定のエクスポートには含まれません",
+        "openaiLabel": "OpenAI APIキー",
+        "openaiPlaceholder": "sk-...",
+        "anthropicLabel": "Anthropic APIキー",
+        "anthropicPlaceholder": "sk-ant-..."
+      },
+      "maxTokens": {
+        "label": "最大トークン数",
+        "description": "AIの応答における最大トークン数"
+      },
+      "temperature": {
+        "label": "温度",
+        "description": "創造性を制御します: 0は集中的、2は高い創造性"
+      },
+      "topP": {
+        "label": "Top P（ニュークリアスサンプリング）"
+      },
+      "streamResponses": {
+        "label": "レスポンスをストリーミング",
+        "description": "生成されながらAIの応答を表示する"
+      },
+      "codeSuggestions": {
+        "label": "コード提案",
+        "description": "AI搭載のコード補完を有効にする"
+      },
+      "autoCompleteDelay": {
+        "label": "自動補完の遅延",
+        "description": "提案を表示するまでの遅延（ミリ秒）"
+      }
+    },
+    "advanced": {
+      "title": "詳細設定",
+      "resetLabel": "詳細設定をデフォルトにリセット",
+      "agentSafety": {
+        "title": "エージェントの安全性と確認",
+        "description": "エージェントのアクションが実行前にプレビューおよび承認される方法を設定する",
+        "enableActionPreview": {
+          "label": "アクションプレビューを有効化",
+          "description": "変更を適用する前に差分プレビューを表示する"
+        },
+        "requireConfirmation": {
+          "label": "確認を必須にする",
+          "description": "エージェントのアクションに明示的な承認を必要とする"
+        },
+        "bulkApprovalMode": {
+          "label": "一括承認モード",
+          "description": "複数の変更を一度に承認できるようにする"
+        },
+        "showExplanations": {
+          "label": "説明を表示",
+          "description": "各変更が提案される理由を表示する"
+        },
+        "autoApproveReadOnly": {
+          "label": "読み取り専用を自動承認",
+          "description": "読み取り専用操作の確認をスキップする"
+        }
+      },
+      "telemetry": {
+        "title": "プライバシーとテレメトリー",
+        "analytics": {
+          "label": "匿名分析",
+          "description": "匿名の使用データを共有してVibeCodeの改善に貢献する"
+        },
+        "crashReporting": {
+          "label": "クラッシュレポート",
+          "description": "問題の修正を支援するためにクラッシュレポートを自動送信する"
+        },
+        "performanceMonitoring": {
+          "label": "パフォーマンスモニタリング",
+          "description": "アプリケーションのパフォーマンスメトリクスを追跡する"
+        }
+      },
+      "debugMode": {
+        "label": "デバッグモード",
+        "description": "追加のログと開発者機能を有効にする"
+      },
+      "logLevel": {
+        "label": "ログレベル",
+        "description": "アプリケーションログの詳細度を設定する",
+        "options": {
+          "error": "エラー",
+          "warn": "警告",
+          "info": "情報",
+          "debug": "デバッグ",
+          "trace": "トレース"
+        }
+      },
+      "dataDirectory": {
+        "label": "データディレクトリ",
+        "description": "アプリケーションデータ保存のカスタムパス",
+        "placeholder": "デフォルトの場所"
+      },
+      "hardwareAcceleration": {
+        "label": "ハードウェアアクセラレーション",
+        "description": "パフォーマンス向上のためにGPUを使用する"
+      },
+      "experimentalFeatures": {
+        "label": "実験的機能",
+        "description": "まだ開発中の機能を有効にする"
+      },
+      "proxy": {
+        "title": "プロキシ設定",
+        "urlLabel": "プロキシURL",
+        "urlPlaceholder": "http://proxy.example.com:8080",
+        "bypassForLocal": {
+          "label": "ローカルをバイパス",
+          "description": "ローカルネットワークアドレスのプロキシをスキップする"
+        }
+      }
+    },
+    "maskedInput": {
+      "showValue": "値を表示",
+      "hideValue": "値を非表示"
+    }
+  },
+  "workspace": {
+    "title": "ワークスペース",
+    "pageTitle": "ワークスペース",
+    "e2eTestMode": "E2Eテストモード",
+    "create": "ワークスペースを作成",
+    "createWorkspace": "ワークスペースを作成",
+    "clone": "ワークスペースをクローン",
+    "delete": "ワークスペースを削除",
+    "open": "ワークスペースを開く",
+    "rename": "ワークスペースの名前を変更",
+    "useTemplate": "テンプレートを使用",
+    "searchPlaceholder": "ワークスペースを検索...",
+    "searchAriaLabel": "ワークスペースを検索",
+    "loadingAriaLabel": "ワークスペースを読み込み中",
+    "emptyState": {
+      "title": "ワークスペースが見つかりません",
+      "description": "最初のワークスペースを作成して始めましょう"
+    },
+    "workspaceCard": {
+      "createdLabel": "{date}に作成",
+      "openButton": "開く",
+      "editButton": "ワークスペースを編集",
+      "settingsButton": "ワークスペース設定"
+    },
+    "createModal": {
+      "title": "新しいワークスペースを作成",
+      "nameLabel": "ワークスペース名",
+      "namePlaceholder": "ワークスペース名を入力",
+      "descriptionLabel": "説明（任意）",
+      "descriptionPlaceholder": "ワークスペースの説明を入力",
+      "submitButton": "ワークスペースを作成",
+      "creatingButton": "作成中...",
+      "cancelButton": "キャンセル",
+      "nameRequired": "ワークスペース名は必須です",
+      "nameTooShort": "ワークスペース名は3文字以上必要です"
+    },
+    "templateModal": {
+      "title": "テンプレートを選択",
+      "nextjsTypescript": "Next.js + TypeScript",
+      "nextjsTypescriptDescription": "フルスタックWebアプリケーション",
+      "reactVite": "React + Vite",
+      "reactViteDescription": "高速フロントエンド開発",
+      "nodejsApi": "Node.js API",
+      "nodejsApiDescription": "バックエンドREST API",
+      "continueButton": "続ける",
+      "cancelButton": "キャンセル"
+    }
+  },
+  "statusBar": {
+    "serviceHealth": "サービスヘルス",
+    "lastUpdated": "最終更新: ",
+    "loadingHealth": "稼働状況を読み込み中",
+    "healthLabel": "サービス稼働状況バー",
+    "detailedHealthLabel": "サービス稼働状況の詳細情報",
+    "healthy": "正常",
+    "degraded": "低下",
+    "unhealthy": "異常",
+    "unknown": "不明",
+    "collapseStatusBar": "ステータスバーを折りたたむ",
+    "expandStatusBar": "ステータスバーを展開する",
+    "ariaRegionLabel": "サービス稼働状況バー",
+    "healthyServicesCount": "全{total}サービス中{healthy}件が正常",
+    "connection": {
+      "liveUpdatesEnabled": "ライブ更新が有効です",
+      "reconnecting": "ライブ更新に再接続中",
+      "usingPolling": "ポーリングによる更新を使用中"
+    },
+    "overallStatus": {
+      "allSystemsOperational": "すべてのシステムは正常に稼働中",
+      "someSystemsDegraded": "一部のシステムが低下しています",
+      "systemIssuesDetected": "システムの問題が検出されました",
+      "statusUnknown": "状態不明"
+    }
+  },
+  "commandPalette": {
+    "searchPlaceholder": "コマンドを入力または検索...",
+    "searchAriaLabel": "コマンドを検索",
+    "closeAriaLabel": "コマンドパレットを閉じる",
+    "resultsAriaLabel": "コマンド検索結果",
+    "noCommandsFound": "\"{query}\" に一致するコマンドが見つかりません",
+    "typeToSearch": "コマンドを検索するには入力してください...",
+    "keyboardHints": {
+      "navigate": "ナビゲート",
+      "select": "選択",
+      "close": "閉じる"
+    },
+    "commands": {
+      "goDashboard": "ダッシュボードへ移動",
+      "goDashboardDescription": "メインダッシュボードへ移動する",
+      "goVm": "VM管理へ移動",
+      "goVmDescription": "仮想マシンを管理する",
+      "goAiChat": "AIチャットへ移動",
+      "goAiChatDescription": "AIチャットインターフェースを開く",
+      "openSettings": "設定を開く",
+      "openSettingsDescription": "アプリケーション設定を構成する",
+      "goMonitoring": "モニタリングへ移動",
+      "goMonitoringDescription": "システムモニタリングとメトリクスを表示する"
+    }
+  },
+  "auth": {
+    "signInTitle": "VibeCode開発ログイン",
+    "signInSubtitle": "開発環境向けシンプルなログイン",
+    "signUpTitle": "アカウントを作成",
+    "email": "メールアドレス",
+    "emailLabel": "メールアドレス",
+    "emailPlaceholder": "メールアドレス",
+    "password": "パスワード",
+    "passwordLabel": "パスワード",
+    "passwordPlaceholder": "パスワード",
+    "confirmPassword": "パスワードを確認",
+    "forgotPassword": "パスワードをお忘れですか？",
+    "noAccount": "アカウントをお持ちでないですか？",
+    "hasAccount": "すでにアカウントをお持ちですか？",
+    "signInWith": "{provider}でログイン",
+    "orContinueWith": "または次の方法で続ける",
+    "signInButton": "ログイン",
+    "testUsersHeading": "開発テストユーザー:",
+    "adminUsersLabel": "管理者ユーザー:",
+    "developersLabel": "開発者:",
+    "teamMembersLabel": "チームメンバー:",
+    "errors": {
+      "invalidCredentials": "認証情報が無効です",
+      "authFailed": "認証に失敗しました - セッションが作成されませんでした",
+      "unexpectedError": "予期しないエラーが発生しました",
+      "validEmail": "有効なメールアドレスを入力してください",
+      "passwordTooShort": "パスワードは6文字以上である必要があります"
+    },
+    "errorPrefix": "エラー: "
+  },
+  "onboarding": {
+    "welcomeTitle": "VibeCodeへようこそ",
+    "subtitle": "ワークスペースをカスタマイズして、毎日使用するサービスに接続してください。",
+    "closeButton": "オンボーディングを閉じる",
+    "themeTitle": "テーマ",
+    "themeDescription": "ダッシュボードのデフォルトの外観を選択してください。",
+    "cliEditorTitle": "CLIエディターの設定",
+    "cliEditorDescription": "お好みのターミナルエディターに合わせて今後のヒントをカスタマイズします。",
+    "editorLabel": "エディター",
+    "selectEditor": "エディターを選択",
+    "extensionsTitle": "おすすめの拡張機能",
+    "extensionsDescription": "VibeCodeスタックに合わせるために、これらのVS Code拡張機能をインストールしてください。",
+    "copyButton": "コピー",
+    "integrationsTitle": "インテグレーション",
+    "integrationsDescription": "接続済みのサービスを管理します。",
+    "setupButton": "セットアップ",
+    "integrationsIncompleteHint": "アカウントまたはAPIキーを接続したら、各インテグレーションにチェックを入れてください。",
+    "quickActionsTitle": "クイックアクション",
+    "codeiumPlayground": "Codeiumプレイグラウンド",
+    "aiConsole": "AIコンソール",
+    "activityLog": "アクティビティログ",
+    "github": "GitHub",
+    "themeOptions": {
+      "light": "ライト",
+      "dark": "ダーク"
+    },
+    "cliEditorOptions": {
+      "vim": "Vim",
+      "neovim": "Neovim",
+      "codeServer": "code-server"
+    },
+    "integrationServices": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "linear": "Linear",
+      "jira": "Jira",
+      "openai": "OpenAI",
+      "anthropic": "Anthropic"
+    },
+    "errors": {
+      "failedToUpdate": "設定の更新に失敗しました"
+    }
+  },
+  "offlineIndicator": {
+    "featureAvailabilityTitle": "機能の利用可能状況",
+    "features": {
+      "browseLocalFiles": "ローカルファイルを閲覧",
+      "browseLocalFilesDescription": "キャッシュされたファイルにアクセス",
+      "viewOrganizations": "組織を表示",
+      "viewOrganizationsDescription": "キャッシュされた組織データを表示",
+      "viewProjects": "プロジェクトを表示",
+      "viewProjectsDescription": "キャッシュされたプロジェクトデータを表示",
+      "createTasks": "タスクを作成",
+      "createTasksDescription": "サーバー接続が必要です",
+      "syncData": "データを同期",
+      "syncDataDescription": "サーバー接続が必要です",
+      "realTimeUpdates": "リアルタイム更新",
+      "realTimeUpdatesDescription": "サーバー接続が必要です"
+    }
+  },
+  "errors": {
+    "notFound": "ページが見つかりません",
+    "notFoundDescription": "お探しのページは存在しないか、移動された可能性があります。",
+    "serverError": "問題が発生しました",
+    "serverErrorDescription": "予期しないエラーが発生しました。もう一度お試しください。",
+    "criticalError": "重大なエラー",
+    "criticalErrorDescription": "重大なエラーが発生しました。アプリケーションを再読み込みする必要があります。",
+    "reloadApplication": "アプリケーションを再読み込み",
+    "goHome": "ホームページへ戻る",
+    "tryAgain": "再試行",
+    "unauthorized": "認証エラー",
+    "forbidden": "アクセス禁止",
+    "failedToFetchHealth": "ヘルスデータの取得に失敗しました",
+    "failedToLoadModels": "モデルの読み込みに失敗しました",
+    "failedToGetRecommendation": "推奨モデルの取得に失敗しました",
+    "failedToApproveAction": "アクションの承認に失敗しました",
+    "failedToRejectAction": "アクションの拒否に失敗しました",
+    "failedToBulkApproveActions": "アクションの一括承認に失敗しました"
+  },
+  "notFound": {
+    "code": "404",
+    "title": "ページが見つかりません",
+    "description": "お探しのページは存在しません。",
+    "goHome": "ホームへ"
+  },
+  "health": {
+    "title": "ヘルスモニター",
+    "allServicesHealthy": "すべてのサービスは正常です",
+    "servicesDown": "{count}件のサービスで問題が発生しています",
+    "lastChecked": "最終確認",
+    "checkNow": "今すぐ確認",
+    "responseTime": "応答時間",
+    "uptime": "稼働時間"
+  },
+  "monitoring": {
+    "title": "モニタリング",
+    "metrics": "メトリクス",
+    "traces": "トレース",
+    "logs": "ログ",
+    "alerts": "アラート",
+    "dashboardTitle": "モニタリングダッシュボード",
+    "dashboardSubtitle": "リアルタイムシステム監視とオブザーバビリティ",
+    "customizeDashboard": "ダッシュボードをカスタマイズ",
+    "refreshData": "データを更新",
+    "customizationModeEnabled": "ダッシュボードカスタマイズモードが有効になりました",
+    "connectionError": "接続エラー — 最新データを取得できません",
+    "systemHealth": "システム稼働状況",
+    "healthy": "正常",
+    "warning": "警告",
+    "serviceApiGateway": "API Gateway",
+    "serviceDatabase": "データベース",
+    "serviceRedis": "Redis",
+    "serviceAiService": "AIサービス",
+    "keyMetrics": "主要メトリクス",
+    "cpuUsage": "CPU使用率",
+    "memoryUsage": "メモリ使用率",
+    "activeUsers": "アクティブユーザー数",
+    "responseTime": "応答時間",
+    "recentAlerts": "最新アラート",
+    "specializedMonitoring": "専門モニタリング",
+    "websocket": "WebSocket",
+    "monitorConnections": "接続を監視",
+    "rateLimit": "レート制限",
+    "trackApiLimits": "API制限を追跡",
+    "aiUsageLink": "AI使用状況",
+    "modelAnalytics": "モデル分析",
+    "performanceMetrics": "パフォーマンスメトリクス",
+    "requestsPerMin": "リクエスト/分",
+    "avgResponseTime": "平均応答時間",
+    "activeConnections": "アクティブ接続数",
+    "errorRate": "エラー率",
+    "systemLogs": "システムログ",
+    "searchLogs": "ログを検索...",
+    "allLevels": "すべてのレベル",
+    "logLevelError": "エラー",
+    "logLevelWarning": "警告",
+    "logLevelInfo": "情報",
+    "distributedTraces": "分散トレース",
+    "searchTraces": "トレースを検索...",
+    "allServices": "すべてのサービス",
+    "rumStatus": "RUMステータス",
+    "rumActive": "アクティブ",
+    "realUserMonitoring": "リアルユーザーモニタリング",
+    "coreWebVitals": "Core Web Vitals",
+    "userSessions": "ユーザーセッション",
+    "activeSessions": "アクティブセッション",
+    "errorTracking": "エラートラッキング",
+    "errorsInLastHour": "過去1時間のエラー数",
+    "breadcrumbMonitoring": "モニタリング",
+    "database": {
+      "title": "データベースヘルスダッシュボード",
+      "subtitle": "データベース接続とパフォーマンスのリアルタイム監視",
+      "loadingMetrics": "データベースヘルスメトリクスを読み込み中...",
+      "errorLoading": "データベースヘルスの読み込みエラー",
+      "lastUpdated": "最終更新",
+      "unknown": "不明",
+      "autoRefresh": "自動更新",
+      "on": "オン",
+      "off": "オフ",
+      "activePoolAlerts": "アクティブプールアラート ({count})",
+      "utilization": "使用率",
+      "active": "アクティブ",
+      "available": "利用可能",
+      "total": "合計",
+      "connectionStatus": "接続ステータス",
+      "latency": "レイテンシ",
+      "activeConnections": "アクティブ接続数",
+      "poolStatus": "プールステータス",
+      "cacheHitRate": "キャッシュヒット率",
+      "excellent": "優秀",
+      "good": "良好",
+      "needsAttention": "要注意",
+      "vectorEmbeddings": "ベクターエンベディング",
+      "notInstalled": "未インストール",
+      "tabConnectionPools": "接続プール",
+      "tabPerformance": "パフォーマンス",
+      "tabSystemInfo": "システム情報",
+      "tabVectorData": "ベクターデータ",
+      "connectionPoolStatus": "接続プールステータス",
+      "pending": "保留中",
+      "totalQueries": "総クエリ数",
+      "lastUsed": "最終使用",
+      "noConnectionPools": "アクティブな接続プールがありません",
+      "queryPerformance": "クエリパフォーマンス",
+      "queriesPerSecond": "クエリ/秒",
+      "avgQueryTime": "平均クエリ時間",
+      "p95QueryTime": "P95クエリ時間",
+      "errorRate": "エラー率",
+      "databaseStatistics": "データベース統計",
+      "committedTransactions": "コミット済みトランザクション",
+      "rolledBackTransactions": "ロールバックされたトランザクション",
+      "rowsReturned": "返された行数",
+      "rowsInserted": "挿入された行数",
+      "rowsUpdated": "更新された行数",
+      "systemInformation": "データベースシステム情報",
+      "databaseName": "データベース名",
+      "user": "ユーザー",
+      "serverStartTime": "サーバー起動時刻",
+      "version": "バージョン",
+      "vectorEmbeddingsStatus": "ベクターエンベディングステータス",
+      "installed": "インストール済み",
+      "totalEmbeddings": "総エンベディング数",
+      "avgContentSize": "平均コンテンツサイズ",
+      "latestEmbedding": "最新エンベディング",
+      "embeddingsError": "エンベディングエラー",
+      "footerRefreshNote": "自動更新が有効な場合、データベースヘルスメトリクスは10秒ごとに更新されます。",
+      "footerPoolNote": "接続プールメトリクスは、すべてのアクティブなデータベース接続から収集されます。"
+    },
+    "llmOps": {
+      "title": "LLM操作",
+      "subtitle": "すべてのプロバイダーにわたるLLM使用状況、コスト、パフォーマンスを監視",
+      "breadcrumb": "LLM操作",
+      "loadingData": "LLM操作データを読み込み中...",
+      "error": "エラー",
+      "noData": "データがありません",
+      "totalRequests": "総リクエスト数",
+      "tokensConsumed": "消費トークン数",
+      "totalCost30Days": "総コスト（30日間）",
+      "performanceMetrics": "パフォーマンスメトリクス",
+      "avgLatency": "平均レイテンシ",
+      "successRate": "成功率",
+      "errorRate": "エラー率",
+      "providerStatistics": "プロバイダー統計",
+      "provider": "プロバイダー",
+      "requests": "リクエスト",
+      "tokens": "トークン",
+      "cost": "コスト",
+      "status": "ステータス",
+      "model": "モデル",
+      "modelUsageStatistics": "モデル使用統計",
+      "modelsActive30Days": "過去30日間でアクティブなモデル: {count}件",
+      "recentRequests": "最近のLLMリクエスト",
+      "allStatus": "すべてのステータス",
+      "statusSuccess": "成功",
+      "statusError": "エラー",
+      "allProviders": "すべてのプロバイダー",
+      "today": "今日",
+      "thisWeek": "今週",
+      "thisMonth": "今月",
+      "projected30Days": "予測（30日）",
+      "costBreakdownByProvider": "プロバイダー別コスト内訳"
+    },
+    "embeddings": {
+      "title": "Azureエンベディングサービスモニタリング",
+      "subtitle": "リアルタイムメトリクスと使用状況分析",
+      "loadingMetrics": "エンベディングメトリクスを読み込み中...",
+      "errorLoading": "メトリクスの読み込みエラー",
+      "lastUpdated": "最終更新",
+      "unknown": "不明",
+      "autoRefresh": "自動更新",
+      "on": "オン",
+      "off": "オフ",
+      "resetMetrics": "メトリクスをリセット",
+      "totalRequests": "総リクエスト数",
+      "errors": "エラー",
+      "totalTokens": "総トークン数",
+      "cost": "コスト",
+      "totalCost": "総コスト",
+      "since": "開始",
+      "avgLatency": "平均レイテンシ",
+      "highLatency": "高レイテンシを検出",
+      "performanceNormal": "パフォーマンス正常",
+      "tabRecentCalls": "最近の呼び出し",
+      "tabHourlyBreakdown": "時間別内訳",
+      "tabErrorAnalysis": "エラー分析",
+      "tabRecommendations": "推奨事項",
+      "recentApiCalls": "最近のAPI呼び出し",
+      "success": "成功",
+      "error": "エラー",
+      "hourlyUsageBreakdown": "時間別使用状況内訳",
+      "requests": "{count}件のリクエスト",
+      "errorsCount": "{count}件のエラー",
+      "errorBreakdown": "エラー内訳",
+      "occurrences": "{count}件の発生",
+      "noErrors": "過去24時間にエラーはありません！",
+      "performanceRecommendations": "パフォーマンス推奨事項",
+      "allSystemsOptimal": "すべてのシステムが最適に動作しています。現時点での推奨事項はありません。",
+      "footerDatadogNote": "メトリクスは包括的な監視とアラートのためにDatadogに自動送信されます。",
+      "footerRefreshNote": "自動更新が有効な場合、ダッシュボードは30秒ごとに更新されます。"
+    },
+    "costBreakdown": {
+      "title": "コスト内訳",
+      "errorLoading": "コストデータの読み込みエラー",
+      "retry": "再試行",
+      "noData": "選択した期間のコストデータがありません",
+      "lastHour": "過去1時間",
+      "last6Hours": "過去6時間",
+      "last12Hours": "過去12時間",
+      "last24Hours": "過去24時間",
+      "last7Days": "過去7日間",
+      "last30Days": "過去30日間",
+      "exportCsv": "CSVをエクスポート",
+      "totalCost": "総コスト",
+      "requestsCount": "{count}件のリクエスト",
+      "avgCostPerRequest": "平均コスト/リクエスト",
+      "totalTokens": "総トークン数: {count}",
+      "costTrend": "コスト傾向",
+      "comparedToPrevious": "前期比: {trend}",
+      "costDistributionByModel": "モデル別コスト分布",
+      "noModelData": "モデル別コストデータがありません",
+      "costDistributionByProvider": "プロバイダー別コスト分布",
+      "noProviderData": "プロバイダー別コストデータがありません",
+      "costComparisonByModel": "モデル別コスト比較",
+      "costAxis": "コスト ($)",
+      "noComparisonData": "モデル比較データがありません",
+      "detailedBreakdownByModel": "モデル別詳細内訳",
+      "model": "モデル",
+      "requests": "リクエスト",
+      "avgPerRequest": "平均/リクエスト",
+      "percentOfTotal": "全体の%",
+      "lastUpdated": "最終更新"
+    },
+    "aiUsage": {
+      "title": "AI使用状況モニター",
+      "loadingDashboard": "AI使用状況ダッシュボードを読み込み中...",
+      "errorLoading": "ダッシュボードの読み込みエラー",
+      "retry": "再試行",
+      "noData": "AI使用状況データがありません",
+      "autoRefresh30s": "自動更新 (30秒)",
+      "refreshNow": "今すぐ更新",
+      "totalRequests": "総リクエスト数",
+      "totalCost": "総コスト",
+      "trend24h": "24時間",
+      "totalTokens": "総トークン数",
+      "acrossAllModels": "全モデル合計",
+      "activeAlerts": "アクティブアラート",
+      "criticalWarningCount": "クリティカル: {critical}件、警告: {warning}件",
+      "avgResponseTime": "平均応答時間",
+      "errorRate": "エラー率",
+      "requestsPerMinute": "リクエスト/分",
+      "activeAlertsCount": "アクティブアラート ({count}件)",
+      "recommendationsCount": "推奨事項 ({count}件)",
+      "lastUpdated": "最終更新",
+      "inputTokens": "入力",
+      "outputTokens": "出力",
+      "costPer1kTokens": "コスト/1Kトークン",
+      "avgResponse": "平均応答",
+      "rpm": "RPM",
+      "action": "アクション"
+    },
+    "websocketDashboard": {
+      "title": "WebSocketモニター",
+      "loadingDashboard": "WebSocketダッシュボードを読み込み中...",
+      "errorLoading": "ダッシュボードの読み込みエラー",
+      "retry": "再試行",
+      "noData": "WebSocketデータがありません",
+      "autoRefresh30s": "自動更新 (30秒)",
+      "refreshNow": "今すぐ更新",
+      "activeConnections": "アクティブ接続数",
+      "ofTotal": "全{total}件中",
+      "averageLatency": "平均レイテンシ",
+      "messages": "メッセージ",
+      "sentReceived": "{sent}件送信、{received}件受信",
+      "activeAlerts": "アクティブアラート",
+      "criticalWarningCount": "クリティカル: {critical}件、警告: {warning}件",
+      "activeAlertsCount": "アクティブアラート ({count}件)",
+      "recommendationsCount": "推奨事項 ({count}件)",
+      "lastUpdated": "最終更新",
+      "status": "ステータス",
+      "uptime": "稼働時間",
+      "sent": "送信",
+      "received": "受信",
+      "queued": "キュー",
+      "latency": "レイテンシ",
+      "avg": "平均",
+      "ping": "Ping",
+      "errors": "エラー",
+      "reconnects": "再接続",
+      "action": "アクション"
+    }
+  },
+  "editor": {
+    "title": "コードエディター",
+    "untitled": "無題",
+    "saveFile": "ファイルを保存",
+    "openFile": "ファイルを開く",
+    "newFile": "新しいファイル"
+  }
+}

@@ -16,7 +16,7 @@
 - ✅ **ArgoCD GitOps Platform** - Complete with project configuration
 - ✅ **NGINX Ingress Controller** - SSL termination and load balancing
 - ✅ **Sealed Secrets Controller** - Secure secret management
-- ✅ **Complete Monitoring Stack** - Datadog, Prometheus, Grafana
+- ✅ **Complete Monitoring Stack** - Datadog, Prometheus
 - ✅ **Application Namespaces** - With proper RBAC and network policies
 - ✅ **Test Applications** - Running and accessible
 - ✅ **Environment Configuration** - Loaded from .env.local
@@ -32,7 +32,7 @@
 - ✅ **Datadog Agent** - Full APM, infrastructure monitoring
 - ✅ **Custom Dashboards** - VibeCode-specific metrics and KPIs  
 - ✅ **Prometheus Metrics** - Application and system monitoring
-- ✅ **Grafana Visualizations** - Business intelligence dashboards
+- ✅ **Datadog Visualizations** - Business intelligence dashboards
 - ✅ **Health Checks** - Automated monitoring and alerting
 
 ### 🔐 Security Features
@@ -79,9 +79,8 @@ kubectl port-forward svc/vibecode-test-service -n vibecode-webgui-staging 8081:8
 kubectl port-forward svc/prometheus -n monitoring 9090:9090
 # URL: http://localhost:9090
 
-# Grafana  
-kubectl port-forward svc/grafana -n monitoring 3000:3000
-# URL: http://localhost:3000
+# Datadog
+# Access at https://app.datadoghq.com/
 ```
 
 ---
@@ -206,7 +205,7 @@ examples/testing/
 │  ┌─────────────┐  │  ┌─────────────┐  │  ┌─────────────────┐   │
 │  │ Datadog     │  │  │ Sealed      │  │  │ Terraform       │   │
 │  │ Prometheus  │  │  │ Secrets     │  │  │ Multi-Cloud     │   │
-│  │ Grafana     │  │  │ RBAC        │  │  │ Auto-scaling    │   │
+│  │ Datadog     │  │  │ RBAC        │  │  │ Auto-scaling    │   │
 │  └─────────────┘  │  └─────────────┘  │  └─────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -281,7 +280,7 @@ The VibeCode GitOps automation is now **100% functional** and **production-ready
 ✅ **Infrastructure as Code** with Terraform  
 ✅ **Multi-environment support** (staging, production)  
 ✅ **Enterprise security** with sealed secrets and RBAC  
-✅ **Comprehensive monitoring** with Datadog, Prometheus, Grafana  
+✅ **Comprehensive monitoring** with Datadog and Prometheus  
 ✅ **Automated CI/CD** with GitHub Actions  
 ✅ **Production deployment** capabilities for AWS, GCP, Azure  
 ✅ **Zero-downtime deployments** with blue-green strategies  

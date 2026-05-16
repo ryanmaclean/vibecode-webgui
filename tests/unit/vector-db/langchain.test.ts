@@ -3,8 +3,5 @@
  */
 
 describe('LangChain Integration', () => {
-  test('placeholder for langchain module', () => {
-    // Placeholder test for langchain integration
-    expect(true).toBe(true);
-  });
+  it.todo('placeholder for langchain module');
 });

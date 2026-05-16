@@ -9,7 +9,7 @@ Our GitOps implementation provides:
 - **ArgoCD-based** GitOps deployments
 - **Multi-environment** support (staging, production)
 - **Infrastructure as Code** with Terraform and Kustomize
-- **Comprehensive monitoring** with Datadog, Prometheus, and Grafana
+- **Comprehensive monitoring** with Datadog and Prometheus
 - **Secure secrets management** with Sealed Secrets
 - **Production-ready** Kubernetes configurations
 
@@ -36,7 +36,7 @@ Our GitOps implementation provides:
 ### 4. Monitoring Stack
 - **Datadog Agent**: Full observability and APM
 - **Prometheus**: Metrics collection and alerting
-- **Grafana**: Visualization and dashboards
+- **Datadog**: Visualization and dashboards
 - **Integration**: Custom metrics from VibeCode application
 
 ### 5. Secrets Management
@@ -147,7 +147,7 @@ kubectl apply -f infrastructure/gitops/argocd/application-production.yaml
 - **Business Metrics**: User activity, AI usage
 - **Kubernetes Metrics**: Pod health, resource usage
 
-### Grafana Dashboards
+### Datadog Dashboards
 - **Platform Overview**: High-level system health
 - **AI Analytics**: Model usage and performance
 - **Infrastructure**: Kubernetes cluster health

@@ -8,7 +8,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslations } from 'next-intl';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -83,56 +84,24 @@ const formatContext = (tokens: number): string => {
   return `${tokens} tokens`;
 };
 
-const getQualityInfo = (tier: QualityTier): { color: string; label: string; description: string } => {
-  const info: Record<QualityTier, { color: string; label: string; description: string }> = {
-    basic: {
-      color: 'bg-gray-100 text-gray-700 border-gray-300',
-      label: 'Basic',
-      description: 'Suitable for simple tasks and basic conversations',
-    },
-    good: {
-      color: 'bg-blue-100 text-blue-700 border-blue-300',
-      label: 'Good',
-      description: 'Reliable for most everyday use cases',
-    },
-    excellent: {
-      color: 'bg-green-100 text-green-700 border-green-300',
-      label: 'Excellent',
-      description: 'High performance for complex tasks',
-    },
-    state_of_art: {
-      color: 'bg-purple-100 text-purple-700 border-purple-300',
-      label: 'State of the Art',
-      description: 'Cutting-edge performance, best in class',
-    },
+const getQualityColor = (tier: QualityTier): string => {
+  const colors: Record<QualityTier, string> = {
+    basic: 'bg-gray-100 text-gray-700 border-gray-300',
+    good: 'bg-blue-100 text-blue-700 border-blue-300',
+    excellent: 'bg-green-100 text-green-700 border-green-300',
+    state_of_art: 'bg-purple-100 text-purple-700 border-purple-300',
   };
-  return info[tier];
+  return colors[tier];
 };
 
-const getSpeedInfo = (tier: SpeedTier): { color: string; label: string; description: string } => {
-  const info: Record<SpeedTier, { color: string; label: string; description: string }> = {
-    slow: {
-      color: 'bg-red-100 text-red-700',
-      label: 'Slow',
-      description: 'Longer response times, best for non-time-critical tasks',
-    },
-    medium: {
-      color: 'bg-yellow-100 text-yellow-700',
-      label: 'Medium',
-      description: 'Balanced response times for most use cases',
-    },
-    fast: {
-      color: 'bg-green-100 text-green-700',
-      label: 'Fast',
-      description: 'Quick responses suitable for interactive use',
-    },
-    very_fast: {
-      color: 'bg-emerald-100 text-emerald-700',
-      label: 'Very Fast',
-      description: 'Near-instant responses for real-time applications',
-    },
+const getSpeedColor = (tier: SpeedTier): string => {
+  const colors: Record<SpeedTier, string> = {
+    slow: 'bg-red-100 text-red-700',
+    medium: 'bg-yellow-100 text-yellow-700',
+    fast: 'bg-green-100 text-green-700',
+    very_fast: 'bg-emerald-100 text-emerald-700',
   };
-  return info[tier];
+  return colors[tier];
 };
 
 const getCapabilityIcon = (capability: string): React.ReactNode => {
@@ -235,6 +204,7 @@ interface PricingCalculatorProps {
 }
 
 const PricingCalculator: React.FC<PricingCalculatorProps> = ({ model }) => {
+  const t = useTranslations('ai');
   const [inputTokens, setInputTokens] = useState(1000);
   const [outputTokens, setOutputTokens] = useState(500);
   const [requestsPerDay, setRequestsPerDay] = useState(100);
@@ -257,7 +227,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({ model }) => {
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <label className="text-xs text-gray-500">Input Tokens</label>
+          <label className="text-xs text-gray-500">{t('modelDetails.pricing.inputTokensLabel')}</label>
           <input
             type="number"
             value={inputTokens}
@@ -266,7 +236,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({ model }) => {
           />
         </div>
         <div>
-          <label className="text-xs text-gray-500">Output Tokens</label>
+          <label className="text-xs text-gray-500">{t('modelDetails.pricing.outputTokensLabel')}</label>
           <input
             type="number"
             value={outputTokens}
@@ -275,7 +245,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({ model }) => {
           />
         </div>
         <div>
-          <label className="text-xs text-gray-500">Requests/Day</label>
+          <label className="text-xs text-gray-500">{t('modelDetails.pricing.requestsPerDay')}</label>
           <input
             type="number"
             value={requestsPerDay}
@@ -287,15 +257,15 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({ model }) => {
 
       <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
         <div className="text-center">
-          <div className="text-xs text-gray-500">Per Request</div>
+          <div className="text-xs text-gray-500">{t('modelDetails.pricing.perRequest')}</div>
           <div className="font-bold text-lg">${costs.perRequest}</div>
         </div>
         <div className="text-center">
-          <div className="text-xs text-gray-500">Daily Cost</div>
+          <div className="text-xs text-gray-500">{t('modelDetails.pricing.dailyCost')}</div>
           <div className="font-bold text-lg">${costs.daily}</div>
         </div>
         <div className="text-center">
-          <div className="text-xs text-gray-500">Monthly Cost</div>
+          <div className="text-xs text-gray-500">{t('modelDetails.pricing.monthlyCost')}</div>
           <div className="font-bold text-lg text-blue-600">${costs.monthly}</div>
         </div>
       </div>
@@ -316,12 +286,24 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
   isFavorite = false,
   onAddToComparison,
 }) => {
+  const t = useTranslations('ai');
   const [copied, setCopied] = useState(false);
 
-  const qualityInfo = getQualityInfo(model.qualityTier);
-  const speedInfo = getSpeedInfo(model.performance.speedTier);
+  const qualityTierKey = model.qualityTier === 'state_of_art' ? 'stateOfArt' : model.qualityTier;
+  const speedTierKey = model.performance.speedTier === 'very_fast' ? 'veryFast' : model.performance.speedTier;
 
-  const handleCopyId = async () => {
+  const qualityInfo = {
+    color: getQualityColor(model.qualityTier),
+    label: t(`modelDetails.quality.${qualityTierKey}`),
+    description: t(`modelDetails.quality.${qualityTierKey}Desc`),
+  };
+  const speedInfo = {
+    color: getSpeedColor(model.performance.speedTier),
+    label: t(`modelDetails.speed.${speedTierKey}`),
+    description: t(`modelDetails.speed.${speedTierKey}Desc`),
+  };
+
+  const handleCopyId = async (): Promise<void> => {
     await navigator.clipboard.writeText(model.id);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -349,7 +331,7 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
                   <button
                     onClick={() => onFavoriteToggle(model.id)}
                     className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                    aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                    aria-label={isFavorite ? t('modelDetails.removeFavorite') : t('modelDetails.addFavorite')}
                   >
                     <Star className={`h-5 w-5 ${isFavorite ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
                   </button>
@@ -374,7 +356,7 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              aria-label="Close"
+              aria-label={t('modelDetails.close')}
             >
               <X className="h-5 w-5 text-gray-500" />
             </button>
@@ -418,18 +400,18 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
           <Tabs defaultValue="overview" className="w-full">
             <div className="sticky top-0 bg-white z-10 px-6 border-b">
               <TabsList className="h-12">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="capabilities">Capabilities</TabsTrigger>
-                <TabsTrigger value="benchmarks">Benchmarks</TabsTrigger>
-                <TabsTrigger value="pricing">Pricing</TabsTrigger>
+                <TabsTrigger value="overview">{t('modelDetails.tabs.overview')}</TabsTrigger>
+                <TabsTrigger value="capabilities">{t('modelDetails.tabs.capabilities')}</TabsTrigger>
+                <TabsTrigger value="benchmarks">{t('modelDetails.tabs.benchmarks')}</TabsTrigger>
+                <TabsTrigger value="pricing">{t('modelDetails.tabs.pricing')}</TabsTrigger>
               </TabsList>
             </div>
 
             <TabsContent value="overview" className="p-6 space-y-6">
               {/* Description */}
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
-                <p className="text-gray-600">{model.description || 'No description available.'}</p>
+                <h3 className="font-semibold text-gray-900 mb-2">{t('modelDetails.overview.description')}</h3>
+                <p className="text-gray-600">{model.description || t('modelDetails.overview.noDescription')}</p>
               </div>
 
               {/* Key Metrics */}
@@ -437,28 +419,28 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
                 <Card>
                   <CardContent className="p-4 text-center">
                     <TrendingUp className="h-8 w-8 mx-auto mb-2 text-purple-500" />
-                    <div className="text-xs text-gray-500">Quality Tier</div>
+                    <div className="text-xs text-gray-500">{t('modelDetails.overview.qualityTier')}</div>
                     <div className="font-bold">{qualityInfo.label}</div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
                     <Clock className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-                    <div className="text-xs text-gray-500">Avg Latency</div>
+                    <div className="text-xs text-gray-500">{t('modelDetails.overview.avgLatency')}</div>
                     <div className="font-bold">{model.performance.avgLatencyMs}ms</div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
                     <Cpu className="h-8 w-8 mx-auto mb-2 text-green-500" />
-                    <div className="text-xs text-gray-500">Tokens/sec</div>
+                    <div className="text-xs text-gray-500">{t('modelDetails.overview.tokensPerSec')}</div>
                     <div className="font-bold">{model.performance.tokensPerSecond}</div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
                     <BarChart3 className="h-8 w-8 mx-auto mb-2 text-orange-500" />
-                    <div className="text-xs text-gray-500">Benchmark Score</div>
+                    <div className="text-xs text-gray-500">{t('modelDetails.overview.benchmarkScore')}</div>
                     <div className="font-bold">{model.benchmarks.overall}</div>
                   </CardContent>
                 </Card>
@@ -466,18 +448,18 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
 
               {/* Context Limits */}
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Token Limits</h3>
+                <h3 className="font-semibold text-gray-900 mb-3">{t('modelDetails.overview.tokenLimits')}</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="text-xs text-gray-500">Context Window</div>
+                    <div className="text-xs text-gray-500">{t('modelDetails.overview.contextWindow')}</div>
                     <div className="font-bold text-lg">{formatContext(model.limits.contextWindow)}</div>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="text-xs text-gray-500">Max Input</div>
+                    <div className="text-xs text-gray-500">{t('modelDetails.overview.maxInput')}</div>
                     <div className="font-bold text-lg">{formatContext(model.limits.maxInputTokens)}</div>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="text-xs text-gray-500">Max Output</div>
+                    <div className="text-xs text-gray-500">{t('modelDetails.overview.maxOutput')}</div>
                     <div className="font-bold text-lg">{formatContext(model.limits.maxOutputTokens)}</div>
                   </div>
                 </div>
@@ -486,7 +468,7 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
               {/* Tags */}
               {model.tags.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Tags</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2">{t('modelDetails.overview.tags')}</h3>
                   <div className="flex flex-wrap gap-2">
                     {model.tags.map(tag => (
                       <Badge key={tag} variant="secondary">
@@ -499,11 +481,11 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
 
               {/* Provider Info */}
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Provider</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">{t('modelDetails.overview.provider')}</h3>
                 <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
                   <div>
                     <div className="font-medium">{model.provider.name}</div>
-                    <div className="text-sm text-gray-500">Tier: {model.provider.tier}</div>
+                    <div className="text-sm text-gray-500">{t('modelDetails.overview.tier', { tier: model.provider.tier })}</div>
                   </div>
                   {model.provider.endpoint && (
                     <a
@@ -512,7 +494,7 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
                       rel="noopener noreferrer"
                       className="ml-auto flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm"
                     >
-                      API Docs
+                      {t('modelDetails.overview.apiDocs')}
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   )}
@@ -537,7 +519,7 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
               <Separator className="my-6" />
 
               {/* Feature Support */}
-              <h3 className="font-semibold text-gray-900 mb-4">Feature Support</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">{t('modelDetails.capabilities.featureSupport')}</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className={`p-3 rounded-lg border ${model.capabilities.function_calling ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
                   <div className="flex items-center gap-2">
@@ -546,7 +528,7 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
                     ) : (
                       <X className="h-4 w-4 text-gray-400" />
                     )}
-                    <span className="text-sm font-medium">Function Calling</span>
+                    <span className="text-sm font-medium">{t('modelDetails.capabilities.functionCalling')}</span>
                   </div>
                 </div>
                 <div className={`p-3 rounded-lg border ${model.capabilities.streaming ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
@@ -556,7 +538,7 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
                     ) : (
                       <X className="h-4 w-4 text-gray-400" />
                     )}
-                    <span className="text-sm font-medium">Streaming</span>
+                    <span className="text-sm font-medium">{t('modelDetails.capabilities.streaming')}</span>
                   </div>
                 </div>
                 <div className={`p-3 rounded-lg border ${model.capabilities.vision > 0 ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
@@ -566,7 +548,7 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
                     ) : (
                       <X className="h-4 w-4 text-gray-400" />
                     )}
-                    <span className="text-sm font-medium">Vision</span>
+                    <span className="text-sm font-medium">{t('modelDetails.capabilities.vision')}</span>
                   </div>
                 </div>
                 <div className={`p-3 rounded-lg border ${!model.deprecated ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
@@ -576,7 +558,7 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
                     ) : (
                       <AlertTriangle className="h-4 w-4 text-red-500" />
                     )}
-                    <span className="text-sm font-medium">{model.deprecated ? 'Deprecated' : 'Active'}</span>
+                    <span className="text-sm font-medium">{model.deprecated ? t('modelDetails.capabilities.deprecated') : t('modelDetails.capabilities.active')}</span>
                   </div>
                 </div>
               </div>
@@ -589,9 +571,9 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
                   <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold text-gray-900">Overall Benchmark Score</h3>
+                        <h3 className="font-semibold text-gray-900">{t('modelDetails.benchmarks.overallScore')}</h3>
                         <p className="text-sm text-gray-600">
-                          Aggregated from {model.benchmarks.benchmarkCount} benchmarks
+                          {t('modelDetails.benchmarks.aggregatedFrom', { count: model.benchmarks.benchmarkCount })}
                         </p>
                       </div>
                       <div className="text-4xl font-bold text-blue-600">
@@ -603,7 +585,7 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
                   {/* Category Scores */}
                   {Object.keys(model.benchmarks.byCategory).length > 0 && (
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">Scores by Category</h3>
+                      <h3 className="font-semibold text-gray-900 mb-3">{t('modelDetails.benchmarks.scoresByCategory')}</h3>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {Object.entries(model.benchmarks.byCategory).map(([category, score]) => (
                           <div key={category} className="p-3 bg-gray-50 rounded-lg">
@@ -619,7 +601,7 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
 
                   {/* Individual Benchmarks */}
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">Individual Benchmarks</h3>
+                    <h3 className="font-semibold text-gray-900 mb-3">{t('modelDetails.benchmarks.individualBenchmarks')}</h3>
                     <Card>
                       <CardContent className="p-0 divide-y">
                         {model.benchmarks.benchmarks.map((benchmark, index) => (
@@ -632,9 +614,9 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
               ) : (
                 <div className="text-center py-12">
                   <BarChart3 className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Benchmark Data</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">{t('modelDetails.benchmarks.noBenchmarkData')}</h3>
                   <p className="text-gray-500">
-                    Benchmark data is not yet available for this model.
+                    {t('modelDetails.benchmarks.noBenchmarkDataDesc')}
                   </p>
                 </div>
               )}
@@ -643,24 +625,24 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
             <TabsContent value="pricing" className="p-6 space-y-6">
               {/* Base Pricing */}
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Base Pricing</h3>
+                <h3 className="font-semibold text-gray-900 mb-3">{t('modelDetails.pricing.basePricing')}</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <Card>
                     <CardContent className="p-4">
-                      <div className="text-sm text-gray-500 mb-1">Input Tokens</div>
+                      <div className="text-sm text-gray-500 mb-1">{t('modelDetails.pricing.inputTokens')}</div>
                       <div className="text-2xl font-bold text-gray-900">
                         {formatPrice(model.pricing.inputPer1K)}
                       </div>
-                      <div className="text-xs text-gray-400 mt-1">per 1,000 tokens</div>
+                      <div className="text-xs text-gray-400 mt-1">{t('modelDetails.pricing.per1kTokens')}</div>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4">
-                      <div className="text-sm text-gray-500 mb-1">Output Tokens</div>
+                      <div className="text-sm text-gray-500 mb-1">{t('modelDetails.pricing.outputTokens')}</div>
                       <div className="text-2xl font-bold text-gray-900">
                         {formatPrice(model.pricing.outputPer1K)}
                       </div>
-                      <div className="text-xs text-gray-400 mt-1">per 1,000 tokens</div>
+                      <div className="text-xs text-gray-400 mt-1">{t('modelDetails.pricing.per1kTokens')}</div>
                     </CardContent>
                   </Card>
                 </div>
@@ -668,7 +650,7 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
 
               {/* Cost Calculator */}
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Cost Calculator</h3>
+                <h3 className="font-semibold text-gray-900 mb-3">{t('modelDetails.pricing.costCalculator')}</h3>
                 <Card>
                   <CardContent className="p-4">
                     <PricingCalculator model={model} />
@@ -681,7 +663,7 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                   <div className="flex items-center gap-2 text-green-800">
                     <Gift className="h-5 w-5" />
-                    <span className="font-medium">Free Tier Available</span>
+                    <span className="font-medium">{t('modelDetails.pricing.freeTierAvailable')}</span>
                   </div>
                   <p className="text-sm text-green-700 mt-1">{model.pricing.freeLimit}</p>
                 </div>
@@ -695,17 +677,17 @@ const ModelDetails: React.FC<ModelDetailsProps> = ({
           <div className="flex gap-2">
             {onAddToComparison && (
               <Button variant="outline" onClick={() => onAddToComparison(model)}>
-                Add to Comparison
+                {t('modelDetails.addToComparison')}
               </Button>
             )}
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>
-              Close
+              {t('modelDetails.close')}
             </Button>
             {onSelect && (
               <Button onClick={() => onSelect(model)}>
-                Use This Model
+                {t('modelDetails.useThisModel')}
               </Button>
             )}
           </div>

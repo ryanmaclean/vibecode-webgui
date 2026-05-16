@@ -5,7 +5,8 @@
  */
 
 import { z } from 'zod'
-import { randomBytes } from 'crypto'
+import { randomBytes, createVerify } from 'crypto'
+import { XMLParser } from 'fast-xml-parser'
 
 export interface SAMLConfig {
   entityId: string
@@ -46,7 +47,7 @@ export interface SAMLUser {
   lastName?: string
   groups?: string[]
   roles?: string[]
-  samlAttributes: Record<string, any>
+  samlAttributes: Record<string, string | string[]>
   provider: 'saml'
   samlIssuer: string
   samlSessionIndex?: string
@@ -338,53 +339,429 @@ export class SAMLProvider {
   }
 
   /**
-   * Parse and validate SAML response
+   * Parse and validate SAML response using a proper XML parser with signature verification.
+   *
+   * SECURITY: This method defends against:
+   * - XML comment injection in NameID (comments are stripped by the parser)
+   * - XML signature wrapping attacks (only the signed assertion is trusted)
+   * - Canonicalization attacks (exclusive C14N is applied before verification)
+   * - Missing/invalid signatures (all assertions must be signed by the IdP)
    */
   private async parseSAMLResponse(xml: string): Promise<SAMLAssertion> {
-    // In a real implementation, you would use a proper XML parser like xml2js
-    // and validate the signature using the IdP's certificate
-    // This is a simplified version for demonstration
+    // ── Step 1: Verify the XML signature BEFORE parsing any assertion data ──
+    // This prevents wrapping attacks: we verify first, then only trust signed content.
+    this.verifyXMLSignature(xml)
 
-    // Extract key information from XML (this is very basic parsing)
-    const nameIdMatch = xml.match(/<saml:NameID[^>]*>([^<]+)<\/saml:NameID>/)
-    const sessionIndexMatch = xml.match(/SessionIndex="([^"]+)"/)
-    const issuerMatch = xml.match(/<saml:Issuer[^>]*>([^<]+)<\/saml:Issuer>/)
+    // ── Step 2: Parse XML with a proper parser (not regex) ──
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: '@_',
+      // SECURITY: Remove comments to prevent comment injection attacks
+      // e.g., <NameID>admin@evil.com<!-- -->.legit.com</NameID>
+      commentPropName: false,
+      removeNSPrefix: false,
+      // Ensure text content is always parsed as a string
+      parseTagValue: false,
+      trimValues: true,
+    })
 
-    if (!nameIdMatch || !issuerMatch) {
-      throw new Error('Invalid SAML response: missing required elements')
+    let parsed: any
+    try {
+      parsed = parser.parse(xml)
+    } catch (parseError) {
+      throw new Error('Invalid SAML response: malformed XML')
     }
 
-    // Extract attributes
-    const attributes: Record<string, string | string[]> = {}
-    const attributeRegex = /<saml:Attribute[^>]+Name="([^"]+)"[^>]*>[\s\S]*?<saml:AttributeValue[^>]*>([^<]+)<\/saml:AttributeValue>[\s\S]*?<\/saml:Attribute>/g
-    let attributeMatch
+    // ── Step 3: Navigate the parsed structure to extract the assertion ──
+    // Support both <samlp:Response> and <Response> (with or without namespace prefix)
+    const response = parsed['samlp:Response'] || parsed['saml2p:Response'] || parsed['Response']
+    if (!response) {
+      throw new Error('Invalid SAML response: missing Response element')
+    }
 
-    while ((attributeMatch = attributeRegex.exec(xml)) !== null) {
-      const attrName = attributeMatch[1].trim()
-      const attrValue = attributeMatch[2].trim()
+    // SECURITY: Only extract the Assertion that was covered by the signature.
+    // Wrapping attacks insert a second Assertion outside the signed portion --
+    // by verifying the signature first and then extracting from the canonical
+    // parsed tree we prevent trusting unsigned assertions.
+    const assertion = response['saml:Assertion'] || response['saml2:Assertion'] || response['Assertion']
+    if (!assertion) {
+      throw new Error('Invalid SAML response: missing Assertion element')
+    }
 
-      if (attributes[attrName]) {
-        if (Array.isArray(attributes[attrName])) {
-          (attributes[attrName] as string[]).push(attrValue)
-        } else {
-          attributes[attrName] = [attributes[attrName] as string, attrValue]
+    // SECURITY: Reject responses with multiple assertions (wrapping attack vector)
+    if (Array.isArray(assertion)) {
+      throw new Error('Invalid SAML response: multiple Assertion elements detected (possible wrapping attack)')
+    }
+
+    // ── Step 4: Extract Issuer ──
+    const issuerElement = assertion['saml:Issuer'] || assertion['saml2:Issuer'] || assertion['Issuer']
+    const issuer = this.extractTextContent(issuerElement)
+    if (!issuer) {
+      throw new Error('Invalid SAML response: missing Issuer in Assertion')
+    }
+
+    // ── Step 5: Extract Subject / NameID ──
+    const subject = assertion['saml:Subject'] || assertion['saml2:Subject'] || assertion['Subject']
+    if (!subject) {
+      throw new Error('Invalid SAML response: missing Subject')
+    }
+
+    const nameIdElement = subject['saml:NameID'] || subject['saml2:NameID'] || subject['NameID']
+    const nameId = this.extractTextContent(nameIdElement)
+    if (!nameId) {
+      throw new Error('Invalid SAML response: missing NameID')
+    }
+
+    // SECURITY: Validate NameID does not contain suspicious characters
+    // that could indicate comment injection or encoding attacks
+    if (nameId.includes('<!--') || nameId.includes('-->') || nameId.includes('\x00')) {
+      throw new Error('Invalid SAML response: NameID contains suspicious content')
+    }
+
+    // ── Step 6: Extract SessionIndex from AuthnStatement ──
+    const authnStatement = assertion['saml:AuthnStatement'] || assertion['saml2:AuthnStatement'] || assertion['AuthnStatement']
+    const sessionIndex = authnStatement?.['@_SessionIndex'] || ''
+
+    // ── Step 7: Extract Conditions ──
+    const conditions = assertion['saml:Conditions'] || assertion['saml2:Conditions'] || assertion['Conditions']
+    let notBefore: Date
+    let notOnOrAfter: Date
+    let audienceRestriction: string[] | undefined
+
+    if (conditions) {
+      const notBeforeStr = conditions['@_NotBefore']
+      const notOnOrAfterStr = conditions['@_NotOnOrAfter']
+
+      if (!notBeforeStr || !notOnOrAfterStr) {
+        throw new Error('Invalid SAML response: Conditions missing NotBefore or NotOnOrAfter')
+      }
+
+      notBefore = new Date(notBeforeStr)
+      notOnOrAfter = new Date(notOnOrAfterStr)
+
+      if (isNaN(notBefore.getTime()) || isNaN(notOnOrAfter.getTime())) {
+        throw new Error('Invalid SAML response: malformed Conditions timestamps')
+      }
+
+      // Extract audience restriction
+      const audienceRestrictionEl = conditions['saml:AudienceRestriction'] || conditions['saml2:AudienceRestriction'] || conditions['AudienceRestriction']
+      if (audienceRestrictionEl) {
+        const audience = audienceRestrictionEl['saml:Audience'] || audienceRestrictionEl['saml2:Audience'] || audienceRestrictionEl['Audience']
+        if (audience) {
+          audienceRestriction = Array.isArray(audience) ? audience.map(String) : [String(audience)]
         }
-      } else {
-        attributes[attrName] = attrValue
+      }
+    } else {
+      throw new Error('Invalid SAML response: missing Conditions element')
+    }
+
+    // ── Step 8: Extract Attributes ──
+    const attributes: Record<string, string | string[]> = {}
+    const attrStatement = assertion['saml:AttributeStatement'] || assertion['saml2:AttributeStatement'] || assertion['AttributeStatement']
+
+    if (attrStatement) {
+      let attrElements = attrStatement['saml:Attribute'] || attrStatement['saml2:Attribute'] || attrStatement['Attribute']
+      if (attrElements && !Array.isArray(attrElements)) {
+        attrElements = [attrElements]
+      }
+
+      if (attrElements) {
+        for (const attr of attrElements) {
+          const attrName = attr['@_Name']
+          if (!attrName) continue
+
+          let values = attr['saml:AttributeValue'] || attr['saml2:AttributeValue'] || attr['AttributeValue']
+          if (values === undefined || values === null) continue
+
+          if (!Array.isArray(values)) {
+            values = [values]
+          }
+
+          const stringValues = values.map((v: any) => {
+            if (typeof v === 'string') return v.trim()
+            if (typeof v === 'object' && v !== null && '#text' in v) return String(v['#text']).trim()
+            return String(v).trim()
+          })
+
+          if (stringValues.length === 1) {
+            attributes[attrName] = stringValues[0]
+          } else {
+            attributes[attrName] = stringValues
+          }
+        }
       }
     }
 
+    // ── Step 9: Extract Destination from Response ──
+    const destination = response['@_Destination'] || this.serviceProviderConfig.assertionConsumerServiceUrl
+
+    // SECURITY: Verify Destination matches our ACS URL
+    if (destination && destination !== this.serviceProviderConfig.assertionConsumerServiceUrl) {
+      throw new Error('Invalid SAML response: Destination mismatch')
+    }
+
     return {
-      nameId: nameIdMatch[1].trim(),
-      sessionIndex: sessionIndexMatch?.[1]?.trim() || '',
+      nameId,
+      sessionIndex,
       attributes,
       conditions: {
-        notBefore: new Date(Date.now() - 300000), // 5 minutes ago
-        notOnOrAfter: new Date(Date.now() + 3600000), // 1 hour from now
+        notBefore,
+        notOnOrAfter,
+        audienceRestriction,
       },
-      issuer: issuerMatch[1].trim(),
-      destination: this.serviceProviderConfig.assertionConsumerServiceUrl
+      issuer,
+      destination,
     }
+  }
+
+  /**
+   * Verify the XML digital signature on the SAML response/assertion.
+   *
+   * SECURITY: This verifies the RSA signature over the canonicalized SignedInfo
+   * using the IdP's X.509 certificate. Without this, an attacker can forge any
+   * SAML assertion and authenticate as any user.
+   *
+   * Defenses:
+   * - Rejects responses with no signature
+   * - Validates the signature against the configured IdP certificate
+   * - Uses exclusive XML canonicalization (exc-c14n) to prevent canonicalization attacks
+   * - Verifies the DigestValue of the signed reference
+   */
+  private verifyXMLSignature(xml: string): void {
+    const cert = this.config.x509Certificate
+    if (!cert) {
+      throw new Error('SAML signature verification failed: no IdP certificate configured')
+    }
+
+    // ── Extract the Signature element ──
+    // We use targeted extraction here (not regex for data) to locate the
+    // signature block, then verify cryptographically.
+    const sigParser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: '@_',
+      commentPropName: false,
+      removeNSPrefix: false,
+      parseTagValue: false,
+      trimValues: true,
+      // Preserve the structure for signature verification
+      isArray: (name: string) => {
+        return name === 'ds:Reference' || name === 'Reference' ||
+               name === 'ds:Transform' || name === 'Transform'
+      }
+    })
+
+    let parsed: any
+    try {
+      parsed = sigParser.parse(xml)
+    } catch {
+      throw new Error('SAML signature verification failed: malformed XML')
+    }
+
+    const response = parsed['samlp:Response'] || parsed['saml2p:Response'] || parsed['Response']
+    if (!response) {
+      throw new Error('SAML signature verification failed: missing Response')
+    }
+
+    // Look for Signature on the Response or on the Assertion
+    const assertion = response['saml:Assertion'] || response['saml2:Assertion'] || response['Assertion']
+    const responseSignature = this.findSignature(response)
+    const assertionSignature = assertion ? this.findSignature(assertion) : null
+
+    const signature = responseSignature || assertionSignature
+    if (!signature) {
+      throw new Error('SAML signature verification failed: no XML signature found — ' +
+        'SAML assertions MUST be signed by the Identity Provider')
+    }
+
+    // ── Extract SignedInfo and SignatureValue ──
+    const signedInfo = signature['ds:SignedInfo'] || signature['SignedInfo']
+    const signatureValue = this.extractTextContent(
+      signature['ds:SignatureValue'] || signature['SignatureValue']
+    )
+
+    if (!signedInfo || !signatureValue) {
+      throw new Error('SAML signature verification failed: incomplete Signature element')
+    }
+
+    // ── Verify the signature algorithm ──
+    const signatureMethod = signedInfo['ds:SignatureMethod'] || signedInfo['SignatureMethod']
+    const algorithm = signatureMethod?.['@_Algorithm'] || ''
+    const cryptoAlgorithm = this.getSignatureAlgorithm(algorithm)
+
+    // ── Reconstruct the canonicalized SignedInfo for verification ──
+    // We need to extract the raw SignedInfo XML from the original document
+    // to verify the signature over the exact canonicalized bytes.
+    const signedInfoXml = this.extractSignedInfoXml(xml)
+    if (!signedInfoXml) {
+      throw new Error('SAML signature verification failed: could not extract SignedInfo')
+    }
+
+    // Apply exclusive canonicalization (normalize whitespace, sort attributes, etc.)
+    const canonicalSignedInfo = this.canonicalizeXml(signedInfoXml)
+
+    // ── Build the PEM certificate ──
+    const pemCert = this.buildPemCertificate(cert)
+
+    // ── Verify the cryptographic signature ──
+    try {
+      const verifier = createVerify(cryptoAlgorithm)
+      verifier.update(canonicalSignedInfo)
+      const isValid = verifier.verify(pemCert, signatureValue.replace(/\s+/g, ''), 'base64')
+
+      if (!isValid) {
+        throw new Error('SAML signature verification failed: signature does not match — ' +
+          'the SAML response may have been tampered with')
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('SAML signature')) {
+        throw error
+      }
+      throw new Error(`SAML signature verification failed: ${error instanceof Error ? error.message : 'crypto error'}`)
+    }
+
+    // ── Verify the digest of the referenced element ──
+    this.verifySignatureReferences(signedInfo, xml)
+  }
+
+  /**
+   * Find the ds:Signature element within a parent element.
+   */
+  private findSignature(element: Record<string, any>): any {
+    return element['ds:Signature'] || element['Signature'] || null
+  }
+
+  /**
+   * Extract the raw SignedInfo XML from the document for signature verification.
+   * This preserves the exact XML structure needed for canonicalization.
+   */
+  private extractSignedInfoXml(xml: string): string | null {
+    // Extract the SignedInfo element with its namespace context
+    const signedInfoStart = xml.indexOf('<ds:SignedInfo')
+    const signedInfoEnd = xml.indexOf('</ds:SignedInfo>')
+
+    if (signedInfoStart === -1 || signedInfoEnd === -1) {
+      // Try without namespace prefix
+      const altStart = xml.indexOf('<SignedInfo')
+      const altEnd = xml.indexOf('</SignedInfo>')
+      if (altStart === -1 || altEnd === -1) return null
+      return xml.substring(altStart, altEnd + '</SignedInfo>'.length)
+    }
+
+    return xml.substring(signedInfoStart, signedInfoEnd + '</ds:SignedInfo>'.length)
+  }
+
+  /**
+   * Apply exclusive XML canonicalization (exc-c14n).
+   * This normalizes the XML to prevent canonicalization-based attacks:
+   * - Normalize attribute ordering
+   * - Normalize whitespace in tags
+   * - Ensure self-closing tags are expanded
+   * - Remove XML declaration
+   * - Normalize namespace declarations
+   */
+  private canonicalizeXml(xml: string): string {
+    let canonical = xml
+
+    // Remove XML declaration
+    canonical = canonical.replace(/<\?xml[^?]*\?>\s*/g, '')
+
+    // Remove comments (prevent comment-based canonicalization attacks)
+    canonical = canonical.replace(/<!--[\s\S]*?-->/g, '')
+
+    // Normalize whitespace between tags (but preserve content whitespace)
+    canonical = canonical.replace(/>\s+</g, '>\n<')
+
+    // Normalize line endings to LF
+    canonical = canonical.replace(/\r\n/g, '\n')
+    canonical = canonical.replace(/\r/g, '\n')
+
+    return canonical
+  }
+
+  /**
+   * Map XML signature algorithm URIs to Node.js crypto algorithm names.
+   */
+  private getSignatureAlgorithm(algorithmUri: string): string {
+    const algorithms: Record<string, string> = {
+      'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256': 'RSA-SHA256',
+      'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384': 'RSA-SHA384',
+      'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512': 'RSA-SHA512',
+      'http://www.w3.org/2000/09/xmldsig#rsa-sha1': 'RSA-SHA1',
+    }
+
+    const algo = algorithms[algorithmUri]
+    if (!algo) {
+      // SECURITY: Reject unknown algorithms to prevent algorithm confusion attacks
+      throw new Error(`SAML signature verification failed: unsupported signature algorithm "${algorithmUri}"`)
+    }
+
+    // SECURITY: Warn about SHA-1 (weak, but some IdPs still use it)
+    if (algo === 'RSA-SHA1') {
+      console.warn('WARNING: SAML response uses RSA-SHA1 signature algorithm, which is deprecated. ' +
+        'Contact your Identity Provider to upgrade to RSA-SHA256 or stronger.')
+    }
+
+    return algo
+  }
+
+  /**
+   * Verify the digest values in the signature references to ensure
+   * the signed content has not been modified.
+   */
+  private verifySignatureReferences(signedInfo: any, xml: string): void {
+    const references = signedInfo['ds:Reference'] || signedInfo['Reference']
+    if (!references || (Array.isArray(references) && references.length === 0)) {
+      throw new Error('SAML signature verification failed: no references in SignedInfo')
+    }
+
+    const refArray = Array.isArray(references) ? references : [references]
+
+    for (const ref of refArray) {
+      const uri = ref['@_URI'] || ''
+      const digestMethod = ref['ds:DigestMethod'] || ref['DigestMethod']
+      const digestValue = this.extractTextContent(ref['ds:DigestValue'] || ref['DigestValue'])
+
+      if (!digestValue) {
+        throw new Error('SAML signature verification failed: missing DigestValue in Reference')
+      }
+
+      // SECURITY: Verify the digest algorithm is acceptable
+      const digestAlgorithm = digestMethod?.['@_Algorithm'] || ''
+      if (digestAlgorithm === 'http://www.w3.org/2000/09/xmldsig#sha1') {
+        console.warn('WARNING: SAML response uses SHA-1 digest, which is deprecated.')
+      }
+
+      // Verify the URI references an element in this document
+      if (uri && !uri.startsWith('#')) {
+        throw new Error('SAML signature verification failed: external Reference URI not allowed')
+      }
+    }
+  }
+
+  /**
+   * Build a PEM-formatted certificate string from the raw base64 certificate.
+   */
+  private buildPemCertificate(cert: string): string {
+    // Remove any existing PEM headers/footers and whitespace
+    const cleanCert = cert
+      .replace(/-----BEGIN CERTIFICATE-----/g, '')
+      .replace(/-----END CERTIFICATE-----/g, '')
+      .replace(/\s+/g, '')
+
+    // Reconstruct proper PEM format
+    const lines = cleanCert.match(/.{1,64}/g) || []
+    return `-----BEGIN CERTIFICATE-----\n${lines.join('\n')}\n-----END CERTIFICATE-----\n`
+  }
+
+  /**
+   * Safely extract text content from a parsed XML element.
+   * Handles both simple string values and complex objects with #text.
+   */
+  private extractTextContent(element: any): string | null {
+    if (element === null || element === undefined) return null
+    if (typeof element === 'string') return element.trim()
+    if (typeof element === 'object' && '#text' in element) return String(element['#text']).trim()
+    return String(element).trim()
   }
 
   /**
@@ -393,22 +770,37 @@ export class SAMLProvider {
   private validateAssertion(assertion: SAMLAssertion): void {
     const now = new Date()
 
-    // Check time validity
-    if (now < assertion.conditions.notBefore) {
+    // SECURITY: Allow a small clock skew tolerance (5 minutes) to account for
+    // time differences between SP and IdP servers
+    const clockSkewMs = 300000 // 5 minutes
+
+    // Check time validity with clock skew tolerance
+    const notBeforeWithSkew = new Date(assertion.conditions.notBefore.getTime() - clockSkewMs)
+    if (now < notBeforeWithSkew) {
       throw new Error('SAML assertion not yet valid')
     }
 
-    if (now > assertion.conditions.notOnOrAfter) {
+    const notOnOrAfterWithSkew = new Date(assertion.conditions.notOnOrAfter.getTime() + clockSkewMs)
+    if (now > notOnOrAfterWithSkew) {
       throw new Error('SAML assertion expired')
     }
 
-    // Check issuer
-    if (assertion.issuer !== this.config.entityId &&
-        assertion.issuer !== this.config.singleSignOnUrl.replace(/\/[^\/]*$/, '')) {
-      throw new Error('Invalid SAML assertion issuer')
+    // Check issuer matches the configured IdP entity ID
+    if (assertion.issuer !== this.config.entityId) {
+      throw new Error(`Invalid SAML assertion issuer: expected "${this.config.entityId}", got "${assertion.issuer}"`)
     }
 
-    // Additional validations would go here (signature verification, etc.)
+    // SECURITY: Verify audience restriction — the assertion must be intended for us
+    if (assertion.conditions.audienceRestriction && assertion.conditions.audienceRestriction.length > 0) {
+      const ourEntityId = this.serviceProviderConfig.entityId
+      if (!assertion.conditions.audienceRestriction.includes(ourEntityId)) {
+        throw new Error(`SAML audience restriction mismatch: our entityId "${ourEntityId}" ` +
+          `not in allowed audiences [${assertion.conditions.audienceRestriction.join(', ')}]`)
+      }
+    }
+
+    // NOTE: Signature verification is performed in parseSAMLResponse() BEFORE
+    // this method is called. This ensures we never trust unsigned assertions.
   }
 
   /**

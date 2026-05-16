@@ -32,6 +32,18 @@ function setNodeEnv(value: string) {
   })
 }
 
+// Helper to call __TEST__bypassSecurityChecks with NODE_ENV temporarily set to 'test'
+function callBypassSecurityChecks(mod: SecurityMiddlewareModule, bypass: boolean) {
+  const prevEnv = process.env.NODE_ENV
+  setNodeEnv('test')
+  if (mod.__TEST__bypassSecurityChecks) {
+    mod.__TEST__bypassSecurityChecks(bypass)
+  }
+  if (prevEnv !== undefined) {
+    setNodeEnv(prevEnv)
+  }
+}
+
 // Mock Next.js modules
 jest.mock('next/server', () => ({
   NextRequest: jest.fn(),
@@ -82,9 +94,7 @@ const loadSecurityMiddleware = () => import('@/middleware/security-middleware')
 async function initializeSecurityModules(bypass = true) {
   jest.resetModules()
   securityMiddlewareModule = await loadSecurityMiddleware()
-  if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-    securityMiddlewareModule.__TEST__bypassSecurityChecks(bypass)
-  }
+  callBypassSecurityChecks(securityMiddlewareModule, bypass)
   nextServerModule = (await import('next/server')) as MockedNextServerModule
   nextServerModule.NextResponse.mockImplementation((_, init?: { status?: number }): MockNextResponse => ({
     status: init?.status ?? 200,
@@ -172,9 +182,7 @@ describe('Security Middleware Module', () => {
       setNodeEnv('production')
 
       // Ensure security checks are enabled
-      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
-      }
+      callBypassSecurityChecks(securityMiddlewareModule, false)
 
       mockRequest.method = 'OPTIONS'
       mockRequest.nextUrl.pathname = '/api/test'
@@ -196,9 +204,7 @@ describe('Security Middleware Module', () => {
       setNodeEnv('production')
 
       // Ensure security checks are enabled
-      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
-      }
+      callBypassSecurityChecks(securityMiddlewareModule, false)
 
       // Temporarily disable MOCK_ORIGINS for this test
       const oldMockOrigins = process.env.MOCK_ORIGINS
@@ -460,9 +466,7 @@ describe('Security Middleware Module', () => {
       setNodeEnv('production')
 
       // Ensure security checks are enabled
-      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
-      }
+      callBypassSecurityChecks(securityMiddlewareModule, false)
 
       mockRequest.nextUrl.pathname = '/api/ai/chat'
       mockRequest.method = 'GET'  // Use GET to avoid CSRF
@@ -495,9 +499,7 @@ describe('Security Middleware Module', () => {
       setNodeEnv('production')
 
       // Ensure security checks are enabled
-      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
-      }
+      callBypassSecurityChecks(securityMiddlewareModule, false)
 
       mockRequest.nextUrl.pathname = '/api/admin/users'
       mockRequest.headers.get.mockImplementation((header: string) => {
@@ -582,9 +584,7 @@ describe('Security Middleware Module', () => {
       setNodeEnv('production')
 
       // Ensure security checks are enabled
-      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
-      }
+      callBypassSecurityChecks(securityMiddlewareModule, false)
 
       mockRequest.nextUrl.pathname = '/api/ai/chat'
       mockRequest.method = 'POST'
@@ -640,11 +640,13 @@ describe('Security Middleware Module', () => {
       expect(mockHeadersSet).toHaveBeenCalledWith('X-XSS-Protection', '1; mode=block')
       expect(mockHeadersSet).toHaveBeenCalledWith('Referrer-Policy', 'origin-when-cross-origin')
       expect(mockHeadersSet).toHaveBeenCalledWith('Cache-Control', 'no-store, no-cache, must-revalidate')
+      expect(mockHeadersSet).toHaveBeenCalledWith(
+        'Content-Security-Policy',
+        expect.stringContaining("default-src 'self'")
+      )
     })
 
-    it('should not add CSP header in development', () => {
-      setNodeEnv('development')
-
+    it('should include all required CSP directives', () => {
       const mockHeadersSet = jest.fn()
       const response = {
         headers: {
@@ -654,10 +656,22 @@ describe('Security Middleware Module', () => {
 
       addSecurityHeaders(response)
 
-      expect(mockHeadersSet).not.toHaveBeenCalledWith(
-        'Content-Security-Policy',
-        expect.any(String)
+      const cspCall = mockHeadersSet.mock.calls.find(
+        (call: [string, string]) => call[0] === 'Content-Security-Policy'
       )
+      expect(cspCall).toBeDefined()
+      const cspValue = cspCall![1] as string
+
+      expect(cspValue).toContain("default-src 'self'")
+      expect(cspValue).toContain("script-src 'self' 'unsafe-eval'")
+      expect(cspValue).toContain("style-src 'self' 'unsafe-inline'")
+      expect(cspValue).toContain("img-src 'self' data: blob:")
+      expect(cspValue).toContain("connect-src 'self' wss: https:")
+      expect(cspValue).toContain("worker-src 'self' blob:")
+      expect(cspValue).toContain("frame-src 'none'")
+      expect(cspValue).toContain("object-src 'none'")
+      expect(cspValue).toContain("base-uri 'self'")
+      expect(cspValue).toContain("form-action 'self'")
     })
   })
 

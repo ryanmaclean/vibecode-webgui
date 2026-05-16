@@ -173,7 +173,7 @@ Five specialized personas have been created to work independently on well-scoped
 - Monitoring dashboards
 - SLO/SLI documentation
 
-**Tools:** Datadog, Prometheus, Grafana, OpenTelemetry, PagerDuty
+**Tools:** Datadog, Prometheus, OpenTelemetry, PagerDuty
 
 ---
 

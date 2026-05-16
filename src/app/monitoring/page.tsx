@@ -5,14 +5,18 @@
 
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { useState } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { DemoBanner } from '@/components/ui/DemoBanner'
 import { Radio, Gauge, Sparkles, ArrowRight } from 'lucide-react'
 
-export default function MonitoringDashboard() {
-  const router = useRouter()
+function escapeHtml(str: string): string {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+export default function MonitoringDashboard(): React.JSX.Element {
+  const t = useTranslations('monitoring')
   const [activeTab, setActiveTab] = useState('overview')
   const [showEditMode, setShowEditMode] = useState(false)
   const [connectionError, setConnectionError] = useState(false)
@@ -53,67 +57,67 @@ export default function MonitoringDashboard() {
     CLS: { value: 0.12, status: 'good' }
   }
 
-  const handleTabClick = (tab: string) => {
+  const handleTabClick = (tab: string): void => {
     setActiveTab(tab)
   }
 
-  const handleCustomizeDashboard = () => {
+  const handleCustomizeDashboard = (): void => {
     setShowEditMode(true)
   }
 
-  const handleRefreshData = () => {
+  const handleRefreshData = (): void => {
     setConnectionError(true)
     setTimeout(() => setConnectionError(false), 2000)
   }
 
-  const renderOverviewTab = () => (
+  const renderOverviewTab = (): React.JSX.Element => (
     <div className="space-y-6">
       {/* Main Dashboard Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Health Status Card */}
         <div data-testid="health-status-card" className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">System Health</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">{t('systemHealth')}</h3>
           <div data-testid="overall-health-status" className="text-2xl font-bold text-green-600">
-            Healthy
+            {t('healthy')}
           </div>
           <div className="mt-2 space-y-2">
             <div data-testid="service-api-gateway" className="flex justify-between">
-              <span>API Gateway</span>
-              <span className="text-green-600">Healthy</span>
+              <span>{t('serviceApiGateway')}</span>
+              <span className="text-green-600">{t('healthy')}</span>
             </div>
             <div data-testid="service-database" className="flex justify-between">
-              <span>Database</span>
-              <span className="text-green-600">Healthy</span>
+              <span>{t('serviceDatabase')}</span>
+              <span className="text-green-600">{t('healthy')}</span>
             </div>
             <div data-testid="service-redis" className="flex justify-between">
-              <span>Redis</span>
-              <span className="text-green-600">Healthy</span>
+              <span>{t('serviceRedis')}</span>
+              <span className="text-green-600">{t('healthy')}</span>
             </div>
             <div data-testid="service-ai-service" className="flex justify-between">
-              <span>AI Service</span>
-              <span className="text-yellow-600">Warning</span>
+              <span>{t('serviceAiService')}</span>
+              <span className="text-yellow-600">{t('warning')}</span>
             </div>
           </div>
         </div>
 
         {/* Metrics Overview Card */}
         <div data-testid="metrics-overview-card" className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Key Metrics</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">{t('keyMetrics')}</h3>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span>CPU Usage</span>
+              <span>{t('cpuUsage')}</span>
               <span className="font-medium">{systemMetrics.cpuUsage}%</span>
             </div>
             <div className="flex justify-between">
-              <span>Memory Usage</span>
+              <span>{t('memoryUsage')}</span>
               <span className="font-medium">{systemMetrics.memoryUsage}%</span>
             </div>
             <div className="flex justify-between">
-              <span>Active Users</span>
+              <span>{t('activeUsers')}</span>
               <span className="font-medium">{systemMetrics.activeUsers}</span>
             </div>
             <div className="flex justify-between">
-              <span>Response Time</span>
+              <span>{t('responseTime')}</span>
               <span className="font-medium">{systemMetrics.avgResponseTime}ms</span>
             </div>
           </div>
@@ -121,7 +125,7 @@ export default function MonitoringDashboard() {
 
         {/* Recent Alerts Card */}
         <div data-testid="recent-alerts-card" className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Alerts</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">{t('recentAlerts')}</h3>
           <div data-testid="alerts-list" className="space-y-2">
             {alerts.map((alert) => (
               <div key={alert.id} data-testid={`alert-${alert.id}`} className={`p-2 rounded ${
@@ -139,7 +143,7 @@ export default function MonitoringDashboard() {
 
       {/* Specialized Monitoring Links */}
       <div className="bg-white p-6 rounded-lg shadow border">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Specialized Monitoring</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">{t('specializedMonitoring')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* WebSocket Monitoring Link */}
           <Link
@@ -152,8 +156,8 @@ export default function MonitoringDashboard() {
                 <Radio className="h-5 w-5 text-white" />
               </div>
               <div>
-                <div className="font-medium text-gray-900">WebSocket</div>
-                <div className="text-xs text-gray-600">Monitor connections</div>
+                <div className="font-medium text-gray-900">{t('websocket')}</div>
+                <div className="text-xs text-gray-600">{t('monitorConnections')}</div>
               </div>
             </div>
             <ArrowRight className="h-5 w-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
@@ -170,8 +174,8 @@ export default function MonitoringDashboard() {
                 <Gauge className="h-5 w-5 text-white" />
               </div>
               <div>
-                <div className="font-medium text-gray-900">Rate Limit</div>
-                <div className="text-xs text-gray-600">Track API limits</div>
+                <div className="font-medium text-gray-900">{t('rateLimit')}</div>
+                <div className="text-xs text-gray-600">{t('trackApiLimits')}</div>
               </div>
             </div>
             <ArrowRight className="h-5 w-5 text-purple-600 group-hover:translate-x-1 transition-transform" />
@@ -188,8 +192,8 @@ export default function MonitoringDashboard() {
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <div>
-                <div className="font-medium text-gray-900">AI Usage</div>
-                <div className="text-xs text-gray-600">Model analytics</div>
+                <div className="font-medium text-gray-900">{t('aiUsageLink')}</div>
+                <div className="text-xs text-gray-600">{t('modelAnalytics')}</div>
               </div>
             </div>
             <ArrowRight className="h-5 w-5 text-green-600 group-hover:translate-x-1 transition-transform" />
@@ -199,50 +203,50 @@ export default function MonitoringDashboard() {
     </div>
   )
 
-  const renderMetricsTab = () => (
+  const renderMetricsTab = (): React.JSX.Element => (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-lg shadow border">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Performance Metrics</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">{t('performanceMetrics')}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">{systemMetrics.requestsPerMinute}</div>
-            <div className="text-sm text-gray-600">Requests/min</div>
+            <div className="text-sm text-gray-600">{t('requestsPerMin')}</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">{systemMetrics.avgResponseTime}ms</div>
-            <div className="text-sm text-gray-600">Avg Response Time</div>
+            <div className="text-sm text-gray-600">{t('avgResponseTime')}</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-600">{systemMetrics.activeConnections}</div>
-            <div className="text-sm text-gray-600">Active Connections</div>
+            <div className="text-sm text-gray-600">{t('activeConnections')}</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-red-600">{systemMetrics.errorRate}%</div>
-            <div className="text-sm text-gray-600">Error Rate</div>
+            <div className="text-sm text-gray-600">{t('errorRate')}</div>
           </div>
         </div>
       </div>
     </div>
   )
 
-  const renderLogsTab = () => (
+  const renderLogsTab = (): React.JSX.Element => (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow border">
         <div className="p-6 border-b">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900">System Logs</h3>
+            <h3 className="text-lg font-medium text-gray-900">{t('systemLogs')}</h3>
             <div className="flex gap-2">
               <input
                 data-testid="log-search-input"
                 type="text"
-                placeholder="Search logs..."
+                placeholder={t('searchLogs')}
                 className="px-3 py-1 border border-gray-300 rounded-md text-sm"
               />
               <select data-testid="log-level-filter" className="px-3 py-1 border border-gray-300 rounded-md text-sm">
-                <option value="">All Levels</option>
-                <option value="ERROR">Error</option>
-                <option value="WARN">Warning</option>
-                <option value="INFO">Info</option>
+                <option value="">{t('allLevels')}</option>
+                <option value="ERROR">{t('logLevelError')}</option>
+                <option value="WARN">{t('logLevelWarning')}</option>
+                <option value="INFO">{t('logLevelInfo')}</option>
               </select>
             </div>
           </div>
@@ -269,24 +273,24 @@ export default function MonitoringDashboard() {
     </div>
   )
 
-  const renderTracesTab = () => (
+  const renderTracesTab = (): React.JSX.Element => (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow border">
         <div className="p-6 border-b">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900">Distributed Traces</h3>
+            <h3 className="text-lg font-medium text-gray-900">{t('distributedTraces')}</h3>
             <div className="flex gap-2">
               <input
                 data-testid="trace-search-input"
                 type="text"
-                placeholder="Search traces..."
+                placeholder={t('searchTraces')}
                 className="px-3 py-1 border border-gray-300 rounded-md text-sm"
               />
               <select data-testid="service-filter" className="px-3 py-1 border border-gray-300 rounded-md text-sm">
-                <option value="">All Services</option>
-                <option value="api-gateway">API Gateway</option>
-                <option value="ai-service">AI Service</option>
-                <option value="database">Database</option>
+                <option value="">{t('allServices')}</option>
+                <option value="api-gateway">{t('serviceApiGateway')}</option>
+                <option value="ai-service">{t('serviceAiService')}</option>
+                <option value="database">{t('serviceDatabase')}</option>
               </select>
             </div>
           </div>
@@ -304,15 +308,15 @@ export default function MonitoringDashboard() {
                   modal.innerHTML = `
                     <div data-testid="trace-details-panel" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                       <div class="bg-white p-6 rounded-lg max-w-4xl w-full mx-4">
-                        <h3 class="text-lg font-medium mb-4">Trace Details: ${trace.traceId}</h3>
+                        <h3 class="text-lg font-medium mb-4">Trace Details: ${escapeHtml(trace.traceId)}</h3>
                         <div data-testid="trace-timeline" class="mb-4 p-4 bg-gray-50 rounded">
                           <div class="text-sm text-gray-600">Timeline visualization would go here</div>
                         </div>
                         <div data-testid="span-list" class="space-y-2">
                           <div class="text-sm font-medium">Spans:</div>
                           <div class="p-2 bg-blue-50 rounded">
-                            <div class="font-mono text-xs">${trace.service} - ${trace.operation}</div>
-                            <div class="text-xs text-gray-600">Duration: ${trace.duration}</div>
+                            <div class="font-mono text-xs">${escapeHtml(trace.service)} - ${escapeHtml(trace.operation)}</div>
+                            <div class="text-xs text-gray-600">Duration: ${escapeHtml(trace.duration)}</div>
                           </div>
                         </div>
                         <button onclick="this.closest('[data-testid=trace-details-panel]').remove()" class="mt-4 px-4 py-2 bg-gray-600 text-white rounded">Close</button>
@@ -344,18 +348,18 @@ export default function MonitoringDashboard() {
     </div>
   )
 
-  const renderRUMTab = () => (
+  const renderRUMTab = (): React.JSX.Element => (
     <div className="space-y-6">
       {/* RUM Status Card */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div data-testid="rum-status-card" className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">RUM Status</h3>
-          <div className="text-2xl font-bold text-green-600">Active</div>
-          <div className="text-sm text-gray-600">Real User Monitoring</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">{t('rumStatus')}</h3>
+          <div className="text-2xl font-bold text-green-600">{t('rumActive')}</div>
+          <div className="text-sm text-gray-600">{t('realUserMonitoring')}</div>
         </div>
 
         <div data-testid="core-web-vitals-card" className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Core Web Vitals</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">{t('coreWebVitals')}</h3>
           <div className="space-y-2">
             {Object.entries(webVitals).map(([vital, data]) => (
               <div key={vital} data-testid={`web-vital-${vital}`} className="flex justify-between">
@@ -375,15 +379,15 @@ export default function MonitoringDashboard() {
         </div>
 
         <div data-testid="user-sessions-card" className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">User Sessions</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">{t('userSessions')}</h3>
           <div className="text-2xl font-bold text-blue-600">1,247</div>
-          <div className="text-sm text-gray-600">Active Sessions</div>
+          <div className="text-sm text-gray-600">{t('activeSessions')}</div>
         </div>
 
         <div data-testid="error-tracking-card" className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Error Tracking</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">{t('errorTracking')}</h3>
           <div className="text-2xl font-bold text-red-600">12</div>
-          <div className="text-sm text-gray-600">Errors in last hour</div>
+          <div className="text-sm text-gray-600">{t('errorsInLastHour')}</div>
         </div>
       </div>
     </div>
@@ -395,9 +399,9 @@ export default function MonitoringDashboard() {
         <DemoBanner />
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Monitoring Dashboard</h1>
-          <p className="mt-2 text-gray-600">Real-time system monitoring and observability</p>
-          
+          <h1 className="text-3xl font-bold text-gray-900">{t('dashboardTitle')}</h1>
+          <p className="mt-2 text-gray-600">{t('dashboardSubtitle')}</p>
+
           {/* Dashboard Controls */}
           <div className="mt-4 flex gap-2">
             <button
@@ -405,26 +409,26 @@ export default function MonitoringDashboard() {
               onClick={handleCustomizeDashboard}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Customize Dashboard
+              {t('customizeDashboard')}
             </button>
             <button
               data-testid="refresh-data-button"
               onClick={handleRefreshData}
               className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
             >
-              Refresh Data
+              {t('refreshData')}
             </button>
           </div>
-          
+
           {showEditMode && (
             <div data-testid="dashboard-edit-mode" className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-yellow-800">Dashboard customization mode enabled</p>
+              <p className="text-yellow-800">{t('customizationModeEnabled')}</p>
             </div>
           )}
-          
+
           {connectionError && (
             <div data-testid="connection-error" className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-800">Connection error - unable to fetch latest data</p>
+              <p className="text-red-800">{t('connectionError')}</p>
             </div>
           )}
         </div>

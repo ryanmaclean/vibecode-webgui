@@ -5,9 +5,5 @@
  */
 
 describe('CollaborationManager', () => {
-  test('placeholder test - collaboration module exists', () => {
-    // This is a placeholder test until we properly integrate Yjs with testable wrappers
-    // The collaboration functionality works in practice
-    expect(true).toBe(true)
-  })
+  it.todo('placeholder test - collaboration module exists - integrate Yjs with testable wrappers');
 });

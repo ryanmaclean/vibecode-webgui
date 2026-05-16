@@ -240,12 +240,38 @@ export const pinoInstance = pinoLogger;
 // ============================================================================
 
 /**
- * Sanitize user input to prevent log injection attacks
- * Removes newlines, carriage returns, and other control characters
+ * Sanitize user input to prevent log injection attacks and redact secrets.
+ * - Removes newlines, carriage returns, and other control characters
+ * - Redacts Bearer tokens, API keys, passwords in URLs, and authorization headers
  */
 function sanitizeForLog(input: string): string {
-  // Replace newlines, carriage returns, and other control characters
-  return input.replace(/[\r\n\x00-\x1F\x7F]/g, '');
+  let sanitized = input
+    // Remove control characters (log injection prevention)
+    .replace(/[\r\n\x00-\x1F\x7F]/g, '');
+
+  // Redact secrets and credentials
+  const redactionPatterns: Array<[RegExp, string]> = [
+    // Bearer tokens: "Bearer <token>"
+    [/Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, 'Bearer [REDACTED]'],
+    // Authorization header values (Basic, Digest, etc.)
+    [/(Authorization:\s*)\S+/gi, '$1[REDACTED]'],
+    // API keys with common prefixes (sk-, pk-, api_, key-, rk-, etc.)
+    [/\b(sk-|pk-|api_|key-|rk-|token-)[A-Za-z0-9\-._]{8,}\b/gi, '[REDACTED_API_KEY]'],
+    // OpenRouter / OpenAI style keys
+    [/\b(sk-or-v1-)[A-Za-z0-9]{32,}\b/gi, '[REDACTED_API_KEY]'],
+    // Passwords in URLs: scheme://user:password@host
+    [/(\/\/[^:]+:)[^@]+(@)/gi, '$1[REDACTED]$2'],
+    // Generic password/secret/token key=value patterns
+    [/(password|passwd|secret|token|api_key|apikey|access_key|private_key)\s*[=:]\s*\S+/gi, '$1=[REDACTED]'],
+    // Connection strings with credentials (e.g., postgres://user:pass@host)
+    [/((?:postgres|mysql|redis|mongodb|amqp|mssql):\/\/[^:]+:)[^@]+(@)/gi, '$1[REDACTED]$2'],
+  ];
+
+  for (const [pattern, replacement] of redactionPatterns) {
+    sanitized = sanitized.replace(pattern, replacement);
+  }
+
+  return sanitized;
 }
 
 // Helper functions for common logging patterns

@@ -330,9 +330,8 @@ describe('Real Y.js Collaboration', () => {
       
       // Destroy all documents
       docs.forEach(doc => doc.destroy());
-      
-      // Test passes if no memory leaks or errors
-      expect(true).toBe(true);
+
+      // Verified: no error thrown by create/destroy cycle above
     });
 
     test('should handle rapid document creation and destruction', () => {
@@ -343,8 +342,7 @@ describe('Real Y.js Collaboration', () => {
         doc.destroy();
       }
       
-      // Should complete without errors
-      expect(true).toBe(true);
+      // Verified: no error thrown by rapid create/destroy cycle above
     });
   });
 });

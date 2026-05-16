@@ -330,8 +330,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        error: 'Failed to process file upload',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        error: 'Upload failed. Please try again.',
       },
       { status: 500 }
     );

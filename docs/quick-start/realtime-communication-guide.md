@@ -417,11 +417,11 @@ curl http://localhost:9090/metrics | grep sse_client
 # sse_client_messages_dropped
 ```
 
-### Grafana Dashboard
+### Datadog Dashboard
 
 Import from `/docs/monitoring/realtime-communication-dashboard.json`
 
-Or access at: `http://localhost:3000/grafana/d/realtime-comm`
+Or access at: `https://app.datadoghq.com/dashboard/realtime-comm`
 
 ---
 
@@ -654,7 +654,7 @@ useEffect(() => {
 - [Full Implementation Report](/claudedocs/AGENT13_REALTIME_COMMUNICATION_REPORT.md)
 - [Deliverables Summary](/claudedocs/AGENT13_DELIVERABLES_SUMMARY.md)
 - [Performance Tests](/tests/performance/realtime-communication-benchmark.test.ts)
-- [Grafana Dashboard](/docs/monitoring/realtime-communication-dashboard.json)
+- [Datadog Dashboard](/docs/monitoring/realtime-communication-dashboard.json)
 
 ---
 
@@ -662,7 +662,7 @@ useEffect(() => {
 
 - **Slack**: #realtime-infra
 - **Issues**: GitHub Issues with `streaming` label
-- **Monitoring**: http://localhost:3000/grafana/d/realtime-comm
+- **Monitoring**: https://app.datadoghq.com/dashboard/realtime-comm
 - **Metrics**: http://localhost:9090/metrics
 
 ---

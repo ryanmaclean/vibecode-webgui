@@ -1,12 +1,15 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { ChatInterface } from '@/components/ai/ChatInterface';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { ConfirmationDialog } from '@/components/agent/ConfirmationDialog';
 import type { ConfirmationRequest } from '@/types/agent-confirmation';
 
 export default function ChatPage() {
+  const t = useTranslations()
+
   // State for managing pending confirmations from agent
   const [pendingConfirmations, setPendingConfirmations] = useState<ConfirmationRequest[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -16,8 +19,14 @@ export default function ChatPage() {
   const handleApprove = useCallback(async (requestId: string) => {
     setIsProcessing(true);
     try {
-      // TODO: Call API to approve the action
-      // await fetch(`/api/agents/confirm/${requestId}`, { method: 'POST', body: JSON.stringify({ approved: true }) })
+      const response = await fetch(`/api/agents/confirmations/${requestId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!response.ok) {
+        throw new Error(`Approval failed: ${response.status}`);
+      }
 
       // Remove from pending confirmations
       setPendingConfirmations((prev) =>
@@ -42,8 +51,14 @@ export default function ChatPage() {
   const handleReject = useCallback(async (requestId: string) => {
     setIsProcessing(true);
     try {
-      // TODO: Call API to reject the action
-      // await fetch(`/api/agents/confirm/${requestId}`, { method: 'POST', body: JSON.stringify({ approved: false }) })
+      const response = await fetch(`/api/agents/confirmations/${requestId}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!response.ok) {
+        throw new Error(`Rejection failed: ${response.status}`);
+      }
 
       // Remove from pending confirmations
       setPendingConfirmations((prev) =>
@@ -72,8 +87,18 @@ export default function ChatPage() {
         .filter((c) => c.bulk_approvable)
         .map((c) => c.request_id);
 
-      // TODO: Call API to bulk approve actions
-      // await fetch('/api/agents/confirm/bulk', { method: 'POST', body: JSON.stringify({ request_ids: bulkApprovableIds }) })
+      // Approve each bulk-approvable request in parallel (no dedicated bulk endpoint exists)
+      await Promise.all(
+        bulkApprovableIds.map((id) =>
+          fetch(`/api/agents/confirmations/${id}/approve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
+          }).then((res) => {
+            if (!res.ok) throw new Error(`Bulk approval failed for ${id}: ${res.status}`);
+          })
+        )
+      );
 
       // Remove approved confirmations from pending list
       setPendingConfirmations((prev) =>
@@ -111,7 +136,7 @@ export default function ChatPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">AI Chat</h1>
+      <h1 className="text-2xl font-bold mb-4">{t('chat.heading')}</h1>
       <ErrorBoundary>
         <ChatInterface />
       </ErrorBoundary>

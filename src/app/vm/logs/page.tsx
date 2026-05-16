@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { FileText, Download, Trash2, Search, Filter } from 'lucide-react'
+import { FileText, Download, Trash2, Search, Filter, Loader2, RefreshCw } from 'lucide-react'
 
 type ServiceTab = 'ssh' | 'postgresql' | 'valkey' | 'openvscode' | 'docker'
 type LogLevel = 'info' | 'warning' | 'error' | 'debug'
@@ -11,6 +11,7 @@ interface LogEntry {
   timestamp: string
   level: LogLevel
   message: string
+  service?: ServiceTab
 }
 
 interface ServiceStatus {
@@ -25,101 +26,6 @@ const SERVICE_TABS: { key: ServiceTab; label: string }[] = [
   { key: 'openvscode', label: 'OpenVSCode' },
   { key: 'docker', label: 'Docker' },
 ]
-
-function randomTimestamp(): string {
-  const now = new Date()
-  now.setSeconds(now.getSeconds() - Math.floor(Math.random() * 5))
-  return now.toISOString().replace('T', ' ').slice(0, 19)
-}
-
-const MOCK_LOG_TEMPLATES: Record<ServiceTab, { level: LogLevel; message: string }[]> = {
-  ssh: [
-    { level: 'info', message: 'Connection accepted from 192.168.64.1:52341' },
-    { level: 'info', message: 'Pubkey auth succeeded for root from 192.168.64.1' },
-    { level: 'info', message: 'Session opened for user root' },
-    { level: 'debug', message: 'KEX algorithm: curve25519-sha256' },
-    { level: 'info', message: 'Session closed for user root' },
-    { level: 'warning', message: 'Authentication failed for user admin from 10.0.0.5' },
-    { level: 'error', message: 'Max authentication attempts exceeded for root from 10.0.0.99' },
-    { level: 'info', message: 'Dropbear SSH server listening on port 2222' },
-    { level: 'debug', message: 'Idle timeout reached, sending keepalive' },
-    { level: 'info', message: 'Child connection from 192.168.64.1:52890' },
-  ],
-  postgresql: [
-    { level: 'info', message: 'database system is ready to accept connections' },
-    { level: 'info', message: 'checkpoint starting: time' },
-    { level: 'info', message: 'checkpoint complete: wrote 42 buffers (0.3%)' },
-    { level: 'info', message: 'connection received: host=192.168.64.1 port=49832' },
-    { level: 'info', message: 'connection authorized: user=postgres database=vibecode' },
-    { level: 'warning', message: 'could not obtain lock on relation "migrations"' },
-    { level: 'error', message: 'duplicate key value violates unique constraint "users_email_key"' },
-    { level: 'info', message: 'autovacuum: VACUUM ANALYZE public.sessions' },
-    { level: 'debug', message: 'query plan: Seq Scan on users (cost=0.00..35.50 rows=2550)' },
-    { level: 'info', message: 'disconnection: session time: 0:05:23.847 user=postgres' },
-  ],
-  valkey: [
-    { level: 'info', message: 'Server initialized, ready to accept connections on port 6379' },
-    { level: 'info', message: 'DB 0: 127 keys (0 volatile) in 256 slots HT' },
-    { level: 'info', message: 'Background saving started by pid 142' },
-    { level: 'info', message: 'DB saved on disk (RDB snapshot)' },
-    { level: 'info', message: 'Client connected: id=15 addr=192.168.64.1:51024' },
-    { level: 'warning', message: 'Memory usage is above 75% of maxmemory (196mb/256mb)' },
-    { level: 'debug', message: 'Accepted connection from 192.168.64.1:51024' },
-    { level: 'info', message: 'Evicting key session:abc123 (LRU policy)' },
-    { level: 'error', message: 'MISCONF write commands not allowed due to errors in RDB persistence' },
-    { level: 'info', message: 'Slowlog: GET cache:models duration=12450us' },
-  ],
-  openvscode: [
-    { level: 'info', message: 'Web UI available at http://0.0.0.0:3000' },
-    { level: 'info', message: 'Extension host started (pid: 289)' },
-    { level: 'info', message: 'Installing extension ms-python.python@2024.18.0' },
-    { level: 'info', message: 'File watcher started for /workspace' },
-    { level: 'info', message: 'Language server initialized: typescript-language-features' },
-    { level: 'warning', message: 'Extension host process exited with code 0, restarting' },
-    { level: 'debug', message: 'IPC message received: openFile /workspace/src/index.ts' },
-    { level: 'info', message: 'Terminal process started (pid: 412, shell: /bin/bash)' },
-    { level: 'error', message: 'Extension activation failed: ms-vscode.cpptools' },
-    { level: 'info', message: 'Git repository detected at /workspace' },
-  ],
-  docker: [
-    { level: 'info', message: 'Starting Docker Engine 24.0.7' },
-    { level: 'info', message: 'API listen on [::]:2375' },
-    { level: 'info', message: 'Container 8a3f2b1c started: nginx:alpine' },
-    { level: 'info', message: 'Pulling image node:20-alpine from docker.io' },
-    { level: 'info', message: 'Network bridge created: vibecode-net (172.18.0.0/16)' },
-    { level: 'warning', message: 'Container 3e7d1a09 exceeded memory limit (512MB)' },
-    { level: 'error', message: 'Failed to start container c4f8a2b: OCI runtime error' },
-    { level: 'info', message: 'Volume vibecode-data mounted at /var/lib/data' },
-    { level: 'debug', message: 'Health check passed for container 8a3f2b1c (200 OK)' },
-    { level: 'info', message: 'Container 5b2a9f7e stopped: postgres:16-alpine (exit 0)' },
-  ],
-}
-
-function generateInitialLogs(service: ServiceTab): LogEntry[] {
-  const templates = MOCK_LOG_TEMPLATES[service]
-  const entries: LogEntry[] = []
-  const now = Date.now()
-  for (let i = 0; i < 30; i++) {
-    const template = templates[Math.floor(Math.random() * templates.length)]
-    const time = new Date(now - (30 - i) * 2000)
-    entries.push({
-      timestamp: time.toISOString().replace('T', ' ').slice(0, 19),
-      level: template.level,
-      message: template.message,
-    })
-  }
-  return entries
-}
-
-function generateNewLog(service: ServiceTab): LogEntry {
-  const templates = MOCK_LOG_TEMPLATES[service]
-  const template = templates[Math.floor(Math.random() * templates.length)]
-  return {
-    timestamp: randomTimestamp(),
-    level: template.level,
-    message: template.message,
-  }
-}
 
 const LEVEL_COLORS: Record<LogLevel, string> = {
   info: 'text-green-400',
@@ -137,18 +43,66 @@ const LEVEL_LABELS: Record<LogLevel, string> = {
 
 export default function VMLogsPage() {
   const [activeTab, setActiveTab] = useState<ServiceTab>('ssh')
-  const [logs, setLogs] = useState<Record<ServiceTab, LogEntry[]>>(() => ({
-    ssh: generateInitialLogs('ssh'),
-    postgresql: generateInitialLogs('postgresql'),
-    valkey: generateInitialLogs('valkey'),
-    openvscode: generateInitialLogs('openvscode'),
-    docker: generateInitialLogs('docker'),
-  }))
+  const [logs, setLogs] = useState<Record<ServiceTab, LogEntry[]>>({
+    ssh: [],
+    postgresql: [],
+    valkey: [],
+    openvscode: [],
+    docker: [],
+  })
   const [serviceStatuses, setServiceStatuses] = useState<Record<string, ServiceStatus>>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [levelFilter, setLevelFilter] = useState<LogLevelFilter>('all')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const logContainerRef = useRef<HTMLDivElement>(null)
   const autoScrollRef = useRef(true)
+
+  // Fetch logs from the API for all services
+  const fetchLogs = useCallback(async (isInitial = false) => {
+    try {
+      if (isInitial) {
+        setLoading(true)
+      }
+      setError(null)
+
+      const res = await fetch('/api/vm/logs?limit=500')
+      if (!res.ok) {
+        if (res.status === 401) {
+          setError('Unauthorized. Please sign in to view logs.')
+          return
+        }
+        throw new Error(`Failed to fetch logs (HTTP ${res.status})`)
+      }
+
+      const data = await res.json()
+      const fetched: LogEntry[] = data.logs ?? []
+
+      // Bucket logs by service
+      const buckets: Record<ServiceTab, LogEntry[]> = {
+        ssh: [],
+        postgresql: [],
+        valkey: [],
+        openvscode: [],
+        docker: [],
+      }
+
+      for (const entry of fetched) {
+        const svc = entry.service as ServiceTab | undefined
+        if (svc && svc in buckets) {
+          buckets[svc].push(entry)
+        }
+      }
+
+      setLogs(buckets)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch logs')
+    } finally {
+      if (isInitial) {
+        setLoading(false)
+      }
+    }
+  }, [])
 
   // Fetch service health statuses
   useEffect(() => {
@@ -174,24 +128,18 @@ export default function VMLogsPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Auto-refresh logs every 5 seconds
+  // Initial log fetch
+  useEffect(() => {
+    fetchLogs(true)
+  }, [fetchLogs])
+
+  // Auto-refresh logs by polling the API every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setLogs((prev) => {
-        const updated = { ...prev }
-        for (const key of SERVICE_TABS.map((t) => t.key)) {
-          const newEntries = []
-          const count = Math.floor(Math.random() * 3) + 1
-          for (let i = 0; i < count; i++) {
-            newEntries.push(generateNewLog(key))
-          }
-          updated[key] = [...prev[key], ...newEntries].slice(-500)
-        }
-        return updated
-      })
+      fetchLogs(false)
     }, 5000)
     return () => clearInterval(interval)
-  }, [])
+  }, [fetchLogs])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -334,11 +282,35 @@ export default function VMLogsPage() {
           onScroll={handleScroll}
           className="bg-gray-900 rounded-b-lg p-4 h-[500px] overflow-y-auto font-mono text-sm leading-relaxed"
         >
-          {filteredLogs.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center h-full text-gray-400">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin" />
+                <p>Loading logs...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center h-full text-red-400">
+              <div className="text-center">
+                <p className="mb-3">{error}</p>
+                <button
+                  onClick={() => fetchLogs(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg transition-colors"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Retry
+                </button>
+              </div>
+            </div>
+          ) : filteredLogs.length === 0 ? (
             <div className="flex items-center justify-center h-full text-gray-500">
               <div className="text-center">
                 <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>No log entries{searchQuery || levelFilter !== 'all' ? ' matching filters' : ''}</p>
+                <p>
+                  {searchQuery || levelFilter !== 'all'
+                    ? 'No log entries matching filters'
+                    : 'No log entries available'}
+                </p>
               </div>
             </div>
           ) : (
