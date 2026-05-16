@@ -9,6 +9,8 @@ const localeLabels: Record<Locale, string> = {
   en: 'English',
   fr: 'Français',
   ja: '日本語',
+  de: 'Deutsch',
+  es: 'Español',
 };
 
 export function LocaleSwitcher({ className }: { className?: string }) {
