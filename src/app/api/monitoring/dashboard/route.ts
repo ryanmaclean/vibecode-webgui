@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 const apiRateLimit = createAPIRateLimit(120) // 120 requests per minute
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(request: NextRequest): Promise<NextResponse | Response> {
   // Check authentication first
   const authResult = await checkMonitoringAuth(request)
   if (!authResult.isAuthorized) {

@@ -3,9 +3,16 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Upload, Code, Settings, Eye, Pin, X } from 'lucide-react'
-import { Button, Textarea, Card, CardContent, Badge, ScrollArea } from '@/components/ui';
+import { Button, Textarea, Card, CardContent, Badge, ScrollArea, KeyboardHint } from '@/components/ui';
 import { AIErrorBoundary } from '@/components/error/ErrorBoundary'
 import { ContextViewer } from './ContextViewer'
+import { StreamTracker } from '@/lib/ai/stream-utils'
+import type { StreamMetadata } from '@/lib/ai/stream-utils'
+import type { ModelProfile } from '@/types/model-comparison'
+import { modelRegistry } from '@/lib/ai/models/model-registry'
+import ModelDisplay from './ModelDisplay'
+import ModelSelector from './ModelSelector'
+import { AILoadingState } from './AILoadingState'
 
 interface Message {
   id: string
@@ -50,6 +57,7 @@ const AIChatInterfaceContent = ({
   const [availableModels, setAvailableModels] = useState<ModelProfile[]>([])
   const [favoriteModelIds, setFavoriteModelIds] = useState<string[]>([])
   const [recentModelIds, setRecentModelIds] = useState<string[]>([])
+  const [streamMetadata, setStreamMetadata] = useState<StreamMetadata | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -304,6 +312,21 @@ const AIChatInterfaceContent = ({
       return updated
     })
   }, [])
+
+  // Cancel streaming response
+  const handleCancel = React.useCallback(() => {
+    abortControllerRef.current?.abort()
+    setIsStreaming(false)
+  }, [])
+
+  // Regenerate last response
+  const handleRegenerate = React.useCallback(() => {
+    const lastUserMessage = [...messages].reverse().find(m => m.type === 'user')
+    if (lastUserMessage) {
+      setMessages(prev => prev.slice(0, -1))
+      setInput(lastUserMessage.content)
+    }
+  }, [messages])
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>): void => {
     if (event.target.files) {

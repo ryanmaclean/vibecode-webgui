@@ -612,10 +612,10 @@ export class VMPoolManager {
       const { stdout } = await execFileAsync('df', ['-m', '/']);
       const lines = stdout.trim().split('\n');
       if (lines.length >= 2) {
-        const parts = lines[1].trim().split(/\s+/);
+        const parts = lines[1]!.trim().split(/\s+/);
         if (parts.length >= 4) {
-          totalDiskMB = parseInt(parts[1], 10);
-          availableDiskMB = parseInt(parts[3], 10);
+          totalDiskMB = parseInt(parts[1]!, 10);
+          availableDiskMB = parseInt(parts[3]!, 10);
         }
       }
     } catch {
