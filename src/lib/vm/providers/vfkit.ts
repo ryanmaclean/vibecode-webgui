@@ -334,7 +334,7 @@ export class VfkitProvider implements VMProvider {
     // Launch VM with retry logic
     const sLaunch = getTracer().startSpan('vfkit.create.launch');
     try {
-      const vm = await retryWithThrow(
+      const _vm = await retryWithThrow(
         () => this.launch(vmDir, config),
         {
           maxAttempts: 3,

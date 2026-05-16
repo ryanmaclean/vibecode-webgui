@@ -25,6 +25,8 @@ const translations = {
   'navigation.keyboardShortcutsHint': 'Keyboard shortcuts (⌘/)',
   'navigation.ariaLabel.vmMenu': 'VM menu',
   'navigation.ariaLabel.aiMenu': 'AI menu',
+  'ai.models.switcherButton.ariaLabel': 'Switch AI model',
+  'ai.models.switcherButton.selectModel': 'Select Model',
 };
 
 const useTranslations = (namespace) => (key, ...args) => {
