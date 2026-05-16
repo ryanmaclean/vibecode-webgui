@@ -5,6 +5,10 @@ on:
     branches: [main, develop]
     types: [opened, synchronize, reopened]
 
+concurrency:
+  group: pr-gates-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 env:
   DD_SITE: datadoghq.com
   DD_SERVICE: gt-repo
@@ -142,8 +146,8 @@ jobs:
         run: npm install -g @datadog/datadog-ci
 
       - name: Run tests with coverage
-        run: npm run test:coverage
-        continue-on-error: true
+        id: coverage-tests
+        run: npm run test:coverage || true
         env:
           REDIS_URL: redis://localhost:6379
           CI: true
