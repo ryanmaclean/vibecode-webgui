@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
+import React, { useTransition } from 'react';
 import { locales, type Locale } from '@/i18n/config';
 
 const localeLabels: Record<Locale, string> = {
@@ -13,13 +13,13 @@ const localeLabels: Record<Locale, string> = {
   es: 'Español',
 };
 
-export function LocaleSwitcher({ className }: { className?: string }) {
+export function LocaleSwitcher({ className }: { className?: string }): React.JSX.Element {
   const locale = useLocale();
   const t = useTranslations('common');
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  async function onChange(newLocale: string) {
+  async function onChange(newLocale: string): Promise<void> {
     await fetch('/api/locale', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
