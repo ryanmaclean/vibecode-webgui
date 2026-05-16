@@ -110,7 +110,7 @@ export class SQLServerVectorAdapter extends BaseVectorDatabaseAdapter {
         
         // Process each chunk individually
         for (let j = 0; j < batch.length; j++) {
-          const chunk = batch[j];
+          const chunk = batch[j]!;
           const chunkId = `${fileId}-chunk-${i + j}`;
           const embedding = await this.embeddingProvider.generateEmbedding(chunk.content);
           

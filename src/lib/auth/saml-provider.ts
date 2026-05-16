@@ -823,7 +823,7 @@ export class SAMLProvider {
       name = `${firstName} ${lastName}`
     }
     if (!name) {
-      name = email.split('@')[0] // Fallback to email prefix
+      name = email.split('@')[0] ?? email // Fallback to email prefix
     }
 
     const groups = mapping.groups ?

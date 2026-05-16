@@ -321,7 +321,8 @@ function ModelBreakdownChart({ data }: ModelBreakdownChartProps): React.JSX.Elem
           ))}
         </Pie>
         <Tooltip
-          formatter={(value: number) => formatCost(value)}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          formatter={((value: number) => formatCost(value)) as any}
           contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
         />
         <Legend />
@@ -378,9 +379,10 @@ function UsageChart({ data, period, metric }: UsageChartProps): React.JSX.Elemen
           }
         />
         <Tooltip
-          formatter={(value: number) =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          formatter={((value: number) =>
             metric === 'cost' ? formatCost(value) : formatTokens(value)
-          }
+          ) as any}
           contentStyle={{
             backgroundColor: 'hsl(var(--card))',
             border: '1px solid hsl(var(--border))',

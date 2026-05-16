@@ -201,7 +201,7 @@ export function CommandPalette({
         case 'Enter':
           e.preventDefault();
           if (selectedIndex >= 0 && selectedIndex < searchResults.length) {
-            handleSelectCommand(searchResults[selectedIndex].item.id);
+            handleSelectCommand(searchResults[selectedIndex]!.item.id);
           }
           break;
       }
