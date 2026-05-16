@@ -4,10 +4,10 @@ import React, { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChatInterface } from '@/components/ai/ChatInterface';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
-import { ConfirmationDialog } from '@/components/agent/ConfirmationDialog';
+import { ConfirmationDialog } from '@/components/agents/ConfirmationDialog';
 import type { ConfirmationRequest } from '@/types/agent-confirmation';
 
-export default function ChatPage() {
+export default function ChatPage(): React.JSX.Element {
   const t = useTranslations()
 
   // State for managing pending confirmations from agent

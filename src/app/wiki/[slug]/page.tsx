@@ -2,9 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { redirect } from 'next/navigation';
 import matter from 'gray-matter';
-import { marked } from 'marked';
 // This is the main page component for a single wiki page.
-export default async function WikiPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function WikiPage({ params }: { params: Promise<{ slug: string }> }): Promise<React.JSX.Element> {
   const { slug } = await params;
   const filePath = path.join(process.cwd(), 'content/wiki', `${slug}.md`);
 

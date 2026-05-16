@@ -3,7 +3,7 @@
  * Simple implementation to make components compile
  */
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 // import { logger } from '@/lib/logger';
 interface User {
   id: string;
@@ -31,13 +31,13 @@ const AuthContext = createContext<AuthContextType>({
   signup: async () => false,
 });
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }): React.JSX.Element {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Simulate loading the user from local storage or a token
-    const checkAuth = async () => {
+    const checkAuth = async (): Promise<void> => {
       try {
         // This would be a real API call in production
         const storedUser = localStorage.getItem('vibeCodeUser');
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, _password: string): Promise<boolean> => {
     setIsLoading(true);
 
     try {
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (name: string, email: string, password: string): Promise<boolean> => {
+  const signup = async (name: string, email: string, _password: string): Promise<boolean> => {
     setIsLoading(true);
 
     try {
@@ -133,4 +133,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = (): AuthContextType => useContext(AuthContext);
