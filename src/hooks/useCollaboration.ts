@@ -9,10 +9,13 @@ import io from 'socket.io-client';
 
 export interface CollaborationSocket {
   emit: (event: string, ...args: unknown[]) => void;
-  on?: (event: string, handler: (...args: unknown[]) => void) => void;
-  off?: (event: string, handler?: (...args: unknown[]) => void) => void;
-  once?: (event: string, handler: (...args: unknown[]) => void) => void;
-  disconnect?: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  on: (event: string, handler: (...args: any[]) => void) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  off: (event: string, handler?: (...args: any[]) => void) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  once?: (event: string, handler: (...args: any[]) => void) => void;
+  disconnect: () => void;
   connected?: boolean;
   id?: string;
 }
@@ -207,30 +210,31 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
         });
 
         socketRef.current = socket;
+        const s = socket;
 
         // Set up event handlers
-        socket.on('connect', () => {
+        s.on('connect', () => {
           if (!mounted) return;
           console.log('✅ Connected to collaboration server');
           setIsConnected(true);
           setConnectionError(null);
 
           // Join workspace on connect
-          socket.emit('join_workspace', {
+          s.emit('join_workspace', {
             workspaceId: options.workspaceId,
             userId: options.userId,
             userName: options.userName,
           });
         });
 
-        socket.on('disconnect', () => {
+        s.on('disconnect', () => {
           if (!mounted) return;
           console.log('🔌 Disconnected from collaboration server');
           setIsConnected(false);
           setActiveUsers([]);
         });
 
-        socket.on('connect_error', (error: unknown) => {
+        s.on('connect_error', (error: unknown) => {
           if (!mounted) return;
           const errorMessage = error instanceof Error ? error.message : 'Connection failed';
           console.error('❌ Collaboration connection error:', error);
@@ -238,12 +242,12 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
           setConnectionError(errorMessage);
         });
 
-        socket.on('workspace_state', (data: { activeUsers: CollaborativeUser[] }) => {
+        s.on('workspace_state', (data: { activeUsers: CollaborativeUser[] }) => {
           if (!mounted) return;
           setActiveUsers(data.activeUsers || []);
         });
 
-        socket.on('user_joined', (data: { user: { name: string }, activeUsers: CollaborativeUser[] }) => {
+        s.on('user_joined', (data: { user: { name: string }, activeUsers: CollaborativeUser[] }) => {
           if (!mounted) return;
           console.log(`👥 User joined: ${data.user.name}`);
           if (data.activeUsers) {
@@ -251,7 +255,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
           }
         });
 
-        socket.on('user_left', (data: { userId: string, activeUsers: CollaborativeUser[] }) => {
+        s.on('user_left', (data: { userId: string, activeUsers: CollaborativeUser[] }) => {
           if (!mounted) return;
           console.log(`👥 User left: ${data.userId}`);
           if (data.activeUsers) {
@@ -259,7 +263,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
           }
         });
 
-        socket.on('user_typing', (data: { userId: string, conversationId: string, isTyping: boolean }) => {
+        s.on('user_typing', (data: { userId: string, conversationId: string, isTyping: boolean }) => {
           if (!mounted) return;
 
           // Get the latest active users to find the typing user
@@ -293,7 +297,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
           });
         });
 
-        socket.on('cursor_moved', (data: { userId: string, cursor: { x: number, y: number }, timestamp: string }) => {
+        s.on('cursor_moved', (data: { userId: string, cursor: { x: number, y: number }, timestamp: string }) => {
           if (!mounted) return;
           setCursors(prev => {
             const others = prev.filter(c => c.userId !== data.userId);
