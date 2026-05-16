@@ -38,6 +38,7 @@ export async function GET(request: NextRequest): Promise<NextResponse | Response
 
   try {
     return NextResponse.json({
+      timestamp: new Date().toISOString(),
       systemMetrics: {
         cpuUsage: 0,
         memoryUsage: 0,
@@ -55,6 +56,20 @@ export async function GET(request: NextRequest): Promise<NextResponse | Response
         LCP: { value: 0, status: 'good' },
         FID: { value: 0, status: 'good' },
         CLS: { value: 0, status: 'good' },
+      },
+      health: {
+        database: { status: 'unknown' },
+        redis: { status: 'unknown' },
+        aiService: { status: 'unknown' },
+        overall: 'unknown',
+      },
+      performance: {
+        responseTime: 0,
+        errorRate: 0,
+        health_check_duration_ms: 0,
+        parallel_execution: false,
+        cache_enabled: false,
+        services_checked: 0,
       },
     })
   } catch (error) {
