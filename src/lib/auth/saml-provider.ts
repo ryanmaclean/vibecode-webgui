@@ -667,6 +667,7 @@ export class SAMLProvider {
 
     // Remove comments (prevent comment-based canonicalization attacks)
     canonical = canonical.replace(/<!--[\s\S]*?-->/g, '')
+    canonical = canonical.replace(/<!--|-->/g, '')
 
     // Normalize whitespace between tags (but preserve content whitespace)
     canonical = canonical.replace(/>\s+</g, '>\n<')

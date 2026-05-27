@@ -801,7 +801,11 @@ export class VMPoolManager {
         savedAt: new Date().toISOString()
       };
 
-      await fs.writeFile(this.statePath, JSON.stringify(state, null, 2));
+      const tmpDir = await fs.mkdtemp(path.join(dir, '.state-'));
+      const tmpFile = path.join(tmpDir, 'state.json');
+      await fs.writeFile(tmpFile, JSON.stringify(state, null, 2), { mode: 0o600 });
+      await fs.rename(tmpFile, this.statePath);
+      await fs.rmdir(tmpDir).catch(() => {});
       log.debug('Saved VM pool state');
     } catch (error) {
       log.error('Failed to save VM pool state', {
