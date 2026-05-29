@@ -1,0 +1,1678 @@
+{
+  "common": {
+    "appName": "VibeCode",
+    "appFullName": "VibeCode WebGUI",
+    "appTitle": "VibeCode WebGUI - Plataforma de Desarrollo con IA",
+    "appDescription": "Entorno de desarrollo web moderno con asistencia de IA",
+    "loading": "Cargando...",
+    "loadingWorkspace": "Cargando workspace…",
+    "preparingWorkspace": "Preparando el workspace de IA…",
+    "loadingModels": "Cargando modelos...",
+    "loadingSettings": "Cargando configuración...",
+    "loadingHealth": "Cargando estado de salud",
+    "saving": "Guardando...",
+    "saved": "Guardado",
+    "save": "Guardar",
+    "saveChanges": "Guardar cambios",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "reset": "Restablecer",
+    "resetAll": "Restablecer todo",
+    "resetToDefaults": "Restablecer valores predeterminados",
+    "refresh": "Actualizar",
+    "retry": "Reintentar",
+    "send": "Enviar",
+    "sending": "Enviando...",
+    "search": "Buscar",
+    "clear": "Limpiar",
+    "copy": "Copiar",
+    "open": "Abrir",
+    "continue": "Continuar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "back": "Volver",
+    "goHome": "Ir al inicio",
+    "tryAgain": "Intentar de nuevo",
+    "acknowledge": "Confirmar",
+    "skipToMainContent": "Ir al contenido principal",
+    "signIn": "Iniciar sesión",
+    "signOut": "Cerrar sesión",
+    "createAccount": "Crear cuenta",
+    "getStarted": "Comenzar",
+    "confirm": "Confirmar",
+    "next": "Siguiente",
+    "submit": "Enviar",
+    "export": "Exportar",
+    "import": "Importar",
+    "online": "En línea",
+    "offlineMode": "Modo sin conexión",
+    "allFeaturesAvailable": "Todas las funciones disponibles",
+    "limitedFeaturesOffline": "Funciones limitadas en modo sin conexión",
+    "available": "Disponible",
+    "unavailable": "No disponible",
+    "error": "Error",
+    "warning": "Advertencia",
+    "info": "Información",
+    "success": "Éxito",
+    "switchLanguage": "Cambiar idioma"
+  },
+  "meta": {
+    "title": "VibeCode WebGUI - Plataforma de Desarrollo con IA",
+    "description": "Entorno de desarrollo web moderno con asistencia de IA",
+    "signinTitle": "Iniciar sesión - VibeCode WebGUI",
+    "signinDescription": "Inicie sesión en su cuenta de VibeCode"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "vm": "VM",
+    "vmDashboard": "Dashboard",
+    "vmSnapshots": "Snapshots",
+    "ai": "IA",
+    "aiChat": "Chat",
+    "aiModels": "Modelos",
+    "aiCosts": "Costos",
+    "aiPrompts": "Prompts",
+    "health": "Estado",
+    "monitoring": "Monitoreo",
+    "workspaces": "Workspaces",
+    "experiments": "Experimentos",
+    "tutorials": "Tutoriales",
+    "settings": "Configuración",
+    "signOut": "Cerrar sesión",
+    "openMenu": "Abrir menú",
+    "closeMenu": "Cerrar menú",
+    "showKeyboardShortcuts": "Mostrar atajos de teclado",
+    "keyboardShortcutsHint": "Atajos de teclado (⌘/)",
+    "ariaLabel": {
+      "vmMenu": "Menú VM",
+      "aiMenu": "Menú IA"
+    }
+  },
+  "landing": {
+    "heroTitle": "Bienvenido a VibeCode",
+    "heroSubtitle": "Entorno de desarrollo con IA para la era moderna",
+    "buildFaster": "Desarrolla más rápido con IA",
+    "buildFasterDescription": "Experimente la próxima generación de herramientas de desarrollo impulsadas por inteligencia artificial. Escriba código, depure y despliegue con velocidad y precisión sin precedentes.",
+    "lightningFast": "Ultra rápido",
+    "lightningFastDescription": "Rendimiento optimizado para retroalimentación instantánea y desarrollo ágil",
+    "aiPowered": "Impulsado por IA",
+    "aiPoweredDescription": "Sugerencias de código inteligentes y flujos de trabajo automatizados",
+    "secure": "Seguro",
+    "secureDescription": "Seguridad de nivel empresarial para su código y datos"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "getStarted": "Comenzar",
+    "vmManagement": "Gestión de VM",
+    "vmManagementDescription": "Administrar máquinas virtuales",
+    "aiStudio": "AI Studio",
+    "aiStudioDescription": "Modelos, costos, prompts",
+    "healthMonitor": "Monitor de Estado",
+    "healthMonitorDescription": "Estado de salud de servicios",
+    "monitoring": "Monitoreo",
+    "monitoringDescription": "Métricas y trazas",
+    "settings": "Configuración",
+    "settingsDescription": "Configuración de la aplicación",
+    "editor": "Editor",
+    "editorDescription": "Editor de código"
+  },
+  "ai": {
+    "dashboard": {
+      "title": "Dashboard de IA",
+      "description": "Acceda a más de 340 modelos de IA, gestione agentes, controle costos y explore plantillas de prompts, todo desde un solo lugar.",
+      "quickActions": "Acciones rápidas",
+      "newChat": "Nuevo Chat",
+      "compareModels": "Comparar modelos",
+      "browsePrompts": "Explorar Prompts",
+      "recentActivity": "Actividad reciente",
+      "cards": {
+        "chat": "Chat",
+        "chatStat": "Conversaciones activas: 3",
+        "chatDescription": "Iniciar o continuar conversaciones con IA",
+        "agents": "Agentes",
+        "agentsStat": "6 agentes disponibles",
+        "agentsDescription": "Workspace multi-agente",
+        "models": "Modelos",
+        "modelsStat": "340+ modelos",
+        "modelsDescription": "Comparar y seleccionar modelos de IA",
+        "costs": "Costos",
+        "costsStat": "Hoy: $2.47",
+        "costsDescription": "Seguimiento de costos de uso de IA",
+        "prompts": "Prompts",
+        "promptsStat": "33 plantillas",
+        "promptsDescription": "Explorar biblioteca de prompts",
+        "history": "Historial",
+        "historyStat": "142 conversaciones",
+        "historyDescription": "Ver conversaciones anteriores",
+        "vectorExplorer": "Explorador de Vectores",
+        "vectorExplorerStat": "Explorar Embeddings",
+        "vectorExplorerDescription": "Visualizar similitudes vectoriales"
+      },
+      "usageStats": {
+        "requestsToday": "Solicitudes hoy",
+        "avgResponseTime": "Tiempo de respuesta promedio",
+        "topModel": "Modelo principal"
+      }
+    },
+    "models": {
+      "pageTitle": "Modelos de IA",
+      "pageDescription": "Explorar, comparar y obtener recomendaciones de modelos de IA",
+      "refreshButton": "Actualizar",
+      "loadingModels": "Cargando modelos...",
+      "addModelToComparison": "Agregar modelo a la comparación",
+      "searchPlaceholder": "Buscar y seleccionar modelos para comparar...",
+      "modelsSelectedForComparison": "{count} de 4 modelos seleccionados para comparación",
+      "getRecommendation": {
+        "title": "Obtener recomendación",
+        "description": "Encuentre el mejor modelo para su tarea",
+        "taskTypeLabel": "Tipo de tarea",
+        "getRecommendationButton": "Obtener recomendación",
+        "findingButton": "Buscando...",
+        "confidenceLabel": "Confianza: {percent}%",
+        "monthlyCostLabel": "~${cost}/mes",
+        "alternativesLabel": "Alternativas"
+      },
+      "taskTypes": {
+        "code_generation": "Generación de código",
+        "code_review": "Revisión de código",
+        "debugging": "Depuración",
+        "chat": "Chat",
+        "analysis": "Análisis",
+        "creative_writing": "Escritura creativa",
+        "summarization": "Resumen",
+        "translation": "Traducción",
+        "math": "Matemáticas",
+        "research": "Investigación",
+        "general": "General"
+      },
+      "selector": {
+        "searchPlaceholder": "Buscar modelos...",
+        "noModelsFound": "No se encontraron modelos",
+        "noModelsFoundHint": "Intente ajustar su búsqueda o filtros",
+        "moreFilters": "Más filtros",
+        "modelsCount": "{count} modelos",
+        "clearFilters": "Limpiar",
+        "minQuality": "Calidad mínima",
+        "minSpeed": "Velocidad mínima",
+        "vision": "Visión",
+        "functionCalling": "Llamada a funciones",
+        "recentlyUsed": "Usados recientemente",
+        "groups": {
+          "favorites": "Favoritos",
+          "recent": "Recientes",
+          "localModels": "Modelos locales"
+        },
+        "qualityOptions": {
+          "any": "Cualquiera",
+          "good": "Buena+",
+          "excellent": "Excelente+",
+          "stateOfArt": "Estado del arte"
+        },
+        "speedOptions": {
+          "any": "Cualquiera",
+          "medium": "Media+",
+          "fast": "Rápida+",
+          "veryFast": "Muy rápida"
+        }
+      },
+      "quickFilters": {
+        "bestForCoding": "Mejor para programación",
+        "bestForCodingDescription": "Mejores modelos para generación y depuración de código",
+        "bestValue": "Mejor relación calidad-precio",
+        "bestValueDescription": "Gran calidad a precios accesibles",
+        "fastest": "Más rápidos",
+        "fastestDescription": "Modelos optimizados para velocidad",
+        "largestContext": "Mayor contexto",
+        "largestContextDescription": "Modelos con ventanas de contexto de 100K+",
+        "vision": "Visión",
+        "visionDescription": "Modelos que pueden interpretar imágenes",
+        "freeModels": "Modelos gratuitos",
+        "freeModelsDescription": "Modelos de IA sin costo"
+      },
+      "badges": {
+        "free": "Gratis",
+        "low": "Bajo",
+        "medium": "Medio",
+        "high": "Alto",
+        "slow": "Lento",
+        "fast": "Rápido",
+        "basic": "Básico",
+        "good": "Bueno",
+        "excellent": "Excelente",
+        "notApplicable": "N/A"
+      },
+      "switcherPanel": {
+        "title": "Cambiar modelo",
+        "viewAll": "Ver todos",
+        "searchPlaceholder": "Buscar modelos...",
+        "currentModel": "Modelo actual",
+        "favorites": "Favoritos",
+        "recent": "Recientes",
+        "allModels": "Todos los modelos ({count})",
+        "noModelsFound": "No se encontraron modelos para \"{query}\"",
+        "addToFavorites": "Agregar a favoritos",
+        "removeFromFavorites": "Quitar de favoritos"
+      },
+      "switcherButton": {
+        "selectModel": "Seleccionar modelo",
+        "ariaLabel": "Cambiar modelo de IA"
+      }
+    },
+    "costs": {
+      "pageTitle": "Costos de IA",
+      "pageDescription": "Monitorear gastos, establecer presupuestos y estimar costos en modelos de IA",
+      "costEstimatorButton": "Estimador de costos",
+      "closeEstimatorButton": "Cerrar estimador",
+      "quickCostEstimate": "Estimación rápida de costos",
+      "modelLabel": "Modelo",
+      "sampleMessageLabel": "Mensaje de ejemplo",
+      "sampleMessagePlaceholder": "Pegue un prompt de ejemplo para estimar su costo...",
+      "alerts": {
+        "budgetThresholdTitle": "Umbral de presupuesto alcanzado",
+        "dailyLimitTitle": "Límite diario alcanzado",
+        "sessionLimitTitle": "Límite de sesión alcanzado",
+        "rateSpikeTitle": "Pico de costos inusual detectado",
+        "unusualUsageTitle": "Patrón de uso inusual",
+        "currentLabel": "Actual: {cost}",
+        "limitLabel": "Límite: {cost}",
+        "percentOfLimit": "{percent}% del límite",
+        "acknowledgeButton": "Confirmar",
+        "closeNotification": "Cerrar notificación"
+      }
+    },
+    "prompts": {
+      "pageTitle": "Biblioteca de Prompts",
+      "pageDescription": "{count} plantillas de prompts reutilizables para asistencia de código con IA en {categories} categorías",
+      "searchPlaceholder": "Buscar plantillas por nombre, descripción o etiqueta...",
+      "allTemplates": "Todas las plantillas",
+      "noTemplatesFound": "No se encontraron plantillas",
+      "categories": {
+        "codeReview": "Revisión de código",
+        "explainCode": "Explicar código",
+        "refactor": "Refactorizar",
+        "generateTests": "Generar tests",
+        "documentation": "Documentación"
+      },
+      "templateCard": {
+        "recommendedModels": "Modelos recomendados",
+        "variables": "Variables ({required} requeridas{optional})",
+        "systemPrompt": "Prompt del sistema",
+        "userPromptTemplate": "Plantilla de prompt del usuario",
+        "tags": "Etiquetas",
+        "useTemplate": "Usar plantilla",
+        "required": "requerido",
+        "type": "tipo: {type}",
+        "default": "predeterminado: {value}",
+        "vars": "{count} var",
+        "varsPlural": "{count} vars"
+      }
+    },
+    "agents": {
+      "pageTitle": "Agentes de IA",
+      "agentsList": "Agentes",
+      "selectAgent": "Seleccionar un agente",
+      "messageCount": "{count} msgs",
+      "youLabel": "Tú",
+      "sendButton": "Enviar",
+      "messagePlaceholder": "Mensaje a {agentName}...",
+      "statusLabels": {
+        "active": "activo",
+        "idle": "inactivo",
+        "busy": "ocupado"
+      },
+      "agentList": {
+        "codeAssistant": "Asistente de Código",
+        "codeAssistantRole": "Desarrollador Full-Stack",
+        "codeAssistantDescription": "Genera, refactoriza y explica código en múltiples lenguajes.",
+        "debugHelper": "Asistente de Depuración",
+        "debugHelperRole": "Cazador de Bugs",
+        "debugHelperDescription": "Analiza trazas de pila, identifica causas raíz y sugiere correcciones.",
+        "architect": "Arquitecto",
+        "architectRole": "Diseñador de Sistemas",
+        "architectDescription": "Diseña arquitectura de sistemas, APIs y esquemas de bases de datos.",
+        "reviewer": "Revisor",
+        "reviewerRole": "Revisor de Código",
+        "reviewerDescription": "Revisa código evaluando calidad, seguridad y buenas prácticas.",
+        "tester": "Tester",
+        "testerRole": "Ingeniero QA",
+        "testerDescription": "Escribe tests unitarios, tests de integración y estrategias de prueba.",
+        "devops": "DevOps",
+        "devopsRole": "Ingeniero de Infraestructura",
+        "devopsDescription": "Gestiona pipelines CI/CD, Docker, Kubernetes e infraestructura en la nube."
+      }
+    },
+    "modelUsage": {
+      "title": "Historial de uso de modelos",
+      "description": "Seguimiento del uso de modelos de IA, consumo de tokens y patrones a lo largo del tiempo",
+      "loadingHistory": "Cargando historial de uso...",
+      "noUsageData": "Sin datos de uso",
+      "noUsageDataDescription": "Comience a usar modelos de IA para ver estadísticas de uso",
+      "noUsageDataForPeriod": "Sin datos de uso para este período",
+      "noTokenConsumptionData": "Sin datos de consumo de tokens para este período",
+      "noModelUsageYet": "Aún no hay datos de uso de modelos",
+      "noModelData": "Sin datos de modelos",
+      "noModelDataDescription": "Aún no se han utilizado modelos de IA",
+      "noTrendData": "Sin datos de tendencia",
+      "noTrendDataDescription": "No hay datos de uso disponibles para el período {period} seleccionado",
+      "noActivityData": "Sin datos de actividad",
+      "noActivityDataDescription": "No hay actividad reciente en el período {period} seleccionado",
+      "periodSelect": {
+        "hourly": "Por hora",
+        "daily": "Diario",
+        "weekly": "Semanal",
+        "monthly": "Mensual"
+      },
+      "metricSelect": {
+        "tokens": "Tokens",
+        "requests": "Solicitudes"
+      },
+      "tabs": {
+        "overview": "Resumen",
+        "overviewShort": "Estadísticas",
+        "trends": "Tendencias de uso",
+        "trendsShort": "Tendencias",
+        "models": "Desglose por modelo",
+        "modelsShort": "Modelos",
+        "details": "Detalles",
+        "detailsShort": "Más"
+      },
+      "stats": {
+        "totalTokens": "Tokens totales",
+        "totalTokensDesc": "Sesión actual",
+        "totalRequests": "Solicitudes totales",
+        "totalRequestsDesc": "Llamadas API realizadas",
+        "avgTokensPerRequest": "Tokens promedio/solicitud",
+        "avgTokensPerRequestDesc": "Promedio por llamada",
+        "mostUsedModel": "Modelo más usado",
+        "mostUsedModelDesc": "Preferido",
+        "promptTokens": "Tokens de prompt",
+        "completionTokens": "Tokens de completado",
+        "tokenRatio": "Proporción de tokens",
+        "completionPromptRatio": "Proporción completado/prompt"
+      },
+      "allTimeStats": {
+        "title": "Estadísticas históricas",
+        "description": "Métricas de uso acumuladas desde {date}",
+        "totalTokens": "Tokens totales",
+        "totalRequests": "Solicitudes totales",
+        "totalCost": "Costo total"
+      },
+      "tokenConsumption": {
+        "title": "Consumo de tokens",
+        "description": "Uso de tokens de prompt vs. completado a lo largo del tiempo",
+        "promptTokens": "Tokens de prompt",
+        "completionTokens": "Tokens de completado",
+        "prompt": "Prompt",
+        "completion": "Completado"
+      },
+      "usageTrends": {
+        "title": "Tendencias de uso",
+        "description": "Patrones de uso {period} a lo largo del tiempo"
+      },
+      "modelBreakdown": {
+        "title": "Desglose de uso por modelo",
+        "description": "Distribución del uso entre diferentes modelos de IA",
+        "detailsTitle": "Detalles de uso por modelo",
+        "detailsDescription": "Estadísticas detalladas de cada modelo utilizado (haga clic en los encabezados para ordenar)"
+      },
+      "topModelsSummary": {
+        "title": "Resumen de modelos principales",
+        "description": "Vista rápida de los modelos más utilizados",
+        "requests": "Solicitudes:",
+        "tokens": "Tokens:",
+        "share": "Participación:"
+      },
+      "table": {
+        "model": "Modelo",
+        "requests": "Solicitudes",
+        "prompt": "Prompt",
+        "completion": "Completado",
+        "total": "Total",
+        "cost": "Costo",
+        "requestsLabel": "{count} solicitudes"
+      },
+      "recentActivity": {
+        "title": "Actividad reciente ({period})",
+        "description": "Últimos 5 puntos de datos de {total} en total",
+        "requests": "{count} solicitudes"
+      },
+      "sessionInfo": {
+        "title": "Información de sesión",
+        "description": "Detalles de la sesión de uso actual",
+        "sessionStart": "Inicio de sesión:",
+        "lastUpdated": "Última actualización:",
+        "totalRequests": "Solicitudes totales:",
+        "totalTokens": "Tokens totales:",
+        "modelsUsed": "Modelos utilizados:",
+        "dataPoints": "Puntos de datos:"
+      }
+    },
+    "costDashboard": {
+      "title": "Dashboard de Costos de IA",
+      "description": "Seguimiento y gestión de gastos de IA en más de {count} modelos",
+      "refresh": "Actualizar",
+      "exportCsv": "Exportar CSV",
+      "exportJson": "Exportar JSON",
+      "export": "Exportar",
+      "lastUpdated": "Última actualización: {time}",
+      "stats": {
+        "sessionCost": "Costo de sesión",
+        "sessionCostDesc": "{count} solicitudes",
+        "todayCost": "Costo de hoy",
+        "vsYesterday": "vs ayer",
+        "totalTokens": "Tokens totales",
+        "totalTokensDesc": "Esta sesión",
+        "allTimeCost": "Costo acumulado",
+        "allTimeCostDesc": "{count} solicitudes en total"
+      },
+      "tabs": {
+        "overview": "Resumen",
+        "byModel": "Por modelo",
+        "alerts": "Alertas",
+        "settings": "Configuración"
+      },
+      "overview": {
+        "usageOverTime": "Uso a lo largo del tiempo",
+        "costPredictions": "Predicciones de costos",
+        "costPredictionsDesc": "Basado en sus patrones de uso de los últimos 7 días",
+        "daily": "Diario",
+        "weekly": "Semanal",
+        "monthly": "Mensual",
+        "monthlyBudgetProgress": "Progreso del presupuesto mensual",
+        "budgetWillExhaust": "Al ritmo actual, el presupuesto se agotará en {days} días"
+      },
+      "metricSelect": {
+        "cost": "Costo",
+        "tokens": "Tokens",
+        "requests": "Solicitudes"
+      },
+      "models": {
+        "costByModel": "Costo por modelo",
+        "costByModelDesc": "Desglose de gastos en diferentes modelos de IA",
+        "modelUsageDetails": "Detalles de uso por modelo",
+        "modelUsageDetailsDesc": "Estadísticas detalladas de cada modelo utilizado",
+        "noModelData": "Sin datos de uso de modelos en esta sesión",
+        "noModelDataChart": "Aún sin datos de uso de modelos",
+        "requestsLabel": "{count} solicitudes",
+        "tokensLabel": "{tokens} tokens"
+      },
+      "alerts": {
+        "title": "Alertas de costos",
+        "description": "Configure alertas para monitorear sus gastos de IA",
+        "createAlert": "Crear alerta",
+        "noAlerts": "No hay alertas configuradas. Configure alertas para monitorear sus gastos.",
+        "active": "Activa",
+        "disabled": "Deshabilitada",
+        "acknowledge": "Confirmar",
+        "threshold": "Umbral: {cost}",
+        "current": "Actual: {cost}",
+        "thresholdCurrent": "Umbral: {threshold} | Actual: {current}",
+        "dismiss": "Descartar"
+      },
+      "createAlertDialog": {
+        "title": "Crear alerta de costos",
+        "description": "Configure una nueva alerta para monitorear sus gastos de IA",
+        "alertType": "Tipo de alerta",
+        "threshold": "Umbral (USD)",
+        "severity": "Severidad",
+        "resetPeriod": "Período de reinicio",
+        "enableImmediately": "Habilitar alerta inmediatamente",
+        "sendNotifications": "Enviar notificaciones al activarse",
+        "cancel": "Cancelar",
+        "create": "Crear alerta",
+        "alertTypes": {
+          "budget_threshold": "Umbral de presupuesto",
+          "daily_limit": "Límite diario",
+          "session_limit": "Límite de sesión",
+          "rate_spike": "Pico de gasto",
+          "unusual_usage": "Uso inusual"
+        },
+        "severities": {
+          "info": "Información",
+          "warning": "Advertencia",
+          "critical": "Crítico"
+        }
+      },
+      "noUsageData": "Sin datos de uso para este período"
+    },
+    "modelDetails": {
+      "removeFavorite": "Quitar de favoritos",
+      "addFavorite": "Agregar a favoritos",
+      "close": "Cerrar",
+      "addToComparison": "Agregar a comparación",
+      "useThisModel": "Usar este modelo",
+      "tabs": {
+        "overview": "Resumen",
+        "capabilities": "Capacidades",
+        "benchmarks": "Benchmarks",
+        "pricing": "Precios"
+      },
+      "overview": {
+        "description": "Descripción",
+        "noDescription": "No hay descripción disponible.",
+        "keyMetrics": "Métricas clave",
+        "qualityTier": "Nivel de calidad",
+        "avgLatency": "Latencia promedio",
+        "tokensPerSec": "Tokens/seg",
+        "benchmarkScore": "Puntuación de benchmark",
+        "tokenLimits": "Límites de tokens",
+        "contextWindow": "Ventana de contexto",
+        "maxInput": "Entrada máxima",
+        "maxOutput": "Salida máxima",
+        "tags": "Etiquetas",
+        "provider": "Proveedor",
+        "tier": "Nivel: {tier}",
+        "apiDocs": "Documentación API"
+      },
+      "capabilities": {
+        "featureSupport": "Soporte de funciones",
+        "functionCalling": "Llamada a funciones",
+        "streaming": "Streaming",
+        "vision": "Visión",
+        "deprecated": "Obsoleto",
+        "active": "Activo"
+      },
+      "benchmarks": {
+        "overallScore": "Puntuación general de benchmark",
+        "aggregatedFrom": "Agregado de {count} benchmarks",
+        "scoresByCategory": "Puntuaciones por categoría",
+        "individualBenchmarks": "Benchmarks individuales",
+        "noBenchmarkData": "Sin datos de benchmark",
+        "noBenchmarkDataDesc": "Los datos de benchmark aún no están disponibles para este modelo."
+      },
+      "pricing": {
+        "basePricing": "Precios base",
+        "inputTokens": "Tokens de entrada",
+        "outputTokens": "Tokens de salida",
+        "per1kTokens": "por 1.000 tokens",
+        "costCalculator": "Calculadora de costos",
+        "inputTokensLabel": "Tokens de entrada",
+        "outputTokensLabel": "Tokens de salida",
+        "requestsPerDay": "Solicitudes/día",
+        "perRequest": "Por solicitud",
+        "dailyCost": "Costo diario",
+        "monthlyCost": "Costo mensual",
+        "freeTierAvailable": "Nivel gratuito disponible"
+      },
+      "quality": {
+        "basic": "Básico",
+        "basicDesc": "Adecuado para tareas simples y conversaciones básicas",
+        "good": "Bueno",
+        "goodDesc": "Confiable para la mayoría de los casos de uso cotidianos",
+        "excellent": "Excelente",
+        "excellentDesc": "Alto rendimiento para tareas complejas",
+        "stateOfArt": "Estado del arte",
+        "stateOfArtDesc": "Rendimiento de vanguardia, el mejor en su clase"
+      },
+      "speed": {
+        "slow": "Lento",
+        "slowDesc": "Tiempos de respuesta más largos, ideal para tareas no urgentes",
+        "medium": "Medio",
+        "mediumDesc": "Tiempos de respuesta equilibrados para la mayoría de los casos",
+        "fast": "Rápido",
+        "fastDesc": "Respuestas rápidas adecuadas para uso interactivo",
+        "veryFast": "Muy rápido",
+        "veryFastDesc": "Respuestas casi instantáneas para aplicaciones en tiempo real"
+      }
+    },
+    "qualityDashboard": {
+      "title": "Dashboard de Métricas de Calidad de IA",
+      "description": "Seguimiento de la calidad de sugerencias de IA, tasas de aceptación y rendimiento de modelos",
+      "refresh": "Actualizar",
+      "allModels": "Todos los modelos",
+      "lastUpdated": "Última actualización: {time}",
+      "errorLoading": "Error al cargar el dashboard: {error}",
+      "retry": "Reintentar",
+      "noQualityData": "No hay datos de calidad disponibles",
+      "periodSelect": {
+        "daily": "Diario",
+        "weekly": "Semanal",
+        "monthly": "Mensual"
+      },
+      "stats": {
+        "acceptanceRate": "Tasa de aceptación",
+        "acceptanceRateDesc": "{count} sugerencias",
+        "avgEditDistance": "Distancia de edición promedio",
+        "avgEditDistanceDesc": "Caracteres modificados",
+        "avgSimilarity": "Similitud promedio",
+        "avgSimilarityDesc": "Respecto a la sugerencia original",
+        "avgTimeToAccept": "Tiempo promedio de aceptación",
+        "ratingDesc": "Calificación: {rating}★"
+      },
+      "activeAlerts": "{count} alertas de calidad activas",
+      "criticalAlerts": "{count} críticas",
+      "tabs": {
+        "overview": "Resumen",
+        "byModel": "Por modelo",
+        "trends": "Tendencias",
+        "alerts": "Alertas"
+      },
+      "overview": {
+        "recentActivity": "Actividad reciente",
+        "recentActivityDesc": "Último rendimiento de modelos",
+        "modelHealthSummary": "Resumen de salud de modelos",
+        "modelHealthSummaryDesc": "Estado de todos los modelos monitoreados",
+        "noRecentActivity": "Sin actividad reciente",
+        "noModelsTracked": "Aún no se monitorean modelos",
+        "suggestions": "{count} sugerencias"
+      },
+      "modelCard": {
+        "acceptanceRate": "Tasa de aceptación",
+        "totalSuggestions": "Sugerencias totales",
+        "editDistance": "Distancia de edición",
+        "similarity": "Similitud",
+        "rating": "Calificación",
+        "avgTime": "Tiempo prom.:",
+        "accepted": "aceptadas",
+        "rejected": "rechazadas",
+        "notAvailable": "N/A"
+      },
+      "modelTab": {
+        "noModelData": "No hay datos de modelos disponibles para el período seleccionado"
+      },
+      "trends": {
+        "title": "Tendencias de calidad a lo largo del tiempo",
+        "noTrendData": "No hay datos de tendencia disponibles para el período seleccionado",
+        "metricSelect": {
+          "acceptanceRate": "Tasa de aceptación",
+          "editDistance": "Distancia de edición",
+          "similarity": "Similitud",
+          "rating": "Calificación"
+        }
+      },
+      "alertsTab": {
+        "title": "Alertas de degradación de calidad",
+        "description": "Monitorear problemas de calidad en todos los modelos",
+        "noAlerts": "Sin alertas de calidad. ¡Todos los modelos funcionan correctamente!",
+        "detected": "Detectado: {time}",
+        "current": "Actual: {value}",
+        "threshold": "Umbral: {value}",
+        "dismiss": "Descartar",
+        "resolved": "RESUELTO"
+      },
+      "dismiss": "Descartar"
+    },
+    "contextMetrics": {
+      "title": "Métricas de Contexto",
+      "description": "Métricas de calidad y utilización de la ventana de contexto",
+      "autoRefreshOn": "Auto-actualización activada",
+      "autoRefreshOff": "Auto-actualización desactivada",
+      "refresh": "Actualizar",
+      "errorLoading": "Error al cargar métricas: {error}",
+      "stats": {
+        "contextUtilization": "Utilización de contexto",
+        "contextUtilizationDesc": "{tokens} / {available} tokens",
+        "avgRelevanceScore": "Puntuación de relevancia promedio",
+        "avgRelevanceScoreDesc": "{count} elementos incluidos",
+        "itemsIncluded": "Elementos incluidos",
+        "itemsIncludedDesc": "{count} excluidos",
+        "avgBuildTime": "Tiempo de construcción promedio",
+        "avgBuildTimeDesc": "{count} construcciones"
+      },
+      "currentContext": {
+        "title": "Ventana de contexto actual",
+        "description": "Estrategia: {strategy} | Modelo: {model}",
+        "tokenUtilization": "Utilización de tokens",
+        "totalTokens": "Tokens totales:",
+        "available": "Disponibles:",
+        "exclusionRate": "Tasa de exclusión:",
+        "buildTime": "Tiempo de construcción:"
+      },
+      "tabs": {
+        "utilization": "Utilización",
+        "priority": "Prioridad",
+        "types": "Tipos",
+        "relevance": "Relevancia"
+      },
+      "utilizationHistory": {
+        "title": "Historial de utilización",
+        "description": "Utilización de la ventana de contexto en construcciones recientes"
+      },
+      "priorityDistribution": {
+        "title": "Distribución por prioridad",
+        "description": "Desglose de elementos de contexto por nivel de prioridad"
+      },
+      "typeDistribution": {
+        "title": "Distribución por tipo de elemento",
+        "description": "Desglose de elementos de contexto por tipo"
+      },
+      "relevanceScores": {
+        "title": "Distribución de puntuaciones de relevancia",
+        "description": "Distribución de las puntuaciones de relevancia de los elementos",
+        "min": "Mín:",
+        "max": "Máx:",
+        "mean": "Media:",
+        "median": "Mediana:",
+        "p95": "P95:"
+      },
+      "sessionStats": {
+        "title": "Estadísticas de sesión",
+        "description": "Métricas agregadas para la sesión {sessionId}",
+        "totalEvents": "Eventos totales:",
+        "contextBuilds": "Construcciones de contexto:",
+        "avgTokens": "Tokens promedio:",
+        "avgExclusion": "Exclusión promedio:"
+      }
+    },
+    "vectorExplorer": {
+      "title": "Explorador de Similitud Vectorial",
+      "description": "Buscar contenido semánticamente similar usando embeddings de IA",
+      "searchQuery": "Consulta de búsqueda",
+      "searchQueryPlaceholder": "Ingrese texto para encontrar contenido similar... (Cmd/Ctrl + Enter para buscar)",
+      "searchQueryHint": "Ingrese cualquier texto y encontraremos contenido semánticamente similar en la base de datos",
+      "contentType": "Tipo de contenido",
+      "resultLimit": "Límite de resultados",
+      "similarityThreshold": "Umbral de similitud",
+      "search": "Buscar contenido similar",
+      "searching": "Buscando...",
+      "errorPrefix": "Error: {error}",
+      "searchResults": "Resultados de búsqueda",
+      "cached": "En caché",
+      "embeddingCached": "Embedding en caché",
+      "resultsCount": "{count} resultados",
+      "foundResults": "Se encontraron {count} elemento(s) de tipo {type} similares",
+      "foundResultsWithThreshold": "con similitud ≥ {threshold}%",
+      "noSimilarContent": "No se encontró contenido similar",
+      "noSimilarContentHint": "Intente reducir el umbral de similitud o cambiar el tipo de contenido",
+      "matchPercent": "{percent}% de coincidencia",
+      "language": "Lenguaje: {lang}",
+      "framework": "Framework: {fw}",
+      "created": "Creado: {date}",
+      "embeddingAnalysis": "Análisis de embeddings",
+      "embeddingAnalysisDesc": "Representación visual de embeddings vectoriales y puntuaciones de similitud",
+      "howItWorks": "Cómo funciona:",
+      "howItWorksSteps": {
+        "step1": "Ingrese su consulta de búsqueda en el área de texto superior",
+        "step2": "Seleccione el tipo de contenido que desea buscar (código, documentación o chat)",
+        "step3": "Ajuste el límite de resultados y el umbral de similitud según sea necesario",
+        "step4": "Haga clic en \"Buscar\" o presione Cmd/Ctrl + Enter para encontrar contenido similar",
+        "step5": "Vea resultados detallados con puntuaciones de similitud y visualizaciones de embeddings"
+      },
+      "contentTypes": {
+        "code": "Código",
+        "documentation": "Documentación",
+        "chat": "Chat"
+      },
+      "limits": {
+        "five": "5 resultados",
+        "ten": "10 resultados",
+        "twenty": "20 resultados",
+        "fifty": "50 resultados"
+      },
+      "thresholds": {
+        "low": "50% (Bajo)",
+        "mediumLow": "60% (Medio-Bajo)",
+        "medium": "70% (Medio)",
+        "high": "80% (Alto)",
+        "veryHigh": "90% (Muy Alto)"
+      }
+    },
+    "modelComparison": {
+      "title": "Comparación de modelos",
+      "description": "Compare hasta {max} modelos lado a lado",
+      "addModel": "Agregar modelo",
+      "addModelToCompare": "Agregar modelo para comparar",
+      "addModelDescription": "Seleccione un modelo para agregar a la comparación",
+      "cancel": "Cancelar",
+      "noModelsTitle": "No hay modelos para comparar",
+      "noModelsDescription": "Agregue al menos 2 modelos para comenzar a comparar",
+      "addFirstModel": "Agregar primer modelo",
+      "addAnotherModel": "Agregar otro modelo para comparar",
+      "recommended": "Recomendado",
+      "recommendationReason": "{name} obtiene la puntuación más alta con rendimiento equilibrado en todos los criterios",
+      "removeFromComparison": "Quitar modelo de la comparación",
+      "score": "Puntuación",
+      "useThisModel": "Usar este modelo",
+      "selectModel": "Seleccionar modelo",
+      "tabs": {
+        "cardView": "Vista de tarjetas",
+        "tableView": "Vista de tabla",
+        "criteria": "Criterios"
+      },
+      "criteria": {
+        "title": "Criterios de comparación",
+        "description": "Ajuste la importancia de cada factor en la comparación",
+        "costImportance": "Importancia del costo",
+        "speedImportance": "Importancia de la velocidad",
+        "qualityImportance": "Importancia de la calidad",
+        "contextSizeImportance": "Importancia del tamaño de contexto"
+      },
+      "table": {
+        "attribute": "Atributo",
+        "overallScore": "Puntuación general",
+        "priceInput": "Precio (Entrada)",
+        "priceOutput": "Precio (Salida)",
+        "contextWindow": "Ventana de contexto",
+        "speed": "Velocidad",
+        "quality": "Calidad",
+        "coding": "Programación",
+        "reasoning": "Razonamiento",
+        "creative": "Creatividad",
+        "math": "Matemáticas",
+        "vision": "Visión",
+        "functionCalling": "Llamada a funciones",
+        "avgLatency": "Latencia promedio",
+        "yes": "Sí",
+        "no": "No"
+      },
+      "modelCard": {
+        "input": "Entrada",
+        "output": "Salida",
+        "context": "Contexto",
+        "coding": "Programación",
+        "reasoning": "Razonamiento",
+        "creative": "Creatividad",
+        "math": "Matemáticas",
+        "vision": "Visión",
+        "functions": "Funciones",
+        "streaming": "Streaming"
+      },
+      "quickSummary": {
+        "title": "Resumen rápido",
+        "bestForCoding": "Mejor para programación",
+        "bestReasoning": "Mejor razonamiento",
+        "bestValue": "Mejor relación calidad-precio",
+        "fastest": "Más rápido",
+        "largestContext": "Mayor contexto"
+      },
+      "pros": {
+        "stateOfArtQuality": "Calidad de estado del arte",
+        "excellentQuality": "Calidad excelente",
+        "veryFastResponses": "Respuestas muy rápidas",
+        "fastResponses": "Respuestas rápidas",
+        "veryAffordable": "Muy económico",
+        "largeContextWindow": "Ventana de contexto amplia",
+        "visionCapable": "Capacidad de visión",
+        "functionCalling": "Soporte de llamada a funciones"
+      },
+      "cons": {
+        "basicQuality": "Nivel de calidad básico",
+        "slowerResponses": "Respuestas más lentas",
+        "higherCost": "Costo más alto",
+        "limitedContext": "Contexto limitado"
+      }
+    }
+  },
+  "chat": {
+    "title": "Chat de IA",
+    "heading": "Chat de IA",
+    "emptyState": "Aún no hay mensajes. ¡Inicie una conversación!",
+    "inputPlaceholder": "Escriba su mensaje... (Shift+Enter para nueva línea)",
+    "promptPlaceholder": "Pregunte lo que quiera...",
+    "sendButton": "Enviar",
+    "sendingButton": "Enviando...",
+    "clearButton": "Limpiar",
+    "thinkingIndicator": "Pensando...",
+    "modelLabel": "Modelo",
+    "modelPlaceholder": "Seleccionar un modelo...",
+    "newConversation": "Nueva conversación",
+    "clearChat": "Limpiar chat",
+    "regenerate": "Regenerar respuesta",
+    "copyCode": "Copiar código",
+    "aiWorkspaceTitle": "Workspace de IA",
+    "aiWorkspaceSubtitle": "Inicie una conversación con su asistente de IA",
+    "costConfirmDialog": {
+      "title": "Confirmar solicitud costosa",
+      "description": "Se estima que este mensaje utilizará más de 500 tokens. Revise la estimación de costo a continuación.",
+      "modelLabel": "Modelo:",
+      "highTokenWarningTitle": "Alto consumo de tokens detectado",
+      "highTokenWarningDescription": "Estimado de {tokenCount} tokens. Esta solicitud puede generar costos más altos.",
+      "cancelButton": "Cancelar",
+      "confirmButton": "Enviar de todos modos"
+    }
+  },
+  "settings": {
+    "pageTitle": "Configuración",
+    "pageDescription": "Configure sus preferencias de VibeCode y ajustes de la aplicación",
+    "title": "Configuración",
+    "exportSettings": "Exportar configuración",
+    "importSettings": "Importar configuración",
+    "importSettingsFileLabel": "Archivo de configuración a importar",
+    "resetToDefaults": "Restablecer valores predeterminados",
+    "setupWizard": "Asistente de configuración",
+    "exportSuccess": "Configuración exportada correctamente",
+    "exportFailed": "Error al exportar la configuración",
+    "importSelectJson": "Seleccione un archivo JSON",
+    "importOverwriteConfirm": "Esto sobrescribirá su configuración actual. ¿Desea continuar?",
+    "importInvalidFormat": "Formato de archivo de configuración no válido",
+    "importInvalidSections": "El archivo de configuración no contiene secciones válidas",
+    "importParseFailed": "Error al analizar el archivo de configuración. Asegúrese de que contenga JSON válido.",
+    "importSuccess": "Configuración importada correctamente",
+    "resetConfirm": "¿Restablecer toda la configuración a los valores predeterminados?",
+    "resetSuccess": "Configuración restablecida a valores predeterminados",
+    "resetFailed": "Error al restablecer la configuración",
+    "importLabel": "Archivo de configuración a importar",
+    "saveStatus": {
+      "saved": "Guardado",
+      "error": "Error",
+      "unsavedChanges": "Cambios sin guardar",
+      "saving": "Guardando...",
+      "pleaseFixErrors": "Corrija los siguientes errores:"
+    },
+    "closeSettingsLabel": "Cerrar configuración",
+    "resetAllLabel": "Restablecer toda la configuración a valores predeterminados",
+    "saveSettingsLabel": "Guardar configuración",
+    "tabs": {
+      "general": "General",
+      "services": "Servicios",
+      "networking": "Red",
+      "environment": "Entorno",
+      "ai": "IA",
+      "advanced": "Avanzado"
+    },
+    "general": {
+      "title": "Configuración general",
+      "resetLabel": "Restablecer configuración general a valores predeterminados",
+      "theme": {
+        "label": "Tema",
+        "description": "Elija su esquema de colores preferido",
+        "light": "Claro",
+        "dark": "Oscuro",
+        "system": "Sistema",
+        "ariaLabel": "Selección de tema"
+      },
+      "launchAtLogin": {
+        "label": "Iniciar al arrancar",
+        "description": "Iniciar VibeCode automáticamente al iniciar sesión"
+      },
+      "minimizeToTray": {
+        "label": "Minimizar a la bandeja",
+        "description": "Mantener VibeCode ejecutándose en la bandeja del sistema al cerrar"
+      },
+      "notifications": {
+        "label": "Notificaciones",
+        "description": "Mostrar notificaciones de escritorio para eventos importantes"
+      },
+      "confirmOnClose": {
+        "label": "Confirmar al cerrar",
+        "description": "Solicitar confirmación antes de cerrar con cambios sin guardar"
+      },
+      "autoSaveInterval": {
+        "label": "Intervalo de autoguardado",
+        "description": "Guardar automáticamente su trabajo (en segundos, 0 para deshabilitar)"
+      },
+      "vimMode": {
+        "label": "Modo Vim",
+        "description": "Habilitar navegación de teclado estilo vim (j/k para desplazamiento, etc.)"
+      }
+    },
+    "services": {
+      "title": "Configuración de servicios",
+      "resetLabel": "Restablecer configuración de servicios a valores predeterminados",
+      "autoStartServices": {
+        "label": "Inicio automático de servicios",
+        "description": "Iniciar automáticamente los servicios en segundo plano al arrancar la aplicación"
+      },
+      "healthMonitoring": {
+        "label": "Monitoreo de salud",
+        "description": "Habilitar verificaciones de salud de servicios en tiempo real"
+      },
+      "portConfiguration": {
+        "title": "Configuración de puertos",
+        "appPort": "Puerto de la aplicación",
+        "aiGatewayPort": "Puerto del Gateway de IA",
+        "databasePort": "Puerto de base de datos",
+        "vmServicePort": "Puerto del servicio VM"
+      },
+      "timeoutConfiguration": {
+        "title": "Configuración de tiempos de espera (ms)",
+        "connectionTimeout": "Tiempo de espera de conexión",
+        "requestTimeout": "Tiempo de espera de solicitud"
+      },
+      "maxRetries": {
+        "label": "Máximo de reintentos",
+        "description": "Máximo de intentos de reconexión para conexiones fallidas"
+      }
+    },
+    "networking": {
+      "title": "Red y seguridad",
+      "subtitle": "Red de confianza cero con Tailscale",
+      "connectionStatusTitle": "Estado de conexión",
+      "setupConfigTitle": "Instalación y configuración",
+      "aboutTailscale": {
+        "title": "Acerca de Tailscale",
+        "description": "Tailscale crea una red superpuesta segura que permite que sus dispositivos se comuniquen de forma segura por internet sin exponer servicios al público.",
+        "keyFeatures": "Características principales:",
+        "features": {
+          "encryption": "Cifrado de extremo a extremo para todo el tráfico",
+          "zeroTrust": "Modelo de seguridad de confianza cero",
+          "noPorts": "Sin puertos abiertos a internet público",
+          "keyRotation": "Rotación y gestión automática de claves",
+          "crossPlatform": "Soporte multiplataforma"
+        }
+      }
+    },
+    "ai": {
+      "title": "Configuración de IA",
+      "resetLabel": "Restablecer configuración de IA a valores predeterminados",
+      "defaultModel": {
+        "label": "Modelo predeterminado",
+        "description": "El modelo de IA a utilizar por defecto",
+        "placeholder": "Seleccionar un modelo"
+      },
+      "apiKeys": {
+        "title": "Claves API",
+        "description": "Las claves API se almacenan de forma segura y nunca se exponen en las exportaciones de configuración",
+        "openaiLabel": "Clave API de OpenAI",
+        "openaiPlaceholder": "sk-...",
+        "anthropicLabel": "Clave API de Anthropic",
+        "anthropicPlaceholder": "sk-ant-..."
+      },
+      "maxTokens": {
+        "label": "Tokens máximos",
+        "description": "Número máximo de tokens en las respuestas de IA"
+      },
+      "temperature": {
+        "label": "Temperatura",
+        "description": "Controla la creatividad: 0 es enfocado, 2 es altamente creativo"
+      },
+      "topP": {
+        "label": "Top P (Muestreo por núcleo)"
+      },
+      "streamResponses": {
+        "label": "Transmitir respuestas",
+        "description": "Mostrar las respuestas de IA a medida que se generan"
+      },
+      "codeSuggestions": {
+        "label": "Sugerencias de código",
+        "description": "Habilitar completado de código con IA"
+      },
+      "autoCompleteDelay": {
+        "label": "Retardo de autocompletado",
+        "description": "Retardo antes de mostrar sugerencias (en milisegundos)"
+      }
+    },
+    "advanced": {
+      "title": "Configuración avanzada",
+      "resetLabel": "Restablecer configuración avanzada a valores predeterminados",
+      "agentSafety": {
+        "title": "Seguridad y confirmación del agente",
+        "description": "Configure cómo se previsualizan y aprueban las acciones del agente antes de ejecutarse",
+        "enableActionPreview": {
+          "label": "Habilitar previsualización de acciones",
+          "description": "Mostrar vistas previas de diferencias antes de aplicar cambios"
+        },
+        "requireConfirmation": {
+          "label": "Requerir confirmación",
+          "description": "Requerir aprobación explícita para las acciones del agente"
+        },
+        "bulkApprovalMode": {
+          "label": "Modo de aprobación masiva",
+          "description": "Permitir aprobar múltiples cambios a la vez"
+        },
+        "showExplanations": {
+          "label": "Mostrar explicaciones",
+          "description": "Mostrar por qué se propone cada cambio"
+        },
+        "autoApproveReadOnly": {
+          "label": "Auto-aprobar solo lectura",
+          "description": "Omitir confirmación para operaciones de solo lectura"
+        }
+      },
+      "telemetry": {
+        "title": "Privacidad y telemetría",
+        "analytics": {
+          "label": "Analíticas anónimas",
+          "description": "Ayude a mejorar VibeCode compartiendo datos de uso anónimos"
+        },
+        "crashReporting": {
+          "label": "Reporte de errores",
+          "description": "Enviar automáticamente reportes de fallos para ayudar a corregir problemas"
+        },
+        "performanceMonitoring": {
+          "label": "Monitoreo de rendimiento",
+          "description": "Seguimiento de métricas de rendimiento de la aplicación"
+        }
+      },
+      "debugMode": {
+        "label": "Modo de depuración",
+        "description": "Habilitar registro adicional y funciones para desarrolladores"
+      },
+      "logLevel": {
+        "label": "Nivel de registro",
+        "description": "Establecer la verbosidad de los registros de la aplicación",
+        "options": {
+          "error": "Error",
+          "warn": "Advertencia",
+          "info": "Información",
+          "debug": "Depuración",
+          "trace": "Traza"
+        }
+      },
+      "dataDirectory": {
+        "label": "Directorio de datos",
+        "description": "Ruta personalizada para el almacenamiento de datos de la aplicación",
+        "placeholder": "Ubicación predeterminada"
+      },
+      "hardwareAcceleration": {
+        "label": "Aceleración por hardware",
+        "description": "Usar GPU para mejorar el rendimiento"
+      },
+      "experimentalFeatures": {
+        "label": "Funciones experimentales",
+        "description": "Habilitar funciones que aún están en desarrollo"
+      },
+      "proxy": {
+        "title": "Configuración de proxy",
+        "urlLabel": "URL del proxy",
+        "urlPlaceholder": "http://proxy.example.com:8080",
+        "bypassForLocal": {
+          "label": "Omitir para red local",
+          "description": "Omitir proxy para direcciones de red local"
+        }
+      }
+    },
+    "maskedInput": {
+      "showValue": "Mostrar valor",
+      "hideValue": "Ocultar valor"
+    }
+  },
+  "workspace": {
+    "title": "Workspaces",
+    "pageTitle": "Workspaces",
+    "e2eTestMode": "Modo de prueba E2E",
+    "create": "Crear workspace",
+    "createWorkspace": "Crear Workspace",
+    "clone": "Clonar workspace",
+    "delete": "Eliminar workspace",
+    "open": "Abrir workspace",
+    "rename": "Renombrar workspace",
+    "useTemplate": "Usar plantilla",
+    "searchPlaceholder": "Buscar workspaces...",
+    "searchAriaLabel": "Buscar workspaces",
+    "loadingAriaLabel": "Cargando workspaces",
+    "emptyState": {
+      "title": "No se encontraron workspaces",
+      "description": "Cree su primer workspace para comenzar"
+    },
+    "workspaceCard": {
+      "createdLabel": "Creado {date}",
+      "openButton": "Abrir",
+      "editButton": "Editar workspace",
+      "settingsButton": "Configuración del workspace"
+    },
+    "createModal": {
+      "title": "Crear nuevo Workspace",
+      "nameLabel": "Nombre del Workspace",
+      "namePlaceholder": "Ingrese el nombre del workspace",
+      "descriptionLabel": "Descripción (Opcional)",
+      "descriptionPlaceholder": "Ingrese la descripción del workspace",
+      "submitButton": "Crear Workspace",
+      "creatingButton": "Creando...",
+      "cancelButton": "Cancelar",
+      "nameRequired": "El nombre del workspace es obligatorio",
+      "nameTooShort": "El nombre del workspace debe tener al menos 3 caracteres"
+    },
+    "templateModal": {
+      "title": "Elegir plantilla",
+      "nextjsTypescript": "Next.js + TypeScript",
+      "nextjsTypescriptDescription": "Aplicación web full-stack",
+      "reactVite": "React + Vite",
+      "reactViteDescription": "Desarrollo frontend rápido",
+      "nodejsApi": "Node.js API",
+      "nodejsApiDescription": "API REST backend",
+      "continueButton": "Continuar",
+      "cancelButton": "Cancelar"
+    }
+  },
+  "statusBar": {
+    "serviceHealth": "Estado de servicios",
+    "lastUpdated": "Última actualización: ",
+    "loadingHealth": "Cargando estado de salud",
+    "healthLabel": "Barra de estado de salud de servicios",
+    "detailedHealthLabel": "Información detallada de salud de servicios",
+    "healthy": "Saludable",
+    "degraded": "Degradado",
+    "unhealthy": "No saludable",
+    "unknown": "Desconocido",
+    "collapseStatusBar": "Contraer barra de estado",
+    "expandStatusBar": "Expandir barra de estado",
+    "ariaRegionLabel": "Barra de estado de salud de servicios",
+    "healthyServicesCount": "{healthy} servicios saludables de {total} en total",
+    "connection": {
+      "liveUpdatesEnabled": "Actualizaciones en vivo habilitadas",
+      "reconnecting": "Reconectando a actualizaciones en vivo",
+      "usingPolling": "Usando sondeo para actualizaciones"
+    },
+    "overallStatus": {
+      "allSystemsOperational": "Todos los sistemas operativos",
+      "someSystemsDegraded": "Algunos sistemas degradados",
+      "systemIssuesDetected": "Problemas del sistema detectados",
+      "statusUnknown": "Estado desconocido"
+    }
+  },
+  "commandPalette": {
+    "searchPlaceholder": "Escriba un comando o busque...",
+    "searchAriaLabel": "Buscar comandos",
+    "closeAriaLabel": "Cerrar paleta de comandos",
+    "resultsAriaLabel": "Resultados de comandos",
+    "noCommandsFound": "No se encontraron comandos para \"{query}\"",
+    "typeToSearch": "Escriba para buscar comandos...",
+    "keyboardHints": {
+      "navigate": "Navegar",
+      "select": "Seleccionar",
+      "close": "Cerrar"
+    },
+    "commands": {
+      "goDashboard": "Ir al Dashboard",
+      "goDashboardDescription": "Navegar al dashboard principal",
+      "goVm": "Ir a gestión de VM",
+      "goVmDescription": "Administrar máquinas virtuales",
+      "goAiChat": "Ir al Chat de IA",
+      "goAiChatDescription": "Abrir interfaz de chat con IA",
+      "openSettings": "Abrir Configuración",
+      "openSettingsDescription": "Configurar ajustes de la aplicación",
+      "goMonitoring": "Ir a Monitoreo",
+      "goMonitoringDescription": "Ver monitoreo y métricas del sistema"
+    }
+  },
+  "auth": {
+    "signInTitle": "Inicio de sesión de desarrollo VibeCode",
+    "signInSubtitle": "Inicio de sesión simple para entorno de desarrollo",
+    "signUpTitle": "Cree su cuenta",
+    "email": "Correo electrónico",
+    "emailLabel": "Dirección de correo electrónico",
+    "emailPlaceholder": "Dirección de correo electrónico",
+    "password": "Contraseña",
+    "passwordLabel": "Contraseña",
+    "passwordPlaceholder": "Contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "forgotPassword": "¿Olvidó su contraseña?",
+    "noAccount": "¿No tiene una cuenta?",
+    "hasAccount": "¿Ya tiene una cuenta?",
+    "signInWith": "Iniciar sesión con {provider}",
+    "orContinueWith": "O continuar con",
+    "signInButton": "Iniciar sesión",
+    "testUsersHeading": "Usuarios de prueba de desarrollo:",
+    "adminUsersLabel": "Administradores:",
+    "developersLabel": "Desarrolladores:",
+    "teamMembersLabel": "Miembros del equipo:",
+    "errors": {
+      "invalidCredentials": "Credenciales no válidas",
+      "authFailed": "Error de autenticación: no se creó la sesión",
+      "unexpectedError": "Ocurrió un error inesperado",
+      "validEmail": "Ingrese una dirección de correo electrónico válida",
+      "passwordTooShort": "La contraseña debe tener al menos 6 caracteres"
+    },
+    "errorPrefix": "Error: "
+  },
+  "onboarding": {
+    "welcomeTitle": "Bienvenido a VibeCode",
+    "subtitle": "Personalice su workspace y conecte los servicios que utiliza a diario.",
+    "closeButton": "Cerrar onboarding",
+    "themeTitle": "Tema",
+    "themeDescription": "Seleccione la apariencia predeterminada del dashboard.",
+    "cliEditorTitle": "Preferencia de editor CLI",
+    "cliEditorDescription": "Adaptaremos los consejos futuros a su editor de terminal favorito.",
+    "editorLabel": "Editor",
+    "selectEditor": "Seleccionar un editor",
+    "extensionsTitle": "Extensiones recomendadas",
+    "extensionsDescription": "Instale estas extensiones de VS Code para complementar el stack de VibeCode.",
+    "copyButton": "Copiar",
+    "integrationsTitle": "Integraciones",
+    "integrationsDescription": "Controle qué servicios ha conectado.",
+    "setupButton": "Configurar",
+    "integrationsIncompleteHint": "Marque cada integración una vez que haya conectado la cuenta o clave API.",
+    "quickActionsTitle": "Acciones rápidas",
+    "codeiumPlayground": "Codeium Playground",
+    "aiConsole": "Consola de IA",
+    "activityLog": "Registro de actividad",
+    "github": "GitHub",
+    "themeOptions": {
+      "light": "Claro",
+      "dark": "Oscuro"
+    },
+    "cliEditorOptions": {
+      "vim": "Vim",
+      "neovim": "Neovim",
+      "codeServer": "code-server"
+    },
+    "integrationServices": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "linear": "Linear",
+      "jira": "Jira",
+      "openai": "OpenAI",
+      "anthropic": "Anthropic"
+    },
+    "errors": {
+      "failedToUpdate": "Error al actualizar las preferencias"
+    }
+  },
+  "offlineIndicator": {
+    "featureAvailabilityTitle": "Disponibilidad de funciones",
+    "features": {
+      "browseLocalFiles": "Explorar archivos locales",
+      "browseLocalFilesDescription": "Acceder a archivos en caché",
+      "viewOrganizations": "Ver organizaciones",
+      "viewOrganizationsDescription": "Ver datos de organizaciones en caché",
+      "viewProjects": "Ver proyectos",
+      "viewProjectsDescription": "Ver datos de proyectos en caché",
+      "createTasks": "Crear tareas",
+      "createTasksDescription": "Requiere conexión al servidor",
+      "syncData": "Sincronizar datos",
+      "syncDataDescription": "Requiere conexión al servidor",
+      "realTimeUpdates": "Actualizaciones en tiempo real",
+      "realTimeUpdatesDescription": "Requiere conexión al servidor"
+    }
+  },
+  "errors": {
+    "notFound": "Página no encontrada",
+    "notFoundDescription": "La página que busca no existe o ha sido movida.",
+    "serverError": "Algo salió mal",
+    "serverErrorDescription": "Ocurrió un error inesperado. Intente de nuevo.",
+    "criticalError": "Error crítico",
+    "criticalErrorDescription": "Ocurrió un error crítico. La aplicación necesita recargarse.",
+    "reloadApplication": "Recargar aplicación",
+    "goHome": "Ir al inicio",
+    "tryAgain": "Intentar de nuevo",
+    "unauthorized": "No autorizado",
+    "forbidden": "Prohibido",
+    "failedToFetchHealth": "Error al obtener datos de salud",
+    "failedToLoadModels": "Error al cargar modelos",
+    "failedToGetRecommendation": "Error al obtener recomendación",
+    "failedToApproveAction": "Error al aprobar acción",
+    "failedToRejectAction": "Error al rechazar acción",
+    "failedToBulkApproveActions": "Error al aprobar acciones en lote"
+  },
+  "notFound": {
+    "code": "404",
+    "title": "Página no encontrada",
+    "description": "La página que busca no existe.",
+    "goHome": "Ir al inicio"
+  },
+  "health": {
+    "title": "Monitor de Estado",
+    "allServicesHealthy": "Todos los servicios están saludables",
+    "servicesDown": "{count} servicios están experimentando problemas",
+    "lastChecked": "Última verificación",
+    "checkNow": "Verificar ahora",
+    "responseTime": "Tiempo de respuesta",
+    "uptime": "Tiempo activo"
+  },
+  "monitoring": {
+    "title": "Monitoreo",
+    "metrics": "Métricas",
+    "traces": "Trazas",
+    "logs": "Registros",
+    "alerts": "Alertas",
+    "dashboardTitle": "Dashboard de Monitoreo",
+    "dashboardSubtitle": "Monitoreo y observabilidad del sistema en tiempo real",
+    "customizeDashboard": "Personalizar Dashboard",
+    "refreshData": "Actualizar datos",
+    "customizationModeEnabled": "Modo de personalización del dashboard habilitado",
+    "connectionError": "Error de conexión: no se pueden obtener los datos más recientes",
+    "systemHealth": "Estado del sistema",
+    "healthy": "Saludable",
+    "warning": "Advertencia",
+    "serviceApiGateway": "API Gateway",
+    "serviceDatabase": "Base de datos",
+    "serviceRedis": "Redis",
+    "serviceAiService": "Servicio de IA",
+    "keyMetrics": "Métricas clave",
+    "cpuUsage": "Uso de CPU",
+    "memoryUsage": "Uso de memoria",
+    "activeUsers": "Usuarios activos",
+    "responseTime": "Tiempo de respuesta",
+    "recentAlerts": "Alertas recientes",
+    "specializedMonitoring": "Monitoreo especializado",
+    "websocket": "WebSocket",
+    "monitorConnections": "Monitorear conexiones",
+    "rateLimit": "Límite de tasa",
+    "trackApiLimits": "Seguimiento de límites de API",
+    "aiUsageLink": "Uso de IA",
+    "modelAnalytics": "Analíticas de modelos",
+    "performanceMetrics": "Métricas de rendimiento",
+    "requestsPerMin": "Solicitudes/min",
+    "avgResponseTime": "Tiempo de respuesta promedio",
+    "activeConnections": "Conexiones activas",
+    "errorRate": "Tasa de errores",
+    "systemLogs": "Registros del sistema",
+    "searchLogs": "Buscar registros...",
+    "allLevels": "Todos los niveles",
+    "logLevelError": "Error",
+    "logLevelWarning": "Advertencia",
+    "logLevelInfo": "Información",
+    "distributedTraces": "Trazas distribuidas",
+    "searchTraces": "Buscar trazas...",
+    "allServices": "Todos los servicios",
+    "rumStatus": "Estado RUM",
+    "rumActive": "Activo",
+    "realUserMonitoring": "Monitoreo de usuarios reales",
+    "coreWebVitals": "Core Web Vitals",
+    "userSessions": "Sesiones de usuario",
+    "activeSessions": "Sesiones activas",
+    "errorTracking": "Seguimiento de errores",
+    "errorsInLastHour": "Errores en la última hora",
+    "breadcrumbMonitoring": "Monitoreo",
+    "database": {
+      "title": "Dashboard de Estado de Base de Datos",
+      "subtitle": "Monitoreo en tiempo real de conexiones y rendimiento de base de datos",
+      "loadingMetrics": "Cargando métricas de salud de base de datos...",
+      "errorLoading": "Error al cargar salud de base de datos",
+      "lastUpdated": "Última actualización",
+      "unknown": "Desconocido",
+      "autoRefresh": "Auto-actualización",
+      "on": "ACTIVADA",
+      "off": "DESACTIVADA",
+      "activePoolAlerts": "Alertas de pool activas ({count})",
+      "utilization": "Utilización",
+      "active": "Activas",
+      "available": "Disponibles",
+      "total": "Total",
+      "connectionStatus": "Estado de conexión",
+      "latency": "Latencia",
+      "activeConnections": "Conexiones activas",
+      "poolStatus": "Estado del pool",
+      "cacheHitRate": "Tasa de aciertos de caché",
+      "excellent": "Excelente",
+      "good": "Bueno",
+      "needsAttention": "Necesita atención",
+      "vectorEmbeddings": "Embeddings vectoriales",
+      "notInstalled": "No instalado",
+      "tabConnectionPools": "Pools de conexiones",
+      "tabPerformance": "Rendimiento",
+      "tabSystemInfo": "Información del sistema",
+      "tabVectorData": "Datos vectoriales",
+      "connectionPoolStatus": "Estado del pool de conexiones",
+      "pending": "Pendientes",
+      "totalQueries": "Consultas totales",
+      "lastUsed": "Último uso",
+      "noConnectionPools": "No hay pools de conexiones activos",
+      "queryPerformance": "Rendimiento de consultas",
+      "queriesPerSecond": "Consultas/segundo",
+      "avgQueryTime": "Tiempo promedio de consulta",
+      "p95QueryTime": "Tiempo de consulta P95",
+      "errorRate": "Tasa de errores",
+      "databaseStatistics": "Estadísticas de base de datos",
+      "committedTransactions": "Transacciones confirmadas",
+      "rolledBackTransactions": "Transacciones revertidas",
+      "rowsReturned": "Filas devueltas",
+      "rowsInserted": "Filas insertadas",
+      "rowsUpdated": "Filas actualizadas",
+      "systemInformation": "Información del sistema de base de datos",
+      "databaseName": "Nombre de base de datos",
+      "user": "Usuario",
+      "serverStartTime": "Hora de inicio del servidor",
+      "version": "Versión",
+      "vectorEmbeddingsStatus": "Estado de embeddings vectoriales",
+      "installed": "Instalado",
+      "totalEmbeddings": "Embeddings totales",
+      "avgContentSize": "Tamaño promedio de contenido",
+      "latestEmbedding": "Último embedding",
+      "embeddingsError": "Error de embeddings",
+      "footerRefreshNote": "Las métricas de salud de base de datos se actualizan cada 10 segundos cuando la auto-actualización está habilitada.",
+      "footerPoolNote": "Las métricas del pool de conexiones se recopilan de todas las conexiones activas a la base de datos."
+    },
+    "llmOps": {
+      "title": "Operaciones LLM",
+      "subtitle": "Monitorear uso, costos y rendimiento de LLM en todos los proveedores",
+      "breadcrumb": "Operaciones LLM",
+      "loadingData": "Cargando datos de operaciones LLM...",
+      "error": "Error",
+      "noData": "No hay datos disponibles",
+      "totalRequests": "Solicitudes totales",
+      "tokensConsumed": "Tokens consumidos",
+      "totalCost30Days": "Costo total (30 días)",
+      "performanceMetrics": "Métricas de rendimiento",
+      "avgLatency": "Latencia promedio",
+      "successRate": "Tasa de éxito",
+      "errorRate": "Tasa de errores",
+      "providerStatistics": "Estadísticas por proveedor",
+      "provider": "Proveedor",
+      "requests": "Solicitudes",
+      "tokens": "Tokens",
+      "cost": "Costo",
+      "status": "Estado",
+      "model": "Modelo",
+      "modelUsageStatistics": "Estadísticas de uso de modelos",
+      "modelsActive30Days": "{count} modelos activos en los últimos 30 días",
+      "recentRequests": "Solicitudes LLM recientes",
+      "allStatus": "Todos los estados",
+      "statusSuccess": "Éxito",
+      "statusError": "Error",
+      "allProviders": "Todos los proveedores",
+      "today": "Hoy",
+      "thisWeek": "Esta semana",
+      "thisMonth": "Este mes",
+      "projected30Days": "Proyectado (30d)",
+      "costBreakdownByProvider": "Desglose de costos por proveedor"
+    },
+    "embeddings": {
+      "title": "Monitoreo del Servicio de Embeddings de Azure",
+      "subtitle": "Métricas en tiempo real y analíticas de uso",
+      "loadingMetrics": "Cargando métricas de embeddings...",
+      "errorLoading": "Error al cargar métricas",
+      "lastUpdated": "Última actualización",
+      "unknown": "Desconocido",
+      "autoRefresh": "Auto-actualización",
+      "on": "ACTIVADA",
+      "off": "DESACTIVADA",
+      "resetMetrics": "Reiniciar métricas",
+      "totalRequests": "Solicitudes totales",
+      "errors": "Errores",
+      "totalTokens": "Tokens totales",
+      "cost": "Costo",
+      "totalCost": "Costo total",
+      "since": "Desde",
+      "avgLatency": "Latencia promedio",
+      "highLatency": "Alta latencia detectada",
+      "performanceNormal": "Rendimiento normal",
+      "tabRecentCalls": "Llamadas recientes",
+      "tabHourlyBreakdown": "Desglose por hora",
+      "tabErrorAnalysis": "Análisis de errores",
+      "tabRecommendations": "Recomendaciones",
+      "recentApiCalls": "Llamadas API recientes",
+      "success": "Éxito",
+      "error": "Error",
+      "hourlyUsageBreakdown": "Desglose de uso por hora",
+      "requests": "{count} solicitudes",
+      "errorsCount": "{count} errores",
+      "errorBreakdown": "Desglose de errores",
+      "occurrences": "{count} ocurrencias",
+      "noErrors": "¡Sin errores en las últimas 24 horas!",
+      "performanceRecommendations": "Recomendaciones de rendimiento",
+      "allSystemsOptimal": "¡Todos los sistemas funcionando de forma óptima! Sin recomendaciones en este momento.",
+      "footerDatadogNote": "Las métricas se envían automáticamente a Datadog para monitoreo y alertas completas.",
+      "footerRefreshNote": "El dashboard se actualiza cada 30 segundos cuando la auto-actualización está habilitada."
+    },
+    "costBreakdown": {
+      "title": "Desglose de costos",
+      "errorLoading": "Error al cargar datos de costos",
+      "retry": "Reintentar",
+      "noData": "No hay datos de costos disponibles para el período seleccionado",
+      "lastHour": "Última hora",
+      "last6Hours": "Últimas 6 horas",
+      "last12Hours": "Últimas 12 horas",
+      "last24Hours": "Últimas 24 horas",
+      "last7Days": "Últimos 7 días",
+      "last30Days": "Últimos 30 días",
+      "exportCsv": "Exportar CSV",
+      "totalCost": "Costo total",
+      "requestsCount": "{count} solicitudes",
+      "avgCostPerRequest": "Costo promedio/solicitud",
+      "totalTokens": "{count} tokens en total",
+      "costTrend": "Tendencia de costos",
+      "comparedToPrevious": "{trend} comparado con el período anterior",
+      "costDistributionByModel": "Distribución de costos por modelo",
+      "noModelData": "No hay datos de costos por modelo disponibles",
+      "costDistributionByProvider": "Distribución de costos por proveedor",
+      "noProviderData": "No hay datos de costos por proveedor disponibles",
+      "costComparisonByModel": "Comparación de costos por modelo",
+      "costAxis": "Costo ($)",
+      "noComparisonData": "No hay datos de comparación de modelos disponibles",
+      "detailedBreakdownByModel": "Desglose detallado por modelo",
+      "model": "Modelo",
+      "requests": "Solicitudes",
+      "avgPerRequest": "Promedio/solicitud",
+      "percentOfTotal": "% del total",
+      "lastUpdated": "Última actualización"
+    },
+    "aiUsage": {
+      "title": "Monitor de Uso de IA",
+      "loadingDashboard": "Cargando dashboard de uso de IA...",
+      "errorLoading": "Error al cargar dashboard",
+      "retry": "Reintentar",
+      "noData": "No hay datos de uso de IA disponibles",
+      "autoRefresh30s": "Auto-actualización (30s)",
+      "refreshNow": "Actualizar ahora",
+      "totalRequests": "Solicitudes totales",
+      "totalCost": "Costo total",
+      "trend24h": "24h",
+      "totalTokens": "Tokens totales",
+      "acrossAllModels": "En todos los modelos",
+      "activeAlerts": "Alertas activas",
+      "criticalWarningCount": "{critical} críticas, {warning} advertencias",
+      "avgResponseTime": "Tiempo de respuesta promedio",
+      "errorRate": "Tasa de errores",
+      "requestsPerMinute": "Solicitudes/minuto",
+      "activeAlertsCount": "Alertas activas ({count})",
+      "recommendationsCount": "Recomendaciones ({count})",
+      "lastUpdated": "Última actualización",
+      "inputTokens": "Entrada",
+      "outputTokens": "Salida",
+      "costPer1kTokens": "Costo/1K tokens",
+      "avgResponse": "Respuesta promedio",
+      "rpm": "RPM",
+      "action": "Acción"
+    },
+    "websocketDashboard": {
+      "title": "Monitor de WebSocket",
+      "loadingDashboard": "Cargando dashboard de WebSocket...",
+      "errorLoading": "Error al cargar dashboard",
+      "retry": "Reintentar",
+      "noData": "No hay datos de WebSocket disponibles",
+      "autoRefresh30s": "Auto-actualización (30s)",
+      "refreshNow": "Actualizar ahora",
+      "activeConnections": "Conexiones activas",
+      "ofTotal": "de {total} en total",
+      "averageLatency": "Latencia promedio",
+      "messages": "Mensajes",
+      "sentReceived": "{sent} enviados, {received} recibidos",
+      "activeAlerts": "Alertas activas",
+      "criticalWarningCount": "{critical} críticas, {warning} advertencias",
+      "activeAlertsCount": "Alertas activas ({count})",
+      "recommendationsCount": "Recomendaciones ({count})",
+      "lastUpdated": "Última actualización",
+      "status": "Estado",
+      "uptime": "Tiempo activo",
+      "sent": "Enviados",
+      "received": "Recibidos",
+      "queued": "En cola",
+      "latency": "Latencia",
+      "avg": "promedio",
+      "ping": "Ping",
+      "errors": "Errores",
+      "reconnects": "Reconexiones",
+      "action": "Acción"
+    }
+  },
+  "editor": {
+    "title": "Editor de Código",
+    "untitled": "Sin título",
+    "saveFile": "Guardar archivo",
+    "openFile": "Abrir archivo",
+    "newFile": "Nuevo archivo"
+  }
+}

@@ -419,7 +419,8 @@ function TrendChart({ data, metric }: TrendChartProps): React.JSX.Element {
             border: '1px solid hsl(var(--border))',
             borderRadius: '8px',
           }}
-          formatter={(value: number) => [value.toFixed(2), metricLabels[metric]]}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          formatter={((value: number) => [value.toFixed(2), metricLabels[metric]]) as any}
         />
         <Area
           type="monotone"

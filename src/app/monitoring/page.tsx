@@ -5,7 +5,7 @@
 
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { DemoBanner } from '@/components/ui/DemoBanner'
@@ -21,41 +21,24 @@ export default function MonitoringDashboard(): React.JSX.Element {
   const [showEditMode, setShowEditMode] = useState(false)
   const [connectionError, setConnectionError] = useState(false)
   
-  // Mock data for E2E testing
-  const systemMetrics = {
-    cpuUsage: 42,
-    memoryUsage: 68,
-    diskUsage: 55,
-    activeUsers: 37,
-    requestsPerMinute: 120,
-    activeConnections: 15,
-    errorRate: 0.8,
-    avgResponseTime: 230
-  }
+  const [systemMetrics, setSystemMetrics] = useState({ cpuUsage: 0, memoryUsage: 0, diskUsage: 0, activeUsers: 0, requestsPerMinute: 0, activeConnections: 0, errorRate: 0, avgResponseTime: 0 })
+  const [alerts, setAlerts] = useState<Array<{ id: number; level: string; message: string; time: string }>>([])
+  const [logs, setLogs] = useState<Array<{ id: number; timestamp: string; level: string; service: string; message: string }>>([])
+  const [traces, setTraces] = useState<Array<{ id: number; traceId: string; service: string; operation: string; duration: string; status: string }>>([])
+  const [webVitals, setWebVitals] = useState<Record<string, { value: number; status: string }>>({ LCP: { value: 0, status: 'good' }, FID: { value: 0, status: 'good' }, CLS: { value: 0, status: 'good' } })
 
-  const alerts = [
-    { id: 1, level: 'warning', message: 'Database connection pool approaching capacity', time: '15 min ago' },
-    { id: 2, level: 'error', message: 'API endpoint /api/vector-search response time exceeded SLA', time: '32 min ago' },
-    { id: 3, level: 'info', message: 'System resources automatically scaled up', time: '1 hour ago' }
-  ]
-
-  const logs = [
-    { id: 1, timestamp: '2024-01-15 10:30:15', level: 'INFO', service: 'api-server', message: 'User authentication successful for user@example.com' },
-    { id: 2, timestamp: '2024-01-15 10:29:45', level: 'WARN', service: 'database', message: 'Connection pool utilization above 80%' },
-    { id: 3, timestamp: '2024-01-15 10:28:30', level: 'ERROR', service: 'ai-service', message: 'OpenRouter API rate limit exceeded' }
-  ]
-
-  const traces = [
-    { id: 1, traceId: 'trace-abc123', service: 'api-gateway', operation: 'POST /api/chat', duration: '245ms', status: 'success' },
-    { id: 2, traceId: 'trace-def456', service: 'ai-service', operation: 'GET /api/models', duration: '89ms', status: 'success' },
-    { id: 3, traceId: 'trace-ghi789', service: 'database', operation: 'SELECT workspaces', duration: '12ms', status: 'success' }
-  ]
-
-  const webVitals = {
-    LCP: { value: 2.3, status: 'good' },
-    FID: { value: 85, status: 'needs-improvement' },
-    CLS: { value: 0.12, status: 'good' }
-  }
+  useEffect(() => {
+    fetch('/api/monitoring/dashboard')
+      .then(res => res.ok ? res.json() : Promise.reject(res))
+      .then(data => {
+        if (data.systemMetrics) setSystemMetrics(data.systemMetrics)
+        if (data.alerts) setAlerts(data.alerts)
+        if (data.logs) setLogs(data.logs)
+        if (data.traces) setTraces(data.traces)
+        if (data.webVitals) setWebVitals(data.webVitals)
+      })
+      .catch(() => {})
+  }, [])
 
   const handleTabClick = (tab: string): void => {
     setActiveTab(tab)

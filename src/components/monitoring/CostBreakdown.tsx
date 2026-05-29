@@ -24,6 +24,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts'
+import type { PieLabel } from 'recharts'
 import { DollarSign, TrendingUp, TrendingDown, Download } from 'lucide-react'
 
 interface ModelCostData {
@@ -137,7 +138,7 @@ interface PieTooltipProps {
 const PieTooltip = memo(function PieTooltip({ active, payload }: PieTooltipProps): React.JSX.Element | null {
   if (!active || !payload || !payload.length) return null
 
-  const data = payload[0].payload
+  const data = payload[0]!.payload
   return (
     <div className="bg-white p-3 border rounded-lg shadow-lg">
       <p className="text-sm font-semibold mb-2">{data.name || data.model || data.provider}</p>
@@ -180,25 +181,26 @@ interface BarTooltipProps {
 const BarTooltip = memo(function BarTooltip({ active, payload }: BarTooltipProps): React.JSX.Element | null {
   if (!active || !payload || !payload.length) return null
 
+  const entry = payload[0]!
   return (
     <div className="bg-white p-3 border rounded-lg shadow-lg">
-      <p className="text-sm font-semibold mb-2">{payload[0].payload.model}</p>
+      <p className="text-sm font-semibold mb-2">{entry.payload.model}</p>
       <div className="space-y-1">
         <div className="flex items-center gap-2 text-sm">
           <div
             className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: payload[0].color }}
+            style={{ backgroundColor: entry.color }}
           />
           <span className="text-gray-600">Total Cost:</span>
-          <span className="font-medium">${payload[0].value.toFixed(4)}</span>
+          <span className="font-medium">${entry.value.toFixed(4)}</span>
         </div>
         <div className="flex items-center justify-between gap-4 text-sm">
           <span className="text-gray-600">Requests:</span>
-          <span className="font-medium">{payload[0].payload.requestCount.toLocaleString()}</span>
+          <span className="font-medium">{entry.payload.requestCount.toLocaleString()}</span>
         </div>
         <div className="flex items-center justify-between gap-4 text-sm">
           <span className="text-gray-600">Avg/Request:</span>
-          <span className="font-medium">${payload[0].payload.avgCostPerRequest.toFixed(6)}</span>
+          <span className="font-medium">${entry.payload.avgCostPerRequest.toFixed(6)}</span>
         </div>
       </div>
     </div>
@@ -504,9 +506,9 @@ function CostBreakdownInner({
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={(entry: { costPercentage: number; name: string }) =>
-                        entry.costPercentage > 5 ? `${entry.name} (${entry.costPercentage.toFixed(1)}%)` : ''
-                      }
+                      label={((entry: Record<string, unknown>) =>
+                        (entry.costPercentage as number) > 5 ? `${entry.name} (${(entry.costPercentage as number).toFixed(1)}%)` : ''
+                      ) as unknown as PieLabel}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
@@ -539,9 +541,9 @@ function CostBreakdownInner({
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={(entry: { costPercentage: number; name: string }) =>
-                        entry.costPercentage > 5 ? `${entry.name} (${entry.costPercentage.toFixed(1)}%)` : ''
-                      }
+                      label={((entry: Record<string, unknown>) =>
+                        (entry.costPercentage as number) > 5 ? `${entry.name} (${(entry.costPercentage as number).toFixed(1)}%)` : ''
+                      ) as unknown as PieLabel}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"

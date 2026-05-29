@@ -666,7 +666,12 @@ export class SAMLProvider {
     canonical = canonical.replace(/<\?xml[^?]*\?>\s*/g, '')
 
     // Remove comments (prevent comment-based canonicalization attacks)
-    canonical = canonical.replace(/<!--[\s\S]*?-->/g, '')
+    canonical = canonical.replace(/<!--[\s\S]*?--!?>/g, '')
+    let prev: string
+    do {
+      prev = canonical
+      canonical = canonical.replace(/<!--|--!?>/g, '')
+    } while (canonical !== prev)
 
     // Normalize whitespace between tags (but preserve content whitespace)
     canonical = canonical.replace(/>\s+</g, '>\n<')
@@ -823,7 +828,7 @@ export class SAMLProvider {
       name = `${firstName} ${lastName}`
     }
     if (!name) {
-      name = email.split('@')[0] // Fallback to email prefix
+      name = email.split('@')[0] ?? email // Fallback to email prefix
     }
 
     const groups = mapping.groups ?

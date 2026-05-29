@@ -72,8 +72,7 @@ export const PROJECT_TEMPLATES: Record<string, ProjectTemplate> = {
         path: 'src/app/layout.tsx',
         content: `import './globals.css'
 import { Inter } from 'next/font/google'
-import { AuthProvider } from '@/components/providers/auth-provider'
-import { ThemeProvider } from '@/components/providers/theme-provider'
+import Providers from '@/app/providers'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -90,11 +89,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ThemeProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </ThemeProvider>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )

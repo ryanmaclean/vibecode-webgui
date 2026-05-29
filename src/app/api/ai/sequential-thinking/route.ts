@@ -135,35 +135,19 @@ async function handlePOST(request: NextRequest) {
         userId: request.user?.id || 'anonymous',
       });
 
-      // For demo/development fallback - create mock thoughts if MCP server is not available
+      // Fallback response when MCP sequential-thinking server is unavailable
       const mockThoughts = [];
-      const thinkingTemplates = [
-        { prefix: "Initial Analysis: ", content: "Understanding the core problem - " },
-        { prefix: "Breaking Down: ", content: "Decomposing the problem into parts - " },
-        { prefix: "Gathering Context: ", content: "Considering relevant information - " },
-        { prefix: "Exploring Solutions: ", content: "Identifying potential approaches - " },
-        { prefix: "Evaluating Options: ", content: "Assessing pros and cons - " },
-        { prefix: "Developing Strategy: ", content: "Planning implementation steps - " },
-        { prefix: "Considering Edge Cases: ", content: "Accounting for exceptions - " },
-        { prefix: "Synthesizing: ", content: "Bringing insights together - " },
-        { prefix: "Reflecting: ", content: "Reviewing the thinking process - " },
-        { prefix: "Concluding: ", content: "Finalizing thoughts on - " }
-      ];
-      
+
       for (let i = 1; i <= numSteps; i++) {
-        const templateIndex = (i - 1) % thinkingTemplates.length;
-        const template = thinkingTemplates[templateIndex];
-        
         mockThoughts.push({
           type: 'thought',
-          text: `Step ${i}/${numSteps}: ${template.prefix}${template.content}'${prompt}'.`
+          text: `Step ${i}/${numSteps}: Sequential thinking service unavailable. Connect the MCP server at localhost:3004 to enable analysis.`
         });
       }
-      
-      // Add a conclusion with a summary
+
       mockThoughts.push({
         type: 'text',
-        text: `Completed sequential thinking process for '${prompt}' in ${numSteps} steps. (Note: This is a fallback response as the MCP server could not be reached.)`
+        text: `Sequential thinking service is not connected. ${numSteps} placeholder steps were returned. Start the MCP server to process this request.`
       });
 
       const processingTime = Date.now() - startTime;

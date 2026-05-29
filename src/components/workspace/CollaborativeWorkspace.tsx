@@ -109,7 +109,7 @@ function CollaborativeWorkspaceContent({
     const currentUser: User = {
       id: userId,
       name: userName,
-      email: `${userName.toLowerCase()}@example.com`,
+      email: userName,
       color: '#1f75cb',
       isActive: true,
       role: 'owner',
@@ -278,7 +278,7 @@ function CollaborativeWorkspaceContent({
       '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'
     ];
     const index = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
-    return colors[index];
+    return colors[index] ?? '#3b82f6';
   };
 
   return (

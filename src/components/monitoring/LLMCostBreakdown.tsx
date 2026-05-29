@@ -298,7 +298,8 @@ function LLMCostBreakdownInner({
   }, [data])
 
   // Memoize tooltip formatter to prevent recreation on every render
-  const tooltipFormatter = useCallback((value: string | number | (string | number)[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tooltipFormatter = useCallback((value: any) => {
     if (typeof value === 'number') return `$${value.toFixed(2)}`
     return String(value)
   }, [])

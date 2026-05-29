@@ -10,7 +10,6 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   StarIcon as StarIconOutline,
-  StarIcon as StarIconSolid,
   ClockIcon,
   UserIcon,
   TagIcon,
@@ -59,11 +58,11 @@ interface TemplateMarketplaceProps {
 
 export function TemplateMarketplace({
   onTemplateSelect,
-  onTemplatePreview,
+  onTemplatePreview: _onTemplatePreview,
   selectedTemplateId,
   selectedCategory,
   className = ''
-}: TemplateMarketplaceProps) {
+}: TemplateMarketplaceProps): React.JSX.Element {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,50 +79,14 @@ export function TemplateMarketplace({
     loadTemplates();
   }, [searchOptions]);
 
-  const loadTemplates = async () => {
+  const loadTemplates = async (): Promise<void> => {
     setLoading(true);
     setError(null);
 
     try {
-      // This would integrate with your template marketplace API
-      // For now, using mock data
-      const mockTemplates: Template[] = [
-        {
-          id: 'react-ts-vite',
-          name: 'React TypeScript Vite',
-          description: 'Modern React application with TypeScript and Vite build system',
-          author: 'VibeCode Team',
-          category: 'web',
-          language: 'typescript',
-          framework: 'react',
-          stars: 4.8,
-          downloads: 15420,
-          tags: ['react', 'typescript', 'vite', 'modern'],
-          complexity: 'intermediate',
-          pricing: 'free',
-          lastUpdated: '2024-01-15',
-          featured: true
-        },
-        {
-          id: 'nextjs-fullstack',
-          name: 'Next.js Full Stack',
-          description: 'Complete full-stack application with Next.js, API routes, and database',
-          author: 'Community',
-          category: 'web',
-          language: 'typescript',
-          framework: 'nextjs',
-          stars: 4.6,
-          downloads: 8930,
-          tags: ['nextjs', 'fullstack', 'api', 'database'],
-          complexity: 'advanced',
-          pricing: 'free',
-          lastUpdated: '2024-01-10',
-          featured: false
-        }
-      ];
-
-      // Apply search filters
-      let filteredTemplates = mockTemplates;
+      const res = await fetch('/api/marketplace/templates')
+      const data = res.ok ? await res.json() : { templates: [] }
+      let filteredTemplates: Template[] = data.templates || [];
 
       if (searchOptions.query) {
         const query = searchOptions.query.toLowerCase();
@@ -177,7 +140,7 @@ export function TemplateMarketplace({
     }
   };
 
-  const handleSortChange = (sortBy: string) => {
+  const handleSortChange = (sortBy: string): void => {
     setSearchOptions(prev => ({
       ...prev,
       sortBy: sortBy as MarketplaceSearchOptions['sortBy'],
@@ -185,7 +148,7 @@ export function TemplateMarketplace({
     }));
   };
 
-  const handleFilterChange = (key: keyof MarketplaceSearchOptions, value: any) => {
+  const handleFilterChange = (key: keyof MarketplaceSearchOptions, value: MarketplaceSearchOptions[keyof MarketplaceSearchOptions]): void => {
     setSearchOptions(prev => ({
       ...prev,
       [key]: value,
@@ -193,7 +156,7 @@ export function TemplateMarketplace({
     }));
   };
 
-  const clearFilters = () => {
+  const clearFilters = (): void => {
     setSearchOptions({
       sortBy: 'relevance',
       pricing: 'all',
@@ -202,7 +165,7 @@ export function TemplateMarketplace({
     });
   };
 
-  const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'sm') => {
+  const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'sm'): React.JSX.Element[] => {
     const sizeClasses = {
       sm: 'h-4 w-4',
       md: 'h-5 w-5',

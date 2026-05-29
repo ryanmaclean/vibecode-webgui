@@ -612,10 +612,10 @@ export class VMPoolManager {
       const { stdout } = await execFileAsync('df', ['-m', '/']);
       const lines = stdout.trim().split('\n');
       if (lines.length >= 2) {
-        const parts = lines[1].trim().split(/\s+/);
+        const parts = lines[1]!.trim().split(/\s+/);
         if (parts.length >= 4) {
-          totalDiskMB = parseInt(parts[1], 10);
-          availableDiskMB = parseInt(parts[3], 10);
+          totalDiskMB = parseInt(parts[1]!, 10);
+          availableDiskMB = parseInt(parts[3]!, 10);
         }
       }
     } catch {
@@ -801,7 +801,11 @@ export class VMPoolManager {
         savedAt: new Date().toISOString()
       };
 
-      await fs.writeFile(this.statePath, JSON.stringify(state, null, 2));
+      const tmpDir = await fs.mkdtemp(path.join(dir, '.state-'));
+      const tmpFile = path.join(tmpDir, 'state.json');
+      await fs.writeFile(tmpFile, JSON.stringify(state, null, 2), { mode: 0o600 });
+      await fs.rename(tmpFile, this.statePath);
+      await fs.rmdir(tmpDir).catch(() => {});
       log.debug('Saved VM pool state');
     } catch (error) {
       log.error('Failed to save VM pool state', {

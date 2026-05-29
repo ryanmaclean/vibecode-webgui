@@ -138,7 +138,7 @@ export default function TutorialsPage() {
           <div className="bg-white rounded-lg shadow p-6 text-center">
             <div className="text-3xl font-bold text-purple-600">
               {tutorials.reduce((sum, t) => {
-                const mins = parseInt(t.time.split('-')[1])
+                const mins = parseInt(t.time.split('-')[1] ?? '0')
                 return sum + mins
               }, 0)}
             </div>

@@ -216,9 +216,10 @@ function UsageChart({ data, period, metric }: UsageChartProps): React.JSX.Elemen
           }
         />
         <Tooltip
-          formatter={(value: number) =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          formatter={((value: number) =>
             metric === 'tokens' ? formatTokens(value) : value.toString()
-          }
+          ) as any}
           contentStyle={{
             backgroundColor: 'hsl(var(--card))',
             border: '1px solid hsl(var(--border))',
@@ -291,10 +292,11 @@ function TokenConsumptionChart({ data, period }: TokenConsumptionChartProps): Re
           tickFormatter={(value) => formatTokens(value)}
         />
         <Tooltip
-          formatter={(value: number, name: string) => [
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          formatter={((value: number, name: string) => [
             formatTokens(value),
             name === 'prompt' ? t('modelUsage.tokenConsumption.promptTokens') : t('modelUsage.tokenConsumption.completionTokens'),
-          ]}
+          ]) as any}
           contentStyle={{
             backgroundColor: 'hsl(var(--card))',
             border: '1px solid hsl(var(--border))',
@@ -420,10 +422,11 @@ function ModelBreakdownChart({ data, chartType }: ModelBreakdownChartProps): Rea
             ))}
           </Pie>
           <Tooltip
-            formatter={(value: number, name: string) => [
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            formatter={((value: number, name: string) => [
               t('modelUsage.table.requestsLabel', { count: value }),
               name,
-            ]}
+            ]) as any}
             contentStyle={{
               backgroundColor: 'hsl(var(--card))',
               border: '1px solid hsl(var(--border))',
@@ -454,7 +457,8 @@ function ModelBreakdownChart({ data, chartType }: ModelBreakdownChartProps): Rea
           label={{ value: t('modelUsage.table.requests'), angle: -90, position: 'insideLeft' }}
         />
         <Tooltip
-          formatter={(value: number) => [t('modelUsage.table.requestsLabel', { count: value }), t('modelUsage.table.requests')]}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          formatter={((value: number) => [t('modelUsage.table.requestsLabel', { count: value }), t('modelUsage.table.requests')]) as any}
           contentStyle={{
             backgroundColor: 'hsl(var(--card))',
             border: '1px solid hsl(var(--border))',
@@ -737,7 +741,7 @@ export default function ModelUsageHistory({
 
   const currentPeriodData = useMemo(() => {
     if (!data) return [];
-    return data.history[selectedPeriod] || [];
+    return (data.history as unknown as Record<string, UsageDataPoint[]>)[selectedPeriod] || [];
   }, [data, selectedPeriod]);
 
   const totalTokensUsed = useMemo(() => {
@@ -1305,8 +1309,8 @@ export default function ModelUsageHistory({
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">{t('modelUsage.sessionInfo.sessionStart')}</span>
                     <span className="text-sm font-medium">
-                      {data.session.sessionStart
-                        ? new Date(data.session.sessionStart).toLocaleString()
+                      {data.session.startTime
+                        ? new Date(data.session.startTime).toLocaleString()
                         : 'N/A'}
                     </span>
                   </div>

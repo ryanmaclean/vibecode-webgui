@@ -8,11 +8,14 @@ import { collaborationManager as sharedCollaborationManager, CollaborationManage
 import io from 'socket.io-client';
 
 export interface CollaborationSocket {
-  emit: (event: string, ...args: any[]) => void;
-  on?: (event: string, handler: (...args: any[]) => void) => void;
-  off?: (event: string, handler?: (...args: any[]) => void) => void;
+  emit: (event: string, ...args: unknown[]) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  on: (event: string, handler: (...args: any[]) => void) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  off: (event: string, handler?: (...args: any[]) => void) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   once?: (event: string, handler: (...args: any[]) => void) => void;
-  disconnect?: () => void;
+  disconnect: () => void;
   connected?: boolean;
   id?: string;
 }
@@ -135,7 +138,7 @@ export interface UseCollaborationReturn extends CollaborationState, Collaboratio
   cursors: CursorState[];
   socket: CollaborationSocket | null;
   collaborationManager: CollaborationManager | null;
-  awareness: any;
+  awareness: unknown;
   getUserById: (userId: string) => CollaborativeUser | undefined;
 }
 
@@ -152,7 +155,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     autoConnect = true,
     enableChat = true,
     enableActivityTracking = true,
-    enableCursorTracking = true,
+    enableCursorTracking: _enableCursorTracking = true,
     onUserJoin,
     onUserLeave,
     onMessage,
@@ -189,10 +192,10 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
       return;
     }
 
-    let socket: any = null;
+    let socket: CollaborationSocket | null = null;
     let mounted = true;
 
-    const initializeSocket = async () => {
+    const initializeSocket = async (): Promise<void> => {
       try {
         // Check API availability
         const response = await fetch('/api/collaboration/socket');
@@ -207,43 +210,44 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
         });
 
         socketRef.current = socket;
+        const s = socket;
 
         // Set up event handlers
-        socket.on('connect', () => {
+        s.on('connect', () => {
           if (!mounted) return;
           console.log('✅ Connected to collaboration server');
           setIsConnected(true);
           setConnectionError(null);
 
           // Join workspace on connect
-          socket.emit('join_workspace', {
+          s.emit('join_workspace', {
             workspaceId: options.workspaceId,
             userId: options.userId,
             userName: options.userName,
           });
         });
 
-        socket.on('disconnect', () => {
+        s.on('disconnect', () => {
           if (!mounted) return;
           console.log('🔌 Disconnected from collaboration server');
           setIsConnected(false);
           setActiveUsers([]);
         });
 
-        socket.on('connect_error', (error: any) => {
+        s.on('connect_error', (error: unknown) => {
           if (!mounted) return;
-          const errorMessage = error?.message || 'Connection failed';
+          const errorMessage = error instanceof Error ? error.message : 'Connection failed';
           console.error('❌ Collaboration connection error:', error);
           setIsConnected(false);
           setConnectionError(errorMessage);
         });
 
-        socket.on('workspace_state', (data: { activeUsers: CollaborativeUser[] }) => {
+        s.on('workspace_state', (data: { activeUsers: CollaborativeUser[] }) => {
           if (!mounted) return;
           setActiveUsers(data.activeUsers || []);
         });
 
-        socket.on('user_joined', (data: { user: { name: string }, activeUsers: CollaborativeUser[] }) => {
+        s.on('user_joined', (data: { user: { name: string }, activeUsers: CollaborativeUser[] }) => {
           if (!mounted) return;
           console.log(`👥 User joined: ${data.user.name}`);
           if (data.activeUsers) {
@@ -251,7 +255,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
           }
         });
 
-        socket.on('user_left', (data: { userId: string, activeUsers: CollaborativeUser[] }) => {
+        s.on('user_left', (data: { userId: string, activeUsers: CollaborativeUser[] }) => {
           if (!mounted) return;
           console.log(`👥 User left: ${data.userId}`);
           if (data.activeUsers) {
@@ -259,7 +263,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
           }
         });
 
-        socket.on('user_typing', (data: { userId: string, conversationId: string, isTyping: boolean }) => {
+        s.on('user_typing', (data: { userId: string, conversationId: string, isTyping: boolean }) => {
           if (!mounted) return;
 
           // Get the latest active users to find the typing user
@@ -293,7 +297,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
           });
         });
 
-        socket.on('cursor_moved', (data: { userId: string, cursor: { x: number, y: number }, timestamp: string }) => {
+        s.on('cursor_moved', (data: { userId: string, cursor: { x: number, y: number }, timestamp: string }) => {
           if (!mounted) return;
           setCursors(prev => {
             const others = prev.filter(c => c.userId !== data.userId);
@@ -600,7 +604,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
   /**
    * Edit file
    */
-  const editFile = useCallback((filePath: string, content: string) => {
+  const editFile = useCallback((filePath: string, _content: string) => {
     if (currentUser && enableActivityTracking) {
       addActivity({
         type: 'file_edited',
@@ -707,29 +711,14 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
   /**
    * Simulate connection (replace with real collaboration service)
    */
-  const simulateConnection = async (wsId: string): Promise<void> => {
+  const simulateConnection = async (_wsId: string): Promise<void> => {
     // Simulate connection delay
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Simulate other users in workspace
-    const mockUsers: CollaborativeUser[] = [
-      {
-        id: 'user-2',
-        name: 'Alice Developer',
-        color: '#ef4444',
-        isActive: true,
-        lastSeen: new Date()
-      },
-      {
-        id: 'user-3',
-        name: 'Bob Designer',
-        color: '#22c55e',
-        isActive: true,
-        lastSeen: new Date()
-      }
-    ];
+    // No simulated users — only real connected users will appear
+    const connectedUsers: CollaborativeUser[] = [];
 
-    setActiveUsers(mockUsers);
+    setActiveUsers(connectedUsers);
 
     // Start heartbeat
     if (heartbeatIntervalRef.current) {

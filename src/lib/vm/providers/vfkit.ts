@@ -334,7 +334,7 @@ export class VfkitProvider implements VMProvider {
     // Launch VM with retry logic
     const sLaunch = getTracer().startSpan('vfkit.create.launch');
     try {
-      const vm = await retryWithThrow(
+      const _vm = await retryWithThrow(
         () => this.launch(vmDir, config),
         {
           maxAttempts: 3,
@@ -345,7 +345,8 @@ export class VfkitProvider implements VMProvider {
         }
       );
       sLaunch.finish();
-      span.finish();
+    } catch (error: unknown) {
+      sLaunch.finish();
       // Provide helpful context about VM creation failures
       if (error instanceof Error && error.message.includes('VM name')) {
         // Re-throw validation errors as-is (already user-friendly)
