@@ -8,13 +8,6 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/ai/costs',
 }));
 
-// Mock lucide-react icons
-jest.mock('lucide-react', () => ({
-  AlertTriangle: (props: any) => <svg data-testid="alert-triangle-icon" {...props} />,
-  Calculator: (props: any) => <svg data-testid="calculator-icon" {...props} />,
-  X: (props: any) => <svg data-testid="x-icon" {...props} />,
-}));
-
 // Mock CostDashboard component
 jest.mock('@/components/ai/CostDashboard', () => {
   return {

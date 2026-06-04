@@ -7,6 +7,7 @@ module.exports = {
   testPathIgnorePatterns: [
     ...(baseConfig.testPathIgnorePatterns || []),
     '<rootDir>/vibecode_webgui/', // Duplicate rig/crew trees - run root tests only
+    '\\.claude/', // Agent worktrees - not real test targets
     // Quarantined: infra/env/mock issues - see docs/TODO.md
     '<rootDir>/tests/integration/vm-providers.test.ts',
     '<rootDir>/tests/unit/lib/monitoring/gastown-cli-tracing.test.ts',
@@ -22,5 +23,6 @@ module.exports = {
     ...(baseConfig.modulePathIgnorePatterns || []),
     '<rootDir>/vibecode_webgui/',
     '<rootDir>/.next/',
+    '\\.claude/',
   ],
 };

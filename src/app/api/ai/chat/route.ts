@@ -15,6 +15,7 @@ import { createErrorResponseFromError } from '@/lib/utils/api-response'
 import { getContextRetriever } from '@/lib/rag/context-retriever'
 import * as crypto from 'crypto'
 import { getDefaultEnhancer, type EnhancedSuggestion } from '@/lib/ai/suggestion-enhancer'
+import { OptimizationStrategy } from '@/lib/ai/context-optimizer'
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
@@ -70,7 +71,7 @@ function logAIInteraction(
   request: AuthenticatedRequest,
   event: 'chat_request' | 'chat_response' | 'chat_error',
   metadata: Record<string, unknown>
-) {
+): void {
   const logContext = {
     service: 'vibecode-webgui',
     component: 'ai-chat-api',
@@ -251,7 +252,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
 
     // Enhance context with AI suggestions if code-related
     let enhancedContext: EnhancedSuggestion | null = null;
-    let systemPrompt = 'You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.';
+    let _systemPrompt = 'You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.';
 
     if (isCodeRelatedQuery(messages)) {
       try {
@@ -273,14 +274,14 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
             },
             optimizationOptions: {
               tokenBudget: 2000,
-              strategy: 'BALANCED' as any,
+              strategy: OptimizationStrategy.BALANCED,
               minRelevanceScore: 0.2
             }
           });
 
           // Include enhanced context in system prompt
           if (enhancedContext.formattedContext) {
-            systemPrompt = `You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.
+            _systemPrompt = `You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.
 
 ${enhancedContext.formattedContext}
 
@@ -443,7 +444,7 @@ Use the above context to provide more accurate and relevant suggestions.`;
           const words = response.split(' ');
           let index = 0;
           
-          const sendChunk = () => {
+          const sendChunk = (): void => {
             if (index < words.length) {
               const chunk = `data: ${JSON.stringify({
                 choices: [{

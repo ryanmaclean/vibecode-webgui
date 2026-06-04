@@ -8,23 +8,6 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/ai/agents',
 }));
 
-// Mock lucide-react icons
-jest.mock('lucide-react', () => ({
-  AlertTriangle: (props: any) => <svg data-testid="alert-triangle-icon" {...props} />,
-  Bot: (props: any) => <svg data-testid="bot-icon" {...props} />,
-  Code: (props: any) => <svg data-testid="code-icon" {...props} />,
-  Bug: (props: any) => <svg data-testid="bug-icon" {...props} />,
-  Building2: (props: any) => <svg data-testid="building-icon" {...props} />,
-  Eye: (props: any) => <svg data-testid="eye-icon" {...props} />,
-  FlaskConical: (props: any) => <svg data-testid="flask-icon" {...props} />,
-  Server: (props: any) => <svg data-testid="server-icon" {...props} />,
-  Send: (props: any) => <svg data-testid="send-icon" {...props} />,
-  X: (props: any) => <svg data-testid="x-icon" {...props} />,
-  ChevronDown: (props: any) => <svg data-testid="chevron-down-icon" {...props} />,
-  User: (props: any) => <svg data-testid="user-icon" {...props} />,
-  Clock: (props: any) => <svg data-testid="clock-icon" {...props} />,
-}));
-
 import AIAgentsPage from '../page';
 
 describe('AIAgentsPage', () => {

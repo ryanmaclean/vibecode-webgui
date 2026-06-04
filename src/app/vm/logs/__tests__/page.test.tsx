@@ -8,24 +8,21 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/vm/logs',
 }));
 
-// Mock lucide-react icons
-jest.mock('lucide-react', () => ({
-  FileText: (props: any) => <svg data-testid="file-text-icon" {...props} />,
-  Download: (props: any) => <svg data-testid="download-icon" {...props} />,
-  Trash2: (props: any) => <svg data-testid="trash-icon" {...props} />,
-  Search: (props: any) => <svg data-testid="search-icon" {...props} />,
-  Filter: (props: any) => <svg data-testid="filter-icon" {...props} />,
-}));
-
 import VMLogsPage from '../page';
 
 describe('VMLogsPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
-    // Mock the health fetch
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
+    // Mock fetch: return logs response for /api/vm/logs, health for /api/health/services
+    global.fetch = jest.fn((url: string) => {
+      if (String(url).includes('/api/vm/logs')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ logs: [] }),
+        });
+      }
+      return Promise.resolve({
         ok: true,
         json: () =>
           Promise.resolve({
@@ -37,8 +34,8 @@ describe('VMLogsPage', () => {
               { name: 'docker', status: 'healthy' },
             ],
           }),
-      })
-    ) as jest.Mock;
+      });
+    }) as jest.Mock;
   });
 
   afterEach(() => {
@@ -85,8 +82,10 @@ describe('VMLogsPage', () => {
     expect(screen.getByPlaceholderText('Search logs...')).toBeInTheDocument();
   });
 
-  it('filters logs by search query', () => {
+  it('filters logs by search query', async () => {
     render(<VMLogsPage />);
+    // Wait for loading to complete
+    await waitFor(() => expect(screen.queryByText('Loading logs...')).not.toBeInTheDocument());
     const searchInput = screen.getByPlaceholderText('Search logs...');
     // Type a search query that is very unlikely to match any log message
     fireEvent.change(searchInput, { target: { value: 'ZZZZZ_NONEXISTENT_QUERY_ZZZZZ' } });
@@ -102,8 +101,10 @@ describe('VMLogsPage', () => {
     expect(options).toEqual(['all', 'error', 'warning', 'info', 'debug']);
   });
 
-  it('filters logs by level', () => {
+  it('filters logs by level', async () => {
     render(<VMLogsPage />);
+    // Wait for loading to complete
+    await waitFor(() => expect(screen.queryByText('Loading logs...')).not.toBeInTheDocument());
     const select = screen.getByRole('combobox');
     fireEvent.change(select, { target: { value: 'error' } });
     // After filtering to error, all visible entries should be error level
@@ -121,11 +122,13 @@ describe('VMLogsPage', () => {
     expect(screen.getByText('Clear')).toBeInTheDocument();
   });
 
-  it('clears logs when Clear button is clicked', () => {
+  it('clears logs when Clear button is clicked', async () => {
     render(<VMLogsPage />);
+    // Wait for loading to complete
+    await waitFor(() => expect(screen.queryByText('Loading logs...')).not.toBeInTheDocument());
     fireEvent.click(screen.getByText('Clear'));
     // After clearing, the empty state should show
-    expect(screen.getByText('No log entries')).toBeInTheDocument();
+    expect(screen.getByText('No log entries available')).toBeInTheDocument();
   });
 
   it('renders Download button', () => {
@@ -145,8 +148,10 @@ describe('VMLogsPage', () => {
     });
   });
 
-  it('shows empty state with no matching filters message', () => {
+  it('shows empty state with no matching filters message', async () => {
     render(<VMLogsPage />);
+    // Wait for loading to complete
+    await waitFor(() => expect(screen.queryByText('Loading logs...')).not.toBeInTheDocument());
     // Set search to something impossible
     const searchInput = screen.getByPlaceholderText('Search logs...');
     fireEvent.change(searchInput, { target: { value: 'IMPOSSIBLE_MATCH_STRING_12345' } });

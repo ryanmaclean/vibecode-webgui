@@ -58,7 +58,12 @@ let client: ReturnType<typeof createOpenAIAgentsClient> | null = null
 let _threadManager: ReturnType<typeof getThreadManager> | null = null
 let confirmationService: ConfirmationService | null = null
 
-function getClient() {
+function getClient(): {
+  client: ReturnType<typeof createOpenAIAgentsClient>
+  _threadManager: ReturnType<typeof getThreadManager> | null
+  toolRegistry: ReturnType<typeof getToolRegistry>
+  confirmationService: ConfirmationService
+} {
   if (!client) {
     client = createOpenAIAgentsClient()
     const _toolRegistry = getToolRegistry()
@@ -74,7 +79,13 @@ function getClient() {
     _threadManager = getThreadManager()
     confirmationService = createConfirmationService()
   }
-  return { client, _threadManager, toolRegistry: getToolRegistry(), confirmationService: confirmationService! }
+  if (!confirmationService) {
+    confirmationService = createConfirmationService()
+  }
+  if (!client) {
+    throw new Error('Client failed to initialize')
+  }
+  return { client, _threadManager, toolRegistry: getToolRegistry(), confirmationService }
 }
 
 // Validation schemas
@@ -130,7 +141,7 @@ const rejectActionSchema = z.object({
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
-) {
+): Promise<NextResponse | Response> {
   // Rate limiting
   const rateLimitResult = await apiRateLimit(request)
   if (!rateLimitResult.success) {
@@ -154,7 +165,7 @@ export async function GET(
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
-) {
+): Promise<NextResponse | Response> {
   // Rate limiting
   const rateLimitResult = await apiRateLimit(request)
   if (!rateLimitResult.success) {
@@ -178,7 +189,7 @@ export async function POST(
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
-) {
+): Promise<NextResponse | Response> {
   // Rate limiting
   const rateLimitResult = await apiRateLimit(request)
   if (!rateLimitResult.success) {
@@ -206,7 +217,7 @@ async function handleRequest(
   request: NextRequest,
   params: Promise<{ path: string[] }>,
   method: string
-) {
+): Promise<NextResponse | Response> {
   try {
     const resolvedParams = await params
     // Authentication check
@@ -283,7 +294,7 @@ async function handleRequest(
 
 // Agent Handlers
 
-async function handleCreateAgent(request: NextRequest, userId: string) {
+async function handleCreateAgent(request: NextRequest, userId: string): Promise<NextResponse> {
   const { client } = getClient()
   const body = await request.json()
 
@@ -313,7 +324,7 @@ async function handleCreateAgent(request: NextRequest, userId: string) {
   }
 }
 
-async function handleListAgents(request: NextRequest, userId: string) {
+async function handleListAgents(request: NextRequest, userId: string): Promise<NextResponse> {
   const { client } = getClient()
   const { searchParams } = new globalThis.URL(request.url)
   // Validate and cap limit parameter to prevent resource exhaustion
@@ -342,7 +353,7 @@ async function handleAgentOperations(
   userId: string,
   agentId: string,
   operation?: string
-) {
+): Promise<NextResponse> {
   const { client } = getClient()
   // Verify ownership
   const agent = await client.getAgent(agentId)
@@ -379,7 +390,7 @@ async function handleThreadRoutes(
   id?: string,
   subResource?: string,
   subId?: string
-) {
+): Promise<NextResponse> {
   const { _threadManager } = getClient()
 
   if (!_threadManager) {
@@ -463,7 +474,7 @@ async function handleThreadMessages(
   method: string,
   threadId: string,
   messageId?: string
-) {
+): Promise<NextResponse> {
   const { client, _threadManager } = getClient()
 
   if (!_threadManager) {
@@ -515,7 +526,7 @@ async function handleThreadRuns(
   method: string,
   threadId: string,
   runId?: string
-) {
+): Promise<NextResponse | Response> {
   const { client, _threadManager, toolRegistry } = getClient()
   if (method === 'POST' && !runId) {
     try {
@@ -602,7 +613,7 @@ async function handleFileRoutes(
   userId: string,
   fileId?: string,
   operation?: string
-) {
+): Promise<NextResponse | Response> {
   const { client } = getClient()
   if (method === 'POST' && !fileId) {
     const formData = await request.formData()
@@ -653,7 +664,7 @@ async function handleToolRoutes(
   method: string,
   userId: string,
   toolName?: string
-) {
+): Promise<NextResponse> {
   const { toolRegistry } = getClient()
   if (method === 'GET') {
     if (toolName) {
@@ -681,7 +692,7 @@ async function handleConfirmationOperations(
   userId: string,
   agentId: string,
   operation: string
-) {
+): Promise<NextResponse> {
   const { confirmationService } = getClient()
 
   switch (operation) {
@@ -795,7 +806,7 @@ async function handleConfirmationOperations(
 
 // Helper Functions
 
-async function pollRun(threadId: string, runId: string, maxAttempts = 60) {
+async function pollRun(threadId: string, runId: string, maxAttempts = 60): Promise<unknown> {
   const { client, toolRegistry } = getClient()
   let attempts = 0
 

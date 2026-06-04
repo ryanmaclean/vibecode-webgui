@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic'
  * GET /api/agents/confirmations
  * List all pending confirmation requests
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     // Rate limiting
     const rateLimitResult = await apiRateLimit(request)

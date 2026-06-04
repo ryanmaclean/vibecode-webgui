@@ -111,6 +111,53 @@ const getMockResponse = (url) => {
     return { status: 200, ok: true, data: { status: 'ok' } };
   }
 
+  // AI Dashboard endpoint
+  if (urlStr.includes('/api/ai/dashboard')) {
+    return {
+      status: 200,
+      ok: true,
+      data: {
+        recentActivity: [
+          { text: 'Used Claude 3.5 Sonnet for code review', time: '2m ago' },
+          { text: 'Generated unit tests with GPT-4o', time: '15m ago' },
+          { text: 'Refactored auth module via multi-agent', time: '1h ago' },
+        ],
+        usageStats: {
+          requestsToday: '47',
+          avgResponseTime: '1.2s',
+          topModel: 'Claude 3.5 Sonnet',
+        },
+      },
+    };
+  }
+
+  // AI Conversations endpoint
+  if (urlStr.includes('/api/ai/conversations')) {
+    const now = new Date();
+    const conversations = [
+      // 10 active conversations
+      { id: '1', title: 'Help me refactor this React component', model: 'Claude 3.5 Sonnet', modelProvider: 'anthropic', messageCount: 15, createdAt: new Date(now - 3600000).toISOString(), updatedAt: new Date(now - 3600000).toISOString(), estimatedCost: 0.05, archived: false },
+      { id: '2', title: 'Write a Python script to parse CSV files', model: 'GPT-4o', modelProvider: 'openai', messageCount: 8, createdAt: new Date(now - 7200000).toISOString(), updatedAt: new Date(now - 7200000).toISOString(), estimatedCost: 0.03, archived: false },
+      { id: '3', title: 'Review my Terraform configuration for best practices', model: 'Claude 3.5 Sonnet', modelProvider: 'anthropic', messageCount: 12, createdAt: new Date(now - 10800000).toISOString(), updatedAt: new Date(now - 10800000).toISOString(), estimatedCost: 0.04, archived: false },
+      { id: '4', title: 'Explain the differences between REST and GraphQL', model: 'GPT-4o', modelProvider: 'openai', messageCount: 6, createdAt: new Date(now - 14400000).toISOString(), updatedAt: new Date(now - 14400000).toISOString(), estimatedCost: 0.02, archived: false },
+      { id: '5', title: 'Debug this Node.js memory leak', model: 'Claude 3.5 Sonnet', modelProvider: 'anthropic', messageCount: 20, createdAt: new Date(now - 18000000).toISOString(), updatedAt: new Date(now - 18000000).toISOString(), estimatedCost: 0.08, archived: false },
+      { id: '6', title: 'Create a Docker compose file for my app', model: 'GPT-4o', modelProvider: 'openai', messageCount: 10, createdAt: new Date(now - 21600000).toISOString(), updatedAt: new Date(now - 21600000).toISOString(), estimatedCost: 0.04, archived: false },
+      { id: '7', title: 'Design a database schema for e-commerce', model: 'Claude 3.5 Sonnet', modelProvider: 'anthropic', messageCount: 18, createdAt: new Date(now - 25200000).toISOString(), updatedAt: new Date(now - 25200000).toISOString(), estimatedCost: 0.07, archived: false },
+      { id: '8', title: 'Optimize SQL queries for performance', model: 'GPT-4o', modelProvider: 'openai', messageCount: 9, createdAt: new Date(now - 28800000).toISOString(), updatedAt: new Date(now - 28800000).toISOString(), estimatedCost: 0.03, archived: false },
+      { id: '9', title: 'Set up CI/CD pipeline with GitHub Actions', model: 'Claude 3.5 Sonnet', modelProvider: 'anthropic', messageCount: 14, createdAt: new Date(now - 32400000).toISOString(), updatedAt: new Date(now - 32400000).toISOString(), estimatedCost: 0.06, archived: false },
+      { id: '10', title: 'Implement OAuth2 authentication', model: 'GPT-4o', modelProvider: 'openai', messageCount: 11, createdAt: new Date(now - 36000000).toISOString(), updatedAt: new Date(now - 36000000).toISOString(), estimatedCost: 0.04, archived: false },
+      // 2 archived conversations
+      { id: '11', title: 'Old project discussion', model: 'Claude 3.5 Sonnet', modelProvider: 'anthropic', messageCount: 5, createdAt: new Date(now - 86400000).toISOString(), updatedAt: new Date(now - 86400000).toISOString(), estimatedCost: 0.02, archived: true },
+      { id: '12', title: 'Archived brainstorming session', model: 'GPT-4o', modelProvider: 'openai', messageCount: 3, createdAt: new Date(now - 172800000).toISOString(), updatedAt: new Date(now - 172800000).toISOString(), estimatedCost: 0.01, archived: true },
+    ];
+    return { status: 200, ok: true, data: { conversations } };
+  }
+
+  // Agents list endpoint
+  if (urlStr.includes('/api/agents/list') || urlStr.endsWith('/api/agents')) {
+    return { status: 200, ok: true, data: { data: [] } };
+  }
+
   // Default response for unmatched URLs
   return { status: 200, ok: true, data: {} };
 };
