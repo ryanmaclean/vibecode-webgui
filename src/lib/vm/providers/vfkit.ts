@@ -334,17 +334,19 @@ export class VfkitProvider implements VMProvider {
     // Launch VM with retry logic
     const sLaunch = getTracer().startSpan('vfkit.create.launch');
     try {
-      const _vm = await retryWithThrow(
+      const vm = await retryWithThrow(
         () => this.launch(vmDir, config),
         {
           maxAttempts: 3,
           initialDelay: 1000,
           backoffMultiplier: 2,
           operationName: 'vfkit-launch',
-          context: { vmId: config.name, vmDir }
+          context: { vmId: config.name, vmDir },
+          shouldRetry: (err: Error) => !err.message.includes('boot timeout')
         }
       );
       sLaunch.finish();
+      return vm;
     } catch (error: unknown) {
       sLaunch.finish();
       // Provide helpful context about VM creation failures
@@ -1453,6 +1455,7 @@ export class VfkitProvider implements VMProvider {
     const bootResult = await waitForBoot(consolePath, {
       timeout: 30000, // 30 seconds timeout for boot
       interval: 200, // Check every 200ms
+      maxAttempts: 10000, // Let timeout control termination, not attempt count
       operationName: 'vfkit-boot',
       context: { vmId: config.name }
     });
@@ -1464,11 +1467,16 @@ export class VfkitProvider implements VMProvider {
     span.finish();
 
     if (!bootResult.healthy) {
-      logger.warn('VM boot health check did not complete', {
+      logger.error('VM boot health check failed', {
         vmId: config.name,
         reason: bootResult.reason,
         duration: bootResult.duration
       });
+      const logPath = path.join(vmDir, 'logs/console.log');
+      throw new Error(
+        `VM "${config.name}" boot timeout: failed to start within 30 seconds (${bootResult.reason}). ` +
+        `Check the console log at ${logPath} for details, or try increasing memory/CPU allocation.`
+      );
     }
 
     return {

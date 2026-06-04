@@ -115,7 +115,7 @@ describe('AIConversationsPage', () => {
 
     expect(screen.getByText('Model Provider')).toBeInTheDocument();
     expect(screen.getByText('Date Range')).toBeInTheDocument();
-    expect(screen.getByText('Clear Filters')).toBeInTheDocument();
+    expect(screen.getByText('Clear')).toBeInTheDocument();
   });
 
   it('shows archive and delete action buttons on conversations', async () => {

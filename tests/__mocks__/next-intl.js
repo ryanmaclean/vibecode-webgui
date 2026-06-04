@@ -87,6 +87,8 @@ const translations = {
   'ai.agents.agentsList': 'Agents',
   'ai.agents.selectAgent': 'Select an agent',
   'ai.agents.sendButton': 'Send',
+  'ai.agents.messagePlaceholder': 'Message {agentName}...',
+  'ai.agents.availableAgents': 'Available Agents',
   // AI Models
   'ai.models.pageTitle': 'AI Models',
   'ai.models.pageDescription': 'Browse, compare, and get recommendations for AI models',
@@ -103,13 +105,31 @@ const translations = {
   'ai.costs.quickCostEstimate': 'Quick Cost Estimate',
   'ai.costs.modelLabel': 'Model',
   'ai.costs.sampleMessageLabel': 'Sample Message',
+  // AI Prompts
+  'ai.prompts.pageTitle': 'Prompt Library',
+  'ai.prompts.pageDescription': '{count} reusable prompt templates for AI-powered code assistance across {categories} categories',
+  'ai.prompts.searchPlaceholder': 'Search templates by name, description, or tag...',
+  'ai.prompts.allTemplates': 'All Templates',
+  'ai.prompts.noTemplatesFound': 'No templates found',
+  'ai.prompts.categories.codeReview': 'Code Review',
+  'ai.prompts.categories.explainCode': 'Explain Code',
+  'ai.prompts.categories.refactor': 'Refactor',
+  'ai.prompts.categories.generateTests': 'Generate Tests',
+  'ai.prompts.categories.documentation': 'Documentation',
   // Common
   'common.clear': 'Clear',
 };
 
-const useTranslations = (namespace) => (key, ...args) => {
+const useTranslations = (namespace) => (key, params) => {
   const fullKey = namespace ? `${namespace}.${key}` : key;
-  return translations[fullKey] ?? translations[key] ?? key;
+  let result = translations[fullKey] ?? translations[key] ?? key;
+  // Basic {param} substitution for parameterized translations
+  if (params && typeof result === 'string') {
+    Object.keys(params).forEach((p) => {
+      result = result.replace(new RegExp(`\{${p}\}`, 'g'), String(params[p]));
+    });
+  }
+  return result;
 };
 
 const useLocale = () => 'en';

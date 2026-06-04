@@ -155,7 +155,20 @@ const getMockResponse = (url) => {
 
   // Agents list endpoint
   if (urlStr.includes('/api/agents/list') || urlStr.endsWith('/api/agents')) {
-    return { status: 200, ok: true, data: { data: [] } };
+    return {
+      status: 200,
+      ok: true,
+      data: {
+        data: [
+          { id: 'agent-1', name: 'Code Assistant', metadata: { role: 'Full-Stack Developer' }, model: 'gpt-4o', description: 'Generates, refactors, and explains code across languages.', instructions: 'I can help you write, refactor, or explain code across multiple languages and frameworks.' },
+          { id: 'agent-2', name: 'Debug Helper', metadata: { role: 'Bug Hunter' }, model: 'gpt-4o', description: 'Analyzes stack traces, identifies root causes, and suggests fixes.', instructions: 'Ready to squash some bugs! I specialize in debugging and root cause analysis.' },
+          { id: 'agent-3', name: 'Architect', metadata: { role: 'System Designer' }, model: 'gpt-4o', description: 'Designs system architecture, APIs, and database schemas.', instructions: 'I design scalable systems and architectures.' },
+          { id: 'agent-4', name: 'Reviewer', metadata: { role: 'Code Reviewer' }, model: 'gpt-4o', description: 'Reviews code for quality, security, and best practices.', instructions: 'I review code for quality and best practices.' },
+          { id: 'agent-5', name: 'Tester', metadata: { role: 'QA Engineer' }, model: 'gpt-4o', description: 'Writes unit tests, integration tests, and test strategies.', instructions: 'I write comprehensive tests for your code.' },
+          { id: 'agent-6', name: 'DevOps', metadata: { role: 'Infrastructure Engineer' }, model: 'gpt-4o', description: 'Manages infrastructure, CI/CD pipelines, and deployments.', instructions: 'I handle infrastructure and deployment automation.' },
+        ],
+      },
+    };
   }
 
   // Default response for unmatched URLs

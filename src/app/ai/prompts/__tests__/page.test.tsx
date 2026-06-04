@@ -119,7 +119,7 @@ describe('PromptsLibraryPage', () => {
     const searchInput = screen.getByPlaceholderText(/Search templates/);
     fireEvent.change(searchInput, { target: { value: 'nonexistenttemplate' } });
     expect(screen.getByText('No templates found')).toBeInTheDocument();
-    expect(screen.getByText('Clear Filters')).toBeInTheDocument();
+    expect(screen.getByText('Clear')).toBeInTheDocument();
   });
 
   it('clears filters when Clear Filters button is clicked', () => {
@@ -128,7 +128,7 @@ describe('PromptsLibraryPage', () => {
     fireEvent.change(searchInput, { target: { value: 'nonexistenttemplate' } });
     expect(screen.getByText('No templates found')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Clear Filters'));
+    fireEvent.click(screen.getByText('Clear'));
     expect(screen.getByText('Standard Code Review')).toBeInTheDocument();
     expect(screen.getByText(/Showing 2 of 2 templates/)).toBeInTheDocument();
   });
