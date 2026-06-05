@@ -261,7 +261,7 @@ describe('/api/chat/stream', () => {
       const fetchCall = (fetch as jest.Mock).mock.calls[0];
       const requestBody = JSON.parse(fetchCall[1].body);
 
-      expect(requestBody.model).toBe('anthropic/claude-sonnet-4-20250514');
+      expect(requestBody.model).toBe('anthropic/claude-sonnet-4-6');
     });
 
     it('should handle OpenRouter API errors', async () => {
