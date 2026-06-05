@@ -1720,7 +1720,7 @@ export class VfkitProvider implements VMProvider {
 
     try {
       const vmDir = validateVMPath(this.vmBaseDir, vmId);
-      const validatedStatePath = path.resolve(statePath);
+      const validatedStatePath = validateVMPath(path.dirname(statePath), path.basename(statePath));
 
       // Collect VM state information
       const state = {

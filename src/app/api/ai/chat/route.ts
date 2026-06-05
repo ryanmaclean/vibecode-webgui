@@ -252,7 +252,6 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
 
     // Enhance context with AI suggestions if code-related
     let enhancedContext: EnhancedSuggestion | null = null;
-    let _systemPrompt = 'You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.';
 
     if (isCodeRelatedQuery(messages)) {
       try {
@@ -279,14 +278,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
             }
           });
 
-          // Include enhanced context in system prompt
           if (enhancedContext.formattedContext) {
-            _systemPrompt = `You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.
-
-${enhancedContext.formattedContext}
-
-Use the above context to provide more accurate and relevant suggestions.`;
-
             logger.info('AI chat context enhanced', {
               totalTokens: enhancedContext.totalTokens,
               relevanceScore: enhancedContext.relevanceScore,
