@@ -334,17 +334,19 @@ export class VfkitProvider implements VMProvider {
     // Launch VM with retry logic
     const sLaunch = getTracer().startSpan('vfkit.create.launch');
     try {
-      const _vm = await retryWithThrow(
+      const vm = await retryWithThrow(
         () => this.launch(vmDir, config),
         {
           maxAttempts: 3,
           initialDelay: 1000,
           backoffMultiplier: 2,
           operationName: 'vfkit-launch',
-          context: { vmId: config.name, vmDir }
+          context: { vmId: config.name, vmDir },
+          shouldRetry: (err: Error) => !err.message.includes('boot timeout')
         }
       );
       sLaunch.finish();
+      return vm;
     } catch (error: unknown) {
       sLaunch.finish();
       // Provide helpful context about VM creation failures
@@ -922,7 +924,8 @@ export class VfkitProvider implements VMProvider {
   async saveState(vmId: string, statePath: string): Promise<boolean> {
     logger.info('Saving VM state', { vmId, statePath });
 
-    const vmDir = path.join(this.vmBaseDir, vmId);
+    const vmDir = validateVMPath(this.vmBaseDir, vmId);
+    const validatedStatePath = validateVMPath(path.dirname(statePath), path.basename(statePath));
 
     try {
       // Verify VM exists
@@ -933,11 +936,11 @@ export class VfkitProvider implements VMProvider {
       }
 
       // Create state directory
-      await fs.mkdir(statePath, { recursive: true });
+      await fs.mkdir(validatedStatePath, { recursive: true });
 
       // Save disk image
-      const diskPath = path.join(vmDir, 'disk/root.img');
-      const stateDiskPath = path.join(statePath, 'root.img');
+      const diskPath = validateVMPath(vmDir, 'disk/root.img');
+      const stateDiskPath = validateVMPath(validatedStatePath, 'root.img');
 
       try {
         await fs.access(diskPath);
@@ -952,8 +955,8 @@ export class VfkitProvider implements VMProvider {
       }
 
       // Save VM configuration
-      const configPath = path.join(vmDir, 'config.json');
-      const stateConfigPath = path.join(statePath, 'config.json');
+      const configPath = validateVMPath(vmDir, 'config.json');
+      const stateConfigPath = validateVMPath(validatedStatePath, 'config.json');
 
       try {
         await fs.access(configPath);
@@ -973,7 +976,7 @@ export class VfkitProvider implements VMProvider {
         savedAt: new Date().toISOString(),
         provider: 'vfkit',
       };
-      const metadataPath = path.join(statePath, 'metadata.json');
+      const metadataPath = validateVMPath(validatedStatePath, 'metadata.json');
       await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
 
       logger.info('VM state saved successfully', { vmId, statePath });
@@ -1212,8 +1215,8 @@ export class VfkitProvider implements VMProvider {
         );
       }
 
-      const mountPoint = '/tmp/alpine-mount';
-      await execFile('mkdir', ['-p', mountPoint]);
+      const mountPoint = await fs.mkdtemp(path.join(os.tmpdir(), 'alpine-mount-'));
+
 
       try {
         await execFile('hdiutil', ['attach', isoPath, '-mountpoint', mountPoint]);
@@ -1452,6 +1455,7 @@ export class VfkitProvider implements VMProvider {
     const bootResult = await waitForBoot(consolePath, {
       timeout: 30000, // 30 seconds timeout for boot
       interval: 200, // Check every 200ms
+      maxAttempts: 10000, // Let timeout control termination, not attempt count
       operationName: 'vfkit-boot',
       context: { vmId: config.name }
     });
@@ -1463,11 +1467,16 @@ export class VfkitProvider implements VMProvider {
     span.finish();
 
     if (!bootResult.healthy) {
-      logger.warn('VM boot health check did not complete', {
+      logger.error('VM boot health check failed', {
         vmId: config.name,
         reason: bootResult.reason,
         duration: bootResult.duration
       });
+      const logPath = path.join(vmDir, 'logs/console.log');
+      throw new Error(
+        `VM "${config.name}" boot timeout: failed to start within 30 seconds (${bootResult.reason}). ` +
+        `Check the console log at ${logPath} for details, or try increasing memory/CPU allocation.`
+      );
     }
 
     return {
@@ -1710,7 +1719,8 @@ export class VfkitProvider implements VMProvider {
     logger.info('Saving VM state', { vmId, statePath });
 
     try {
-      const vmDir = path.join(this.vmBaseDir, vmId);
+      const vmDir = validateVMPath(this.vmBaseDir, vmId);
+      const validatedStatePath = validateVMPath(path.dirname(statePath), path.basename(statePath));
 
       // Collect VM state information
       const state = {
@@ -1723,7 +1733,7 @@ export class VfkitProvider implements VMProvider {
 
       // Read VM config
       try {
-        const configPath = path.join(vmDir, 'config.json');
+        const configPath = validateVMPath(vmDir, 'config.json');
         const configData = await fs.readFile(configPath, 'utf-8');
         state.config = JSON.parse(configData);
       } catch (error) {
@@ -1732,7 +1742,7 @@ export class VfkitProvider implements VMProvider {
 
       // Read VM PID if running
       try {
-        const pidPath = path.join(vmDir, 'vm.pid');
+        const pidPath = validateVMPath(vmDir, 'vm.pid');
         const pidContent = await fs.readFile(pidPath, 'utf-8');
         state.pid = parseInt(pidContent.trim(), 10);
       } catch (error) {
@@ -1740,7 +1750,7 @@ export class VfkitProvider implements VMProvider {
       }
 
       // Save state to file
-      await fs.writeFile(statePath, JSON.stringify(state, null, 2));
+      await fs.writeFile(validatedStatePath, JSON.stringify(state, null, 2));
 
       logger.info('VM state saved successfully', { vmId, statePath });
       return true;

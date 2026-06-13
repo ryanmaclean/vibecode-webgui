@@ -12,8 +12,7 @@ import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { logger } from '@/lib/logger'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 import type { AuthenticatedRequest } from '@/lib/auth/middleware'
-import { ContextManager } from '@/lib/ai/context/context-manager'
-import { ContextStrategy, ContextItemType, ContextPriority } from '@/types/context'
+import { ContextStrategy, ContextItemType } from '@/types/context'
 import { buildChatContext, type FileContext, type ChatMessage } from '@/lib/ai/context/context-integration'
 import { trackContextBuild } from '@/lib/ai/context/context-metrics'
 
@@ -82,7 +81,7 @@ const enhancedChatRequestSchema = z.object({
 })
 
 // Enhanced RAG context builder
-async function buildEnhancedRAGContext(workspaceId: string, userQuery: string, userId: string) {
+async function buildEnhancedRAGContext(workspaceId: string, userQuery: string, userId: string): Promise<{ context: string; workspaceId: string; relevanceScore: 'high' | 'medium' } | null> {
   try {
     const workspace = await prisma.workspace.findFirst({
       where: {
@@ -153,7 +152,7 @@ function getValidatedCorsOrigin(requestOrigin: string | null): string | null {
   return null
 }
 
-export async function POST(request: AuthenticatedRequest) {
+export async function POST(request: AuthenticatedRequest): Promise<Response> {
   try {
     // Rate limiting check
     const rateLimitResult = await apiRateLimit(request)
@@ -494,7 +493,7 @@ export async function POST(request: AuthenticatedRequest) {
 }
 
 // CORS support
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
   const requestOrigin = request.headers.get('origin')
   const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
   const headers: Record<string, string> = {

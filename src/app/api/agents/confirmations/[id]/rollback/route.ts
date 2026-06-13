@@ -37,7 +37,7 @@ const rollbackRequestSchema = z.object({
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+): Promise<NextResponse> {
   try {
     // Rate limiting
     const rateLimitResult = await apiRateLimit(request)

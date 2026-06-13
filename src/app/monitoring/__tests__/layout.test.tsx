@@ -26,19 +26,6 @@ jest.mock('@/lib/logger', () => ({
   logger: { error: jest.fn(), info: jest.fn(), warn: jest.fn(), debug: jest.fn() },
 }));
 
-// Mock lucide-react icons
-jest.mock('lucide-react', () => ({
-  LayoutDashboard: (props: any) => <svg data-testid="icon-dashboard" {...props} />,
-  Network: (props: any) => <svg data-testid="icon-network" {...props} />,
-  Database: (props: any) => <svg data-testid="icon-database" {...props} />,
-  Cpu: (props: any) => <svg data-testid="icon-cpu" {...props} />,
-  Layers: (props: any) => <svg data-testid="icon-layers" {...props} />,
-  Zap: (props: any) => <svg data-testid="icon-zap" {...props} />,
-  Activity: (props: any) => <svg data-testid="icon-activity" {...props} />,
-  FileText: (props: any) => <svg data-testid="icon-filetext" {...props} />,
-  AlertTriangle: (props: any) => <svg data-testid="icon-alert" {...props} />,
-  BarChart: (props: any) => <svg data-testid="icon-barchart" {...props} />,
-}));
 
 import MonitoringLayout from '../layout';
 
