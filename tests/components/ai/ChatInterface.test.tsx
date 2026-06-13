@@ -78,7 +78,7 @@ describe('ChatInterface Component', () => {
       expect(screen.getByTestId('chat-interface')).toBeInTheDocument();
       expect(screen.getByText('AI Chat')).toBeInTheDocument();
       expect(screen.getByTestId('model-badge')).toBeInTheDocument();
-      expect(screen.getByTestId('message-input')).toBeInTheDocument();
+      expect(screen.getByTestId('chat-input')).toBeInTheDocument();
       expect(screen.getByTestId('send-button')).toBeInTheDocument();
     });
 
@@ -173,7 +173,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Hello');
 
       const sendButton = screen.getByTestId('send-button');
@@ -208,7 +208,7 @@ describe('ChatInterface Component', () => {
       const user = userEvent.setup();
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Hello world');
 
       expect(input).toHaveValue('Hello world');
@@ -224,7 +224,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test message');
 
       const sendButton = screen.getByTestId('send-button');
@@ -246,7 +246,7 @@ describe('ChatInterface Component', () => {
       const user = userEvent.setup();
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test');
 
       const sendButton = screen.getByTestId('send-button');
@@ -263,7 +263,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test');
 
       const sendButton = screen.getByTestId('send-button');
@@ -282,7 +282,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test message{Enter}');
 
       await waitFor(() => {
@@ -294,7 +294,7 @@ describe('ChatInterface Component', () => {
       const user = userEvent.setup();
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Line 1{Shift>}{Enter}{/Shift}Line 2');
 
       expect(aiClient.chatStreamRequest).not.toHaveBeenCalled();
@@ -310,7 +310,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface onMessageSent={mockOnMessageSent} />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, '   Test message   ');
 
       const sendButton = screen.getByTestId('send-button');
@@ -339,7 +339,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface initialMessages={messages} />);
 
-      const messageElement = screen.getByTestId('message-user');
+      const messageElement = screen.getByTestId('user-message');
       expect(messageElement).toHaveClass('justify-end');
     });
 
@@ -355,7 +355,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface initialMessages={messages} />);
 
-      const messageElement = screen.getByTestId('message-assistant');
+      const messageElement = screen.getByTestId('assistant-message');
       expect(messageElement).toHaveClass('justify-start');
     });
 
@@ -389,7 +389,7 @@ describe('ChatInterface Component', () => {
       renderWithProviders(<ChatInterface initialMessages={messages} defaultModel="openai/gpt-3.5-turbo" />);
 
       // Check that the message shows the model name (not just the badge)
-      const messageElement = screen.getByTestId('message-assistant');
+      const messageElement = screen.getByTestId('assistant-message');
       expect(messageElement).toHaveTextContent('(GPT-4)');
     });
 
@@ -421,7 +421,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface defaultModel="openai/gpt-4" />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test question');
 
       const sendButton = screen.getByTestId('send-button');
@@ -460,7 +460,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test');
 
       const sendButton = screen.getByTestId('send-button');
@@ -485,7 +485,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test');
 
       const sendButton = screen.getByTestId('send-button');
@@ -506,7 +506,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test');
 
       const sendButton = screen.getByTestId('send-button');
@@ -546,7 +546,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface initialMessages={initialMessages} />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Second message');
 
       const sendButton = screen.getByTestId('send-button');
@@ -579,7 +579,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test');
 
       const sendButton = screen.getByTestId('send-button');
@@ -603,7 +603,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface onError={mockOnError} />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test');
 
       const sendButton = screen.getByTestId('send-button');
@@ -625,7 +625,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test');
 
       const sendButton = screen.getByTestId('send-button');
@@ -636,8 +636,8 @@ describe('ChatInterface Component', () => {
       }, { timeout: 3000 });
 
       // Should have user message and error message, but not empty assistant message
-      const userMessages = screen.getAllByTestId('message-user');
-      const assistantMessages = screen.getAllByTestId('message-assistant');
+      const userMessages = screen.getAllByTestId('user-message');
+      const assistantMessages = screen.getAllByTestId('assistant-message');
       expect(userMessages).toHaveLength(1);
       expect(assistantMessages).toHaveLength(1);
     });
@@ -653,7 +653,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test');
 
       const sendButton = screen.getByTestId('send-button');
@@ -675,7 +675,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test');
 
       const sendButton = screen.getByTestId('send-button');
@@ -704,7 +704,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test 1');
 
       let sendButton = screen.getByTestId('send-button');
@@ -787,7 +787,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test');
 
       const sendButton = screen.getByTestId('send-button');
@@ -815,7 +815,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface onMessageSent={mockOnMessageSent} />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test message');
 
       const sendButton = screen.getByTestId('send-button');
@@ -841,7 +841,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface onMessageSent={mockOnMessageSent} />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test');
 
       const sendButton = screen.getByTestId('send-button');
@@ -878,7 +878,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test');
 
       const sendButton = screen.getByTestId('send-button');
@@ -908,7 +908,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test');
 
       const sendButton = screen.getByTestId('send-button');
@@ -938,7 +938,7 @@ describe('ChatInterface Component', () => {
 
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       await user.type(input, 'Test 1');
 
       const sendButton = screen.getByTestId('send-button');
@@ -963,13 +963,13 @@ describe('ChatInterface Component', () => {
       renderWithProviders(<ChatInterface />);
 
       expect(screen.getByLabelText('Model')).toBeInTheDocument();
-      expect(screen.getByTestId('message-input')).toHaveAttribute('placeholder');
+      expect(screen.getByTestId('chat-input')).toHaveAttribute('placeholder');
     });
 
     it('focuses input on mount', () => {
       renderWithProviders(<ChatInterface />);
 
-      const input = screen.getByTestId('message-input');
+      const input = screen.getByTestId('chat-input');
       expect(input).toHaveFocus();
     });
   });

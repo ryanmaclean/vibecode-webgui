@@ -362,6 +362,7 @@ export function ChatInterface({
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold">{t('chat.heading')}</h2>
           <ModelDisplay
+            data-testid="model-badge"
             model={availableModels.find((m) => m.id === selectedModel)}
             compact
           />
