@@ -61,7 +61,6 @@ module.exports = {
     '<rootDir>/tests/api/monitoring/traces.test.ts',
     '<rootDir>/tests/api/upload.test.ts',
     '<rootDir>/tests/components/ai/ChatInterface.test.tsx',
-    '<rootDir>/tests/integration/agent-confirmation.test.ts',
     '<rootDir>/tests/integration/ai/ai-chat-endpoint.test.ts',
     '<rootDir>/tests/integration/ai/suggestion-enhancement.test.ts',
     '<rootDir>/tests/integration/api/secrets.test.ts',

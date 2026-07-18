@@ -1,12 +1,16 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Integration Tests for Agent Action Preview & Confirmation
  *
  * Tests end-to-end workflow from settings to service to UI
  * for the agent confirmation feature.
  */
 
-import { Agent, createAgent } from '@/lib/agent-framework';
-import type { ToolDefinition } from '@/lib/agent-framework';
+import { Agent, createAgent } from '@/lib/agent-framework/core';
+import type { ToolDefinition } from '@/lib/agent-framework/core';
 import { ConfirmationService } from '@/lib/agent-framework/confirmation/service';
 import type {
   ConfirmationRequest,
@@ -17,9 +21,11 @@ import type {
   ConfirmationRejectedEvent,
 } from '@/types/agent-confirmation';
 import { UnifiedAIClient } from '@/lib/unified-ai-client';
+import { resetPrismaMock } from '@/lib/prisma';
 
 // UnifiedAIClient is globally mocked by jest.setup.js
 jest.mock('@/lib/unified-ai-client');
+jest.mock('@/lib/prisma');
 
 describe('Agent Confirmation - Integration Tests', () => {
   let client: jest.Mocked<UnifiedAIClient>;
@@ -28,6 +34,7 @@ describe('Agent Confirmation - Integration Tests', () => {
   beforeEach(() => {
     // Reset and configure the mock client
     jest.clearAllMocks();
+    resetPrismaMock();
     client = new UnifiedAIClient() as jest.Mocked<UnifiedAIClient>;
 
     // Create fresh confirmation service for each test
@@ -50,15 +57,16 @@ describe('Agent Confirmation - Integration Tests', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     // Clean up pending confirmations
     if (confirmationService) {
-      confirmationService.clearPendingConfirmations();
+      await confirmationService.clearPendingConfirmations();
     }
+    resetPrismaMock();
   });
 
   describe('Settings → Service Integration', () => {
-    it('should create confirmation service with custom settings', () => {
+    it('should create confirmation service with custom settings', async () => {
       const customService = new ConfirmationService({
         defaultTimeout: 60000,
         maxPendingConfirmations: 100,
@@ -66,10 +74,10 @@ describe('Agent Confirmation - Integration Tests', () => {
       });
 
       expect(customService).toBeDefined();
-      expect(customService.getPendingCount()).toBe(0);
+      expect(await customService.getPendingCount()).toBe(0);
     });
 
-    it('should respect max pending confirmations limit', () => {
+    it('should respect max pending confirmations limit', async () => {
       const limitedService = new ConfirmationService({
         maxPendingConfirmations: 2,
       });
@@ -101,12 +109,12 @@ describe('Agent Confirmation - Integration Tests', () => {
         created_at: new Date().toISOString(),
       };
 
-      limitedService.requestConfirmation('agent-1', action1);
-      limitedService.requestConfirmation('agent-1', action2);
+      await limitedService.requestConfirmation('agent-1', action1);
+      await limitedService.requestConfirmation('agent-1', action2);
 
-      expect(() => {
-        limitedService.requestConfirmation('agent-1', action3);
-      }).toThrow(/Maximum pending confirmations/);
+      await expect(
+        limitedService.requestConfirmation('agent-1', action3)
+      ).rejects.toThrow(/Maximum pending confirmations/);
     });
   });
 
@@ -155,7 +163,7 @@ describe('Agent Confirmation - Integration Tests', () => {
         approvedEvent = event;
       });
 
-      const request = confirmationService.requestConfirmation('test-agent', action);
+      const request = await confirmationService.requestConfirmation('test-agent', action);
 
       // Simulate async confirmation
       setTimeout(async () => {
@@ -187,7 +195,7 @@ describe('Agent Confirmation - Integration Tests', () => {
         rejectedEvent = event;
       });
 
-      const request = confirmationService.requestConfirmation('test-agent', action);
+      const request = await confirmationService.requestConfirmation('test-agent', action);
 
       // Simulate async rejection
       setTimeout(async () => {
@@ -310,30 +318,32 @@ describe('Agent Confirmation - Integration Tests', () => {
         }, 10);
       });
 
-      // Mock client to trigger tool call
-      client.chat = jest.fn().mockResolvedValueOnce({
-        content: '',
-        model: 'gpt-4o-mini',
-        provider: 'openai',
-        tool_calls: [{
-          id: 'call_1',
-          type: 'function',
-          function: {
-            name: 'file_delete',
-            arguments: JSON.stringify({
-              file_path: 'important.ts',
-            }),
-          },
-        }],
-      });
+      // Mock client to trigger tool call; second response handles post-rejection continuation
+      client.chat = jest.fn()
+        .mockResolvedValueOnce({
+          content: '',
+          model: 'gpt-4o-mini',
+          provider: 'openai',
+          tool_calls: [{
+            id: 'call_1',
+            type: 'function',
+            function: {
+              name: 'file_delete',
+              arguments: JSON.stringify({
+                file_path: 'important.ts',
+              }),
+            },
+          }],
+        })
+        .mockResolvedValueOnce({
+          content: 'I was unable to delete the file as the action was rejected.',
+          model: 'gpt-4o-mini',
+          provider: 'openai',
+        });
 
-      try {
-        await agent.processMessage('Delete the file');
-      } catch (error) {
-        expect(error).toBeDefined();
-        expect((error as Error).message).toContain('rejected');
-      }
+      await agent.processMessage('Delete the file');
 
+      // Tool must not have executed despite the tool call being requested
       expect(toolExecuted).toBe(false);
     }, 30000);
   });
@@ -370,13 +380,13 @@ describe('Agent Confirmation - Integration Tests', () => {
       const requestIds: string[] = [];
 
       for (const action of actions) {
-        const request = confirmationService.requestConfirmation('test-agent', action, {
+        const request = await confirmationService.requestConfirmation('test-agent', action, {
           bulkApprovable: true,
         });
         requestIds.push(request.request_id);
       }
 
-      expect(confirmationService.getPendingCount()).toBe(3);
+      expect(await confirmationService.getPendingCount()).toBe(3);
 
       const result = await confirmationService.bulkApprove({
         request_ids: requestIds,
@@ -387,7 +397,7 @@ describe('Agent Confirmation - Integration Tests', () => {
       expect(result.approved_count).toBe(3);
       expect(result.failed_count).toBe(0);
       expect(result.results).toHaveLength(3);
-      expect(confirmationService.getPendingCount()).toBe(0);
+      expect(await confirmationService.getPendingCount()).toBe(0);
     });
 
     it('should skip non-bulk-approvable actions in bulk approval', async () => {
@@ -421,18 +431,18 @@ describe('Agent Confirmation - Integration Tests', () => {
       const requestIds: string[] = [];
 
       // Mark first and third as bulk approvable
-      const req1 = confirmationService.requestConfirmation('test-agent', actions[0], {
+      const req1 = await confirmationService.requestConfirmation('test-agent', actions[0], {
         bulkApprovable: true,
       });
       requestIds.push(req1.request_id);
 
       // Mark second as NOT bulk approvable
-      const req2 = confirmationService.requestConfirmation('test-agent', actions[1], {
+      const req2 = await confirmationService.requestConfirmation('test-agent', actions[1], {
         bulkApprovable: false,
       });
       requestIds.push(req2.request_id);
 
-      const req3 = confirmationService.requestConfirmation('test-agent', actions[2], {
+      const req3 = await confirmationService.requestConfirmation('test-agent', actions[2], {
         bulkApprovable: true,
       });
       requestIds.push(req3.request_id);
@@ -443,7 +453,7 @@ describe('Agent Confirmation - Integration Tests', () => {
 
       expect(result.approved_count).toBe(2);
       expect(result.failed_count).toBe(1);
-      expect(confirmationService.getPendingCount()).toBe(1); // The non-bulk-approvable one remains
+      expect(await confirmationService.getPendingCount()).toBe(1); // The non-bulk-approvable one remains
     });
   });
 
@@ -464,7 +474,7 @@ describe('Agent Confirmation - Integration Tests', () => {
         expiredEvent = true;
       });
 
-      const request = confirmationService.requestConfirmation('test-agent', action, {
+      const request = await confirmationService.requestConfirmation('test-agent', action, {
         timeout: 100, // 100ms timeout
       });
 
@@ -598,29 +608,30 @@ describe('Agent Confirmation - Integration Tests', () => {
         }, 50);
       });
 
-      // Mock LLM to call the tool
-      client.chat = jest.fn().mockResolvedValueOnce({
-        content: '',
-        model: 'gpt-4o-mini',
-        provider: 'openai',
-        tool_calls: [{
-          id: 'call_delete',
-          type: 'function',
-          function: {
-            name: 'file_delete',
-            arguments: JSON.stringify({
-              file_path: 'important.ts',
-            }),
-          },
-        }],
-      });
+      // Mock LLM to call the tool; second response handles post-rejection continuation
+      client.chat = jest.fn()
+        .mockResolvedValueOnce({
+          content: '',
+          model: 'gpt-4o-mini',
+          provider: 'openai',
+          tool_calls: [{
+            id: 'call_delete',
+            type: 'function',
+            function: {
+              name: 'file_delete',
+              arguments: JSON.stringify({
+                file_path: 'important.ts',
+              }),
+            },
+          }],
+        })
+        .mockResolvedValueOnce({
+          content: 'The deletion was rejected by the user.',
+          model: 'gpt-4o-mini',
+          provider: 'openai',
+        });
 
-      try {
-        await agent.processMessage('Delete the file');
-        fail('Should have thrown rejection error');
-      } catch (error) {
-        expect((error as Error).message).toContain('rejected');
-      }
+      await agent.processMessage('Delete the file');
 
       expect(executionLog).toContain('Confirmation requested');
       expect(executionLog).toContain('User rejecting');
@@ -633,13 +644,13 @@ describe('Agent Confirmation - Integration Tests', () => {
     it('should handle approval of non-existent confirmation', async () => {
       await expect(
         confirmationService.approve('non-existent-id')
-      ).rejects.toThrow(/not found in pending queue/);
+      ).rejects.toThrow(/not found/);
     });
 
     it('should handle rejection of non-existent confirmation', async () => {
       await expect(
         confirmationService.reject('non-existent-id')
-      ).rejects.toThrow(/not found in pending queue/);
+      ).rejects.toThrow(/not found/);
     });
 
     it('should handle double approval gracefully', async () => {
@@ -652,14 +663,14 @@ describe('Agent Confirmation - Integration Tests', () => {
         created_at: new Date().toISOString(),
       };
 
-      const request = confirmationService.requestConfirmation('test-agent', action);
+      const request = await confirmationService.requestConfirmation('test-agent', action);
 
       await confirmationService.approve(request.request_id);
 
-      // Second approval should fail
+      // Second approval should fail because status is no longer pending
       await expect(
         confirmationService.approve(request.request_id)
-      ).rejects.toThrow(/not found in pending queue/);
+      ).rejects.toThrow(/Cannot approve.*status is/);
     });
 
     it('should clear all pending confirmations on clearPendingConfirmations', async () => {
@@ -672,20 +683,20 @@ describe('Agent Confirmation - Integration Tests', () => {
         created_at: new Date().toISOString(),
       }));
 
-      actions.forEach(action => {
-        confirmationService.requestConfirmation('test-agent', action);
-      });
+      for (const action of actions) {
+        await confirmationService.requestConfirmation('test-agent', action);
+      }
 
-      expect(confirmationService.getPendingCount()).toBe(3);
+      expect(await confirmationService.getPendingCount()).toBe(3);
 
-      confirmationService.clearPendingConfirmations();
+      await confirmationService.clearPendingConfirmations();
 
-      expect(confirmationService.getPendingCount()).toBe(0);
+      expect(await confirmationService.getPendingCount()).toBe(0);
     });
   });
 
   describe('Risk Level Assessment', () => {
-    it('should include risk level in confirmation request', () => {
+    it('should include risk level in confirmation request', async () => {
       const action: ActionPreview = {
         action_id: 'risk-test',
         action_type: 'file_delete',
@@ -695,14 +706,14 @@ describe('Agent Confirmation - Integration Tests', () => {
         created_at: new Date().toISOString(),
       };
 
-      const request = confirmationService.requestConfirmation('test-agent', action, {
+      const request = await confirmationService.requestConfirmation('test-agent', action, {
         riskLevel: 'high',
       });
 
       expect(request.risk_level).toBe('high');
     });
 
-    it('should mark file deletes as high risk by default', () => {
+    it('should mark file deletes as high risk by default', async () => {
       const action: ActionPreview = {
         action_id: 'delete-risk',
         action_type: 'file_delete',
@@ -712,7 +723,7 @@ describe('Agent Confirmation - Integration Tests', () => {
         created_at: new Date().toISOString(),
       };
 
-      const request = confirmationService.requestConfirmation('test-agent', action, {
+      const request = await confirmationService.requestConfirmation('test-agent', action, {
         riskLevel: 'high',
       });
 
