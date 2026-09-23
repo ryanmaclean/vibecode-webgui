@@ -96,6 +96,10 @@ artifacts/
 
 # Backup files
 *.backup
+
+# Test artifacts
+.test-results/
+tests/acceptance/*.agent
 *.backup-*
 *.conflict-backup-*
 

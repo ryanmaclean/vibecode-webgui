@@ -3,12 +3,16 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Upload, Code, Settings, Eye, Pin, X } from 'lucide-react'
-import { Button, Textarea, Card, CardContent, Badge, ScrollArea } from '@/components/ui';
+import { Button, Textarea, Card, CardContent, Badge, ScrollArea, KeyboardHint } from '@/components/ui';
 import { AIErrorBoundary } from '@/components/error/ErrorBoundary'
 import { ContextViewer } from './ContextViewer'
-// import { logger } from '@/lib/logger';
-// import PromptTemplates from './PromptTemplates'
-// import PromptEnhancer from './PromptEnhancer'
+import { StreamTracker } from '@/lib/ai/stream-utils'
+import type { StreamMetadata } from '@/lib/ai/stream-utils'
+import type { ModelProfile } from '@/types/model-comparison'
+import { modelRegistry } from '@/lib/ai/models/model-registry'
+import ModelDisplay from './ModelDisplay'
+import ModelSelector from './ModelSelector'
+import { AILoadingState } from './AILoadingState'
 
 interface Message {
   id: string
@@ -35,7 +39,7 @@ const AIChatInterfaceContent = ({
   initialContext = [],
   onFileUpload,
   className = ''
-}: AIChatInterfaceProps) => {
+}: AIChatInterfaceProps): React.JSX.Element => {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
@@ -53,6 +57,7 @@ const AIChatInterfaceContent = ({
   const [availableModels, setAvailableModels] = useState<ModelProfile[]>([])
   const [favoriteModelIds, setFavoriteModelIds] = useState<string[]>([])
   const [recentModelIds, setRecentModelIds] = useState<string[]>([])
+  const [streamMetadata, setStreamMetadata] = useState<StreamMetadata | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -124,7 +129,7 @@ const AIChatInterfaceContent = ({
 
   // Load conversation history on mount/workspace change
   useEffect(() => {
-    const load = async () => {
+    const load = async (): Promise<void> => {
       setIsLoadingHistory(true)
       setHistoryError(null)
       try {
@@ -146,7 +151,7 @@ const AIChatInterfaceContent = ({
     load()
   }, [workspaceId])
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = async (): Promise<void> => {
     if (!input.trim() || isStreaming) return
 
     const userMessage: Message = {
@@ -239,9 +244,9 @@ const AIChatInterfaceContent = ({
       const finalMessages = [...messages, userMessage, { ...assistantMessage, content: accumulatedContent }]
       saveConversation(finalMessages)
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Don't show error if user cancelled
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         return
       }
 
@@ -260,7 +265,7 @@ const AIChatInterfaceContent = ({
     }
   }
 
-  const saveConversation = async (messagesToSave: Message[]) => {
+  const saveConversation = async (messagesToSave: Message[]): Promise<void> => {
     try {
       await fetch(`/api/ai/conversations/${workspaceId}`, {
         method: 'POST',
@@ -308,7 +313,22 @@ const AIChatInterfaceContent = ({
     })
   }, [])
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Cancel streaming response
+  const handleCancel = React.useCallback(() => {
+    abortControllerRef.current?.abort()
+    setIsStreaming(false)
+  }, [])
+
+  // Regenerate last response
+  const handleRegenerate = React.useCallback(() => {
+    const lastUserMessage = [...messages].reverse().find(m => m.type === 'user')
+    if (lastUserMessage) {
+      setMessages(prev => prev.slice(0, -1))
+      setInput(lastUserMessage.content)
+    }
+  }, [messages])
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>): void => {
     if (event.target.files) {
       const fileNames = Array.from(event.target.files).map(file => file.name)
       setContextFiles(prev => [...prev, ...fileNames])
@@ -316,7 +336,7 @@ const AIChatInterfaceContent = ({
     }
   }
 
-  const handleTogglePin = (file: string) => {
+  const handleTogglePin = (file: string): void => {
     setPinnedFiles(prev => {
       if (prev.includes(file)) {
         // Unpin
@@ -328,19 +348,19 @@ const AIChatInterfaceContent = ({
     })
   }
 
-  const handleRemoveFile = (file: string) => {
+  const handleRemoveFile = (file: string): void => {
     setContextFiles(prev => prev.filter(f => f !== file))
     // Don't remove from pinned files - user might want to keep it pinned
   }
 
-  const handleKeyPress = (event: React.KeyboardEvent) => {
+  const handleKeyPress = (event: React.KeyboardEvent): void => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       handleSendMessage()
     }
   }
 
-  const formatTimestamp = (date: Date) => {
+  const formatTimestamp = (date: Date): string => {
     return new Date(date).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit'
@@ -366,7 +386,6 @@ const AIChatInterfaceContent = ({
   */
 
   const currentModel = availableModels.find(m => m.id === selectedModel)
-  const currentModelName = currentModel?.name || 'AI Model'
 
   return (
     <div className={`flex flex-col h-full bg-white dark:bg-gray-900 ${className}`} role="region" aria-label="AI Chat Interface">
@@ -710,7 +729,7 @@ const AIChatInterfaceContent = ({
  * AI Chat Interface with Error Boundary
  * Wraps the interface with AI-specific error handling
  */
-export const AIChatInterface = (props: AIChatInterfaceProps) => {
+export const AIChatInterface = (props: AIChatInterfaceProps): React.JSX.Element => {
   return (
     <AIErrorBoundary
       componentName="AIChatInterface"

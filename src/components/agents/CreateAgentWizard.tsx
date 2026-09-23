@@ -17,7 +17,7 @@
 
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import {
 Wand2,
   ArrowRight,
@@ -28,7 +28,7 @@ Wand2,
   Eye,
   Loader
 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
@@ -78,7 +78,7 @@ export interface CreateAgentWizardProps {
 // Constants
 // ============================================================================
 
-const DEFAULT_TEMPLATES: AgentTemplate[] = [
+const FALLBACK_TEMPLATES: AgentTemplate[] = [
   {
     id: 'general',
     name: 'General Assistant',
@@ -149,7 +149,7 @@ interface TemplateStepProps {
   onSelect: (templateId: string) => void
 }
 
-function TemplateStep({ templates, selected, onSelect }: TemplateStepProps) {
+function TemplateStep({ templates, selected, onSelect }: TemplateStepProps): React.JSX.Element {
   return (
     <div className="space-y-4">
       <div className="text-center space-y-2">
@@ -196,7 +196,7 @@ interface DetailsStepProps {
   onChange: (updates: Partial<WizardData>) => void
 }
 
-function DetailsStep({ data, onChange }: DetailsStepProps) {
+function DetailsStep({ data, onChange }: DetailsStepProps): React.JSX.Element {
   return (
     <div className="space-y-4">
       <div className="text-center space-y-2">
@@ -252,7 +252,7 @@ interface ReviewStepProps {
   template?: AgentTemplate
 }
 
-function ReviewStep({ data, template }: ReviewStepProps) {
+function ReviewStep({ data, template }: ReviewStepProps): React.JSX.Element {
   return (
     <div className="space-y-4">
       <div className="text-center space-y-2">
@@ -338,11 +338,12 @@ function ReviewStep({ data, template }: ReviewStepProps) {
 export function CreateAgentWizard({
   onCreate,
   onCancel,
-  templates = DEFAULT_TEMPLATES,
+  templates = FALLBACK_TEMPLATES,
   className
-}: CreateAgentWizardProps) {
+}: CreateAgentWizardProps): React.JSX.Element {
   const [currentStep, setCurrentStep] = useState(0)
   const [isCreating, setIsCreating] = useState(false)
+  const [activeTemplates, setActiveTemplates] = useState<AgentTemplate[]>(templates)
   const [wizardData, setWizardData] = useState<WizardData>({
     name: '',
     description: '',
@@ -353,8 +354,17 @@ export function CreateAgentWizard({
     maxTokens: 2048
   })
 
+  useEffect(() => {
+    fetch('/api/agents/templates')
+      .then(res => res.ok ? res.json() : Promise.reject(res))
+      .then(data => {
+        if (data.templates?.length > 0) setActiveTemplates(data.templates)
+      })
+      .catch(() => {})
+  }, [])
+
   const currentTemplate = wizardData.template
-    ? templates.find(t => t.id === wizardData.template)
+    ? activeTemplates.find(t => t.id === wizardData.template)
     : undefined
 
   const updateWizardData = useCallback((updates: Partial<WizardData>) => {
@@ -362,7 +372,7 @@ export function CreateAgentWizard({
   }, [])
 
   const handleTemplateSelect = useCallback((templateId: string) => {
-    const template = templates.find(t => t.id === templateId)
+    const template = activeTemplates.find(t => t.id === templateId)
     if (template) {
       setWizardData(prev => ({
         ...prev,
@@ -370,7 +380,7 @@ export function CreateAgentWizard({
         ...template.presetConfig
       }))
     }
-  }, [templates])
+  }, [activeTemplates])
 
   const handleNext = useCallback(() => {
     if (currentStep < STEPS.length - 1) {
@@ -397,7 +407,7 @@ export function CreateAgentWizard({
     }
   }, [onCreate, wizardData])
 
-  const canProceed = () => {
+  const canProceed = (): boolean => {
     switch (currentStep) {
       case 0:
         return wizardData.template !== undefined
@@ -476,7 +486,7 @@ export function CreateAgentWizard({
         <div className="min-h-[400px]">
           {currentStep === 0 && (
             <TemplateStep
-              templates={templates}
+              templates={activeTemplates}
               selected={wizardData.template}
               onSelect={handleTemplateSelect}
             />

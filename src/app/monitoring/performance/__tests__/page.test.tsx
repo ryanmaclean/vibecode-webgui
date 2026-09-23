@@ -15,24 +15,51 @@ jest.mock('next/link', () => {
   );
 });
 
-// Mock lucide-react icons
-jest.mock('lucide-react', () => ({
-  Activity: (props: any) => <svg data-testid="activity-icon" {...props} />,
-  Clock: (props: any) => <svg data-testid="clock-icon" {...props} />,
-  Zap: (props: any) => <svg data-testid="zap-icon" {...props} />,
-  AlertTriangle: (props: any) => <svg data-testid="alert-triangle-icon" {...props} />,
-  RefreshCw: (props: any) => <svg data-testid="refresh-icon" {...props} />,
-  Server: (props: any) => <svg data-testid="server-icon" {...props} />,
-  ArrowUp: (props: any) => <svg data-testid="arrow-up-icon" {...props} />,
-  ArrowDown: (props: any) => <svg data-testid="arrow-down-icon" {...props} />,
-  TrendingUp: (props: any) => <svg data-testid="trending-up-icon" {...props} />,
-  TrendingDown: (props: any) => <svg data-testid="trending-down-icon" {...props} />,
-  ChevronRight: (props: any) => <svg data-testid="chevron-right-icon" {...props} />,
-  Cpu: (props: any) => <svg data-testid="cpu-icon" {...props} />,
-  HardDrive: (props: any) => <svg data-testid="harddrive-icon" {...props} />,
-  Wifi: (props: any) => <svg data-testid="wifi-icon" {...props} />,
-  MemoryStick: (props: any) => <svg data-testid="memorystick-icon" {...props} />,
-}));
+// ── Mock data ──────────────────────────────────────────────────────────────
+
+const MOCK_REPORT = {
+  timeframe: '1h',
+  timestamp: new Date().toISOString(),
+  status: 'healthy',
+  metrics: {
+    cpuUsage: 34,
+    loadAverage: { '1m': 1.2, '5m': 1.0, '15m': 0.9 },
+    memory: { totalMB: 4096, freeMB: 2048, usedPercent: 50 },
+    process: { heapUsedMB: 256, heapTotalMB: 512, rssMB: 384, externalMB: 10, uptimeSeconds: 86400 },
+  },
+  recommendations: [],
+  critical_issues: [],
+  summary: { avg_api_response_time: 142 },
+};
+
+const MOCK_HEALTH = {
+  healthy: true,
+  status: 'healthy',
+  issues: [],
+  recommendations: [],
+  timestamp: new Date().toISOString(),
+};
+
+function createFetchMock() {
+  return jest.fn((url: string) => {
+    if (url.includes('action=report')) {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(MOCK_REPORT) });
+    }
+    if (url.includes('action=health')) {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(MOCK_HEALTH) });
+    }
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+  }) as jest.Mock;
+}
+
+async function renderAndSettle() {
+  global.fetch = createFetchMock();
+  render(<PerformanceMetricsPage />);
+  // Wait for loading to complete (heading appears after data loads)
+  await waitFor(() => {
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+  });
+}
 
 import PerformanceMetricsPage from '../page';
 
@@ -41,137 +68,109 @@ describe('PerformanceMetricsPage', () => {
     jest.clearAllMocks();
   });
 
-  it('renders without crashing', () => {
-    render(<PerformanceMetricsPage />);
+  it('renders without crashing', async () => {
+    await renderAndSettle();
     const matches = screen.getAllByText('Performance Metrics');
     expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('renders page title as heading', () => {
-    render(<PerformanceMetricsPage />);
+  it('renders page title as heading', async () => {
+    await renderAndSettle();
     const heading = screen.getByRole('heading', { level: 1 });
     expect(heading).toHaveTextContent('Performance Metrics');
   });
 
-  it('renders page description', () => {
-    render(<PerformanceMetricsPage />);
+  it('renders page description', async () => {
+    await renderAndSettle();
     expect(
       screen.getByText('API endpoint and VM resource performance monitoring')
     ).toBeInTheDocument();
   });
 
-  it('renders breadcrumb with link to /monitoring', () => {
-    render(<PerformanceMetricsPage />);
+  it('renders breadcrumb with link to /monitoring', async () => {
+    await renderAndSettle();
     const monitoringLink = screen.getByText('Monitoring');
     expect(monitoringLink).toBeInTheDocument();
     expect(monitoringLink.closest('a')).toHaveAttribute('href', '/monitoring');
   });
 
-  it('renders Avg API Latency metric card', () => {
-    render(<PerformanceMetricsPage />);
+  it('renders Avg API Latency metric card', async () => {
+    await renderAndSettle();
     expect(screen.getByText('Avg API Latency')).toBeInTheDocument();
   });
 
-  it('renders P95 Latency metric card', () => {
-    render(<PerformanceMetricsPage />);
+  it('renders P95 Latency metric card', async () => {
+    await renderAndSettle();
     expect(screen.getByText('P95 Latency')).toBeInTheDocument();
   });
 
-  it('renders VM Boot Time metric card', () => {
-    render(<PerformanceMetricsPage />);
-    expect(screen.getByText('VM Boot Time')).toBeInTheDocument();
-    expect(screen.getByText('24.3s')).toBeInTheDocument();
+  it('renders Process Uptime metric card', async () => {
+    await renderAndSettle();
+    expect(screen.getByText('Process Uptime')).toBeInTheDocument();
   });
 
-  it('renders Error Rate metric card', () => {
-    render(<PerformanceMetricsPage />);
+  it('renders Error Rate metric card', async () => {
+    await renderAndSettle();
     // "Error Rate" appears in metric card and table header
     const matches = screen.getAllByText(/Error Rate/);
     expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('renders time range buttons', () => {
-    render(<PerformanceMetricsPage />);
+  it('renders time range buttons', async () => {
+    await renderAndSettle();
     expect(screen.getByText('Last 1h')).toBeInTheDocument();
     expect(screen.getByText('Last 6h')).toBeInTheDocument();
     expect(screen.getByText('Last 24h')).toBeInTheDocument();
     expect(screen.getByText('Last 7d')).toBeInTheDocument();
   });
 
-  it('switches time range when a button is clicked', () => {
-    render(<PerformanceMetricsPage />);
+  it('switches time range when a button is clicked', async () => {
+    await renderAndSettle();
     const btn6h = screen.getByText('Last 6h');
     fireEvent.click(btn6h);
-    // The button class should change (active state) - verify by re-render stability
     expect(btn6h).toBeInTheDocument();
   });
 
-  it('renders auto-refresh toggle button', () => {
-    render(<PerformanceMetricsPage />);
+  it('renders auto-refresh toggle button', async () => {
+    await renderAndSettle();
     const autoRefreshBtn = screen.getByText('Off');
     expect(autoRefreshBtn).toBeInTheDocument();
   });
 
-  it('toggles auto-refresh when clicked', () => {
-    render(<PerformanceMetricsPage />);
+  it('toggles auto-refresh when clicked', async () => {
+    await renderAndSettle();
     const toggleBtn = screen.getByText('Off').closest('button')!;
     fireEvent.click(toggleBtn);
     expect(screen.getByText('On')).toBeInTheDocument();
     expect(screen.getByText('Auto-refresh')).toBeInTheDocument();
   });
 
-  it('renders Refresh button', () => {
-    render(<PerformanceMetricsPage />);
+  it('renders Refresh button', async () => {
+    await renderAndSettle();
     expect(screen.getByText('Refresh')).toBeInTheDocument();
   });
 
-  it('renders API Endpoint Performance table heading', () => {
-    render(<PerformanceMetricsPage />);
+  it('renders API Endpoint Performance table heading', async () => {
+    await renderAndSettle();
     expect(screen.getByText('API Endpoint Performance')).toBeInTheDocument();
-    expect(screen.getByText(/10 endpoints tracked/)).toBeInTheDocument();
+    expect(screen.getByText(/0 endpoints tracked/)).toBeInTheDocument();
   });
 
-  it('renders endpoint table with endpoint paths', () => {
-    render(<PerformanceMetricsPage />);
-    expect(screen.getByText('/api/health/services')).toBeInTheDocument();
-    expect(screen.getByText('/api/ai/chat')).toBeInTheDocument();
-    expect(screen.getByText('/api/vm/instances')).toBeInTheDocument();
-    expect(screen.getByText('/api/containers')).toBeInTheDocument();
-  });
-
-  it('renders endpoint table column headers', () => {
-    render(<PerformanceMetricsPage />);
+  it('renders endpoint table column headers', async () => {
+    await renderAndSettle();
     expect(screen.getByText('Endpoint')).toBeInTheDocument();
     expect(screen.getByText('Method')).toBeInTheDocument();
-    // Avg Latency appears in card and table header
     const avgLatencyMatches = screen.getAllByText(/Avg Latency/);
     expect(avgLatencyMatches.length).toBeGreaterThanOrEqual(1);
     const errorRateMatches = screen.getAllByText(/Error Rate/);
     expect(errorRateMatches.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('renders VM Resource Performance section', () => {
-    render(<PerformanceMetricsPage />);
+  it('renders VM Resource Performance section', async () => {
+    await renderAndSettle();
     expect(screen.getByText('VM Resource Performance')).toBeInTheDocument();
+    // With mocked data, resource cards should be present
     expect(screen.getByText('CPU Usage')).toBeInTheDocument();
-    expect(screen.getByText('Memory Usage')).toBeInTheDocument();
-    expect(screen.getByText('Disk I/O')).toBeInTheDocument();
-    expect(screen.getByText('Network')).toBeInTheDocument();
-  });
-
-  it('renders VM resource values', () => {
-    render(<PerformanceMetricsPage />);
-    // "34%" appears both as the value text and the percentage label at bottom
-    const cpuValues = screen.getAllByText('34%');
-    expect(cpuValues.length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('2.1 GB / 4.0 GB')).toBeInTheDocument();
-    expect(screen.getByText('R: 12.4 MB/s')).toBeInTheDocument();
-    expect(screen.getByText('In: 45.2 Mbps')).toBeInTheDocument();
-  });
-
-  it('renders trend indicators with vs prev period label', () => {
-    render(<PerformanceMetricsPage />);
-    const prevPeriodTexts = screen.getAllByText('vs prev period');
-    expect(prevPeriodTexts.length).toBe(4);
+    expect(screen.getByText('System Memory')).toBeInTheDocument();
   });
 });

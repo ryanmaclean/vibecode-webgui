@@ -10,7 +10,6 @@ import {
   PlusIcon,
   MagnifyingGlassIcon,
   StarIcon as StarIconOutline,
-  StarIcon as StarIconSolid,
   ClockIcon,
   TagIcon,
   FolderIcon,
@@ -110,7 +109,7 @@ export function ProjectScaffolder({
   className = '',
   initialTemplate,
   initialProjectName
-}: ProjectScaffolderProps) {
+}: ProjectScaffolderProps): React.JSX.Element {
   const [templates, setTemplates] = useState<ProjectTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
   const [projectConfig, setProjectConfig] = useState<ProjectConfig>({
@@ -159,65 +158,31 @@ export function ProjectScaffolder({
     loadTemplates();
   }, []);
 
-  const loadTemplates = async () => {
-    // This would integrate with the template marketplace API
-    // For now, using mock data
-    const mockTemplates: ProjectTemplate[] = [
-      {
-        id: 'react-ts-vite',
-        name: 'React TypeScript Vite',
-        description: 'Modern React application with TypeScript and Vite build system',
-        category: 'web',
-        language: 'typescript',
-        framework: 'react',
-        complexity: 'intermediate',
-        stars: 4.8,
-        downloads: 15420,
-        tags: ['react', 'typescript', 'vite', 'modern'],
-        estimatedTime: '5 min',
-        features: ['TypeScript', 'Vite', 'ESLint', 'Prettier', 'Testing']
-      },
-      {
-        id: 'nextjs-fullstack',
-        name: 'Next.js Full Stack',
-        description: 'Complete full-stack application with Next.js, API routes, and database',
-        category: 'web',
-        language: 'typescript',
-        framework: 'nextjs',
-        complexity: 'advanced',
-        stars: 4.6,
-        downloads: 8930,
-        tags: ['nextjs', 'fullstack', 'api', 'database'],
-        estimatedTime: '8 min',
-        features: ['Next.js', 'API Routes', 'Database', 'Authentication', 'Deployment']
-      },
-      {
-        id: 'vue-nuxt-starter',
-        name: 'Vue Nuxt Starter',
-        description: 'Vue.js application with Nuxt.js framework and server-side rendering',
-        category: 'web',
-        language: 'javascript',
-        framework: 'vue',
-        complexity: 'intermediate',
-        stars: 4.4,
-        downloads: 5620,
-        tags: ['vue', 'nuxt', 'ssr', 'javascript'],
-        estimatedTime: '6 min',
-        features: ['Vue 3', 'Nuxt 3', 'SSR', 'TypeScript', 'Tailwind CSS']
-      }
-    ];
+  const loadTemplates = async (): Promise<void> => {
+    try {
+      const res = await fetch('/api/projects/templates')
+      const data = res.ok ? await res.json() : { templates: [] }
+      const fetched: ProjectTemplate[] = data.templates || []
 
-    setTemplates(() => {
-      const combined = [...mockTemplates];
-      if (initialTemplate) {
-        const normalized = normalizeTemplate(initialTemplate);
-        const exists = combined.some(template => template.id === normalized.id);
-        if (!exists) {
-          combined.push(normalized);
+      setTemplates(() => {
+        const combined = [...fetched];
+        if (initialTemplate) {
+          const normalized = normalizeTemplate(initialTemplate);
+          const exists = combined.some(template => template.id === normalized.id);
+          if (!exists) {
+            combined.push(normalized);
+          }
         }
-      }
-      return combined;
-    });
+        return combined;
+      });
+    } catch {
+      setTemplates(() => {
+        if (initialTemplate) {
+          return [normalizeTemplate(initialTemplate)];
+        }
+        return [];
+      });
+    }
   };
 
   useEffect(() => {
@@ -260,7 +225,7 @@ export function ProjectScaffolder({
     { id: 'desktop', name: 'Desktop', count: templates.filter(t => t.category === 'desktop').length }
   ];
 
-  const handleTemplateSelect = (template: ProjectTemplate) => {
+  const handleTemplateSelect = (template: ProjectTemplate): void => {
     setSelectedTemplate(template);
     setProjectConfig(prev => ({
       ...prev,
@@ -269,7 +234,7 @@ export function ProjectScaffolder({
     onTemplateSelect?.(template);
   };
 
-  const handleCreateProject = async () => {
+  const handleCreateProject = async (): Promise<void> => {
     if (!selectedTemplate || !projectConfig.name.trim()) {
       setGenerationStatus({
         status: 'error',
@@ -339,11 +304,11 @@ export function ProjectScaffolder({
     }
   };
 
-  const updateProjectConfig = (updates: Partial<ProjectConfig>) => {
+  const updateProjectConfig = (updates: Partial<ProjectConfig>): void => {
     setProjectConfig(prev => ({ ...prev, ...updates }));
   };
 
-  const renderStars = (rating: number) => {
+  const renderStars = (rating: number): React.JSX.Element[] => {
     const stars = [];
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;

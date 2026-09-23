@@ -10,8 +10,7 @@ import { UnifiedAIClient, type UnifiedChatMessage } from '@/lib/unified-ai-clien
 import { logger } from '@/lib/logger'
 import type { AuthenticatedRequest } from '@/lib/auth/middleware'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
-import { ContextManager } from '@/lib/ai/context/context-manager'
-import { ContextStrategy, ContextItemType, ContextPriority } from '@/types/context'
+import { ContextStrategy, ContextItemType } from '@/types/context'
 import { buildChatContext, type FileContext, type ChatMessage } from '@/lib/ai/context/context-integration'
 import { trackContextBuild } from '@/lib/ai/context/context-metrics'
 
@@ -81,7 +80,7 @@ interface UnifiedChatRequest {
 }
 
 // Enhanced RAG context builder with multiple strategies
-async function buildAdvancedRAGContext(workspaceId: string, userQuery: string, userId: string) {
+async function buildAdvancedRAGContext(workspaceId: string, userQuery: string, userId: string): Promise<{ context: string; workspaceId: string; relevanceScore: 'high' | 'medium' | 'low'; strategiesUsed: number; totalLength: number } | null> {
   try {
     const workspace = await prisma.workspace.findFirst({
       where: {
@@ -153,7 +152,7 @@ ${availableProviders.map(p => `- ${p}: Available`).join('\n')}
 When you need specific capabilities, I'll automatically use the most appropriate tools and providers.`
 }
 
-export async function POST(request: NextRequest & AuthenticatedRequest) {
+export async function POST(request: NextRequest & AuthenticatedRequest): Promise<Response> {
   try {
     // Check rate limit
     const rateLimitResult = await apiRateLimit(request)
@@ -537,7 +536,7 @@ export async function POST(request: NextRequest & AuthenticatedRequest) {
 }
 
 // Enhanced CORS support with origin validation
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS(request: NextRequest): Promise<Response> {
   const requestOrigin = request.headers.get('origin')
   const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
 

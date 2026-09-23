@@ -383,13 +383,13 @@ async function generateAIResponse(options: {
   confidence: number;
 }> {
   try {
-    // This would integrate with your AI services (OpenAI, Ollama, etc.)
-    // For now, return a mock response
+    // TODO: Integrate with AI services (OpenAI, Ollama, etc.)
+    // No AI provider is configured yet — return an honest error response.
     return {
-      content: `I understand you said: "${options.message}". This is a mock AI response that would be replaced with actual AI integration.`,
-      model: options.model || 'gpt-4',
-      tokens: options.message.split(' ').length * 2, // Rough estimate
-      confidence: 0.85
+      content: 'AI service is not configured. Please set up an AI provider to enable chat responses.',
+      model: options.model || 'none',
+      tokens: 0,
+      confidence: 0
     };
   } catch (error) {
     console.error('Failed to generate AI response:', error);

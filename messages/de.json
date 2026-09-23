@@ -1,0 +1,1678 @@
+{
+  "common": {
+    "appName": "VibeCode",
+    "appFullName": "VibeCode WebGUI",
+    "appTitle": "VibeCode WebGUI - KI-gestützte Entwicklungsplattform",
+    "appDescription": "Moderne webbasierte Entwicklungsumgebung mit KI-Unterstützung",
+    "loading": "Laden...",
+    "loadingWorkspace": "Workspace wird geladen…",
+    "preparingWorkspace": "KI-Workspace wird vorbereitet…",
+    "loadingModels": "Modelle werden geladen...",
+    "loadingSettings": "Einstellungen werden geladen...",
+    "loadingHealth": "Zustandsstatus wird geladen",
+    "saving": "Speichern...",
+    "saved": "Gespeichert",
+    "save": "Speichern",
+    "saveChanges": "Änderungen speichern",
+    "cancel": "Abbrechen",
+    "close": "Schließen",
+    "reset": "Zurücksetzen",
+    "resetAll": "Alle zurücksetzen",
+    "resetToDefaults": "Auf Standard zurücksetzen",
+    "refresh": "Aktualisieren",
+    "retry": "Erneut versuchen",
+    "send": "Senden",
+    "sending": "Senden...",
+    "search": "Suchen",
+    "clear": "Löschen",
+    "copy": "Kopieren",
+    "open": "Öffnen",
+    "continue": "Weiter",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "create": "Erstellen",
+    "back": "Zurück",
+    "goHome": "Zur Startseite",
+    "tryAgain": "Erneut versuchen",
+    "acknowledge": "Bestätigen",
+    "skipToMainContent": "Zum Hauptinhalt springen",
+    "signIn": "Anmelden",
+    "signOut": "Abmelden",
+    "createAccount": "Konto erstellen",
+    "getStarted": "Jetzt starten",
+    "confirm": "Bestätigen",
+    "next": "Weiter",
+    "submit": "Absenden",
+    "export": "Exportieren",
+    "import": "Importieren",
+    "online": "Online",
+    "offlineMode": "Offline-Modus",
+    "allFeaturesAvailable": "Alle Funktionen verfügbar",
+    "limitedFeaturesOffline": "Eingeschränkte Funktionen im Offline-Modus",
+    "available": "Verfügbar",
+    "unavailable": "Nicht verfügbar",
+    "error": "Fehler",
+    "warning": "Warnung",
+    "info": "Info",
+    "success": "Erfolg",
+    "switchLanguage": "Sprache wechseln"
+  },
+  "meta": {
+    "title": "VibeCode WebGUI - KI-gestützte Entwicklungsplattform",
+    "description": "Moderne webbasierte Entwicklungsumgebung mit KI-Unterstützung",
+    "signinTitle": "Anmelden - VibeCode WebGUI",
+    "signinDescription": "Melden Sie sich bei Ihrem VibeCode-Konto an"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "vm": "VM",
+    "vmDashboard": "Dashboard",
+    "vmSnapshots": "Snapshots",
+    "ai": "KI",
+    "aiChat": "Chat",
+    "aiModels": "Modelle",
+    "aiCosts": "Kosten",
+    "aiPrompts": "Prompts",
+    "health": "Zustand",
+    "monitoring": "Überwachung",
+    "workspaces": "Workspaces",
+    "experiments": "Experimente",
+    "tutorials": "Tutorials",
+    "settings": "Einstellungen",
+    "signOut": "Abmelden",
+    "openMenu": "Menü öffnen",
+    "closeMenu": "Menü schließen",
+    "showKeyboardShortcuts": "Tastenkürzel anzeigen",
+    "keyboardShortcutsHint": "Tastenkürzel (⌘/)",
+    "ariaLabel": {
+      "vmMenu": "VM-Menü",
+      "aiMenu": "KI-Menü"
+    }
+  },
+  "landing": {
+    "heroTitle": "Willkommen bei VibeCode",
+    "heroSubtitle": "KI-gestützte Entwicklungsumgebung für die moderne Ära",
+    "buildFaster": "Schneller entwickeln mit KI",
+    "buildFasterDescription": "Erleben Sie die nächste Generation von Entwicklungstools mit künstlicher Intelligenz. Schreiben Sie Code, debuggen und deployen Sie mit beispielloser Geschwindigkeit und Genauigkeit.",
+    "lightningFast": "Blitzschnell",
+    "lightningFastDescription": "Optimierte Leistung für sofortiges Feedback und schnelle Entwicklung",
+    "aiPowered": "KI-gestützt",
+    "aiPoweredDescription": "Intelligente Code-Vorschläge und automatisierte Workflows",
+    "secure": "Sicher",
+    "secureDescription": "Sicherheit auf Enterprise-Niveau für Ihren Code und Ihre Daten"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "getStarted": "Jetzt starten",
+    "vmManagement": "VM-Verwaltung",
+    "vmManagementDescription": "Virtuelle Maschinen verwalten",
+    "aiStudio": "AI Studio",
+    "aiStudioDescription": "Modelle, Kosten, Prompts",
+    "healthMonitor": "Zustandsmonitor",
+    "healthMonitorDescription": "Service-Zustandsstatus",
+    "monitoring": "Überwachung",
+    "monitoringDescription": "Metriken & Traces",
+    "settings": "Einstellungen",
+    "settingsDescription": "App-Konfiguration",
+    "editor": "Editor",
+    "editorDescription": "Code-Editor"
+  },
+  "ai": {
+    "dashboard": {
+      "title": "KI-Dashboard",
+      "description": "Zugriff auf 340+ KI-Modelle, Agents verwalten, Kosten verfolgen und Prompt-Vorlagen durchsuchen – alles an einem Ort.",
+      "quickActions": "Schnellaktionen",
+      "newChat": "Neuer Chat",
+      "compareModels": "Modelle vergleichen",
+      "browsePrompts": "Prompts durchsuchen",
+      "recentActivity": "Letzte Aktivität",
+      "cards": {
+        "chat": "Chat",
+        "chatStat": "Aktive Unterhaltungen: 3",
+        "chatDescription": "KI-Unterhaltungen starten oder fortsetzen",
+        "agents": "Agents",
+        "agentsStat": "6 Agents verfügbar",
+        "agentsDescription": "Multi-Agent-Workspace",
+        "models": "Modelle",
+        "modelsStat": "340+ Modelle",
+        "modelsDescription": "KI-Modelle vergleichen und auswählen",
+        "costs": "Kosten",
+        "costsStat": "Heute: $2,47",
+        "costsDescription": "KI-Nutzungskosten verfolgen",
+        "prompts": "Prompts",
+        "promptsStat": "33 Vorlagen",
+        "promptsDescription": "Prompt-Bibliothek durchsuchen",
+        "history": "Verlauf",
+        "historyStat": "142 Unterhaltungen",
+        "historyDescription": "Vergangene Unterhaltungen ansehen",
+        "vectorExplorer": "Vektor-Explorer",
+        "vectorExplorerStat": "Embeddings erkunden",
+        "vectorExplorerDescription": "Vektor-Ähnlichkeiten visualisieren"
+      },
+      "usageStats": {
+        "requestsToday": "Anfragen heute",
+        "avgResponseTime": "Ø Antwortzeit",
+        "topModel": "Top-Modell"
+      }
+    },
+    "models": {
+      "pageTitle": "KI-Modelle",
+      "pageDescription": "KI-Modelle durchsuchen, vergleichen und Empfehlungen erhalten",
+      "refreshButton": "Aktualisieren",
+      "loadingModels": "Modelle werden geladen...",
+      "addModelToComparison": "Modell zum Vergleich hinzufügen",
+      "searchPlaceholder": "Modelle suchen und zum Vergleich auswählen...",
+      "modelsSelectedForComparison": "{count} von 4 Modellen zum Vergleich ausgewählt",
+      "getRecommendation": {
+        "title": "Empfehlung erhalten",
+        "description": "Das beste Modell für Ihre Aufgabe finden",
+        "taskTypeLabel": "Aufgabentyp",
+        "getRecommendationButton": "Empfehlung erhalten",
+        "findingButton": "Suche...",
+        "confidenceLabel": "Konfidenz: {percent}%",
+        "monthlyCostLabel": "~${cost}/Monat",
+        "alternativesLabel": "Alternativen"
+      },
+      "taskTypes": {
+        "code_generation": "Code-Generierung",
+        "code_review": "Code-Review",
+        "debugging": "Debugging",
+        "chat": "Chat",
+        "analysis": "Analyse",
+        "creative_writing": "Kreatives Schreiben",
+        "summarization": "Zusammenfassung",
+        "translation": "Übersetzung",
+        "math": "Mathematik",
+        "research": "Recherche",
+        "general": "Allgemein"
+      },
+      "selector": {
+        "searchPlaceholder": "Modelle suchen...",
+        "noModelsFound": "Keine Modelle gefunden",
+        "noModelsFoundHint": "Passen Sie Ihre Suche oder Filter an",
+        "moreFilters": "Weitere Filter",
+        "modelsCount": "{count} Modelle",
+        "clearFilters": "Löschen",
+        "minQuality": "Min. Qualität",
+        "minSpeed": "Min. Geschwindigkeit",
+        "vision": "Vision",
+        "functionCalling": "Function Calling",
+        "recentlyUsed": "Kürzlich verwendet",
+        "groups": {
+          "favorites": "Favoriten",
+          "recent": "Kürzlich",
+          "localModels": "Lokale Modelle"
+        },
+        "qualityOptions": {
+          "any": "Beliebig",
+          "good": "Gut+",
+          "excellent": "Exzellent+",
+          "stateOfArt": "State of Art"
+        },
+        "speedOptions": {
+          "any": "Beliebig",
+          "medium": "Mittel+",
+          "fast": "Schnell+",
+          "veryFast": "Sehr schnell"
+        }
+      },
+      "quickFilters": {
+        "bestForCoding": "Beste für Coding",
+        "bestForCodingDescription": "Top-Modelle für Code-Generierung und Debugging",
+        "bestValue": "Bestes Preis-Leistungs-Verhältnis",
+        "bestValueDescription": "Hohe Qualität zu erschwinglichen Preisen",
+        "fastest": "Schnellste",
+        "fastestDescription": "Auf Geschwindigkeit optimierte Modelle",
+        "largestContext": "Größter Kontext",
+        "largestContextDescription": "Modelle mit 100K+ Kontextfenster",
+        "vision": "Vision",
+        "visionDescription": "Modelle mit Bildverständnis",
+        "freeModels": "Kostenlose Modelle",
+        "freeModelsDescription": "KI-Modelle ohne Kosten"
+      },
+      "badges": {
+        "free": "Kostenlos",
+        "low": "Niedrig",
+        "medium": "Mittel",
+        "high": "Hoch",
+        "slow": "Langsam",
+        "fast": "Schnell",
+        "basic": "Basis",
+        "good": "Gut",
+        "excellent": "Exzellent",
+        "notApplicable": "k.A."
+      },
+      "switcherPanel": {
+        "title": "Modell wechseln",
+        "viewAll": "Alle anzeigen",
+        "searchPlaceholder": "Modelle suchen...",
+        "currentModel": "Aktuelles Modell",
+        "favorites": "Favoriten",
+        "recent": "Kürzlich",
+        "allModels": "Alle Modelle ({count})",
+        "noModelsFound": "Keine Modelle für \"{query}\" gefunden",
+        "addToFavorites": "Zu Favoriten hinzufügen",
+        "removeFromFavorites": "Aus Favoriten entfernen"
+      },
+      "switcherButton": {
+        "selectModel": "Modell auswählen",
+        "ariaLabel": "KI-Modell wechseln"
+      }
+    },
+    "costs": {
+      "pageTitle": "KI-Kosten",
+      "pageDescription": "Ausgaben überwachen, Budgets festlegen und Kosten über KI-Modelle schätzen",
+      "costEstimatorButton": "Kostenschätzer",
+      "closeEstimatorButton": "Schätzer schließen",
+      "quickCostEstimate": "Schnelle Kostenschätzung",
+      "modelLabel": "Modell",
+      "sampleMessageLabel": "Beispielnachricht",
+      "sampleMessagePlaceholder": "Fügen Sie einen Beispiel-Prompt ein, um die Kosten zu schätzen...",
+      "alerts": {
+        "budgetThresholdTitle": "Budget-Schwellenwert erreicht",
+        "dailyLimitTitle": "Tageslimit erreicht",
+        "sessionLimitTitle": "Sitzungslimit erreicht",
+        "rateSpikeTitle": "Ungewöhnlicher Kostenanstieg erkannt",
+        "unusualUsageTitle": "Ungewöhnliches Nutzungsmuster",
+        "currentLabel": "Aktuell: {cost}",
+        "limitLabel": "Limit: {cost}",
+        "percentOfLimit": "{percent}% des Limits",
+        "acknowledgeButton": "Bestätigen",
+        "closeNotification": "Benachrichtigung schließen"
+      }
+    },
+    "prompts": {
+      "pageTitle": "Prompt-Bibliothek",
+      "pageDescription": "{count} wiederverwendbare Prompt-Vorlagen für KI-gestützte Code-Assistenz in {categories} Kategorien",
+      "searchPlaceholder": "Vorlagen nach Name, Beschreibung oder Tag suchen...",
+      "allTemplates": "Alle Vorlagen",
+      "noTemplatesFound": "Keine Vorlagen gefunden",
+      "categories": {
+        "codeReview": "Code-Review",
+        "explainCode": "Code erklären",
+        "refactor": "Refactoring",
+        "generateTests": "Tests generieren",
+        "documentation": "Dokumentation"
+      },
+      "templateCard": {
+        "recommendedModels": "Empfohlene Modelle",
+        "variables": "Variablen ({required} erforderlich{optional})",
+        "systemPrompt": "System-Prompt",
+        "userPromptTemplate": "Benutzer-Prompt-Vorlage",
+        "tags": "Tags",
+        "useTemplate": "Vorlage verwenden",
+        "required": "erforderlich",
+        "type": "Typ: {type}",
+        "default": "Standard: {value}",
+        "vars": "{count} Variable",
+        "varsPlural": "{count} Variablen"
+      }
+    },
+    "agents": {
+      "pageTitle": "KI-Agents",
+      "agentsList": "Agents",
+      "selectAgent": "Agent auswählen",
+      "messageCount": "{count} Nachr.",
+      "youLabel": "Sie",
+      "sendButton": "Senden",
+      "messagePlaceholder": "Nachricht an {agentName}...",
+      "statusLabels": {
+        "active": "aktiv",
+        "idle": "inaktiv",
+        "busy": "beschäftigt"
+      },
+      "agentList": {
+        "codeAssistant": "Code-Assistent",
+        "codeAssistantRole": "Full-Stack-Entwickler",
+        "codeAssistantDescription": "Generiert, refaktorisiert und erklärt Code in verschiedenen Sprachen.",
+        "debugHelper": "Debug-Helfer",
+        "debugHelperRole": "Bug-Jäger",
+        "debugHelperDescription": "Analysiert Stack-Traces, identifiziert Ursachen und schlägt Lösungen vor.",
+        "architect": "Architekt",
+        "architectRole": "System-Designer",
+        "architectDescription": "Entwirft Systemarchitektur, APIs und Datenbank-Schemas.",
+        "reviewer": "Reviewer",
+        "reviewerRole": "Code-Reviewer",
+        "reviewerDescription": "Prüft Code auf Qualität, Sicherheit und Best Practices.",
+        "tester": "Tester",
+        "testerRole": "QA-Ingenieur",
+        "testerDescription": "Schreibt Unit-Tests, Integrationstests und Teststrategien.",
+        "devops": "DevOps",
+        "devopsRole": "Infrastruktur-Ingenieur",
+        "devopsDescription": "Verwaltet CI/CD-Pipelines, Docker, Kubernetes und Cloud-Infrastruktur."
+      }
+    },
+    "modelUsage": {
+      "title": "Modell-Nutzungsverlauf",
+      "description": "KI-Modellnutzung, Token-Verbrauch und Muster über die Zeit verfolgen",
+      "loadingHistory": "Nutzungsverlauf wird geladen...",
+      "noUsageData": "Keine Nutzungsdaten",
+      "noUsageDataDescription": "Beginnen Sie mit der Nutzung von KI-Modellen, um Statistiken zu sehen",
+      "noUsageDataForPeriod": "Keine Nutzungsdaten für diesen Zeitraum",
+      "noTokenConsumptionData": "Keine Token-Verbrauchsdaten für diesen Zeitraum",
+      "noModelUsageYet": "Noch keine Modell-Nutzungsdaten",
+      "noModelData": "Keine Modelldaten",
+      "noModelDataDescription": "Es wurden noch keine KI-Modelle verwendet",
+      "noTrendData": "Keine Trenddaten",
+      "noTrendDataDescription": "Keine Nutzungsdaten für den ausgewählten Zeitraum ({period}) verfügbar",
+      "noActivityData": "Keine Aktivitätsdaten",
+      "noActivityDataDescription": "Keine aktuelle Aktivität im ausgewählten Zeitraum ({period})",
+      "periodSelect": {
+        "hourly": "Stündlich",
+        "daily": "Täglich",
+        "weekly": "Wöchentlich",
+        "monthly": "Monatlich"
+      },
+      "metricSelect": {
+        "tokens": "Token",
+        "requests": "Anfragen"
+      },
+      "tabs": {
+        "overview": "Übersicht",
+        "overviewShort": "Statistiken",
+        "trends": "Nutzungstrends",
+        "trendsShort": "Trends",
+        "models": "Modellaufschlüsselung",
+        "modelsShort": "Modelle",
+        "details": "Details",
+        "detailsShort": "Mehr"
+      },
+      "stats": {
+        "totalTokens": "Token gesamt",
+        "totalTokensDesc": "Aktuelle Sitzung",
+        "totalRequests": "Anfragen gesamt",
+        "totalRequestsDesc": "API-Aufrufe",
+        "avgTokensPerRequest": "Ø Token/Anfrage",
+        "avgTokensPerRequestDesc": "Durchschnitt pro Aufruf",
+        "mostUsedModel": "Meistgenutztes Modell",
+        "mostUsedModelDesc": "Top-Wahl",
+        "promptTokens": "Prompt-Token",
+        "completionTokens": "Completion-Token",
+        "tokenRatio": "Token-Verhältnis",
+        "completionPromptRatio": "Completion/Prompt-Verhältnis"
+      },
+      "allTimeStats": {
+        "title": "Gesamtstatistiken",
+        "description": "Nutzungsmetriken seit {date}",
+        "totalTokens": "Token gesamt",
+        "totalRequests": "Anfragen gesamt",
+        "totalCost": "Gesamtkosten"
+      },
+      "tokenConsumption": {
+        "title": "Token-Verbrauch",
+        "description": "Prompt- vs. Completion-Token-Nutzung über die Zeit",
+        "promptTokens": "Prompt-Token",
+        "completionTokens": "Completion-Token",
+        "prompt": "Prompt",
+        "completion": "Completion"
+      },
+      "usageTrends": {
+        "title": "Nutzungstrends",
+        "description": "{period} Nutzungsmuster über die Zeit"
+      },
+      "modelBreakdown": {
+        "title": "Modellnutzung – Aufschlüsselung",
+        "description": "Nutzungsverteilung über verschiedene KI-Modelle",
+        "detailsTitle": "Modellnutzung – Details",
+        "detailsDescription": "Detaillierte Statistiken für jedes verwendete Modell (Spaltenüberschriften zum Sortieren klicken)"
+      },
+      "topModelsSummary": {
+        "title": "Top-Modelle – Zusammenfassung",
+        "description": "Schnellübersicht der am häufigsten genutzten Modelle",
+        "requests": "Anfragen:",
+        "tokens": "Token:",
+        "share": "Anteil:"
+      },
+      "table": {
+        "model": "Modell",
+        "requests": "Anfragen",
+        "prompt": "Prompt",
+        "completion": "Completion",
+        "total": "Gesamt",
+        "cost": "Kosten",
+        "requestsLabel": "{count} Anfragen"
+      },
+      "recentActivity": {
+        "title": "Aktuelle Aktivität ({period})",
+        "description": "Letzte 5 Datenpunkte von {total} insgesamt",
+        "requests": "{count} Anfragen"
+      },
+      "sessionInfo": {
+        "title": "Sitzungsinformationen",
+        "description": "Details zur aktuellen Nutzungssitzung",
+        "sessionStart": "Sitzungsbeginn:",
+        "lastUpdated": "Letzte Aktualisierung:",
+        "totalRequests": "Anfragen gesamt:",
+        "totalTokens": "Token gesamt:",
+        "modelsUsed": "Verwendete Modelle:",
+        "dataPoints": "Datenpunkte:"
+      }
+    },
+    "costDashboard": {
+      "title": "KI-Kosten-Dashboard",
+      "description": "Ihre KI-Ausgaben über {count}+ Modelle verfolgen und verwalten",
+      "refresh": "Aktualisieren",
+      "exportCsv": "CSV exportieren",
+      "exportJson": "JSON exportieren",
+      "export": "Exportieren",
+      "lastUpdated": "Zuletzt aktualisiert: {time}",
+      "stats": {
+        "sessionCost": "Sitzungskosten",
+        "sessionCostDesc": "{count} Anfragen",
+        "todayCost": "Kosten heute",
+        "vsYesterday": "ggü. gestern",
+        "totalTokens": "Token gesamt",
+        "totalTokensDesc": "Diese Sitzung",
+        "allTimeCost": "Gesamtkosten",
+        "allTimeCostDesc": "{count} Anfragen insgesamt"
+      },
+      "tabs": {
+        "overview": "Übersicht",
+        "byModel": "Nach Modell",
+        "alerts": "Warnungen",
+        "settings": "Einstellungen"
+      },
+      "overview": {
+        "usageOverTime": "Nutzung über Zeit",
+        "costPredictions": "Kostenprognosen",
+        "costPredictionsDesc": "Basierend auf Ihren Nutzungsmustern der letzten 7 Tage",
+        "daily": "Täglich",
+        "weekly": "Wöchentlich",
+        "monthly": "Monatlich",
+        "monthlyBudgetProgress": "Monatliches Budget – Fortschritt",
+        "budgetWillExhaust": "Bei aktuellem Verbrauch ist das Budget in {days} Tagen erschöpft"
+      },
+      "metricSelect": {
+        "cost": "Kosten",
+        "tokens": "Token",
+        "requests": "Anfragen"
+      },
+      "models": {
+        "costByModel": "Kosten nach Modell",
+        "costByModelDesc": "Aufschlüsselung der Ausgaben über verschiedene KI-Modelle",
+        "modelUsageDetails": "Modellnutzung – Details",
+        "modelUsageDetailsDesc": "Detaillierte Statistiken für jedes verwendete Modell",
+        "noModelData": "Keine Modellnutzungsdaten in dieser Sitzung",
+        "noModelDataChart": "Noch keine Modellnutzungsdaten",
+        "requestsLabel": "{count} Anfragen",
+        "tokensLabel": "{tokens} Token"
+      },
+      "alerts": {
+        "title": "Kostenwarnungen",
+        "description": "Warnungen konfigurieren, um Ihre KI-Ausgaben zu überwachen",
+        "createAlert": "Warnung erstellen",
+        "noAlerts": "Keine Warnungen konfiguriert. Richten Sie Warnungen ein, um Ihre Ausgaben zu überwachen.",
+        "active": "Aktiv",
+        "disabled": "Deaktiviert",
+        "acknowledge": "Bestätigen",
+        "threshold": "Schwellenwert: {cost}",
+        "current": "Aktuell: {cost}",
+        "thresholdCurrent": "Schwellenwert: {threshold} | Aktuell: {current}",
+        "dismiss": "Verwerfen"
+      },
+      "createAlertDialog": {
+        "title": "Kostenwarnung erstellen",
+        "description": "Neue Warnung zur Überwachung Ihrer KI-Ausgaben einrichten",
+        "alertType": "Warnungstyp",
+        "threshold": "Schwellenwert (USD)",
+        "severity": "Schweregrad",
+        "resetPeriod": "Zurücksetzungszeitraum",
+        "enableImmediately": "Warnung sofort aktivieren",
+        "sendNotifications": "Benachrichtigungen bei Auslösung senden",
+        "cancel": "Abbrechen",
+        "create": "Warnung erstellen",
+        "alertTypes": {
+          "budget_threshold": "Budget-Schwellenwert",
+          "daily_limit": "Tageslimit",
+          "session_limit": "Sitzungslimit",
+          "rate_spike": "Kostenanstieg",
+          "unusual_usage": "Ungewöhnliche Nutzung"
+        },
+        "severities": {
+          "info": "Info",
+          "warning": "Warnung",
+          "critical": "Kritisch"
+        }
+      },
+      "noUsageData": "Keine Nutzungsdaten für diesen Zeitraum"
+    },
+    "modelDetails": {
+      "removeFavorite": "Aus Favoriten entfernen",
+      "addFavorite": "Zu Favoriten hinzufügen",
+      "close": "Schließen",
+      "addToComparison": "Zum Vergleich hinzufügen",
+      "useThisModel": "Dieses Modell verwenden",
+      "tabs": {
+        "overview": "Übersicht",
+        "capabilities": "Fähigkeiten",
+        "benchmarks": "Benchmarks",
+        "pricing": "Preise"
+      },
+      "overview": {
+        "description": "Beschreibung",
+        "noDescription": "Keine Beschreibung verfügbar.",
+        "keyMetrics": "Schlüsselmetriken",
+        "qualityTier": "Qualitätsstufe",
+        "avgLatency": "Ø Latenz",
+        "tokensPerSec": "Token/Sek.",
+        "benchmarkScore": "Benchmark-Wert",
+        "tokenLimits": "Token-Limits",
+        "contextWindow": "Kontextfenster",
+        "maxInput": "Max. Eingabe",
+        "maxOutput": "Max. Ausgabe",
+        "tags": "Tags",
+        "provider": "Anbieter",
+        "tier": "Stufe: {tier}",
+        "apiDocs": "API-Dokumentation"
+      },
+      "capabilities": {
+        "featureSupport": "Feature-Unterstützung",
+        "functionCalling": "Function Calling",
+        "streaming": "Streaming",
+        "vision": "Vision",
+        "deprecated": "Veraltet",
+        "active": "Aktiv"
+      },
+      "benchmarks": {
+        "overallScore": "Gesamt-Benchmark-Wert",
+        "aggregatedFrom": "Aggregiert aus {count} Benchmarks",
+        "scoresByCategory": "Werte nach Kategorie",
+        "individualBenchmarks": "Einzelne Benchmarks",
+        "noBenchmarkData": "Keine Benchmark-Daten",
+        "noBenchmarkDataDesc": "Benchmark-Daten sind für dieses Modell noch nicht verfügbar."
+      },
+      "pricing": {
+        "basePricing": "Basispreise",
+        "inputTokens": "Eingabe-Token",
+        "outputTokens": "Ausgabe-Token",
+        "per1kTokens": "pro 1.000 Token",
+        "costCalculator": "Kostenrechner",
+        "inputTokensLabel": "Eingabe-Token",
+        "outputTokensLabel": "Ausgabe-Token",
+        "requestsPerDay": "Anfragen/Tag",
+        "perRequest": "Pro Anfrage",
+        "dailyCost": "Tageskosten",
+        "monthlyCost": "Monatskosten",
+        "freeTierAvailable": "Kostenloses Kontingent verfügbar"
+      },
+      "quality": {
+        "basic": "Basis",
+        "basicDesc": "Geeignet für einfache Aufgaben und grundlegende Unterhaltungen",
+        "good": "Gut",
+        "goodDesc": "Zuverlässig für die meisten alltäglichen Anwendungsfälle",
+        "excellent": "Exzellent",
+        "excellentDesc": "Hohe Leistung für komplexe Aufgaben",
+        "stateOfArt": "State of the Art",
+        "stateOfArtDesc": "Spitzenleistung, Klassenbester"
+      },
+      "speed": {
+        "slow": "Langsam",
+        "slowDesc": "Längere Antwortzeiten, ideal für nicht zeitkritische Aufgaben",
+        "medium": "Mittel",
+        "mediumDesc": "Ausgewogene Antwortzeiten für die meisten Anwendungsfälle",
+        "fast": "Schnell",
+        "fastDesc": "Schnelle Antworten für interaktive Nutzung",
+        "veryFast": "Sehr schnell",
+        "veryFastDesc": "Nahezu sofortige Antworten für Echtzeit-Anwendungen"
+      }
+    },
+    "qualityDashboard": {
+      "title": "KI-Qualitätsmetriken-Dashboard",
+      "description": "Qualität von KI-Vorschlägen, Akzeptanzraten und Modellleistung verfolgen",
+      "refresh": "Aktualisieren",
+      "allModels": "Alle Modelle",
+      "lastUpdated": "Zuletzt aktualisiert: {time}",
+      "errorLoading": "Fehler beim Laden des Dashboards: {error}",
+      "retry": "Erneut versuchen",
+      "noQualityData": "Keine Qualitätsdaten verfügbar",
+      "periodSelect": {
+        "daily": "Täglich",
+        "weekly": "Wöchentlich",
+        "monthly": "Monatlich"
+      },
+      "stats": {
+        "acceptanceRate": "Akzeptanzrate",
+        "acceptanceRateDesc": "{count} Vorschläge",
+        "avgEditDistance": "Ø Bearbeitungsdistanz",
+        "avgEditDistanceDesc": "Geänderte Zeichen",
+        "avgSimilarity": "Ø Ähnlichkeit",
+        "avgSimilarityDesc": "Zum ursprünglichen Vorschlag",
+        "avgTimeToAccept": "Ø Zeit bis Akzeptanz",
+        "ratingDesc": "Bewertung: {rating}★"
+      },
+      "activeAlerts": "{count} aktive Qualitätswarnungen",
+      "criticalAlerts": "{count} kritisch",
+      "tabs": {
+        "overview": "Übersicht",
+        "byModel": "Nach Modell",
+        "trends": "Trends",
+        "alerts": "Warnungen"
+      },
+      "overview": {
+        "recentActivity": "Aktuelle Aktivität",
+        "recentActivityDesc": "Neueste Modellleistung",
+        "modelHealthSummary": "Modell-Zustandsübersicht",
+        "modelHealthSummaryDesc": "Status aller überwachten Modelle",
+        "noRecentActivity": "Keine aktuelle Aktivität",
+        "noModelsTracked": "Noch keine Modelle erfasst",
+        "suggestions": "{count} Vorschläge"
+      },
+      "modelCard": {
+        "acceptanceRate": "Akzeptanzrate",
+        "totalSuggestions": "Vorschläge gesamt",
+        "editDistance": "Bearbeitungsdistanz",
+        "similarity": "Ähnlichkeit",
+        "rating": "Bewertung",
+        "avgTime": "Ø Zeit:",
+        "accepted": "akzeptiert",
+        "rejected": "abgelehnt",
+        "notAvailable": "k.A."
+      },
+      "modelTab": {
+        "noModelData": "Keine Modelldaten für den ausgewählten Zeitraum verfügbar"
+      },
+      "trends": {
+        "title": "Qualitätstrends über Zeit",
+        "noTrendData": "Keine Trenddaten für den ausgewählten Zeitraum verfügbar",
+        "metricSelect": {
+          "acceptanceRate": "Akzeptanzrate",
+          "editDistance": "Bearbeitungsdistanz",
+          "similarity": "Ähnlichkeit",
+          "rating": "Bewertung"
+        }
+      },
+      "alertsTab": {
+        "title": "Qualitätsverschlechterungswarnungen",
+        "description": "Qualitätsprobleme über alle Modelle überwachen",
+        "noAlerts": "Keine Qualitätswarnungen. Alle Modelle arbeiten einwandfrei!",
+        "detected": "Erkannt: {time}",
+        "current": "Aktuell: {value}",
+        "threshold": "Schwellenwert: {value}",
+        "dismiss": "Verwerfen",
+        "resolved": "BEHOBEN"
+      },
+      "dismiss": "Verwerfen"
+    },
+    "contextMetrics": {
+      "title": "Kontext-Metriken",
+      "description": "Qualität und Auslastung des Kontextfensters",
+      "autoRefreshOn": "Auto-Aktualisierung An",
+      "autoRefreshOff": "Auto-Aktualisierung Aus",
+      "refresh": "Aktualisieren",
+      "errorLoading": "Fehler beim Laden der Metriken: {error}",
+      "stats": {
+        "contextUtilization": "Kontextauslastung",
+        "contextUtilizationDesc": "{tokens} / {available} Token",
+        "avgRelevanceScore": "Ø Relevanzwert",
+        "avgRelevanceScoreDesc": "{count} Elemente einbezogen",
+        "itemsIncluded": "Einbezogene Elemente",
+        "itemsIncludedDesc": "{count} ausgeschlossen",
+        "avgBuildTime": "Ø Build-Zeit",
+        "avgBuildTimeDesc": "{count} Builds"
+      },
+      "currentContext": {
+        "title": "Aktuelles Kontextfenster",
+        "description": "Strategie: {strategy} | Modell: {model}",
+        "tokenUtilization": "Token-Auslastung",
+        "totalTokens": "Token gesamt:",
+        "available": "Verfügbar:",
+        "exclusionRate": "Ausschlussrate:",
+        "buildTime": "Build-Zeit:"
+      },
+      "tabs": {
+        "utilization": "Auslastung",
+        "priority": "Priorität",
+        "types": "Typen",
+        "relevance": "Relevanz"
+      },
+      "utilizationHistory": {
+        "title": "Auslastungsverlauf",
+        "description": "Kontextfenster-Auslastung über aktuelle Builds"
+      },
+      "priorityDistribution": {
+        "title": "Prioritätsverteilung",
+        "description": "Aufschlüsselung der Kontext-Elemente nach Prioritätsstufe"
+      },
+      "typeDistribution": {
+        "title": "Typverteilung",
+        "description": "Aufschlüsselung der Kontext-Elemente nach Typ"
+      },
+      "relevanceScores": {
+        "title": "Relevanzwert-Verteilung",
+        "description": "Verteilung der Element-Relevanzwerte",
+        "min": "Min:",
+        "max": "Max:",
+        "mean": "Mittel:",
+        "median": "Median:",
+        "p95": "P95:"
+      },
+      "sessionStats": {
+        "title": "Sitzungsstatistiken",
+        "description": "Aggregierte Metriken für Sitzung {sessionId}",
+        "totalEvents": "Ereignisse gesamt:",
+        "contextBuilds": "Kontext-Builds:",
+        "avgTokens": "Ø Token:",
+        "avgExclusion": "Ø Ausschluss:"
+      }
+    },
+    "vectorExplorer": {
+      "title": "Vektor-Ähnlichkeits-Explorer",
+      "description": "Semantisch ähnliche Inhalte mit KI-Embeddings suchen",
+      "searchQuery": "Suchanfrage",
+      "searchQueryPlaceholder": "Text eingeben, um ähnliche Inhalte zu finden... (Cmd/Strg + Enter zum Suchen)",
+      "searchQueryHint": "Geben Sie beliebigen Text ein und wir finden semantisch ähnliche Inhalte in der Datenbank",
+      "contentType": "Inhaltstyp",
+      "resultLimit": "Ergebnislimit",
+      "similarityThreshold": "Ähnlichkeitsschwelle",
+      "search": "Ähnliche Inhalte suchen",
+      "searching": "Suche läuft...",
+      "errorPrefix": "Fehler: {error}",
+      "searchResults": "Suchergebnisse",
+      "cached": "Zwischengespeichert",
+      "embeddingCached": "Embedding zwischengespeichert",
+      "resultsCount": "{count} Ergebnisse",
+      "foundResults": "{count} ähnliche(s) {type}-Element(e) gefunden",
+      "foundResultsWithThreshold": "mit Ähnlichkeit ≥ {threshold}%",
+      "noSimilarContent": "Keine ähnlichen Inhalte gefunden",
+      "noSimilarContentHint": "Versuchen Sie, die Ähnlichkeitsschwelle zu senken oder den Inhaltstyp zu ändern",
+      "matchPercent": "{percent}% Übereinstimmung",
+      "language": "Sprache: {lang}",
+      "framework": "Framework: {fw}",
+      "created": "Erstellt: {date}",
+      "embeddingAnalysis": "Embedding-Analyse",
+      "embeddingAnalysisDesc": "Visuelle Darstellung von Vektor-Embeddings und Ähnlichkeitswerten",
+      "howItWorks": "So funktioniert es:",
+      "howItWorksSteps": {
+        "step1": "Geben Sie Ihre Suchanfrage im Textfeld oben ein",
+        "step2": "Wählen Sie den Inhaltstyp, den Sie suchen möchten (Code, Dokumentation oder Chat)",
+        "step3": "Passen Sie Ergebnislimit und Ähnlichkeitsschwelle nach Bedarf an",
+        "step4": "Klicken Sie auf \"Suchen\" oder drücken Sie Cmd/Strg + Enter, um ähnliche Inhalte zu finden",
+        "step5": "Sehen Sie detaillierte Ergebnisse mit Ähnlichkeitswerten und Embedding-Visualisierungen"
+      },
+      "contentTypes": {
+        "code": "Code",
+        "documentation": "Dokumentation",
+        "chat": "Chat"
+      },
+      "limits": {
+        "five": "5 Ergebnisse",
+        "ten": "10 Ergebnisse",
+        "twenty": "20 Ergebnisse",
+        "fifty": "50 Ergebnisse"
+      },
+      "thresholds": {
+        "low": "50% (Niedrig)",
+        "mediumLow": "60% (Mittel-Niedrig)",
+        "medium": "70% (Mittel)",
+        "high": "80% (Hoch)",
+        "veryHigh": "90% (Sehr hoch)"
+      }
+    },
+    "modelComparison": {
+      "title": "Modellvergleich",
+      "description": "Bis zu {max} Modelle nebeneinander vergleichen",
+      "addModel": "Modell hinzufügen",
+      "addModelToCompare": "Modell zum Vergleich hinzufügen",
+      "addModelDescription": "Wählen Sie ein Modell für den Vergleich aus",
+      "cancel": "Abbrechen",
+      "noModelsTitle": "Keine Modelle zum Vergleich",
+      "noModelsDescription": "Fügen Sie mindestens 2 Modelle hinzu, um den Vergleich zu starten",
+      "addFirstModel": "Erstes Modell hinzufügen",
+      "addAnotherModel": "Weiteres Modell zum Vergleich hinzufügen",
+      "recommended": "Empfohlen",
+      "recommendationReason": "{name} erzielt die höchste Punktzahl mit ausgewogener Leistung über alle Kriterien",
+      "removeFromComparison": "Modell aus Vergleich entfernen",
+      "score": "Punktzahl",
+      "useThisModel": "Dieses Modell verwenden",
+      "selectModel": "Modell auswählen",
+      "tabs": {
+        "cardView": "Kartenansicht",
+        "tableView": "Tabellenansicht",
+        "criteria": "Kriterien"
+      },
+      "criteria": {
+        "title": "Vergleichskriterien",
+        "description": "Gewichtung der einzelnen Faktoren im Vergleich anpassen",
+        "costImportance": "Kosten-Gewichtung",
+        "speedImportance": "Geschwindigkeits-Gewichtung",
+        "qualityImportance": "Qualitäts-Gewichtung",
+        "contextSizeImportance": "Kontextgröße-Gewichtung"
+      },
+      "table": {
+        "attribute": "Attribut",
+        "overallScore": "Gesamtpunktzahl",
+        "priceInput": "Preis (Eingabe)",
+        "priceOutput": "Preis (Ausgabe)",
+        "contextWindow": "Kontextfenster",
+        "speed": "Geschwindigkeit",
+        "quality": "Qualität",
+        "coding": "Coding",
+        "reasoning": "Reasoning",
+        "creative": "Kreativ",
+        "math": "Mathematik",
+        "vision": "Vision",
+        "functionCalling": "Function Calling",
+        "avgLatency": "Ø Latenz",
+        "yes": "Ja",
+        "no": "Nein"
+      },
+      "modelCard": {
+        "input": "Eingabe",
+        "output": "Ausgabe",
+        "context": "Kontext",
+        "coding": "Coding",
+        "reasoning": "Reasoning",
+        "creative": "Kreativ",
+        "math": "Mathematik",
+        "vision": "Vision",
+        "functions": "Funktionen",
+        "streaming": "Streaming"
+      },
+      "quickSummary": {
+        "title": "Schnellübersicht",
+        "bestForCoding": "Bestes für Coding",
+        "bestReasoning": "Bestes Reasoning",
+        "bestValue": "Bestes Preis-Leistungs-Verhältnis",
+        "fastest": "Schnellstes",
+        "largestContext": "Größter Kontext"
+      },
+      "pros": {
+        "stateOfArtQuality": "State-of-the-Art-Qualität",
+        "excellentQuality": "Exzellente Qualität",
+        "veryFastResponses": "Sehr schnelle Antworten",
+        "fastResponses": "Schnelle Antworten",
+        "veryAffordable": "Sehr günstig",
+        "largeContextWindow": "Großes Kontextfenster",
+        "visionCapable": "Vision-fähig",
+        "functionCalling": "Function-Calling-Unterstützung"
+      },
+      "cons": {
+        "basicQuality": "Basis-Qualitätsstufe",
+        "slowerResponses": "Langsamere Antworten",
+        "higherCost": "Höhere Kosten",
+        "limitedContext": "Begrenzter Kontext"
+      }
+    }
+  },
+  "chat": {
+    "title": "KI-Chat",
+    "heading": "KI-Chat",
+    "emptyState": "Noch keine Nachrichten. Starten Sie eine Unterhaltung!",
+    "inputPlaceholder": "Nachricht eingeben... (Umschalt+Enter für neue Zeile)",
+    "promptPlaceholder": "Fragen Sie etwas...",
+    "sendButton": "Senden",
+    "sendingButton": "Senden...",
+    "clearButton": "Löschen",
+    "thinkingIndicator": "Denkt nach...",
+    "modelLabel": "Modell",
+    "modelPlaceholder": "Modell auswählen...",
+    "newConversation": "Neue Unterhaltung",
+    "clearChat": "Chat löschen",
+    "regenerate": "Antwort neu generieren",
+    "copyCode": "Code kopieren",
+    "aiWorkspaceTitle": "KI-Workspace",
+    "aiWorkspaceSubtitle": "Starten Sie eine Unterhaltung mit Ihrem KI-Assistenten",
+    "costConfirmDialog": {
+      "title": "Teure Anfrage bestätigen",
+      "description": "Diese Nachricht wird voraussichtlich mehr als 500 Token verwenden. Bitte prüfen Sie die Kostenschätzung unten.",
+      "modelLabel": "Modell:",
+      "highTokenWarningTitle": "Hohe Token-Anzahl erkannt",
+      "highTokenWarningDescription": "Geschätzt {tokenCount} Token. Diese Anfrage kann höhere Kosten verursachen.",
+      "cancelButton": "Abbrechen",
+      "confirmButton": "Trotzdem senden"
+    }
+  },
+  "settings": {
+    "pageTitle": "Einstellungen",
+    "pageDescription": "Konfigurieren Sie Ihre VibeCode-Präferenzen und Anwendungseinstellungen",
+    "title": "Einstellungen",
+    "exportSettings": "Einstellungen exportieren",
+    "importSettings": "Einstellungen importieren",
+    "importSettingsFileLabel": "Einstellungsdatei importieren",
+    "resetToDefaults": "Auf Standard zurücksetzen",
+    "setupWizard": "Einrichtungsassistent",
+    "exportSuccess": "Einstellungen erfolgreich exportiert",
+    "exportFailed": "Export der Einstellungen fehlgeschlagen",
+    "importSelectJson": "Bitte wählen Sie eine JSON-Datei aus",
+    "importOverwriteConfirm": "Ihre aktuellen Einstellungen werden überschrieben. Fortfahren?",
+    "importInvalidFormat": "Ungültiges Einstellungsdatei-Format",
+    "importInvalidSections": "Die Einstellungsdatei enthält keine gültigen Einstellungsbereiche",
+    "importParseFailed": "Einstellungsdatei konnte nicht gelesen werden. Stellen Sie sicher, dass sie gültiges JSON enthält.",
+    "importSuccess": "Einstellungen erfolgreich importiert",
+    "resetConfirm": "Alle Einstellungen auf Standard zurücksetzen?",
+    "resetSuccess": "Einstellungen auf Standard zurückgesetzt",
+    "resetFailed": "Zurücksetzen der Einstellungen fehlgeschlagen",
+    "importLabel": "Einstellungsdatei importieren",
+    "saveStatus": {
+      "saved": "Gespeichert",
+      "error": "Fehler",
+      "unsavedChanges": "Ungespeicherte Änderungen",
+      "saving": "Speichern...",
+      "pleaseFixErrors": "Bitte beheben Sie die folgenden Fehler:"
+    },
+    "closeSettingsLabel": "Einstellungen schließen",
+    "resetAllLabel": "Alle Einstellungen auf Standard zurücksetzen",
+    "saveSettingsLabel": "Einstellungen speichern",
+    "tabs": {
+      "general": "Allgemein",
+      "services": "Dienste",
+      "networking": "Netzwerk",
+      "environment": "Umgebung",
+      "ai": "KI",
+      "advanced": "Erweitert"
+    },
+    "general": {
+      "title": "Allgemeine Einstellungen",
+      "resetLabel": "Allgemeine Einstellungen auf Standard zurücksetzen",
+      "theme": {
+        "label": "Design",
+        "description": "Wählen Sie Ihr bevorzugtes Farbschema",
+        "light": "Hell",
+        "dark": "Dunkel",
+        "system": "System",
+        "ariaLabel": "Design-Auswahl"
+      },
+      "launchAtLogin": {
+        "label": "Bei Anmeldung starten",
+        "description": "VibeCode beim Anmelden automatisch starten"
+      },
+      "minimizeToTray": {
+        "label": "In Taskleiste minimieren",
+        "description": "VibeCode beim Schließen im Hintergrund weiterlaufen lassen"
+      },
+      "notifications": {
+        "label": "Benachrichtigungen",
+        "description": "Desktop-Benachrichtigungen für wichtige Ereignisse anzeigen"
+      },
+      "confirmOnClose": {
+        "label": "Beim Schließen bestätigen",
+        "description": "Bestätigung anfordern, bevor bei ungespeicherten Änderungen geschlossen wird"
+      },
+      "autoSaveInterval": {
+        "label": "Auto-Speicher-Intervall",
+        "description": "Automatisches Speichern Ihrer Arbeit (in Sekunden, 0 zum Deaktivieren)"
+      },
+      "vimMode": {
+        "label": "Vim-Modus",
+        "description": "Vim-ähnliche Tastaturnavigation aktivieren (j/k zum Scrollen, etc.)"
+      }
+    },
+    "services": {
+      "title": "Dienst-Einstellungen",
+      "resetLabel": "Dienst-Einstellungen auf Standard zurücksetzen",
+      "autoStartServices": {
+        "label": "Dienste automatisch starten",
+        "description": "Hintergrunddienste beim App-Start automatisch starten"
+      },
+      "healthMonitoring": {
+        "label": "Zustandsüberwachung",
+        "description": "Echtzeit-Zustandsprüfungen der Dienste aktivieren"
+      },
+      "portConfiguration": {
+        "title": "Port-Konfiguration",
+        "appPort": "Anwendungs-Port",
+        "aiGatewayPort": "KI-Gateway-Port",
+        "databasePort": "Datenbank-Port",
+        "vmServicePort": "VM-Dienst-Port"
+      },
+      "timeoutConfiguration": {
+        "title": "Timeout-Konfiguration (ms)",
+        "connectionTimeout": "Verbindungs-Timeout",
+        "requestTimeout": "Anfrage-Timeout"
+      },
+      "maxRetries": {
+        "label": "Max. Wiederholungen",
+        "description": "Maximale Wiederholungsversuche bei fehlgeschlagenen Verbindungen"
+      }
+    },
+    "networking": {
+      "title": "Netzwerk & Sicherheit",
+      "subtitle": "Zero-Trust-Netzwerk mit Tailscale",
+      "connectionStatusTitle": "Verbindungsstatus",
+      "setupConfigTitle": "Einrichtung & Konfiguration",
+      "aboutTailscale": {
+        "title": "Über Tailscale",
+        "description": "Tailscale erstellt ein sicheres Netzwerk-Overlay, das Ihren Geräten eine sichere Kommunikation über das Internet ermöglicht, ohne Dienste öffentlich zugänglich zu machen.",
+        "keyFeatures": "Hauptmerkmale:",
+        "features": {
+          "encryption": "Ende-zu-Ende-Verschlüsselung für den gesamten Datenverkehr",
+          "zeroTrust": "Zero-Trust-Sicherheitsmodell",
+          "noPorts": "Keine offenen Ports zum öffentlichen Internet",
+          "keyRotation": "Automatische Schlüsselrotation und -verwaltung",
+          "crossPlatform": "Plattformübergreifende Unterstützung"
+        }
+      }
+    },
+    "ai": {
+      "title": "KI-Einstellungen",
+      "resetLabel": "KI-Einstellungen auf Standard zurücksetzen",
+      "defaultModel": {
+        "label": "Standardmodell",
+        "description": "Das standardmäßig verwendete KI-Modell",
+        "placeholder": "Modell auswählen"
+      },
+      "apiKeys": {
+        "title": "API-Schlüssel",
+        "description": "API-Schlüssel werden sicher gespeichert und nie in Einstellungsexporten angezeigt",
+        "openaiLabel": "OpenAI API-Schlüssel",
+        "openaiPlaceholder": "sk-...",
+        "anthropicLabel": "Anthropic API-Schlüssel",
+        "anthropicPlaceholder": "sk-ant-..."
+      },
+      "maxTokens": {
+        "label": "Max. Token",
+        "description": "Maximale Anzahl von Token in KI-Antworten"
+      },
+      "temperature": {
+        "label": "Temperatur",
+        "description": "Steuert Kreativität: 0 ist fokussiert, 2 ist hochkreativ"
+      },
+      "topP": {
+        "label": "Top P (Nucleus Sampling)"
+      },
+      "streamResponses": {
+        "label": "Antworten streamen",
+        "description": "KI-Antworten während der Generierung anzeigen"
+      },
+      "codeSuggestions": {
+        "label": "Code-Vorschläge",
+        "description": "KI-gestützte Code-Vervollständigungen aktivieren"
+      },
+      "autoCompleteDelay": {
+        "label": "Auto-Vervollständigungs-Verzögerung",
+        "description": "Verzögerung vor Anzeige von Vorschlägen (in Millisekunden)"
+      }
+    },
+    "advanced": {
+      "title": "Erweiterte Einstellungen",
+      "resetLabel": "Erweiterte Einstellungen auf Standard zurücksetzen",
+      "agentSafety": {
+        "title": "Agent-Sicherheit & Bestätigung",
+        "description": "Konfigurieren Sie, wie Agent-Aktionen vor der Ausführung angezeigt und genehmigt werden",
+        "enableActionPreview": {
+          "label": "Aktionsvorschau aktivieren",
+          "description": "Diff-Vorschauen vor dem Anwenden von Änderungen anzeigen"
+        },
+        "requireConfirmation": {
+          "label": "Bestätigung erforderlich",
+          "description": "Explizite Genehmigung für Agent-Aktionen erfordern"
+        },
+        "bulkApprovalMode": {
+          "label": "Sammelgenehmigungsmodus",
+          "description": "Mehrere Änderungen gleichzeitig genehmigen"
+        },
+        "showExplanations": {
+          "label": "Erklärungen anzeigen",
+          "description": "Anzeigen, warum jede Änderung vorgeschlagen wird"
+        },
+        "autoApproveReadOnly": {
+          "label": "Nur-Lesen automatisch genehmigen",
+          "description": "Bestätigung für schreibgeschützte Operationen überspringen"
+        }
+      },
+      "telemetry": {
+        "title": "Datenschutz & Telemetrie",
+        "analytics": {
+          "label": "Anonyme Analysen",
+          "description": "VibeCode durch anonyme Nutzungsdaten verbessern helfen"
+        },
+        "crashReporting": {
+          "label": "Absturzberichte",
+          "description": "Absturzberichte automatisch senden, um Probleme zu beheben"
+        },
+        "performanceMonitoring": {
+          "label": "Leistungsüberwachung",
+          "description": "Leistungsmetriken der Anwendung erfassen"
+        }
+      },
+      "debugMode": {
+        "label": "Debug-Modus",
+        "description": "Zusätzliche Protokollierung und Entwicklerfunktionen aktivieren"
+      },
+      "logLevel": {
+        "label": "Protokoll-Stufe",
+        "description": "Detailgrad der Anwendungsprotokolle festlegen",
+        "options": {
+          "error": "Fehler",
+          "warn": "Warnung",
+          "info": "Info",
+          "debug": "Debug",
+          "trace": "Trace"
+        }
+      },
+      "dataDirectory": {
+        "label": "Datenverzeichnis",
+        "description": "Benutzerdefinierter Pfad für die Anwendungsdaten",
+        "placeholder": "Standardspeicherort"
+      },
+      "hardwareAcceleration": {
+        "label": "Hardwarebeschleunigung",
+        "description": "GPU für verbesserte Leistung verwenden"
+      },
+      "experimentalFeatures": {
+        "label": "Experimentelle Funktionen",
+        "description": "Funktionen aktivieren, die sich noch in Entwicklung befinden"
+      },
+      "proxy": {
+        "title": "Proxy-Konfiguration",
+        "urlLabel": "Proxy-URL",
+        "urlPlaceholder": "http://proxy.example.com:8080",
+        "bypassForLocal": {
+          "label": "Für lokal umgehen",
+          "description": "Proxy für lokale Netzwerkadressen überspringen"
+        }
+      }
+    },
+    "maskedInput": {
+      "showValue": "Wert anzeigen",
+      "hideValue": "Wert verbergen"
+    }
+  },
+  "workspace": {
+    "title": "Workspaces",
+    "pageTitle": "Workspaces",
+    "e2eTestMode": "E2E-Testmodus",
+    "create": "Workspace erstellen",
+    "createWorkspace": "Workspace erstellen",
+    "clone": "Workspace klonen",
+    "delete": "Workspace löschen",
+    "open": "Workspace öffnen",
+    "rename": "Workspace umbenennen",
+    "useTemplate": "Vorlage verwenden",
+    "searchPlaceholder": "Workspaces suchen...",
+    "searchAriaLabel": "Workspaces suchen",
+    "loadingAriaLabel": "Workspaces werden geladen",
+    "emptyState": {
+      "title": "Keine Workspaces gefunden",
+      "description": "Erstellen Sie Ihren ersten Workspace, um zu beginnen"
+    },
+    "workspaceCard": {
+      "createdLabel": "Erstellt {date}",
+      "openButton": "Öffnen",
+      "editButton": "Workspace bearbeiten",
+      "settingsButton": "Workspace-Einstellungen"
+    },
+    "createModal": {
+      "title": "Neuen Workspace erstellen",
+      "nameLabel": "Workspace-Name",
+      "namePlaceholder": "Workspace-Namen eingeben",
+      "descriptionLabel": "Beschreibung (optional)",
+      "descriptionPlaceholder": "Workspace-Beschreibung eingeben",
+      "submitButton": "Workspace erstellen",
+      "creatingButton": "Erstellen...",
+      "cancelButton": "Abbrechen",
+      "nameRequired": "Workspace-Name ist erforderlich",
+      "nameTooShort": "Workspace-Name muss mindestens 3 Zeichen lang sein"
+    },
+    "templateModal": {
+      "title": "Vorlage wählen",
+      "nextjsTypescript": "Next.js + TypeScript",
+      "nextjsTypescriptDescription": "Full-Stack-Webanwendung",
+      "reactVite": "React + Vite",
+      "reactViteDescription": "Schnelle Frontend-Entwicklung",
+      "nodejsApi": "Node.js API",
+      "nodejsApiDescription": "Backend-REST-API",
+      "continueButton": "Weiter",
+      "cancelButton": "Abbrechen"
+    }
+  },
+  "statusBar": {
+    "serviceHealth": "Dienst-Zustand",
+    "lastUpdated": "Zuletzt aktualisiert: ",
+    "loadingHealth": "Zustandsstatus wird geladen",
+    "healthLabel": "Dienst-Zustandsleiste",
+    "detailedHealthLabel": "Detaillierte Dienst-Zustandsinformationen",
+    "healthy": "Gesund",
+    "degraded": "Beeinträchtigt",
+    "unhealthy": "Fehlerhaft",
+    "unknown": "Unbekannt",
+    "collapseStatusBar": "Statusleiste einklappen",
+    "expandStatusBar": "Statusleiste ausklappen",
+    "ariaRegionLabel": "Dienst-Zustandsleiste",
+    "healthyServicesCount": "{healthy} gesunde Dienste von {total} insgesamt",
+    "connection": {
+      "liveUpdatesEnabled": "Live-Updates aktiviert",
+      "reconnecting": "Verbindung zu Live-Updates wird wiederhergestellt",
+      "usingPolling": "Polling für Updates wird verwendet"
+    },
+    "overallStatus": {
+      "allSystemsOperational": "Alle Systeme betriebsbereit",
+      "someSystemsDegraded": "Einige Systeme beeinträchtigt",
+      "systemIssuesDetected": "Systemprobleme erkannt",
+      "statusUnknown": "Status unbekannt"
+    }
+  },
+  "commandPalette": {
+    "searchPlaceholder": "Befehl eingeben oder suchen...",
+    "searchAriaLabel": "Befehle suchen",
+    "closeAriaLabel": "Befehlspalette schließen",
+    "resultsAriaLabel": "Befehlsergebnisse",
+    "noCommandsFound": "Keine Befehle für \"{query}\" gefunden",
+    "typeToSearch": "Tippen Sie, um nach Befehlen zu suchen...",
+    "keyboardHints": {
+      "navigate": "Navigieren",
+      "select": "Auswählen",
+      "close": "Schließen"
+    },
+    "commands": {
+      "goDashboard": "Zum Dashboard",
+      "goDashboardDescription": "Zum Haupt-Dashboard navigieren",
+      "goVm": "Zur VM-Verwaltung",
+      "goVmDescription": "Virtuelle Maschinen verwalten",
+      "goAiChat": "Zum KI-Chat",
+      "goAiChatDescription": "KI-Chat-Oberfläche öffnen",
+      "openSettings": "Einstellungen öffnen",
+      "openSettingsDescription": "Anwendungseinstellungen konfigurieren",
+      "goMonitoring": "Zur Überwachung",
+      "goMonitoringDescription": "Systemüberwachung und Metriken anzeigen"
+    }
+  },
+  "auth": {
+    "signInTitle": "VibeCode Entwickler-Login",
+    "signInSubtitle": "Einfache Anmeldung für die Entwicklungsumgebung",
+    "signUpTitle": "Konto erstellen",
+    "email": "E-Mail",
+    "emailLabel": "E-Mail-Adresse",
+    "emailPlaceholder": "E-Mail-Adresse",
+    "password": "Passwort",
+    "passwordLabel": "Passwort",
+    "passwordPlaceholder": "Passwort",
+    "confirmPassword": "Passwort bestätigen",
+    "forgotPassword": "Passwort vergessen?",
+    "noAccount": "Noch kein Konto?",
+    "hasAccount": "Bereits ein Konto?",
+    "signInWith": "Mit {provider} anmelden",
+    "orContinueWith": "Oder fortfahren mit",
+    "signInButton": "Anmelden",
+    "testUsersHeading": "Entwicklungs-Testbenutzer:",
+    "adminUsersLabel": "Admin-Benutzer:",
+    "developersLabel": "Entwickler:",
+    "teamMembersLabel": "Teammitglieder:",
+    "errors": {
+      "invalidCredentials": "Ungültige Anmeldedaten",
+      "authFailed": "Authentifizierung fehlgeschlagen – keine Sitzung erstellt",
+      "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten",
+      "validEmail": "Geben Sie eine gültige E-Mail-Adresse ein",
+      "passwordTooShort": "Das Passwort muss mindestens 6 Zeichen lang sein"
+    },
+    "errorPrefix": "Fehler: "
+  },
+  "onboarding": {
+    "welcomeTitle": "Willkommen bei VibeCode",
+    "subtitle": "Passen Sie Ihren Workspace an und verbinden Sie die Dienste, die Sie täglich nutzen.",
+    "closeButton": "Onboarding schließen",
+    "themeTitle": "Design",
+    "themeDescription": "Wählen Sie das Standard-Design für das Dashboard.",
+    "cliEditorTitle": "CLI-Editor-Präferenz",
+    "cliEditorDescription": "Wir passen zukünftige Tipps an Ihren bevorzugten Terminal-Editor an.",
+    "editorLabel": "Editor",
+    "selectEditor": "Editor auswählen",
+    "extensionsTitle": "Empfohlene Erweiterungen",
+    "extensionsDescription": "Installieren Sie diese VS-Code-Erweiterungen passend zum VibeCode-Stack.",
+    "copyButton": "Kopieren",
+    "integrationsTitle": "Integrationen",
+    "integrationsDescription": "Verfolgen Sie, welche Dienste Sie verbunden haben.",
+    "setupButton": "Einrichten",
+    "integrationsIncompleteHint": "Haken Sie jede Integration ab, sobald Sie das Konto oder den API-Schlüssel verbunden haben.",
+    "quickActionsTitle": "Schnellaktionen",
+    "codeiumPlayground": "Codeium Playground",
+    "aiConsole": "KI-Konsole",
+    "activityLog": "Aktivitätsprotokoll",
+    "github": "GitHub",
+    "themeOptions": {
+      "light": "Hell",
+      "dark": "Dunkel"
+    },
+    "cliEditorOptions": {
+      "vim": "Vim",
+      "neovim": "Neovim",
+      "codeServer": "code-server"
+    },
+    "integrationServices": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "linear": "Linear",
+      "jira": "Jira",
+      "openai": "OpenAI",
+      "anthropic": "Anthropic"
+    },
+    "errors": {
+      "failedToUpdate": "Einstellungen konnten nicht aktualisiert werden"
+    }
+  },
+  "offlineIndicator": {
+    "featureAvailabilityTitle": "Funktionsverfügbarkeit",
+    "features": {
+      "browseLocalFiles": "Lokale Dateien durchsuchen",
+      "browseLocalFilesDescription": "Auf zwischengespeicherte Dateien zugreifen",
+      "viewOrganizations": "Organisationen anzeigen",
+      "viewOrganizationsDescription": "Zwischengespeicherte Organisationsdaten anzeigen",
+      "viewProjects": "Projekte anzeigen",
+      "viewProjectsDescription": "Zwischengespeicherte Projektdaten anzeigen",
+      "createTasks": "Aufgaben erstellen",
+      "createTasksDescription": "Serververbindung erforderlich",
+      "syncData": "Daten synchronisieren",
+      "syncDataDescription": "Serververbindung erforderlich",
+      "realTimeUpdates": "Echtzeit-Updates",
+      "realTimeUpdatesDescription": "Serververbindung erforderlich"
+    }
+  },
+  "errors": {
+    "notFound": "Seite nicht gefunden",
+    "notFoundDescription": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
+    "serverError": "Etwas ist schiefgelaufen",
+    "serverErrorDescription": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+    "criticalError": "Kritischer Fehler",
+    "criticalErrorDescription": "Ein kritischer Fehler ist aufgetreten. Die Anwendung muss neu geladen werden.",
+    "reloadApplication": "Anwendung neu laden",
+    "goHome": "Zur Startseite",
+    "tryAgain": "Erneut versuchen",
+    "unauthorized": "Nicht autorisiert",
+    "forbidden": "Zugriff verweigert",
+    "failedToFetchHealth": "Zustandsdaten konnten nicht abgerufen werden",
+    "failedToLoadModels": "Modelle konnten nicht geladen werden",
+    "failedToGetRecommendation": "Empfehlung konnte nicht abgerufen werden",
+    "failedToApproveAction": "Aktion konnte nicht genehmigt werden",
+    "failedToRejectAction": "Aktion konnte nicht abgelehnt werden",
+    "failedToBulkApproveActions": "Sammelgenehmigung der Aktionen fehlgeschlagen"
+  },
+  "notFound": {
+    "code": "404",
+    "title": "Seite nicht gefunden",
+    "description": "Die gesuchte Seite existiert nicht.",
+    "goHome": "Zur Startseite"
+  },
+  "health": {
+    "title": "Zustandsmonitor",
+    "allServicesHealthy": "Alle Dienste sind gesund",
+    "servicesDown": "{count} Dienste haben Probleme",
+    "lastChecked": "Zuletzt geprüft",
+    "checkNow": "Jetzt prüfen",
+    "responseTime": "Antwortzeit",
+    "uptime": "Verfügbarkeit"
+  },
+  "monitoring": {
+    "title": "Überwachung",
+    "metrics": "Metriken",
+    "traces": "Traces",
+    "logs": "Protokolle",
+    "alerts": "Warnungen",
+    "dashboardTitle": "Überwachungs-Dashboard",
+    "dashboardSubtitle": "Echtzeit-Systemüberwachung und Observability",
+    "customizeDashboard": "Dashboard anpassen",
+    "refreshData": "Daten aktualisieren",
+    "customizationModeEnabled": "Dashboard-Anpassungsmodus aktiviert",
+    "connectionError": "Verbindungsfehler – aktuelle Daten konnten nicht abgerufen werden",
+    "systemHealth": "Systemzustand",
+    "healthy": "Gesund",
+    "warning": "Warnung",
+    "serviceApiGateway": "API-Gateway",
+    "serviceDatabase": "Datenbank",
+    "serviceRedis": "Redis",
+    "serviceAiService": "KI-Dienst",
+    "keyMetrics": "Schlüsselmetriken",
+    "cpuUsage": "CPU-Auslastung",
+    "memoryUsage": "Speicherauslastung",
+    "activeUsers": "Aktive Benutzer",
+    "responseTime": "Antwortzeit",
+    "recentAlerts": "Aktuelle Warnungen",
+    "specializedMonitoring": "Spezialisierte Überwachung",
+    "websocket": "WebSocket",
+    "monitorConnections": "Verbindungen überwachen",
+    "rateLimit": "Rate-Limit",
+    "trackApiLimits": "API-Limits verfolgen",
+    "aiUsageLink": "KI-Nutzung",
+    "modelAnalytics": "Modell-Analysen",
+    "performanceMetrics": "Leistungsmetriken",
+    "requestsPerMin": "Anfragen/Min.",
+    "avgResponseTime": "Ø Antwortzeit",
+    "activeConnections": "Aktive Verbindungen",
+    "errorRate": "Fehlerrate",
+    "systemLogs": "Systemprotokolle",
+    "searchLogs": "Protokolle suchen...",
+    "allLevels": "Alle Stufen",
+    "logLevelError": "Fehler",
+    "logLevelWarning": "Warnung",
+    "logLevelInfo": "Info",
+    "distributedTraces": "Verteilte Traces",
+    "searchTraces": "Traces suchen...",
+    "allServices": "Alle Dienste",
+    "rumStatus": "RUM-Status",
+    "rumActive": "Aktiv",
+    "realUserMonitoring": "Real User Monitoring",
+    "coreWebVitals": "Core Web Vitals",
+    "userSessions": "Benutzersitzungen",
+    "activeSessions": "Aktive Sitzungen",
+    "errorTracking": "Fehlerverfolgung",
+    "errorsInLastHour": "Fehler in der letzten Stunde",
+    "breadcrumbMonitoring": "Überwachung",
+    "database": {
+      "title": "Datenbank-Zustandsdashboard",
+      "subtitle": "Echtzeit-Überwachung von Datenbankverbindungen und Leistung",
+      "loadingMetrics": "Datenbank-Zustandsmetriken werden geladen...",
+      "errorLoading": "Fehler beim Laden des Datenbankzustands",
+      "lastUpdated": "Zuletzt aktualisiert",
+      "unknown": "Unbekannt",
+      "autoRefresh": "Auto-Aktualisierung",
+      "on": "AN",
+      "off": "AUS",
+      "activePoolAlerts": "Aktive Pool-Warnungen ({count})",
+      "utilization": "Auslastung",
+      "active": "Aktiv",
+      "available": "Verfügbar",
+      "total": "Gesamt",
+      "connectionStatus": "Verbindungsstatus",
+      "latency": "Latenz",
+      "activeConnections": "Aktive Verbindungen",
+      "poolStatus": "Pool-Status",
+      "cacheHitRate": "Cache-Trefferrate",
+      "excellent": "Exzellent",
+      "good": "Gut",
+      "needsAttention": "Aufmerksamkeit erforderlich",
+      "vectorEmbeddings": "Vektor-Embeddings",
+      "notInstalled": "Nicht installiert",
+      "tabConnectionPools": "Verbindungspools",
+      "tabPerformance": "Leistung",
+      "tabSystemInfo": "Systeminfo",
+      "tabVectorData": "Vektordaten",
+      "connectionPoolStatus": "Verbindungspool-Status",
+      "pending": "Ausstehend",
+      "totalQueries": "Abfragen gesamt",
+      "lastUsed": "Zuletzt verwendet",
+      "noConnectionPools": "Keine aktiven Verbindungspools",
+      "queryPerformance": "Abfrageleistung",
+      "queriesPerSecond": "Abfragen/Sekunde",
+      "avgQueryTime": "Ø Abfragezeit",
+      "p95QueryTime": "P95-Abfragezeit",
+      "errorRate": "Fehlerrate",
+      "databaseStatistics": "Datenbankstatistiken",
+      "committedTransactions": "Bestätigte Transaktionen",
+      "rolledBackTransactions": "Zurückgerollte Transaktionen",
+      "rowsReturned": "Zurückgegebene Zeilen",
+      "rowsInserted": "Eingefügte Zeilen",
+      "rowsUpdated": "Aktualisierte Zeilen",
+      "systemInformation": "Datenbank-Systeminformationen",
+      "databaseName": "Datenbankname",
+      "user": "Benutzer",
+      "serverStartTime": "Server-Startzeit",
+      "version": "Version",
+      "vectorEmbeddingsStatus": "Vektor-Embeddings-Status",
+      "installed": "Installiert",
+      "totalEmbeddings": "Embeddings gesamt",
+      "avgContentSize": "Ø Inhaltsgröße",
+      "latestEmbedding": "Neuestes Embedding",
+      "embeddingsError": "Embedding-Fehler",
+      "footerRefreshNote": "Datenbank-Zustandsmetriken werden alle 10 Sekunden aktualisiert, wenn die Auto-Aktualisierung aktiviert ist.",
+      "footerPoolNote": "Verbindungspool-Metriken werden von allen aktiven Datenbankverbindungen erfasst."
+    },
+    "llmOps": {
+      "title": "LLM-Betrieb",
+      "subtitle": "LLM-Nutzung, Kosten und Leistung über alle Anbieter überwachen",
+      "breadcrumb": "LLM-Betrieb",
+      "loadingData": "LLM-Betriebsdaten werden geladen...",
+      "error": "Fehler",
+      "noData": "Keine Daten verfügbar",
+      "totalRequests": "Anfragen gesamt",
+      "tokensConsumed": "Verbrauchte Token",
+      "totalCost30Days": "Gesamtkosten (30 Tage)",
+      "performanceMetrics": "Leistungsmetriken",
+      "avgLatency": "Ø Latenz",
+      "successRate": "Erfolgsrate",
+      "errorRate": "Fehlerrate",
+      "providerStatistics": "Anbieterstatistiken",
+      "provider": "Anbieter",
+      "requests": "Anfragen",
+      "tokens": "Token",
+      "cost": "Kosten",
+      "status": "Status",
+      "model": "Modell",
+      "modelUsageStatistics": "Modellnutzungsstatistiken",
+      "modelsActive30Days": "{count} Modelle in den letzten 30 Tagen aktiv",
+      "recentRequests": "Aktuelle LLM-Anfragen",
+      "allStatus": "Alle Status",
+      "statusSuccess": "Erfolg",
+      "statusError": "Fehler",
+      "allProviders": "Alle Anbieter",
+      "today": "Heute",
+      "thisWeek": "Diese Woche",
+      "thisMonth": "Dieser Monat",
+      "projected30Days": "Prognose (30 Tage)",
+      "costBreakdownByProvider": "Kostenaufschlüsselung nach Anbieter"
+    },
+    "embeddings": {
+      "title": "Azure Embedding Service – Überwachung",
+      "subtitle": "Echtzeit-Metriken und Nutzungsanalysen",
+      "loadingMetrics": "Embedding-Metriken werden geladen...",
+      "errorLoading": "Fehler beim Laden der Metriken",
+      "lastUpdated": "Zuletzt aktualisiert",
+      "unknown": "Unbekannt",
+      "autoRefresh": "Auto-Aktualisierung",
+      "on": "AN",
+      "off": "AUS",
+      "resetMetrics": "Metriken zurücksetzen",
+      "totalRequests": "Anfragen gesamt",
+      "errors": "Fehler",
+      "totalTokens": "Token gesamt",
+      "cost": "Kosten",
+      "totalCost": "Gesamtkosten",
+      "since": "Seit",
+      "avgLatency": "Ø Latenz",
+      "highLatency": "Hohe Latenz erkannt",
+      "performanceNormal": "Leistung normal",
+      "tabRecentCalls": "Aktuelle Aufrufe",
+      "tabHourlyBreakdown": "Stündliche Aufschlüsselung",
+      "tabErrorAnalysis": "Fehleranalyse",
+      "tabRecommendations": "Empfehlungen",
+      "recentApiCalls": "Aktuelle API-Aufrufe",
+      "success": "Erfolg",
+      "error": "Fehler",
+      "hourlyUsageBreakdown": "Stündliche Nutzungsaufschlüsselung",
+      "requests": "{count} Anfragen",
+      "errorsCount": "{count} Fehler",
+      "errorBreakdown": "Fehleraufschlüsselung",
+      "occurrences": "{count} Vorkommen",
+      "noErrors": "Keine Fehler in den letzten 24 Stunden!",
+      "performanceRecommendations": "Leistungsempfehlungen",
+      "allSystemsOptimal": "Alle Systeme arbeiten optimal! Keine Empfehlungen zum jetzigen Zeitpunkt.",
+      "footerDatadogNote": "Metriken werden automatisch an Datadog für umfassende Überwachung und Alarmierung gesendet.",
+      "footerRefreshNote": "Das Dashboard aktualisiert sich alle 30 Sekunden, wenn die Auto-Aktualisierung aktiviert ist."
+    },
+    "costBreakdown": {
+      "title": "Kostenaufschlüsselung",
+      "errorLoading": "Fehler beim Laden der Kostendaten",
+      "retry": "Erneut versuchen",
+      "noData": "Keine Kostendaten für den ausgewählten Zeitraum verfügbar",
+      "lastHour": "Letzte Stunde",
+      "last6Hours": "Letzte 6 Stunden",
+      "last12Hours": "Letzte 12 Stunden",
+      "last24Hours": "Letzte 24 Stunden",
+      "last7Days": "Letzte 7 Tage",
+      "last30Days": "Letzte 30 Tage",
+      "exportCsv": "CSV exportieren",
+      "totalCost": "Gesamtkosten",
+      "requestsCount": "{count} Anfragen",
+      "avgCostPerRequest": "Ø Kosten/Anfrage",
+      "totalTokens": "{count} Token gesamt",
+      "costTrend": "Kostentrend",
+      "comparedToPrevious": "{trend} im Vergleich zum vorherigen Zeitraum",
+      "costDistributionByModel": "Kostenverteilung nach Modell",
+      "noModelData": "Keine Modell-Kostendaten verfügbar",
+      "costDistributionByProvider": "Kostenverteilung nach Anbieter",
+      "noProviderData": "Keine Anbieter-Kostendaten verfügbar",
+      "costComparisonByModel": "Kostenvergleich nach Modell",
+      "costAxis": "Kosten ($)",
+      "noComparisonData": "Keine Modellvergleichsdaten verfügbar",
+      "detailedBreakdownByModel": "Detaillierte Aufschlüsselung nach Modell",
+      "model": "Modell",
+      "requests": "Anfragen",
+      "avgPerRequest": "Ø/Anfrage",
+      "percentOfTotal": "% des Gesamten",
+      "lastUpdated": "Zuletzt aktualisiert"
+    },
+    "aiUsage": {
+      "title": "KI-Nutzungsmonitor",
+      "loadingDashboard": "KI-Nutzungsdashboard wird geladen...",
+      "errorLoading": "Fehler beim Laden des Dashboards",
+      "retry": "Erneut versuchen",
+      "noData": "Keine KI-Nutzungsdaten verfügbar",
+      "autoRefresh30s": "Auto-Aktualisierung (30s)",
+      "refreshNow": "Jetzt aktualisieren",
+      "totalRequests": "Anfragen gesamt",
+      "totalCost": "Gesamtkosten",
+      "trend24h": "24h",
+      "totalTokens": "Token gesamt",
+      "acrossAllModels": "Über alle Modelle",
+      "activeAlerts": "Aktive Warnungen",
+      "criticalWarningCount": "{critical} kritisch, {warning} Warnung",
+      "avgResponseTime": "Ø Antwortzeit",
+      "errorRate": "Fehlerrate",
+      "requestsPerMinute": "Anfragen/Minute",
+      "activeAlertsCount": "Aktive Warnungen ({count})",
+      "recommendationsCount": "Empfehlungen ({count})",
+      "lastUpdated": "Zuletzt aktualisiert",
+      "inputTokens": "Eingabe",
+      "outputTokens": "Ausgabe",
+      "costPer1kTokens": "Kosten/1K Token",
+      "avgResponse": "Ø Antwort",
+      "rpm": "Anfr./Min.",
+      "action": "Aktion"
+    },
+    "websocketDashboard": {
+      "title": "WebSocket-Monitor",
+      "loadingDashboard": "WebSocket-Dashboard wird geladen...",
+      "errorLoading": "Fehler beim Laden des Dashboards",
+      "retry": "Erneut versuchen",
+      "noData": "Keine WebSocket-Daten verfügbar",
+      "autoRefresh30s": "Auto-Aktualisierung (30s)",
+      "refreshNow": "Jetzt aktualisieren",
+      "activeConnections": "Aktive Verbindungen",
+      "ofTotal": "von {total} gesamt",
+      "averageLatency": "Ø Latenz",
+      "messages": "Nachrichten",
+      "sentReceived": "{sent} gesendet, {received} empf.",
+      "activeAlerts": "Aktive Warnungen",
+      "criticalWarningCount": "{critical} kritisch, {warning} Warnung",
+      "activeAlertsCount": "Aktive Warnungen ({count})",
+      "recommendationsCount": "Empfehlungen ({count})",
+      "lastUpdated": "Zuletzt aktualisiert",
+      "status": "Status",
+      "uptime": "Verfügbarkeit",
+      "sent": "Gesendet",
+      "received": "Empfangen",
+      "queued": "Warteschlange",
+      "latency": "Latenz",
+      "avg": "Ø",
+      "ping": "Ping",
+      "errors": "Fehler",
+      "reconnects": "Neuverbindungen",
+      "action": "Aktion"
+    }
+  },
+  "editor": {
+    "title": "Code-Editor",
+    "untitled": "Unbenannt",
+    "saveFile": "Datei speichern",
+    "openFile": "Datei öffnen",
+    "newFile": "Neue Datei"
+  }
+}

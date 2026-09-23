@@ -93,7 +93,7 @@ const streamingChatRequestSchema = z.object({
 })
 
 // Helper to build RAG context from workspace using vector search
-async function buildRAGContext(workspaceId: string, userQuery: string, userId: string) {
+async function buildRAGContext(workspaceId: string, userQuery: string, userId: string): Promise<string> {
   try {
     // Get workspace from database
     const workspace = await prisma.workspace.findFirst({
@@ -127,7 +127,7 @@ async function buildRAGContext(workspaceId: string, userQuery: string, userId: s
 }
 
 // Helper to build basic workspace context (fallback)
-async function buildWorkspaceContext(workspaceId: string, files: string[]) {
+async function buildWorkspaceContext(workspaceId: string, files: string[]): Promise<string> {
   try {
     // Get file contents for context (limit to recent/relevant files)
     const contextFiles = files.slice(0, 5) // Limit context to prevent token overflow
@@ -158,7 +158,7 @@ async function buildWorkspaceContext(workspaceId: string, files: string[]) {
   }
 }
 
-export async function POST(req: AuthenticatedRequest & NextRequest) {
+export async function POST(req: AuthenticatedRequest & NextRequest): Promise<Response> {
   try {
     // Check rate limit
     const rateLimitResult = await apiRateLimit(req)
@@ -441,7 +441,7 @@ export async function POST(req: AuthenticatedRequest & NextRequest) {
 }
 
 // Handle preflight requests for CORS
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS(request: NextRequest): Promise<Response> {
   const { Response: GlobalResponse } = globalThis
   const requestOrigin = request.headers.get('origin')
   const validatedOrigin = getValidatedCorsOrigin(requestOrigin)

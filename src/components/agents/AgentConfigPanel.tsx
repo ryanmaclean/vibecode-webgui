@@ -20,7 +20,6 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import {
 Settings,
-  Cpu,
   FileSearch,
   Code2,
   Zap,
@@ -86,7 +85,7 @@ export interface AgentConfigPanelProps {
 // Constants
 // ============================================================================
 
-const AVAILABLE_MODELS: AgentModel[] = [
+const DEFAULT_MODELS: AgentModel[] = [
   {
     id: 'gpt-4-turbo-preview',
     name: 'GPT-4 Turbo',
@@ -140,7 +139,7 @@ export function AgentConfigPanel({
   onSave,
   readOnly = false,
   className
-}: AgentConfigPanelProps) {
+}: AgentConfigPanelProps): React.JSX.Element {
   const [config, setConfig] = useState<AgentConfig>({
     ...DEFAULT_CONFIG,
     ...initialConfig
@@ -148,8 +147,18 @@ export function AgentConfigPanel({
   const [isSaving, setIsSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [availableModels, setAvailableModels] = useState<AgentModel[]>(DEFAULT_MODELS)
 
-  const selectedModel = AVAILABLE_MODELS.find(m => m.id === config.model)
+  useEffect(() => {
+    fetch('/api/ai/models/available')
+      .then(res => res.ok ? res.json() : Promise.reject(res))
+      .then(data => {
+        if (data.models?.length > 0) setAvailableModels(data.models)
+      })
+      .catch(() => {})
+  }, [])
+
+  const selectedModel = availableModels.find(m => m.id === config.model)
 
   // Validate configuration
   useEffect(() => {
@@ -293,7 +302,7 @@ export function AgentConfigPanel({
                   <SelectValue placeholder="Select a model" />
                 </SelectTrigger>
                 <SelectContent>
-                  {AVAILABLE_MODELS.map((model) => (
+                  {availableModels.map((model) => (
                     <SelectItem key={model.id} value={model.id}>
                       <div className="flex flex-col">
                         <span className="font-medium">{model.name}</span>

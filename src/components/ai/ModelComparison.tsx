@@ -319,7 +319,7 @@ const CriteriaAdjuster: React.FC<CriteriaAdjusterProps> = ({
         </div>
         <Slider
           value={[criteria.cost * 100]}
-          onValueChange={([v]) => handleChange('cost', v / 100)}
+          onValueChange={([v]) => handleChange('cost', (v ?? 0) / 100)}
           max={100}
           step={5}
         />
@@ -335,7 +335,7 @@ const CriteriaAdjuster: React.FC<CriteriaAdjusterProps> = ({
         </div>
         <Slider
           value={[criteria.speed * 100]}
-          onValueChange={([v]) => handleChange('speed', v / 100)}
+          onValueChange={([v]) => handleChange('speed', (v ?? 0) / 100)}
           max={100}
           step={5}
         />
@@ -351,7 +351,7 @@ const CriteriaAdjuster: React.FC<CriteriaAdjusterProps> = ({
         </div>
         <Slider
           value={[criteria.quality * 100]}
-          onValueChange={([v]) => handleChange('quality', v / 100)}
+          onValueChange={([v]) => handleChange('quality', (v ?? 0) / 100)}
           max={100}
           step={5}
         />
@@ -367,7 +367,7 @@ const CriteriaAdjuster: React.FC<CriteriaAdjusterProps> = ({
         </div>
         <Slider
           value={[criteria.context_size * 100]}
-          onValueChange={([v]) => handleChange('context_size', v / 100)}
+          onValueChange={([v]) => handleChange('context_size', (v ?? 0) / 100)}
           max={100}
           step={5}
         />
@@ -562,7 +562,7 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
         : `Ranks #${index + 1} based on weighted criteria`;
     });
 
-    const winnerId = scores[0].modelId;
+    const winnerId = scores[0]!.modelId;
     const winner = models.find(m => m.id === winnerId);
 
     return {
@@ -698,8 +698,8 @@ const ModelComparison: React.FC<ModelComparisonProps> = ({
       ) : models.length === 1 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ModelCard
-            model={models[0]}
-            onRemove={() => handleRemoveModel(models[0].id)}
+            model={models[0]!}
+            onRemove={() => handleRemoveModel(models[0]!.id)}
           />
           <Card className="border-2 border-dashed flex items-center justify-center">
             <CardContent className="text-center py-8">

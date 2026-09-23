@@ -4,10 +4,10 @@ import React, { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChatInterface } from '@/components/ai/ChatInterface';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
-import { ConfirmationDialog } from '@/components/agent/ConfirmationDialog';
+import { ConfirmationDialog } from '@/components/agents/ConfirmationDialog';
 import type { ConfirmationRequest } from '@/types/agent-confirmation';
 
-export default function ChatPage() {
+export default function ChatPage(): React.JSX.Element {
   const t = useTranslations()
 
   // State for managing pending confirmations from agent
@@ -80,7 +80,7 @@ export default function ChatPage() {
   }, []);
 
   // Handle bulk approval of all bulk-approvable actions
-  const handleBulkApprove = useCallback(async () => {
+  const _handleBulkApprove = useCallback(async () => {
     setIsProcessing(true);
     try {
       const bulkApprovableIds = pendingConfirmations
@@ -119,21 +119,6 @@ export default function ChatPage() {
     }
   }, [pendingConfirmations]);
 
-  // TODO: In Phase 4, this will be replaced with actual agent event listener
-  // Example:
-  // useEffect(() => {
-  //   const handleConfirmationRequired = (event: ConfirmationRequiredEvent) => {
-  //     setPendingConfirmations((prev) => [...prev, event.request]);
-  //     setIsDialogOpen(true);
-  //   };
-  //
-  //   agent?.on(AgentEvent.ConfirmationRequired, handleConfirmationRequired);
-  //
-  //   return () => {
-  //     agent?.off(AgentEvent.ConfirmationRequired, handleConfirmationRequired);
-  //   };
-  // }, [agent]);
-
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">{t('chat.heading')}</h1>
@@ -143,13 +128,11 @@ export default function ChatPage() {
 
       {/* Confirmation Dialog for agent actions */}
       <ConfirmationDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        confirmations={pendingConfirmations}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        confirmation={pendingConfirmations[0] ?? null}
         onApprove={handleApprove}
         onReject={handleReject}
-        onBulkApprove={handleBulkApprove}
-        bulkApprovalEnabled={true}
         isProcessing={isProcessing}
       />
     </div>

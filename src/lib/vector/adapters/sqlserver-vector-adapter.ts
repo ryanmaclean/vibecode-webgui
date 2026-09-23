@@ -110,7 +110,7 @@ export class SQLServerVectorAdapter extends BaseVectorDatabaseAdapter {
         
         // Process each chunk individually
         for (let j = 0; j < batch.length; j++) {
-          const chunk = batch[j];
+          const chunk = batch[j]!;
           const chunkId = `${fileId}-chunk-${i + j}`;
           const embedding = await this.embeddingProvider.generateEmbedding(chunk.content);
           
@@ -180,24 +180,6 @@ export class SQLServerVectorAdapter extends BaseVectorDatabaseAdapter {
       
       // Return mock results
       const mockResults: SearchResult[] = [];
-      for (let i = 0; i < 3; i++) {
-        mockResults.push({
-          chunk: {
-            id: `mock-chunk-${i}`,
-            content: `Mock content for result ${i}`,
-            embedding: [],
-            metadata: {
-              fileId: 123,
-              fileName: 'mock-file.ts',
-              startLine: 10 + i * 10,
-              endLine: 20 + i * 10,
-              language: 'typescript',
-              tokens: 50
-            }
-          },
-          similarity: 0.95 - (i * 0.05)
-        });
-      }
       
       return mockResults;
     } catch (error) {

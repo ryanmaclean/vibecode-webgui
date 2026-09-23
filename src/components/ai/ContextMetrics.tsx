@@ -334,7 +334,7 @@ export function ContextMetrics({
     // This is simplified - in reality you'd need to get individual relevance scores
     const avgScore = latestSnapshot.averageRelevanceScore;
     const binIndex = Math.min(Math.floor(avgScore / 0.2), 4);
-    bins[binIndex].count = latestSnapshot.itemsIncluded;
+    if (bins[binIndex]) bins[binIndex].count = latestSnapshot.itemsIncluded;
 
     return bins;
   }, [data.snapshots]);
