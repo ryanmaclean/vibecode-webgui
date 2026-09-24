@@ -532,3 +532,14 @@ PROMISE_VERIFICATION_REPORT.md
 logs/security/
 # Generated test data files
 test-data/
+
+# Repo cleanup phase 1 (#2125): generated/runtime artifacts that were tracked
+td/tools/kafka_tui/target/
+gitea/data/
+gitea/log/
+**/.beads-backups/
+*.backup
+*.bak
+*.bak.*
+*.conflict-backup-*
+*.from-merge
