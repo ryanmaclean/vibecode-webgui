@@ -19,6 +19,7 @@ export const createMockRouter = (overrides: Partial<MockRouter> = {}): MockRoute
   forward: jest.fn(),
   refresh: jest.fn(),
   prefetch: jest.fn(),
+  bfcacheId: 'test-bfcache-id',
   ...overrides,
 });
 
