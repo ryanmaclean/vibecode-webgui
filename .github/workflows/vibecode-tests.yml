@@ -54,7 +54,7 @@ jobs:
           -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
 
     - name: Upload coverage
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v6
       with:
         files: ./platforms/macos/VibeCodeSwift/coverage.lcov
         flags: swift-tests
