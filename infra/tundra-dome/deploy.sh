@@ -173,6 +173,14 @@ install_crds() {
     kubectl apply -f "$SCRIPT_DIR/crds/lane.yaml"
     kubectl apply -f "$SCRIPT_DIR/crds/playbook.yaml"
     kubectl apply -f "$SCRIPT_DIR/crds/station.yaml"
+    # examples/errands.yaml uses kind: Errand; its CRD was never installed here.
+    kubectl apply -f "$SCRIPT_DIR/crds/errand.yaml"
+
+    # Custom resources cannot be applied until their CRDs are Established.
+    kubectl wait --for condition=established --timeout=60s \
+        -f "$SCRIPT_DIR/crds/bead.yaml" -f "$SCRIPT_DIR/crds/polecat.yaml" \
+        -f "$SCRIPT_DIR/crds/lane.yaml" -f "$SCRIPT_DIR/crds/playbook.yaml" \
+        -f "$SCRIPT_DIR/crds/station.yaml" -f "$SCRIPT_DIR/crds/errand.yaml"
 
     log_success "CRDs installed"
 }
@@ -518,6 +526,10 @@ case "${1:-}" in
         ;;
     --stack-only)
         check_prerequisites
+        # Idempotent (dry-run | apply): a fresh cluster (e.g. the KinD smoke in
+        # CI) has neither namespace, and deploy_datadog needs both plus secrets.
+        create_namespaces
+        create_secrets
         install_crds
         deploy_datadog
         deploy_stack

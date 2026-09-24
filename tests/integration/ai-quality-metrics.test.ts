@@ -22,6 +22,9 @@
  */
 
 const { describe, test, expect, beforeEach, afterEach, beforeAll, afterAll } = require('@jest/globals');
+// Real Prisma client against the CI Postgres (#2136): tests/__mocks__/@prisma/client.ts
+// is applied to every suite automatically, and it cannot persist rows.
+jest.unmock('@prisma/client');
 const { PrismaClient } = require('@prisma/client');
 const { setupDatadogMocks, getSubmittedMetrics, clearSubmittedMetrics } = require('../__mocks__/datadog-mock');
 const { createQualityTracker } = require('@/lib/ai/quality-tracker');
@@ -33,7 +36,8 @@ const { getMetricsProvider } = require('@/lib/monitoring/metrics-provider');
 const SKIP_E2E = process.env.SKIP_POSTGRES_TESTS === '1';
 const describeIf = SKIP_E2E ? describe.skip : describe;
 
-const prisma = new PrismaClient();
+// Construct only when the suite runs: an ungenerated client throws in its constructor.
+const prisma = SKIP_E2E ? undefined : new PrismaClient();
 let restoreMocks: () => void;
 const datadogSite = process.env.DD_SITE || 'datadoghq.com';
 const baseUrl = `https://api.${datadogSite}`;

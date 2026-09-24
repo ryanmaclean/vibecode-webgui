@@ -1,0 +1,1999 @@
+{
+  "schema": "vibecode.repo-inventory/v1",
+  "ref": "HEAD",
+  "commit": "b86320d0c9138dd84cfbece21989636234733511",
+  "tracked_files": 9827,
+  "tracked_bytes": 119896464,
+  "git_local_pack_bytes": 5643618304,
+  "git_local_pack_note": "size-pack of the clone that produced this report (includes all fetched refs), not the remote",
+  "top_files": [
+    {
+      "path": "td/bin/td",
+      "size": 14272354
+    },
+    {
+      "path": "docs/images/final-signed-test-02-desktop.png",
+      "size": 4746304
+    },
+    {
+      "path": "infra/tundra-dome/bin/td",
+      "size": 2878546
+    },
+    {
+      "path": "platforms/azure/azure/SwiftUI-Apps/e2e-test-menubar.png",
+      "size": 2053797
+    },
+    {
+      "path": "platforms/azure/azure/SwiftUI-Apps/e2e-test-openvscode.png",
+      "size": 1838811
+    },
+    {
+      "path": "vendor/github.com/DataDog/go-libddwaf/v2/internal/lib/libddwaf-darwin-amd64.dylib",
+      "size": 1566256
+    },
+    {
+      "path": "vendor/github.com/DataDog/go-libddwaf/v2/internal/lib/libddwaf-darwin-arm64.dylib",
+      "size": 1436976
+    },
+    {
+      "path": "public/docs-index.json",
+      "size": 1409532
+    },
+    {
+      "path": "package-lock.json",
+      "size": 1212322
+    },
+    {
+      "path": "vendor/golang.org/x/sys/windows/zerrors_windows.go",
+      "size": 945502
+    },
+    {
+      "path": "airflow/airflow.db",
+      "size": 819200
+    },
+    {
+      "path": "bun.lock",
+      "size": 737313
+    },
+    {
+      "path": "config/datadog/unified-ops-dashboard-gastown.json",
+      "size": 577706
+    },
+    {
+      "path": ".feed.jsonl",
+      "size": 535276
+    },
+    {
+      "path": "docs/archive/playwright-report/index.html",
+      "size": 514984
+    },
+    {
+      "path": "mbp_m1/.beads/issues.jsonl",
+      "size": 488280
+    },
+    {
+      "path": "vendor/github.com/DataDog/appsec-internal-go/appsec/rules.json",
+      "size": 294310
+    },
+    {
+      "path": "config/datadog/unified-ops-dashboard-gastown-consolidated.json",
+      "size": 292440
+    },
+    {
+      "path": "packages/vibecode-cli/package-lock.json",
+      "size": 287335
+    },
+    {
+      "path": "infrastructure/services/ai-gateway/package-lock.json",
+      "size": 276173
+    },
+    {
+      "path": "docs/package-lock.json",
+      "size": 266559
+    },
+    {
+      "path": "docs/images/installation-first-launch.png",
+      "size": 256142
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/ztypes_linux.go",
+      "size": 255805
+    },
+    {
+      "path": "platforms/tauri/resources/extensions/workspace-rag-1.0.0.vsix",
+      "size": 247412
+    },
+    {
+      "path": "infra/tundra-dome/tundra-dome.json",
+      "size": 232107
+    },
+    {
+      "path": "infra/tundra-dome/tundra-dome.yaml",
+      "size": 222102
+    },
+    {
+      "path": "platforms/azure/azure/SwiftUI-Apps/VibeCodeServicesVibeCode.app/Contents/MacOS/VibeCodeServicesVibeCode",
+      "size": 213712
+    },
+    {
+      "path": "docs/archive/logs/vibecode.log.backup-1761950732",
+      "size": 206970
+    },
+    {
+      "path": "extensions/vibecode-ai-assistant/package-lock.json",
+      "size": 202869
+    },
+    {
+      "path": "vendor/google.golang.org/protobuf/types/descriptorpb/descriptor.pb.go",
+      "size": 199387
+    },
+    {
+      "path": "vendor/golang.org/x/sys/windows/zsyscall_windows.go",
+      "size": 196064
+    },
+    {
+      "path": "infrastructure/ops/monitoring/datadog/vibecode-webgui-traces-20250923T203748Z.json",
+      "size": 191020
+    },
+    {
+      "path": "infrastructure/datadog/vibecode-webgui-traces-20250923T203748Z.json",
+      "size": 191020
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_linux.go",
+      "size": 188927
+    },
+    {
+      "path": "platforms/web-dashboard/package-lock.json",
+      "size": 185270
+    },
+    {
+      "path": "infrastructure/ops/monitoring/datadog/trace-summary-20250923T2038Z.json",
+      "size": 175545
+    },
+    {
+      "path": "infrastructure/datadog/trace-summary-20250923T2038Z.json",
+      "size": 175545
+    },
+    {
+      "path": ".opencode/opencode.db-wal",
+      "size": 168952
+    },
+    {
+      "path": "infrastructure/ops/monitoring/datadog/kind-agent-check-postgres-20250924T034148Z.txt",
+      "size": 168459
+    },
+    {
+      "path": "infrastructure/datadog/kind-agent-check-postgres-20250924T034148Z.txt",
+      "size": 168459
+    },
+    {
+      "path": "platforms/electron-vibecode/package-lock.json",
+      "size": 166898
+    },
+    {
+      "path": "vendor/google.golang.org/protobuf/internal/impl/codec_gen.go",
+      "size": 166736
+    },
+    {
+      "path": "platforms/kubernetes/helm/vibecode-platform/charts/datadog-3.60.0.tgz",
+      "size": 160997
+    },
+    {
+      "path": "docs/archive/archive/test-results-old-root/auth-flow-Authentication-Flow-should-navigate-to-login-page-chromium/video.webm",
+      "size": 159071
+    },
+    {
+      "path": ".beads/formulas/towers-of-hanoi-10.formula.toml",
+      "size": 148720
+    },
+    {
+      "path": "platforms/tauri/Cargo.lock",
+      "size": 135649
+    },
+    {
+      "path": "platforms/tauri/gen/schemas/macOS-schema.json",
+      "size": 130683
+    },
+    {
+      "path": "platforms/tauri/gen/schemas/desktop-schema.json",
+      "size": 130683
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zsysnum_zos_s390x.go",
+      "size": 119799
+    },
+    {
+      "path": "docs/archive/archive/test-results-old-root/auth-flow-Authentication-Flow-should-logout-successfully-chromium/video.webm",
+      "size": 118037
+    },
+    {
+      "path": "docs/archive/archive/test-results-old-root/auth-flow-Authentication-F-17f6c-ation-across-page-refreshes-chromium/video.webm",
+      "size": 115758
+    },
+    {
+      "path": "config/datadog/vibecode-unified-operations-dashboard.json",
+      "size": 114472
+    },
+    {
+      "path": "docs/archive/consolidated-wiki/reports/VALIDATION_REPORT.md",
+      "size": 113317
+    },
+    {
+      "path": "docs/archive/content/wiki/reports/VALIDATION_REPORT.md",
+      "size": 113224
+    },
+    {
+      "path": "infra/tundra-dome/tundra-dome.clean.yaml",
+      "size": 112343
+    },
+    {
+      "path": "vibecode-vm-dist",
+      "size": 111360
+    },
+    {
+      "path": "vendor/golang.org/x/sys/windows/types_windows.go",
+      "size": 106190
+    },
+    {
+      "path": "docs/archive/archive/test-results-old-root/auth-flow-Authentication-F-67eb1-e-invalid-login-credentials-chromium/video.webm",
+      "size": 105065
+    },
+    {
+      "path": "extensions/workspace-rag/bun.lock",
+      "size": 102336
+    },
+    {
+      "path": "docs/archive/archive/test-results-old-root/auth-flow-Authentication-F-bb4d7-ogin-with-valid-credentials-chromium/video.webm",
+      "size": 100981
+    },
+    {
+      "path": "docs/planning/TODO.md",
+      "size": 98640
+    },
+    {
+      "path": ".beads/issues.jsonl.tmp.72889",
+      "size": 98259
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_darwin_arm64.go",
+      "size": 89553
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_darwin_amd64.go",
+      "size": 89553
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_freebsd_riscv64.go",
+      "size": 85759
+    },
+    {
+      "path": "platforms/azure/azure/build-unified-services-with-datadog.sh",
+      "size": 83350
+    },
+    {
+      "path": "vendor/golang.org/x/sys/windows/syscall_windows.go",
+      "size": 82438
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_freebsd_386.go",
+      "size": 81461
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_freebsd_amd64.go",
+      "size": 81347
+    },
+    {
+      "path": "docs/archive/old-reports/TODO_salvage_full.md",
+      "size": 81236
+    },
+    {
+      "path": "docs/archive/old-reports/TODO.salvage.md",
+      "size": 81236
+    },
+    {
+      "path": "docs/sessions/archive-worklogs/TODO_salvage_full.md",
+      "size": 81232
+    },
+    {
+      "path": "docs/sessions/archive-worklogs/TODO.salvage.md",
+      "size": 81232
+    },
+    {
+      "path": "config/patches/workflows.patch",
+      "size": 81163
+    },
+    {
+      "path": "airflow/airflow.cfg",
+      "size": 81154
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_freebsd_arm64.go",
+      "size": 81119
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_freebsd_arm.go",
+      "size": 81090
+    },
+    {
+      "path": "platforms/kubernetes/helm/vibecode-platform/charts/mongodb-14.0.0.tgz",
+      "size": 80596
+    },
+    {
+      "path": "docs/SWIFT_RUST_FFI_INTEGRATION.md",
+      "size": 80523
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_openbsd_arm64.go",
+      "size": 80437
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_openbsd_amd64.go",
+      "size": 80437
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_openbsd_386.go",
+      "size": 80435
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_openbsd_mips64.go",
+      "size": 80434
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_openbsd_arm.go",
+      "size": 80425
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_openbsd_ppc64.go",
+      "size": 80394
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_openbsd_riscv64.go",
+      "size": 80356
+    },
+    {
+      "path": "docs/images/get-extension-info-error.png",
+      "size": 80220
+    },
+    {
+      "path": "docs/images/get-extension-info-v2-error.png",
+      "size": 80158
+    },
+    {
+      "path": "vendor/github.com/ebitengine/purego/zcallback_arm64.s",
+      "size": 79499
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/syscall_linux.go",
+      "size": 79401
+    },
+    {
+      "path": "docs/archive/agent-reports-2026-01/AGENT-Z-HIGH-AVAILABILITY-DESIGN.md",
+      "size": 79235
+    },
+    {
+      "path": "config/ide/.opencode/opencode.db-wal",
+      "size": 78312
+    },
+    {
+      "path": "platforms/tauri/binaries/vibecode-vm-aarch64-apple-darwin",
+      "size": 77264
+    },
+    {
+      "path": "docs/security/AUTHENTICATION_STRATEGY.md",
+      "size": 76904
+    },
+    {
+      "path": "vendor/google.golang.org/protobuf/internal/genid/descriptor_gen.go",
+      "size": 75914
+    },
+    {
+      "path": "messages/ja.json",
+      "size": 74981
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_netbsd_386.go",
+      "size": 74502
+    },
+    {
+      "path": ".beads/formulas/towers-of-hanoi-9.formula.toml",
+      "size": 74402
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_netbsd_arm64.go",
+      "size": 74084
+    },
+    {
+      "path": "vendor/golang.org/x/sys/unix/zerrors_netbsd_amd64.go",
+      "size": 74084
+    }
+  ],
+  "top_dirs": [
+    {
+      "dir": "docs",
+      "files": 2383,
+      "bytes": 29057787
+    },
+    {
+      "dir": "vendor",
+      "files": 1191,
+      "bytes": 15877185
+    },
+    {
+      "dir": "td",
+      "files": 35,
+      "bytes": 14319089
+    },
+    {
+      "dir": "td/bin",
+      "files": 1,
+      "bytes": 14272354
+    },
+    {
+      "dir": "src",
+      "files": 1261,
+      "bytes": 12592124
+    },
+    {
+      "dir": "platforms",
+      "files": 1053,
+      "bytes": 12024708
+    },
+    {
+      "dir": "docs/archive",
+      "files": 859,
+      "bytes": 9248484
+    },
+    {
+      "dir": "vendor/golang.org/x",
+      "files": 433,
+      "bytes": 8412209
+    },
+    {
+      "dir": "vendor/golang.org",
+      "files": 433,
+      "bytes": 8412209
+    },
+    {
+      "dir": "vendor/golang.org/x/sys",
+      "files": 348,
+      "bytes": 7909117
+    },
+    {
+      "dir": "tests",
+      "files": 699,
+      "bytes": 7605014
+    },
+    {
+      "dir": "src/lib",
+      "files": 634,
+      "bytes": 7215664
+    },
+    {
+      "dir": "platforms/azure",
+      "files": 343,
+      "bytes": 7005250
+    },
+    {
+      "dir": "platforms/azure/azure",
+      "files": 268,
+      "bytes": 6771910
+    },
+    {
+      "dir": "platforms/azure/azure/SwiftUI-Apps",
+      "files": 228,
+      "bytes": 6381420
+    },
+    {
+      "dir": "vendor/golang.org/x/sys/unix",
+      "files": 312,
+      "bytes": 6358944
+    },
+    {
+      "dir": "docs/images",
+      "files": 13,
+      "bytes": 5408091
+    },
+    {
+      "dir": "vendor/github.com",
+      "files": 465,
+      "bytes": 5381095
+    },
+    {
+      "dir": ".claude",
+      "files": 461,
+      "bytes": 4117029
+    },
+    {
+      "dir": ".claude/skills",
+      "files": 452,
+      "bytes": 4046798
+    },
+    {
+      "dir": "vendor/github.com/DataDog",
+      "files": 143,
+      "bytes": 3968794
+    },
+    {
+      "dir": "infra/tundra-dome",
+      "files": 63,
+      "bytes": 3781951
+    },
+    {
+      "dir": "infra",
+      "files": 63,
+      "bytes": 3781951
+    },
+    {
+      "dir": ".claude/skills/datadog-operations",
+      "files": 406,
+      "bytes": 3690410
+    },
+    {
+      "dir": "infrastructure",
+      "files": 382,
+      "bytes": 3320894
+    },
+    {
+      "dir": "tests/unit",
+      "files": 267,
+      "bytes": 3270549
+    },
+    {
+      "dir": "scripts",
+      "files": 415,
+      "bytes": 3238916
+    },
+    {
+      "dir": "vendor/github.com/DataDog/go-libddwaf/v2",
+      "files": 45,
+      "bytes": 3153052
+    },
+    {
+      "dir": "vendor/github.com/DataDog/go-libddwaf",
+      "files": 45,
+      "bytes": 3153052
+    },
+    {
+      "dir": "vendor/github.com/DataDog/go-libddwaf/v2/internal",
+      "files": 25,
+      "bytes": 3054594
+    },
+    {
+      "dir": "vendor/github.com/DataDog/go-libddwaf/v2/internal/lib",
+      "files": 10,
+      "bytes": 3008056
+    },
+    {
+      "dir": "infra/tundra-dome/bin",
+      "files": 1,
+      "bytes": 2878546
+    },
+    {
+      "dir": "docs/sessions",
+      "files": 287,
+      "bytes": 2851212
+    },
+    {
+      "dir": "docs/archive/agent-reports-2026-01",
+      "files": 218,
+      "bytes": 2848489
+    },
+    {
+      "dir": ".claude/skills/datadog-operations/datadog-skill-go",
+      "files": 237,
+      "bytes": 2713551
+    },
+    {
+      "dir": "docs/sessions/archive-worklogs",
+      "files": 268,
+      "bytes": 2473563
+    },
+    {
+      "dir": "src/app",
+      "files": 300,
+      "bytes": 2350198
+    },
+    {
+      "dir": "config",
+      "files": 473,
+      "bytes": 2273100
+    },
+    {
+      "dir": "src/components",
+      "files": 211,
+      "bytes": 2226985
+    },
+    {
+      "dir": "tests/unit/lib",
+      "files": 109,
+      "bytes": 1705837
+    },
+    {
+      "dir": "docs/archive/consolidated-wiki",
+      "files": 172,
+      "bytes": 1612450
+    },
+    {
+      "dir": "docs/archive/content/wiki",
+      "files": 165,
+      "bytes": 1604204
+    },
+    {
+      "dir": "docs/archive/content",
+      "files": 165,
+      "bytes": 1604204
+    },
+    {
+      "dir": "vendor/golang.org/x/sys/windows",
+      "files": 31,
+      "bytes": 1543011
+    },
+    {
+      "dir": "tests/integration",
+      "files": 90,
+      "bytes": 1442844
+    },
+    {
+      "dir": "public",
+      "files": 10,
+      "bytes": 1428480
+    },
+    {
+      "dir": ".claude/skills/datadog-operations/datadog-skill-go/internal",
+      "files": 81,
+      "bytes": 1398211
+    },
+    {
+      "dir": "vendor/google.golang.org/protobuf",
+      "files": 144,
+      "bytes": 1370691
+    },
+    {
+      "dir": "vendor/google.golang.org",
+      "files": 144,
+      "bytes": 1370691
+    },
+    {
+      "dir": "extensions",
+      "files": 131,
+      "bytes": 1353519
+    }
+  ],
+  "backup_pattern": {
+    "regex": "(\\.backup$|\\.bak$|\\.bak\\.|\\.conflict-backup-|\\.from-merge$|\\.orig$|\\.rej$|~$|\\.swp$)",
+    "files": [],
+    "bytes": 0
+  },
+  "generated_or_runtime": {
+    "regex": "((^|/)(coverage|test-results|playwright-report|\\.next|__pycache__)/|\\.log$|\\.log\\.[0-9]|\\.log\\.gz$|\\.tsbuildinfo$|(^|/)gitea/data/|\\.db$|\\.sqlite3?$|\\.pyc$|(^|/)\\.DS_Store$)",
+    "files": [
+      {
+        "path": ".opencode/opencode.db",
+        "size": 4096
+      },
+      {
+        "path": "airflow/airflow.db",
+        "size": 819200
+      },
+      {
+        "path": "config/ide/.opencode/opencode.db",
+        "size": 4096
+      },
+      {
+        "path": "docs/archive/logs/kind-port-forward.log",
+        "size": 157
+      },
+      {
+        "path": "docs/archive/playwright-report/index.html",
+        "size": 514984
+      }
+    ],
+    "bytes": 1342533
+  },
+  "duplicate_content": {
+    "groups": 572,
+    "wasted_bytes": 4853358,
+    "top": [
+      {
+        "sha": "2ec907f91da7a7a34ffeff228971a14fb03382ae",
+        "copies": 2,
+        "bytes_each": 191020,
+        "wasted_bytes": 191020,
+        "paths": [
+          "infrastructure/datadog/vibecode-webgui-traces-20250923T203748Z.json",
+          "infrastructure/ops/monitoring/datadog/vibecode-webgui-traces-20250923T203748Z.json"
+        ]
+      },
+      {
+        "sha": "0d6ac61a10c34a1cbf2ca73fef7b9e3f5511fa88",
+        "copies": 2,
+        "bytes_each": 175545,
+        "wasted_bytes": 175545,
+        "paths": [
+          "infrastructure/datadog/trace-summary-20250923T2038Z.json",
+          "infrastructure/ops/monitoring/datadog/trace-summary-20250923T2038Z.json"
+        ]
+      },
+      {
+        "sha": "6aba394ca75f7e07fab5c4d5ab45728cc81cd5d4",
+        "copies": 2,
+        "bytes_each": 168459,
+        "wasted_bytes": 168459,
+        "paths": [
+          "infrastructure/datadog/kind-agent-check-postgres-20250924T034148Z.txt",
+          "infrastructure/ops/monitoring/datadog/kind-agent-check-postgres-20250924T034148Z.txt"
+        ]
+      },
+      {
+        "sha": "f827fe175de8bf91fafb2e8c88965aec7392c452",
+        "copies": 2,
+        "bytes_each": 130683,
+        "wasted_bytes": 130683,
+        "paths": [
+          "platforms/tauri/gen/schemas/desktop-schema.json",
+          "platforms/tauri/gen/schemas/macOS-schema.json"
+        ]
+      },
+      {
+        "sha": "7c9200671188de255af84b6f1c637f4d43bd556c",
+        "copies": 3,
+        "bytes_each": 58981,
+        "wasted_bytes": 117962,
+        "paths": [
+          "docs/assets/code_server_diy_diagram.png",
+          "docs/diagrams/code_server_diy_diagram.png",
+          "docs/images/code_server_diy_diagram.png"
+        ]
+      },
+      {
+        "sha": "ba4e2ae3198e699830a234c9d00406980e69ef7d",
+        "copies": 2,
+        "bytes_each": 81236,
+        "wasted_bytes": 81236,
+        "paths": [
+          "docs/archive/old-reports/TODO.salvage.md",
+          "docs/archive/old-reports/TODO_salvage_full.md"
+        ]
+      },
+      {
+        "sha": "5b10274dc9546cece3c6e71b456efacb3d70ae67",
+        "copies": 2,
+        "bytes_each": 81232,
+        "wasted_bytes": 81232,
+        "paths": [
+          "docs/sessions/archive-worklogs/TODO.salvage.md",
+          "docs/sessions/archive-worklogs/TODO_salvage_full.md"
+        ]
+      },
+      {
+        "sha": "44cfeb0defd74c758f575660975e5c0ba0626304",
+        "copies": 3,
+        "bytes_each": 30021,
+        "wasted_bytes": 60042,
+        "paths": [
+          "docs/guides/development/MCP_Context7.md",
+          "docs/sessions/archive-worklogs/MCP_Context7.md",
+          "docs/src/content/docs/mcp-context7.md"
+        ]
+      },
+      {
+        "sha": "5cd01fbf43023c89365e0e125a7662e5c212bc32",
+        "copies": 4,
+        "bytes_each": 19754,
+        "wasted_bytes": 59262,
+        "paths": [
+          "docs/archive/archive/test-results-old-root/auth-flow-Authentication-F-17f6c-ation-across-page-refreshes-chromium/test-failed-1.png",
+          "docs/archive/archive/test-results-old-root/auth-flow-Authentication-F-d7213-e-for-unauthenticated-users-chromium/test-failed-1.png",
+          "docs/archive/archive/test-results-old-root/auth-flow-Authentication-Flow-should-logout-successfully-chromium/test-failed-1.png",
+          "docs/archive/archive/test-results-old-root/auth-flow-Authentication-Flow-should-navigate-to-login-page-chromium/test-failed-1.png"
+        ]
+      },
+      {
+        "sha": "007089abe754b3d9a862ac84e51db598c3bcfeae",
+        "copies": 3,
+        "bytes_each": 26956,
+        "wasted_bytes": 53912,
+        "paths": [
+          "docs/guides/development/MCP_Serena.md",
+          "docs/sessions/archive-worklogs/MCP_Serena.md",
+          "docs/src/content/docs/mcp-serena.md"
+        ]
+      },
+      {
+        "sha": "0dceb99122fb6558b7b660a61c2828f6fc5479cf",
+        "copies": 3,
+        "bytes_each": 21714,
+        "wasted_bytes": 43428,
+        "paths": [
+          "docs/archive/consolidated-wiki/project-todo.md",
+          "docs/archive/content/wiki/project-todo.md",
+          "docs/src/content/docs/project-todo.md"
+        ]
+      },
+      {
+        "sha": "47585ce51c1158831ee75e705efc609ca56f4a39",
+        "copies": 3,
+        "bytes_each": 18748,
+        "wasted_bytes": 37496,
+        "paths": [
+          "docs/archive/consolidated-wiki/redis-valkey.md",
+          "docs/archive/content/wiki/redis-valkey.md",
+          "docs/src/content/docs/redis-valkey.md"
+        ]
+      },
+      {
+        "sha": "83571e6d05ec31a89aa6e863c6c08cf658fc0415",
+        "copies": 3,
+        "bytes_each": 17995,
+        "wasted_bytes": 35990,
+        "paths": [
+          "docs/archive/consolidated-wiki/claude-prompt.md",
+          "docs/archive/content/wiki/claude-prompt.md",
+          "docs/src/content/docs/claude-prompt.md"
+        ]
+      },
+      {
+        "sha": "6cf4e8dea8891e0a23a4f95aa4e52d84983611a6",
+        "copies": 2,
+        "bytes_each": 34917,
+        "wasted_bytes": 34917,
+        "paths": [
+          "docs/reports/EXPERIMENTS_UI_MOCKUPS.md",
+          "docs/sessions/archive-worklogs/EXPERIMENTS_UI_MOCKUPS.md"
+        ]
+      },
+      {
+        "sha": "fba95ed8f6966a200c38da4261c59378c9ea83e4",
+        "copies": 3,
+        "bytes_each": 16868,
+        "wasted_bytes": 33736,
+        "paths": [
+          "docs/archive/consolidated-wiki/vscode-extensions.md",
+          "docs/archive/content/wiki/vscode-extensions.md",
+          "docs/src/content/docs/vscode-extensions.md"
+        ]
+      },
+      {
+        "sha": "5035d2d8d88fbb03b8b04cf755bae1adf277daf3",
+        "copies": 3,
+        "bytes_each": 16588,
+        "wasted_bytes": 33176,
+        "paths": [
+          "config/datadog/datadog-azure-embedding-dashboard.json",
+          "infrastructure/datadog/datadog-azure-embedding-dashboard.json",
+          "infrastructure/ops/monitoring/datadog-azure-embedding-dashboard.json"
+        ]
+      },
+      {
+        "sha": "60c8485198008f57257bdb7bc3a2dff3032ef2bb",
+        "copies": 3,
+        "bytes_each": 15845,
+        "wasted_bytes": 31690,
+        "paths": [
+          "docs/archive/consolidated-wiki/mastra-integration.md",
+          "docs/archive/content/wiki/mastra-integration.md",
+          "docs/src/content/docs/mastra-integration.md"
+        ]
+      },
+      {
+        "sha": "905e32d295f995bbde361806bdc624a26a1ba389",
+        "copies": 2,
+        "bytes_each": 30293,
+        "wasted_bytes": 30293,
+        "paths": [
+          "docs/reports/audit-results/files-by-size.txt",
+          "docs/security/audit-results/files-by-size.txt"
+        ]
+      },
+      {
+        "sha": "36e320c17774da2048b7b067e700738c86ddd387",
+        "copies": 2,
+        "bytes_each": 30210,
+        "wasted_bytes": 30210,
+        "paths": [
+          "docs/reports/EXPERIMENTS_10_AGENT_PLAN.md",
+          "docs/sessions/archive-worklogs/EXPERIMENTS_10_AGENT_PLAN.md"
+        ]
+      },
+      {
+        "sha": "cc132639effc25509da6c25af6227eff57f63b23",
+        "copies": 3,
+        "bytes_each": 13958,
+        "wasted_bytes": 27916,
+        "paths": [
+          "docs/archive/consolidated-wiki/microsoft-extensions.md",
+          "docs/archive/content/wiki/microsoft-extensions.md",
+          "docs/src/content/docs/microsoft-extensions.md"
+        ]
+      },
+      {
+        "sha": "ab32249e3788e4259aa56fc35ac425dd618161bf",
+        "copies": 3,
+        "bytes_each": 13613,
+        "wasted_bytes": 27226,
+        "paths": [
+          "docs/archive/consolidated-wiki/production-deployment-guide.md",
+          "docs/archive/content/wiki/production-deployment-guide.md",
+          "docs/src/content/docs/production-deployment-guide.md"
+        ]
+      },
+      {
+        "sha": "1de051836bc5ab0a52560eb030b5b756d8fd4010",
+        "copies": 3,
+        "bytes_each": 13152,
+        "wasted_bytes": 26304,
+        "paths": [
+          "docs/archive/consolidated-wiki/repository-scan.md",
+          "docs/archive/content/wiki/repository-scan.md",
+          "docs/src/content/docs/repository-scan.md"
+        ]
+      },
+      {
+        "sha": "dc81f53ad7df789db17e419bc59c51ac14f636dd",
+        "copies": 2,
+        "bytes_each": 25973,
+        "wasted_bytes": 25973,
+        "paths": [
+          "docs/reports/audit-results/all-markdown-files.txt",
+          "docs/security/audit-results/all-markdown-files.txt"
+        ]
+      },
+      {
+        "sha": "ce7374d6ab30cb7365e5c518b5605460186e6a27",
+        "copies": 3,
+        "bytes_each": 12644,
+        "wasted_bytes": 25288,
+        "paths": [
+          "docs/archive/consolidated-wiki/comprehensive-testing.md",
+          "docs/archive/content/wiki/comprehensive-testing.md",
+          "docs/src/content/docs/comprehensive-testing.md"
+        ]
+      },
+      {
+        "sha": "f7588833d1cda1c241131a12ce0f8e735a6419c6",
+        "copies": 3,
+        "bytes_each": 12606,
+        "wasted_bytes": 25212,
+        "paths": [
+          "docs/guides/development/MCP_Sequential.md",
+          "docs/sessions/archive-worklogs/MCP_Sequential.md",
+          "docs/src/content/docs/mcp-sequential.md"
+        ]
+      },
+      {
+        "sha": "2397c67aaaaa4f5b44faa24dfdc848fc70dddc94",
+        "copies": 2,
+        "bytes_each": 24781,
+        "wasted_bytes": 24781,
+        "paths": [
+          "docs/guides/development/MCP_Playwright.md",
+          "docs/sessions/archive-worklogs/MCP_Playwright.md"
+        ]
+      },
+      {
+        "sha": "500abc56d945dd04c1ffee2720766d108c25354f",
+        "copies": 3,
+        "bytes_each": 12177,
+        "wasted_bytes": 24354,
+        "paths": [
+          "docs/archive/consolidated-wiki/developer-guide.md",
+          "docs/archive/content/wiki/developer-guide.md",
+          "docs/src/content/docs/developer-guide.md"
+        ]
+      },
+      {
+        "sha": "aba130f1b912e648a025b5afeee077008f584a54",
+        "copies": 2,
+        "bytes_each": 23438,
+        "wasted_bytes": 23438,
+        "paths": [
+          "archive/docs/src/content/docs/platforms/openindiana.md",
+          "docs/src/content/docs/platforms/openindiana.md"
+        ]
+      },
+      {
+        "sha": "2609d6bff6655472e9db36273ca78b48f72175b8",
+        "copies": 3,
+        "bytes_each": 11410,
+        "wasted_bytes": 22820,
+        "paths": [
+          "docs/archive/consolidated-wiki/missing-ai-libraries.md",
+          "docs/archive/content/wiki/missing-ai-libraries.md",
+          "docs/src/content/docs/missing-ai-libraries.md"
+        ]
+      },
+      {
+        "sha": "e15a96834c8ac7be83993cbf56fbb9888b25987b",
+        "copies": 2,
+        "bytes_each": 22666,
+        "wasted_bytes": 22666,
+        "paths": [
+          "docs/planning/REMEDIATION_PLAN.md",
+          "docs/sessions/archive-worklogs/REMEDIATION_PLAN.md"
+        ]
+      },
+      {
+        "sha": "c58773b6b6b572c698a18908dd23c9fe6d64a10f",
+        "copies": 3,
+        "bytes_each": 11324,
+        "wasted_bytes": 22648,
+        "paths": [
+          "docs/archive/consolidated-wiki/test-coverage-report.md",
+          "docs/archive/content/wiki/test-coverage-report.md",
+          "docs/src/content/docs/test-coverage-report.md"
+        ]
+      },
+      {
+        "sha": "946e08139acb803d8ae13670d27b112ec49cbdf7",
+        "copies": 3,
+        "bytes_each": 11308,
+        "wasted_bytes": 22616,
+        "paths": [
+          "docs/archive/consolidated-wiki/azure-infrastructure.md",
+          "docs/archive/content/wiki/azure-infrastructure.md",
+          "docs/src/content/docs/azure-infrastructure.md"
+        ]
+      },
+      {
+        "sha": "ae4a15b642c0b81c54bb7867a78ae69ff904980e",
+        "copies": 2,
+        "bytes_each": 22322,
+        "wasted_bytes": 22322,
+        "paths": [
+          "infrastructure/datadog/dbm-query-20250924T021827Z.json",
+          "infrastructure/ops/monitoring/datadog/dbm-query-20250924T021827Z.json"
+        ]
+      },
+      {
+        "sha": "bc4ba0b910cc8f5ea3b91e5efefb8305f5947640",
+        "copies": 2,
+        "bytes_each": 22211,
+        "wasted_bytes": 22211,
+        "paths": [
+          "infrastructure/datadog/dbm-query-20250924T024447Z.json",
+          "infrastructure/ops/monitoring/datadog/dbm-query-20250924T024447Z.json"
+        ]
+      },
+      {
+        "sha": "50599a2c2935a239398eeb237fc77d2f8df37c32",
+        "copies": 3,
+        "bytes_each": 11045,
+        "wasted_bytes": 22090,
+        "paths": [
+          "config/datadog/datadog-dashboard-embedding-metrics.json",
+          "infrastructure/datadog/datadog-dashboard-embedding-metrics.json",
+          "infrastructure/ops/monitoring/datadog-dashboard-embedding-metrics.json"
+        ]
+      },
+      {
+        "sha": "0bfc5a61b61a20f5fbc0a866a118630dd134e8b5",
+        "copies": 2,
+        "bytes_each": 21952,
+        "wasted_bytes": 21952,
+        "paths": [
+          "infrastructure/datadog/dbm-metrics-20250924T021155Z.json",
+          "infrastructure/ops/monitoring/datadog/dbm-metrics-20250924T021155Z.json"
+        ]
+      },
+      {
+        "sha": "daedd5546d6b1c7382aac9b85c11d9cdf6c6ac28",
+        "copies": 3,
+        "bytes_each": 10940,
+        "wasted_bytes": 21880,
+        "paths": [
+          "docs/archive/consolidated-wiki/postgresql-sample-queries.md",
+          "docs/archive/content/wiki/postgresql-sample-queries.md",
+          "docs/src/content/docs/postgresql-sample-queries.md"
+        ]
+      },
+      {
+        "sha": "57c266df276a765a953e5f8ce43a4e79404e7901",
+        "copies": 3,
+        "bytes_each": 10537,
+        "wasted_bytes": 21074,
+        "paths": [
+          "docs/guides/DBM_APM_DEPLOYMENT_GUIDE.md",
+          "docs/guides/deployment/DBM_APM_DEPLOYMENT_GUIDE.md",
+          "docs/sessions/archive-worklogs/DBM_APM_DEPLOYMENT_GUIDE.md"
+        ]
+      },
+      {
+        "sha": "044375fa60e2ad74a587ae90a3eb9421594a86b3",
+        "copies": 2,
+        "bytes_each": 21024,
+        "wasted_bytes": 21024,
+        "paths": [
+          "infrastructure/datadog/kind-agent-status-20250924T034136Z.txt",
+          "infrastructure/ops/monitoring/datadog/kind-agent-status-20250924T034136Z.txt"
+        ]
+      },
+      {
+        "sha": "385d573f6e2f5aab560af1166af89bdd44776d0d",
+        "copies": 2,
+        "bytes_each": 20891,
+        "wasted_bytes": 20891,
+        "paths": [
+          "platforms/macos/macos-services/IMPLEMENTATION_GUIDE.md",
+          "platforms/macos/services/IMPLEMENTATION_GUIDE.md"
+        ]
+      },
+      {
+        "sha": "bb43a3cad9f6341771df86013fbda5b657a8288d",
+        "copies": 3,
+        "bytes_each": 10358,
+        "wasted_bytes": 20716,
+        "paths": [
+          "docs/archive/consolidated-wiki/ai-cli-tools.md",
+          "docs/archive/content/wiki/ai-cli-tools.md",
+          "docs/src/content/docs/ai-cli-tools.md"
+        ]
+      },
+      {
+        "sha": "1f7a61eed1659769f229a6a428bcb16f46d46946",
+        "copies": 2,
+        "bytes_each": 19658,
+        "wasted_bytes": 19658,
+        "paths": [
+          "docs/archive/old-reports/BRANCH_REDUCTION_FINAL_REPORT.md",
+          "docs/sessions/archive-worklogs/BRANCH_REDUCTION_FINAL_REPORT.md"
+        ]
+      },
+      {
+        "sha": "d4a8e80248b0e68c4dc79de13f2f62c78882b71b",
+        "copies": 2,
+        "bytes_each": 19154,
+        "wasted_bytes": 19154,
+        "paths": [
+          "docs/planning/OMNIOS_STRATEGIC_POSITIONING.md",
+          "docs/sessions/archive-worklogs/OMNIOS_STRATEGIC_POSITIONING.md"
+        ]
+      },
+      {
+        "sha": "4de962c1f33863b3beee3bf7a6d9d04540ae0ada",
+        "copies": 3,
+        "bytes_each": 9542,
+        "wasted_bytes": 19084,
+        "paths": [
+          "docs/archive/consolidated-wiki/genai-integration.md",
+          "docs/archive/content/wiki/genai-integration.md",
+          "docs/src/content/docs/genai-integration.md"
+        ]
+      },
+      {
+        "sha": "f8d4edcbd17a598f5dade83d7ee4b8edcba42e8a",
+        "copies": 3,
+        "bytes_each": 9514,
+        "wasted_bytes": 19028,
+        "paths": [
+          "docs/archive/consolidated-wiki/production-status.md",
+          "docs/archive/content/wiki/production-status.md",
+          "docs/src/content/docs/production-status.md"
+        ]
+      },
+      {
+        "sha": "428617110cf772b411d76d1815d83aca4f5694d7",
+        "copies": 2,
+        "bytes_each": 19009,
+        "wasted_bytes": 19009,
+        "paths": [
+          "docs/archive/consolidated-wiki/postgresql-genai-demo-guide.md",
+          "docs/archive/content/wiki/postgresql-genai-demo-guide.md"
+        ]
+      },
+      {
+        "sha": "8465e644f693464a4687cceaa0e0f3fa3480ac82",
+        "copies": 2,
+        "bytes_each": 18836,
+        "wasted_bytes": 18836,
+        "paths": [
+          "platforms/macos/macos-native-build/AGENT23_DELIVERABLES.md",
+          "platforms/macos/native-build/AGENT23_DELIVERABLES.md"
+        ]
+      },
+      {
+        "sha": "627f024fb5669a002697a8704777b6b915e5bd7d",
+        "copies": 2,
+        "bytes_each": 18784,
+        "wasted_bytes": 18784,
+        "paths": [
+          "docs/archive/consolidated-wiki/REDIS_VALKEY_INTEGRATION_GUIDE.md",
+          "docs/archive/content/wiki/REDIS_VALKEY_INTEGRATION_GUIDE.md"
+        ]
+      },
+      {
+        "sha": "cd5adbcbf784e6b52d5143b9d23c947919c6277c",
+        "copies": 3,
+        "bytes_each": 9306,
+        "wasted_bytes": 18612,
+        "paths": [
+          "docs/archive/consolidated-wiki/enhanced-ai-features.md",
+          "docs/archive/content/wiki/enhanced-ai-features.md",
+          "docs/src/content/docs/enhanced-ai-features.md"
+        ]
+      },
+      {
+        "sha": "cc7016f463920a38a7ea1157299b63d837bd0503",
+        "copies": 2,
+        "bytes_each": 18465,
+        "wasted_bytes": 18465,
+        "paths": [
+          "docs/archive/consolidated-wiki/TEMPORAL_GENAI_INTEGRATION.md",
+          "docs/archive/content/wiki/TEMPORAL_GENAI_INTEGRATION.md"
+        ]
+      },
+      {
+        "sha": "0e9bd712b40e2df97fceac9e34434660456cc34e",
+        "copies": 2,
+        "bytes_each": 18360,
+        "wasted_bytes": 18360,
+        "paths": [
+          "docs/reports/TYPESCRIPT_PR_AND_ISSUES_ANALYSIS.md",
+          "docs/sessions/archive-worklogs/TYPESCRIPT_PR_AND_ISSUES_ANALYSIS.md"
+        ]
+      },
+      {
+        "sha": "db6a56e637c7345a1b300095cb166c774770e029",
+        "copies": 2,
+        "bytes_each": 18249,
+        "wasted_bytes": 18249,
+        "paths": [
+          "platforms/macos/fleet-orchestration/dashboard/FleetDashboard.swift",
+          "platforms/macos/macos-fleet-orchestration/dashboard/FleetDashboard.swift"
+        ]
+      },
+      {
+        "sha": "2ec045d1b1b1c4133e65ff9d64d25f0b673f70c3",
+        "copies": 3,
+        "bytes_each": 9108,
+        "wasted_bytes": 18216,
+        "paths": [
+          "docs/guides/deployment/cost-analysis-azure-deployment-options.md",
+          "docs/sessions/archive-worklogs/cost-analysis-azure-deployment-options.md",
+          "docs/summaries/cost-analysis-azure-deployment-options.md"
+        ]
+      },
+      {
+        "sha": "708190740c47306877b51058d90cd42723e36f58",
+        "copies": 2,
+        "bytes_each": 17755,
+        "wasted_bytes": 17755,
+        "paths": [
+          "docs/reports/infrastructure/EBPF_OBSERVABILITY_IMPLEMENTATION_546.md",
+          "docs/sessions/archive-worklogs/EBPF_OBSERVABILITY_IMPLEMENTATION_546.md"
+        ]
+      },
+      {
+        "sha": "2fee088eb9716472098187c81645efb106551d90",
+        "copies": 3,
+        "bytes_each": 8867,
+        "wasted_bytes": 17734,
+        "paths": [
+          "docs/guides/development/MCP_IMPLEMENTATION.md",
+          "docs/sessions/archive-worklogs/MCP_IMPLEMENTATION.md",
+          "docs/src/content/docs/mcp-implementation.md"
+        ]
+      },
+      {
+        "sha": "3d08d0d8160975cefc1fa9a7273f6204f0b32dc4",
+        "copies": 2,
+        "bytes_each": 17429,
+        "wasted_bytes": 17429,
+        "paths": [
+          "platforms/macos/fleet-orchestration/fleet-manager/FleetManager.swift",
+          "platforms/macos/macos-fleet-orchestration/fleet-manager/FleetManager.swift"
+        ]
+      },
+      {
+        "sha": "31e3692a029db5aa269af8b9f83be2a2298be3ab",
+        "copies": 2,
+        "bytes_each": 17256,
+        "wasted_bytes": 17256,
+        "paths": [
+          "platforms/macos/macos-native-build/Sources/VibecodeBuilder/BuildEngine.swift",
+          "platforms/macos/native-build/Sources/VibecodeBuilder/BuildEngine.swift"
+        ]
+      },
+      {
+        "sha": "a60f4d773dfe031e4498885e230e4af09350956f",
+        "copies": 2,
+        "bytes_each": 17153,
+        "wasted_bytes": 17153,
+        "paths": [
+          "infrastructure/datadog/templates/vector-database-dashboard.json",
+          "infrastructure/ops/monitoring/datadog/templates/vector-database-dashboard.json"
+        ]
+      },
+      {
+        "sha": "cd54287cc2f12986e20edc33ad596c290cac17c7",
+        "copies": 2,
+        "bytes_each": 16914,
+        "wasted_bytes": 16914,
+        "paths": [
+          "docs/planning/ERROR_REDUCTION_ROADMAP.md",
+          "docs/sessions/archive-worklogs/ERROR_REDUCTION_ROADMAP.md"
+        ]
+      },
+      {
+        "sha": "f3c9a7c032dda1320fd0538c434023b2e8a177bb",
+        "copies": 2,
+        "bytes_each": 16894,
+        "wasted_bytes": 16894,
+        "paths": [
+          "docs/archive/consolidated-wiki/VSCODE_EXTENSION_CONFIGURATION.md",
+          "docs/archive/content/wiki/VSCODE_EXTENSION_CONFIGURATION.md"
+        ]
+      },
+      {
+        "sha": "6d42a56b7b069c7356c5f1aaf118b0352a0851b5",
+        "copies": 2,
+        "bytes_each": 16841,
+        "wasted_bytes": 16841,
+        "paths": [
+          "platforms/macos/fleet-orchestration/remote-management/RemoteManager.swift",
+          "platforms/macos/macos-fleet-orchestration/remote-management/RemoteManager.swift"
+        ]
+      },
+      {
+        "sha": "da3301b19731d77a718905c34dd9175791cbdae1",
+        "copies": 3,
+        "bytes_each": 8327,
+        "wasted_bytes": 16654,
+        "paths": [
+          "docs/archive/consolidated-wiki/kind-validation.md",
+          "docs/archive/content/wiki/kind-validation.md",
+          "docs/src/content/docs/kind-validation.md"
+        ]
+      },
+      {
+        "sha": "9f198cc35440c89be03bad801721e726c3bfefd1",
+        "copies": 2,
+        "bytes_each": 16200,
+        "wasted_bytes": 16200,
+        "paths": [
+          "infrastructure/datadog/dbm-metrics-20250924T024452Z.json",
+          "infrastructure/ops/monitoring/datadog/dbm-metrics-20250924T024452Z.json"
+        ]
+      },
+      {
+        "sha": "da3b0be38c55c9e8b0738d4fcbfd178a229e5deb",
+        "copies": 2,
+        "bytes_each": 16176,
+        "wasted_bytes": 16176,
+        "paths": [
+          "docs/archive/consolidated-wiki/wiki.md",
+          "docs/archive/content/wiki/wiki.md"
+        ]
+      },
+      {
+        "sha": "ecffeca14a1d93f23a1d11a5d297dbfe26dfb2d0",
+        "copies": 2,
+        "bytes_each": 15869,
+        "wasted_bytes": 15869,
+        "paths": [
+          "docs/archive/old-reports/SEQUENTIAL_CLEANUP_COMPLETE.md",
+          "docs/sessions/archive-worklogs/SEQUENTIAL_CLEANUP_COMPLETE.md"
+        ]
+      },
+      {
+        "sha": "ba9479ffc93640abbd7a3d5b6fa0404347bbe49b",
+        "copies": 2,
+        "bytes_each": 15857,
+        "wasted_bytes": 15857,
+        "paths": [
+          "docs/archive/consolidated-wiki/MASTRA_INTEGRATION_GUIDE.md",
+          "docs/archive/content/wiki/MASTRA_INTEGRATION_GUIDE.md"
+        ]
+      },
+      {
+        "sha": "587d6591a70f66907b818e097ace70561b980c4a",
+        "copies": 3,
+        "bytes_each": 7825,
+        "wasted_bytes": 15650,
+        "paths": [
+          "docs/archive/consolidated-wiki/tailwind-v4-testing-report.md",
+          "docs/archive/content/wiki/tailwind-v4-testing-report.md",
+          "docs/src/content/docs/tailwind-v4-testing-report.md"
+        ]
+      },
+      {
+        "sha": "9ecb4b5c8f877da20544415b917faab9666136f7",
+        "copies": 2,
+        "bytes_each": 15553,
+        "wasted_bytes": 15553,
+        "paths": [
+          "docs/reports/infrastructure/DATADOG_EXPERIMENTS_INTEGRATION_COMPLETE.md",
+          "docs/sessions/archive-worklogs/DATADOG_EXPERIMENTS_INTEGRATION_COMPLETE.md"
+        ]
+      },
+      {
+        "sha": "17b1af95a7e744582cf0d116a512812a5fb9aabd",
+        "copies": 2,
+        "bytes_each": 15520,
+        "wasted_bytes": 15520,
+        "paths": [
+          "docs/planning/SECURITY_IMMEDIATE_ACTIONS.md",
+          "docs/sessions/archive-worklogs/SECURITY_IMMEDIATE_ACTIONS.md"
+        ]
+      },
+      {
+        "sha": "222dd0da2bfd18ab3d98bacba9e5e56ad258e774",
+        "copies": 2,
+        "bytes_each": 15516,
+        "wasted_bytes": 15516,
+        "paths": [
+          "docs/archive/releases/arm64-vms-v1.0/README.md",
+          "docs/releases/arm64-vms-v1.0/README.md"
+        ]
+      },
+      {
+        "sha": "bc34a89b3a40e65124a6a9942543d1fd86ff12a0",
+        "copies": 3,
+        "bytes_each": 7704,
+        "wasted_bytes": 15408,
+        "paths": [
+          "docs/archive/consolidated-wiki/comprehensive-environment-test-report.md",
+          "docs/archive/content/wiki/comprehensive-environment-test-report.md",
+          "docs/src/content/docs/comprehensive-environment-test-report.md"
+        ]
+      },
+      {
+        "sha": "ed288aaf9524157dd7669918a5142eb717c66f2b",
+        "copies": 3,
+        "bytes_each": 7661,
+        "wasted_bytes": 15322,
+        "paths": [
+          "docs/archive/root-md-files/PGVECTOR_CACHE_INTEGRATION_COMPLETE.md",
+          "docs/reports/infrastructure/PGVECTOR_CACHE_INTEGRATION_COMPLETE.md",
+          "docs/sessions/archive-worklogs/PGVECTOR_CACHE_INTEGRATION_COMPLETE.md"
+        ]
+      },
+      {
+        "sha": "2261ef14c846229702de8ba0e7623393714faaba",
+        "copies": 2,
+        "bytes_each": 15014,
+        "wasted_bytes": 15014,
+        "paths": [
+          "platforms/macos/fleet-orchestration/DEPLOYMENT_GUIDE.md",
+          "platforms/macos/macos-fleet-orchestration/DEPLOYMENT_GUIDE.md"
+        ]
+      },
+      {
+        "sha": "858d21437d7ab5b972a26d97dcc5e4ff191d903f",
+        "copies": 2,
+        "bytes_each": 14948,
+        "wasted_bytes": 14948,
+        "paths": [
+          "platforms/macos/macos-services/README.md",
+          "platforms/macos/services/README.md"
+        ]
+      },
+      {
+        "sha": "29a8f2e3171a50bfd9bb2ab769b4a3476466bd5c",
+        "copies": 2,
+        "bytes_each": 14939,
+        "wasted_bytes": 14939,
+        "paths": [
+          "docs/archive/content/wiki/kind-troubleshooting.md",
+          "docs/src/content/docs/kind-troubleshooting.md"
+        ]
+      },
+      {
+        "sha": "cf260e80d6a7cf479b4c745bdbac1bd948d4fbee",
+        "copies": 2,
+        "bytes_each": 14818,
+        "wasted_bytes": 14818,
+        "paths": [
+          "docs/archive/consolidated-wiki/DATADOG_MONITORING_CONFIGURATION.md",
+          "docs/archive/content/wiki/DATADOG_MONITORING_CONFIGURATION.md"
+        ]
+      },
+      {
+        "sha": "d320992f5c821386719b9102c5e2e6f4c27498d8",
+        "copies": 2,
+        "bytes_each": 14810,
+        "wasted_bytes": 14810,
+        "paths": [
+          "docs/reports/ARM64_VM_DEMONSTRATION_COMPLETE.md",
+          "docs/sessions/archive-worklogs/ARM64_VM_DEMONSTRATION_COMPLETE.md"
+        ]
+      },
+      {
+        "sha": "c36c0b7ad089763d34cae76861597b03d95875ef",
+        "copies": 2,
+        "bytes_each": 14792,
+        "wasted_bytes": 14792,
+        "paths": [
+          "platforms/macos/macos-services/bin/vibecode-service",
+          "platforms/macos/services/bin/vibecode-service"
+        ]
+      },
+      {
+        "sha": "8d4669c7a32676ab3a2a05961fbac6a2fc97875c",
+        "copies": 2,
+        "bytes_each": 14713,
+        "wasted_bytes": 14713,
+        "paths": [
+          "docs/historical/AGENT_1_DELIVERY_REPORT.md",
+          "docs/reports/agents/AGENT_1_DELIVERY_REPORT.md"
+        ]
+      },
+      {
+        "sha": "c3fae6f6e40a7dec8e1c678d00e2928f1f21f756",
+        "copies": 2,
+        "bytes_each": 14553,
+        "wasted_bytes": 14553,
+        "paths": [
+          "docs/reports/EXPERIMENTS_PLATFORM_COMPLETE.md",
+          "docs/sessions/archive-worklogs/EXPERIMENTS_PLATFORM_COMPLETE.md"
+        ]
+      },
+      {
+        "sha": "75f113c0c2f759bc12d094309c699b18e526ecbd",
+        "copies": 2,
+        "bytes_each": 14524,
+        "wasted_bytes": 14524,
+        "paths": [
+          "docs/archive/consolidated-wiki/AI_CLI_TOOLS_IMPLEMENTATION_PLAN.md",
+          "docs/archive/content/wiki/AI_CLI_TOOLS_IMPLEMENTATION_PLAN.md"
+        ]
+      },
+      {
+        "sha": "e796a83073f95fb040d348eff12f86e6aeccba29",
+        "copies": 2,
+        "bytes_each": 14464,
+        "wasted_bytes": 14464,
+        "paths": [
+          "docs/reports/infrastructure/DATADOG_EXPERIMENTS_REFRAMING.md",
+          "docs/sessions/archive-worklogs/DATADOG_EXPERIMENTS_REFRAMING.md"
+        ]
+      },
+      {
+        "sha": "89284266c53aae93c66b3c0323aec3e18103551a",
+        "copies": 3,
+        "bytes_each": 7196,
+        "wasted_bytes": 14392,
+        "paths": [
+          "docs/archive/consolidated-wiki/license-sweep.md",
+          "docs/archive/content/wiki/license-sweep.md",
+          "docs/src/content/docs/license-sweep.md"
+        ]
+      },
+      {
+        "sha": "62287b4e470c4f5e197f609edb072c4c54f133f3",
+        "copies": 2,
+        "bytes_each": 14334,
+        "wasted_bytes": 14334,
+        "paths": [
+          "infrastructure/datadog/vibecode-webgui-smoke-traces-20250923T203709Z.json",
+          "infrastructure/ops/monitoring/datadog/vibecode-webgui-smoke-traces-20250923T203709Z.json"
+        ]
+      },
+      {
+        "sha": "669988dae4751866598cb3ec3935a1927d041ee8",
+        "copies": 3,
+        "bytes_each": 7117,
+        "wasted_bytes": 14234,
+        "paths": [
+          "docs/reports/DBM_SUCCESS_VALIDATION.md",
+          "docs/reports/infrastructure/DBM_SUCCESS_VALIDATION.md",
+          "docs/sessions/archive-worklogs/DBM_SUCCESS_VALIDATION.md"
+        ]
+      },
+      {
+        "sha": "fe80b5fd02f5ae9a6ca0f50a4c57bbea1f2c3e76",
+        "copies": 2,
+        "bytes_each": 13988,
+        "wasted_bytes": 13988,
+        "paths": [
+          "docs/archive/consolidated-wiki/MICROSOFT_VSCODE_EXTENSIONS_MIT_BSD.md",
+          "docs/archive/content/wiki/MICROSOFT_VSCODE_EXTENSIONS_MIT_BSD.md"
+        ]
+      },
+      {
+        "sha": "a93f213e024905ce1e7fc0d5697da1d39d7fc14d",
+        "copies": 3,
+        "bytes_each": 6898,
+        "wasted_bytes": 13796,
+        "paths": [
+          "docs/archive/root-md-files/PGVECTOR_PRODUCTION_READINESS_REPORT.md",
+          "docs/reports/infrastructure/PGVECTOR_PRODUCTION_READINESS_REPORT.md",
+          "docs/sessions/archive-worklogs/PGVECTOR_PRODUCTION_READINESS_REPORT.md"
+        ]
+      },
+      {
+        "sha": "129986ed90168b6e67d0be571506f6cd40e18b18",
+        "copies": 2,
+        "bytes_each": 13683,
+        "wasted_bytes": 13683,
+        "paths": [
+          "docs/reports/EXPERIMENTS_FINAL_STATUS.md",
+          "docs/sessions/archive-worklogs/EXPERIMENTS_FINAL_STATUS.md"
+        ]
+      },
+      {
+        "sha": "80292a17ef8cc240c2d980bc2806530eaa760fe4",
+        "copies": 3,
+        "bytes_each": 6808,
+        "wasted_bytes": 13616,
+        "paths": [
+          "docs/archive/root-md-files/PLATFORM_STATUS_AUGUST_2025.md",
+          "docs/reports/status/PLATFORM_STATUS_AUGUST_2025.md",
+          "docs/sessions/archive-worklogs/PLATFORM_STATUS_AUGUST_2025.md"
+        ]
+      },
+      {
+        "sha": "68ae1ec768d69d0d217c576d7f8e9faa777a28ed",
+        "copies": 3,
+        "bytes_each": 6776,
+        "wasted_bytes": 13552,
+        "paths": [
+          "docs/archive/consolidated-wiki/container-manifest.md",
+          "docs/archive/content/wiki/container-manifest.md",
+          "docs/src/content/docs/container-manifest.md"
+        ]
+      },
+      {
+        "sha": "9e839cf625286f7cbc459b735fe189e6be088f77",
+        "copies": 2,
+        "bytes_each": 13470,
+        "wasted_bytes": 13470,
+        "paths": [
+          "platforms/macos/fleet-orchestration/auto-scaling/AutoScaler.swift",
+          "platforms/macos/macos-fleet-orchestration/auto-scaling/AutoScaler.swift"
+        ]
+      },
+      {
+        "sha": "65ac63583750bd6b6a68056433c0a64f5c3f945e",
+        "copies": 2,
+        "bytes_each": 13388,
+        "wasted_bytes": 13388,
+        "paths": [
+          "docs/reports/CROSS_PLATFORM_VM_COMPLETE.md",
+          "docs/sessions/archive-worklogs/CROSS_PLATFORM_VM_COMPLETE.md"
+        ]
+      },
+      {
+        "sha": "fdc46ac77a8200574f8de5ffdcedcbe656473a95",
+        "copies": 3,
+        "bytes_each": 6654,
+        "wasted_bytes": 13308,
+        "paths": [
+          "docs/reports/POSTGRES_MONITORING_VALIDATION_RESULTS.md",
+          "docs/reports/infrastructure/POSTGRES_MONITORING_VALIDATION_RESULTS.md",
+          "docs/sessions/archive-worklogs/POSTGRES_MONITORING_VALIDATION_RESULTS.md"
+        ]
+      },
+      {
+        "sha": "100c1b13e239a61d619f4ed179fb6eae4b2797ec",
+        "copies": 2,
+        "bytes_each": 13190,
+        "wasted_bytes": 13190,
+        "paths": [
+          "platforms/macos/fleet-orchestration/service-discovery/ServiceDiscovery.swift",
+          "platforms/macos/macos-fleet-orchestration/service-discovery/ServiceDiscovery.swift"
+        ]
+      },
+      {
+        "sha": "0ccd4f8dd9ae98964566d224c6205786795f7022",
+        "copies": 2,
+        "bytes_each": 13186,
+        "wasted_bytes": 13186,
+        "paths": [
+          "docs/archive/consolidated-wiki/REPOSITORY_SCAN_REPORT_JULY_2025.md",
+          "docs/archive/content/wiki/REPOSITORY_SCAN_REPORT_JULY_2025.md"
+        ]
+      },
+      {
+        "sha": "64f727f23eceeb2310542d9cb8742c30c7f8949f",
+        "copies": 2,
+        "bytes_each": 13059,
+        "wasted_bytes": 13059,
+        "paths": [
+          "platforms/macos/fleet-orchestration/fleet-manager/FleetDatabase.swift",
+          "platforms/macos/macos-fleet-orchestration/fleet-manager/FleetDatabase.swift"
+        ]
+      },
+      {
+        "sha": "032d35cdab52444f3adc956ba1a9779743381300",
+        "copies": 2,
+        "bytes_each": 12991,
+        "wasted_bytes": 12991,
+        "paths": [
+          "docs/archive/reports/persona_inputs/security_context.md",
+          "docs/reports/persona_inputs/security_context.md"
+        ]
+      },
+      {
+        "sha": "1f593f611bff1d1d4af84a16b12401549b3009b8",
+        "copies": 2,
+        "bytes_each": 12932,
+        "wasted_bytes": 12932,
+        "paths": [
+          "docs/reports/ARM64_PLATFORM_EVALUATION_SUMMARY.md",
+          "docs/sessions/archive-worklogs/ARM64_PLATFORM_EVALUATION_SUMMARY.md"
+        ]
+      },
+      {
+        "sha": "7b829be6dbefde3bf4dbf30c6fc430c6ee423e0d",
+        "copies": 3,
+        "bytes_each": 6433,
+        "wasted_bytes": 12866,
+        "paths": [
+          "docs/planning/GAP-ANALYSIS.md",
+          "docs/sessions/archive-worklogs/GAP-ANALYSIS.md",
+          "docs/summaries/GAP-ANALYSIS.md"
+        ]
+      },
+      {
+        "sha": "6d360f6bba60307ddce12a4bda5ae0e2ff9278b8",
+        "copies": 4,
+        "bytes_each": 4253,
+        "wasted_bytes": 12759,
+        "paths": [
+          "platforms/azure/azure/SwiftUI-Apps/playwright-screenshots/03-interface-interaction.png",
+          "platforms/azure/azure/SwiftUI-Apps/playwright-screenshots/04-search-panel.png",
+          "platforms/azure/azure/SwiftUI-Apps/playwright-screenshots/05-extensions-panel.png",
+          "platforms/azure/azure/SwiftUI-Apps/playwright-screenshots/07-terminal-opened.png"
+        ]
+      }
+    ]
+  },
+  "duplicate_trees": [
+    {
+      "tree_sha": "0f6ada1073cd730b745d84ab752be313679e5871",
+      "copies": 2,
+      "files_each": 12,
+      "bytes_each": 154238,
+      "wasted_bytes": 154238,
+      "paths": [
+        "platforms/macos/fleet-orchestration",
+        "platforms/macos/macos-fleet-orchestration"
+      ]
+    },
+    {
+      "tree_sha": "59ff82e31e16c49e03d9db4e8840bffcb442e0b6",
+      "copies": 2,
+      "files_each": 13,
+      "bytes_each": 94047,
+      "wasted_bytes": 94047,
+      "paths": [
+        "docs/archive/releases/arm64-vms-v1.0",
+        "docs/releases/arm64-vms-v1.0"
+      ]
+    },
+    {
+      "tree_sha": "dd5634708736df7abe98ef9ea9868bc463a5fb42",
+      "copies": 2,
+      "files_each": 6,
+      "bytes_each": 71697,
+      "wasted_bytes": 71697,
+      "paths": [
+        "platforms/macos/macos-services",
+        "platforms/macos/services"
+      ]
+    },
+    {
+      "tree_sha": "0abef58e760d0cfc1323ef24b0a9fc63ccbd754f",
+      "copies": 2,
+      "files_each": 9,
+      "bytes_each": 61723,
+      "wasted_bytes": 61723,
+      "paths": [
+        "docs/reports/audit-results",
+        "docs/security/audit-results"
+      ]
+    },
+    {
+      "tree_sha": "1588f125d49185d03ead77ce3717abb01f4c2d7a",
+      "copies": 2,
+      "files_each": 2,
+      "bytes_each": 59425,
+      "wasted_bytes": 59425,
+      "paths": [
+        "docs/assets",
+        "docs/diagrams"
+      ]
+    },
+    {
+      "tree_sha": "2fad7429c9dfec89df9da607effdbe3d9b0f6c0e",
+      "copies": 2,
+      "files_each": 42,
+      "bytes_each": 58088,
+      "wasted_bytes": 58088,
+      "paths": [
+        "docs/archive/reports/persona_inputs",
+        "docs/reports/persona_inputs"
+      ]
+    },
+    {
+      "tree_sha": "33f5b80b56f06867f4f236848137379196e29e2e",
+      "copies": 2,
+      "files_each": 3,
+      "bytes_each": 34470,
+      "wasted_bytes": 34470,
+      "paths": [
+        "platforms/macos/macos-native-build/Sources",
+        "platforms/macos/native-build/Sources"
+      ]
+    },
+    {
+      "tree_sha": "8c0c979d47cd0e1b549e7fbc9695e11569681b5b",
+      "copies": 2,
+      "files_each": 3,
+      "bytes_each": 32423,
+      "wasted_bytes": 32423,
+      "paths": [
+        "infrastructure/datadog/templates",
+        "infrastructure/ops/monitoring/datadog/templates"
+      ]
+    },
+    {
+      "tree_sha": "ecbca21e1a9074dcc6bf5d711cb663f15a60c778",
+      "copies": 2,
+      "files_each": 12,
+      "bytes_each": 20803,
+      "wasted_bytes": 20803,
+      "paths": [
+        "docs/archive/reports/benchmarks",
+        "docs/reports/benchmarks"
+      ]
+    },
+    {
+      "tree_sha": "5369464a65be5794f96ed3c697035cd0565626a5",
+      "copies": 2,
+      "files_each": 6,
+      "bytes_each": 19955,
+      "wasted_bytes": 19955,
+      "paths": [
+        "docs/archive/old-builds/vibecode-v1.4a-package",
+        "docs/archive/vibecode-v1.4a-package"
+      ]
+    },
+    {
+      "tree_sha": "aead1411595e23bc4d17f5d0c48f89eb209b618c",
+      "copies": 2,
+      "files_each": 13,
+      "bytes_each": 19828,
+      "wasted_bytes": 19828,
+      "paths": [
+        "docs/archive/old-builds/vibecode-pgvector",
+        "platforms/docker/vibecode-pgvector"
+      ]
+    },
+    {
+      "tree_sha": "e1a8af6009c60c5833e16e05d7b2ce33dc749560",
+      "copies": 2,
+      "files_each": 1,
+      "bytes_each": 10036,
+      "wasted_bytes": 10036,
+      "paths": [
+        "platforms/kubernetes/k8s/manifests",
+        "platforms/kubernetes/kubernetes/manifests"
+      ]
+    },
+    {
+      "tree_sha": "85eab142d716e09fa74385abb37acd23b00090bd",
+      "copies": 2,
+      "files_each": 5,
+      "bytes_each": 8897,
+      "wasted_bytes": 8897,
+      "paths": [
+        "platforms/macos/AppleContainerRuntime/deployment",
+        "platforms/macos/apple-container"
+      ]
+    },
+    {
+      "tree_sha": "cc3dc3b746af36bb28b87b09dbc0d80517740835",
+      "copies": 2,
+      "files_each": 7,
+      "bytes_each": 6950,
+      "wasted_bytes": 6950,
+      "paths": [
+        "docs/archive/old-builds/vibecode-optimized",
+        "platforms/docker/vibecode-optimized"
+      ]
+    },
+    {
+      "tree_sha": "0dda422e51662b87d2904ecffd87563256244cb1",
+      "copies": 2,
+      "files_each": 1,
+      "bytes_each": 4746,
+      "wasted_bytes": 4746,
+      "paths": [
+        "infrastructure/datadog/conf.d",
+        "infrastructure/monitoring/datadog/conf.d"
+      ]
+    },
+    {
+      "tree_sha": "a0c030afc14d9b93cc37ac5325496209290381fd",
+      "copies": 2,
+      "files_each": 1,
+      "bytes_each": 3289,
+      "wasted_bytes": 3289,
+      "paths": [
+        "docs/archive/consolidated-wiki/guides",
+        "docs/archive/content/wiki/guides"
+      ]
+    },
+    {
+      "tree_sha": "8d25a1b3c581fe5ac65dcf3e406a5a86979882ac",
+      "copies": 2,
+      "files_each": 1,
+      "bytes_each": 2824,
+      "wasted_bytes": 2824,
+      "paths": [
+        "platforms/macos/macos-native-build/scripts",
+        "platforms/macos/native-build/scripts"
+      ]
+    },
+    {
+      "tree_sha": "0571fa38d43ac7746aec1589c80c5a6ddcacfb43",
+      "copies": 2,
+      "files_each": 1,
+      "bytes_each": 2033,
+      "wasted_bytes": 2033,
+      "paths": [
+        "infrastructure/datadog/training",
+        "infrastructure/ops/monitoring/datadog/training"
+      ]
+    },
+    {
+      "tree_sha": "18ed912da0779b764b8d15b2e5c5032b996518e9",
+      "copies": 2,
+      "files_each": 1,
+      "bytes_each": 1333,
+      "wasted_bytes": 1333,
+      "paths": [
+        "platforms/macos/macos-native-build/launch",
+        "platforms/macos/native-build/launch"
+      ]
+    },
+    {
+      "tree_sha": "ca9f71f15910d662f0abf186eec7e0b1f91de5f3",
+      "copies": 2,
+      "files_each": 1,
+      "bytes_each": 1293,
+      "wasted_bytes": 1293,
+      "paths": [
+        "docs/archive/reports/persona_outputs",
+        "docs/reports/persona_outputs"
+      ]
+    },
+    {
+      "tree_sha": "0c7a9a28207e5f4c1b9a03a9757d88d90bca75b3",
+      "copies": 2,
+      "files_each": 1,
+      "bytes_each": 640,
+      "wasted_bytes": 640,
+      "paths": [
+        "docs/archive/reports/nightly",
+        "docs/reports/nightly"
+      ]
+    },
+    {
+      "tree_sha": "edec220d2248d4e1023a69495bd611d019949155",
+      "copies": 2,
+      "files_each": 1,
+      "bytes_each": 461,
+      "wasted_bytes": 461,
+      "paths": [
+        "src/app/api/agents/templates",
+        "src/app/api/projects/templates"
+      ]
+    },
+    {
+      "tree_sha": "d564d0bc3dd917926892c55e3706cc116d5b165e",
+      "copies": 4,
+      "files_each": 1,
+      "bytes_each": 0,
+      "wasted_bytes": 0,
+      "paths": [
+        "docs/images/features",
+        "docs/images/screenshots",
+        "docs/images/technical",
+        "platforms/tauri/vm-images"
+      ]
+    }
+  ]
+}
