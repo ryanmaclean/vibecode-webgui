@@ -207,13 +207,28 @@ jobs:
           fi
           echo "✅ Redis is ready"
 
-      - name: Run unit tests
+      # #2136: never trust a cached/stale generated client, and give the
+      # DB-backed suites (tests/integration/experiments-e2e.test.ts) real tables.
+      # postgres:16 has no pgvector, so the optional Unsupported("vector(...)")
+      # embedding columns are dropped from the pushed copy only; the generated
+      # client never selects Unsupported fields, so it is unaffected.
+      - name: Prepare Prisma client and test schema
         run: |
-          npm test -- --passWithNoTests \
-            --testPathIgnorePatterns="tests/e2e|tests/k8s" \
-            --runInBand
+          npx prisma validate
+          npx prisma generate
+          grep -v 'Unsupported("vector' prisma/schema.prisma > "$RUNNER_TEMP/schema.ci.prisma"
+          npx prisma db push --schema "$RUNNER_TEMP/schema.ci.prisma" --skip-generate --accept-data-loss
+
+      # Do NOT pass --testPathIgnorePatterns here: on the CLI it replaces the
+      # config list, which silently un-quarantined ~60 suites and ran
+      # extensions/, examples/ and config/alternatives/ tests (#2136).
+      # tests/e2e is already ignored by config/jest.config.js; tests/integration
+      # runs in the next step.
+      - name: Run unit tests
+        run: npm test -- --passWithNoTests --runInBand
         env:
           NODE_OPTIONS: -r dd-trace/ci/init
+          JEST_EXCLUDE_INTEGRATION: '1'
 
       - name: Run integration tests
         run: |

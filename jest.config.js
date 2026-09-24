@@ -8,6 +8,8 @@ module.exports = {
     ...(baseConfig.testPathIgnorePatterns || []),
     '<rootDir>/vibecode_webgui/', // Duplicate rig/crew trees - run root tests only
     '\\.claude/', // Agent worktrees - not real test targets
+    // ci-simplified.yml runs tests/integration in its own step; skip them in the unit step.
+    ...(process.env.JEST_EXCLUDE_INTEGRATION === '1' ? ['<rootDir>/tests/integration/'] : []),
     // Quarantined: infra/env/mock issues - see docs/TODO.md
     '<rootDir>/tests/integration/vm-providers.test.ts',
     '<rootDir>/tests/unit/lib/monitoring/gastown-cli-tracing.test.ts',
