@@ -74,6 +74,11 @@ module.exports = {
     '<rootDir>/tests/integration/vm-boot-timeout.test.ts',
     '<rootDir>/tests/integration/vm-reliability.test.ts',
     '<rootDir>/tests/integration/workspace-templates.test.ts',
+    // Needs the pgvector extension (CI runs postgres:16 without it) and creates a
+    // collection named test_integration, which pgvector-client's table allowlist
+    // rejects by design. Un-quarantine once it targets an allowlisted table and
+    // CI has pgvector (#2136 follow-up).
+    '<rootDir>/tests/integration/cache-pgvector-integration.test.ts',
     '<rootDir>/tests/middleware/error-tracking-middleware.test.ts',
   ],
   modulePathIgnorePatterns: [
