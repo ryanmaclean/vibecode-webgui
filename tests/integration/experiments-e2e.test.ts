@@ -1,4 +1,6 @@
 /**
+ * @jest-environment node
+ *
  * End-to-End Integration Tests for Experimentation Platform
  *
  * Tests the complete experiment lifecycle from creation to analysis.
@@ -10,13 +12,19 @@
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals'
 import { PrismaClient, ExperimentStatus, Prisma } from '@prisma/client'
 
-// Mock Prisma Client using the comprehensive mock
-jest.mock('@prisma/client')
-
-const prisma = new PrismaClient()
+// Real Prisma client against the CI Postgres (schema pushed by the
+// "Prepare Prisma" step in ci-simplified.yml). The manual mock in
+// tests/__mocks__/@prisma/client.ts cannot persist rows, so every
+// create-then-read assertion here failed against it (#2136). Without
+// Postgres (SKIP_POSTGRES_TESTS=1, set by jest.globalSetup.js) the suite skips.
+jest.unmock('@prisma/client')
 
 // Skip tests if PostgreSQL is not available (set by jest.globalSetup.js)
 const SKIP_E2E = process.env.SKIP_POSTGRES_TESTS === '1'
+
+// Construct only when the suite will run: an ungenerated client throws in its
+// constructor, which would fail the file even though every test is skipped.
+const prisma = (SKIP_E2E ? undefined : new PrismaClient()) as PrismaClient
 const describeIf = SKIP_E2E ? describe.skip : describe
 
 // Helper functions that implement experiment business logic
