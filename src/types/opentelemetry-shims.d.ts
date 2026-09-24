@@ -1,4 +1,4 @@
-declare module '@opentelemetry/exporter-otlp-http' {
+declare module '@opentelemetry/exporter-trace-otlp-http' {
   export class OTLPTraceExporter {
     constructor(config?: { url?: string; headers?: Record<string, string> })
   }
@@ -14,6 +14,7 @@ declare module '@opentelemetry/resources' {
   export class Resource {
     constructor(attributes?: Record<string, unknown>)
   }
+  export function resourceFromAttributes(attributes?: Record<string, unknown>): unknown
 }
 
 declare module '@opentelemetry/sdk-node' {
