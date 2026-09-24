@@ -192,12 +192,16 @@ jobs:
 
           echo "Waiting for Redis..."
           attempt=1
-          until redis-cli -h localhost -p 6379 ping > /dev/null 2>&1 || [ $attempt -eq $max_attempts ]; do
+          # NOTE: redis-cli is not preinstalled on GitHub-hosted ubuntu runners
+          # (unlike pg_isready, which ships with the PostgreSQL client package),
+          # so we probe TCP reachability with nc instead of shelling out to a
+          # binary that doesn't exist on the host.
+          until nc -z localhost 6379 || [ $attempt -eq $max_attempts ]; do
             echo "Redis not ready, attempt $attempt/$max_attempts"
             sleep 2
             attempt=$((attempt + 1))
           done
-          if ! redis-cli -h localhost -p 6379 ping > /dev/null 2>&1; then
+          if ! nc -z localhost 6379; then
             echo "❌ Redis failed to become ready after $max_attempts attempts"
             exit 1
           fi
