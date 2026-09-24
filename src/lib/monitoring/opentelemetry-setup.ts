@@ -23,7 +23,12 @@ const isDockerBuild = (
 let NodeSDK: any = null;
 let OTLPTraceExporter: any = null;
 let PrometheusExporter: any = null;
+// @opentelemetry/resources 2.x dropped the `Resource` class constructor in
+// favor of the `resourceFromAttributes` factory function. Keep both around so
+// this keeps working across the range of resources versions our transitive
+// deps might resolve to.
 let Resource: any = null;
+let resourceFromAttributes: any = null;
 let SEMRESATTRS_SERVICE_NAME: any = null;
 let SEMRESATTRS_SERVICE_VERSION: any = null;
 let TailBasedSampler: any = null;
@@ -62,6 +67,7 @@ function initializeOtelImports(): boolean {
 
     // Resources
     Resource = safeImport('@opentelemetry/resources', 'Resource');
+    resourceFromAttributes = safeImport('@opentelemetry/resources', 'resourceFromAttributes');
     SEMRESATTRS_SERVICE_NAME = safeImport('@opentelemetry/semantic-conventions', 'SEMRESATTRS_SERVICE_NAME');
     SEMRESATTRS_SERVICE_VERSION = safeImport('@opentelemetry/semantic-conventions', 'SEMRESATTRS_SERVICE_VERSION');
 
@@ -75,8 +81,8 @@ function initializeOtelImports(): boolean {
     DnsInstrumentation = safeImport('@opentelemetry/instrumentation-dns', 'DnsInstrumentation');
     NetInstrumentation = safeImport('@opentelemetry/instrumentation-net', 'NetInstrumentation');
 
-    // Check if core modules are available
-    return !!(NodeSDK && Resource);
+    // Check if core modules are available (either resource API is acceptable)
+    return !!(NodeSDK && (Resource || resourceFromAttributes));
   } catch (error) {
     console.warn('⚠️ Failed to initialize OpenTelemetry imports:', (error as Error).message);
     return false;
@@ -92,7 +98,7 @@ let otelSDK: any = null;
 
 // Create resource with fallback
 function createResource(): any {
-  if (!Resource) {
+  if (!Resource && !resourceFromAttributes) {
     return null;
   }
 
@@ -112,7 +118,10 @@ function createResource(): any {
       attributes[SEMRESATTRS_SERVICE_VERSION] = serviceVersion;
     }
 
-    return new Resource(attributes);
+    // @opentelemetry/resources >=2.0 removed the `Resource` class in favor of
+    // the `resourceFromAttributes` factory. Prefer the new API, fall back to
+    // the old constructor for older resolved versions.
+    return resourceFromAttributes ? resourceFromAttributes(attributes) : new Resource(attributes);
   } catch (error) {
     console.warn('⚠️ Failed to create OpenTelemetry resource:', (error as Error).message);
     return null;
@@ -262,7 +271,7 @@ export function initializeOpenTelemetry() {
   }
 
   // Check if all required modules are available
-  if (!NodeSDK || !Resource || !TailBasedSampler) {
+  if (!NodeSDK || (!Resource && !resourceFromAttributes) || !TailBasedSampler) {
     return null;
   }
 
@@ -356,7 +365,7 @@ export function checkOpenTelemetryHealth(): {
   // Check if core modules are available
   const coreModules = {
     'NodeSDK': !!NodeSDK,
-    'Resource': !!Resource,
+    'Resource': !!(Resource || resourceFromAttributes),
     'TailBasedSampler': !!TailBasedSampler,
   };
 

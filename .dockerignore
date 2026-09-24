@@ -26,6 +26,8 @@
 !Dockerfile.ingest
 !.npmrc
 !config/next.config.mjs
+!config/typescript/tsconfig.base.json
+!messages/**
 
 # Explicitly ignore large/unneeded directories even if whitelisted higher up
 node_modules
