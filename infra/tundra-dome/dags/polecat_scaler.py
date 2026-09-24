@@ -14,7 +14,6 @@ from typing import Any
 from airflow.decorators import dag, task
 from airflow.exceptions import AirflowSkipException
 
-
 LANE_NAMES = os.environ.get("TUNDRA_LANES", "critical,standard,experimental").split(",")
 MIN_WORKERS = int(os.environ.get("TUNDRA_MIN_WORKERS", "1"))
 MAX_WORKERS = int(os.environ.get("TUNDRA_MAX_WORKERS", "10"))

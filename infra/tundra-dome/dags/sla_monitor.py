@@ -18,7 +18,6 @@ from typing import Any
 from airflow.decorators import dag, task
 from airflow.exceptions import AirflowSkipException
 
-
 LANE_NAMES = os.environ.get("TUNDRA_LANES", "critical,standard,experimental").split(",")
 SLA_CRITICAL_MIN = int(os.environ.get("TUNDRA_SLA_CRITICAL_MIN", "30"))
 SLA_STANDARD_MIN = int(os.environ.get("TUNDRA_SLA_STANDARD_MIN", "240"))

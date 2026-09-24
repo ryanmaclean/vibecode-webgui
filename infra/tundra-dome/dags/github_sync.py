@@ -16,7 +16,6 @@ from airflow.decorators import dag, task
 from airflow.exceptions import AirflowSkipException
 from airflow.models import Variable
 
-
 GITHUB_REPO = os.environ.get("TUNDRA_GITHUB_REPO", "ryanmaclean/vibecode-webgui")
 GITHUB_SYNC_STATE_KEY = "TUNDRA_GITHUB_SYNC_STATE"
 

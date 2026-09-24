@@ -17,7 +17,6 @@ from typing import Any
 
 from airflow.decorators import dag, task
 
-
 LANE_NAMES = os.environ.get("TUNDRA_LANES", "critical,standard,experimental").split(",")
 BACKLOG_THRESHOLD = int(os.environ.get("TUNDRA_BACKLOG_THRESHOLD", "100"))
 ERROR_RATE_THRESHOLD = float(os.environ.get("TUNDRA_ERROR_RATE_THRESHOLD", "0.1"))
