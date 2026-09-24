@@ -11,9 +11,9 @@ Emits alerts when SLA thresholds are breached.
 """
 from __future__ import annotations
 
-from datetime import datetime
 import os
-from typing import Dict, Any, List
+from datetime import datetime, timezone
+from typing import Any
 
 from airflow.decorators import dag, task
 from airflow.exceptions import AirflowSkipException
@@ -29,7 +29,7 @@ SLA_EXPERIMENTAL_MIN = int(os.environ.get("TUNDRA_SLA_EXPERIMENTAL_MIN", "1440")
     dag_id="tundra_sla_monitor",
     description="Monitor SLA compliance and emit alerts for violations",
     schedule="*/5 * * * *",
-    start_date=datetime(2026, 2, 1),
+    start_date=datetime(2026, 2, 1, tzinfo=timezone.utc),
     catchup=False,
     max_active_runs=1,
     default_args={"owner": "tundra", "retries": 0},
@@ -47,7 +47,7 @@ def tundra_sla_monitor():
         return thresholds.get(lane, SLA_STANDARD_MIN)
 
     @task()
-    def check_aging_beads(lane: str, sla_minutes: int) -> List[Dict[str, Any]]:
+    def check_aging_beads(lane: str, sla_minutes: int) -> list[dict[str, Any]]:
         """Check for beads exceeding SLA threshold."""
         # Placeholder: replace with actual Kafka or datastore query
         # Query beads in lane where created_at < now() - sla_minutes
@@ -61,7 +61,7 @@ def tundra_sla_monitor():
         return aging_beads
 
     @task()
-    def calculate_sla_metrics(lane: str, aging_beads: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def calculate_sla_metrics(lane: str, aging_beads: list[dict[str, Any]]) -> dict[str, Any]:
         """Calculate SLA compliance metrics."""
         total_count = len(aging_beads)  # Would query total beads in timeframe
         violation_count = len(aging_beads)
@@ -77,7 +77,7 @@ def tundra_sla_monitor():
         }
 
     @task()
-    def emit_sla_alert(metrics: Dict[str, Any]) -> None:
+    def emit_sla_alert(metrics: dict[str, Any]) -> None:
         """Emit alert for SLA violations."""
         lane = metrics["lane"]
         violations = metrics["violations"]

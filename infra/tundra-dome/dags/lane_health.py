@@ -11,9 +11,9 @@ Emits alerts when thresholds are exceeded.
 """
 from __future__ import annotations
 
-from datetime import datetime
 import os
-from typing import Dict, Any
+from datetime import datetime, timezone
+from typing import Any
 
 from airflow.decorators import dag, task
 
@@ -27,7 +27,7 @@ ERROR_RATE_THRESHOLD = float(os.environ.get("TUNDRA_ERROR_RATE_THRESHOLD", "0.1"
     dag_id="tundra_lane_health",
     description="Monitor lane health metrics and emit alerts",
     schedule="*/3 * * * *",
-    start_date=datetime(2026, 2, 1),
+    start_date=datetime(2026, 2, 1, tzinfo=timezone.utc),
     catchup=False,
     max_active_runs=1,
     default_args={"owner": "tundra", "retries": 0},
@@ -35,7 +35,7 @@ ERROR_RATE_THRESHOLD = float(os.environ.get("TUNDRA_ERROR_RATE_THRESHOLD", "0.1"
 )
 def tundra_lane_health():
     @task()
-    def check_lane_health(lane: str) -> Dict[str, Any]:
+    def check_lane_health(lane: str) -> dict[str, Any]:
         """Check health metrics for a specific lane."""
         # Placeholder: replace with actual Kafka consumer or metrics query
         # In production, this would query lane topic depths, worker status, etc.
@@ -52,7 +52,7 @@ def tundra_lane_health():
         return metrics
 
     @task()
-    def evaluate_health(metrics: Dict[str, Any]) -> str:
+    def evaluate_health(metrics: dict[str, Any]) -> str:
         """Evaluate health status and return alert level."""
         lane = metrics["lane"]
         backlog = metrics["backlog_depth"]
