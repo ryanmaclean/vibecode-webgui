@@ -224,15 +224,18 @@ jobs:
       # extensions/, examples/ and config/alternatives/ tests (#2136).
       # tests/e2e is already ignored by config/jest.config.js; tests/integration
       # runs in the next step.
+      # --forceExit: in run 36048879268 every suite finished (387 passed,
+      # 1 skipped) but open handles (live Postgres/Redis clients, dd-trace CI
+      # visibility) kept jest alive until the 25-minute job timeout.
       - name: Run unit tests
-        run: npm test -- --passWithNoTests --runInBand
+        run: npm test -- --passWithNoTests --runInBand --forceExit
         env:
           NODE_OPTIONS: -r dd-trace/ci/init
           JEST_EXCLUDE_INTEGRATION: '1'
 
       - name: Run integration tests
         run: |
-          if npm run test:integration --if-present; then
+          if npm run test:integration --if-present -- --forceExit; then
             echo "✅ Integration tests passed"
           else
             echo "❌ Integration tests failed"
