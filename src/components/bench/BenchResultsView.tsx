@@ -14,6 +14,7 @@ import {
   buildBenchView,
   formatMetricValue,
   metricSpec,
+  seriesGroupKey,
 } from '@/lib/bench/view'
 
 export interface BenchResultsViewProps {
@@ -41,7 +42,11 @@ function formatDelta(delta: MetricDelta | undefined): string {
 }
 
 function SeriesTable({ series }: { series: BenchSeriesView }): React.JSX.Element {
-  const keys = measuredMetricKeys(series.latest)
+  // Deltas cover the union of latest and previous metrics, so a metric that
+  // was measured before but not in the latest run still gets a row ("not
+  // measured"). A single-run series has no deltas; fall back to its metrics.
+  const keys =
+    series.deltas.length > 0 ? series.deltas.map((d) => d.key) : measuredMetricKeys(series.latest)
   const deltaByKey = new Map(series.deltas.map((d) => [d.key, d]))
   const { key, latest } = series
 
@@ -129,7 +134,9 @@ export function BenchResultsView({
       {view.series.length === 0 ? (
         <p className="text-sm text-muted-foreground">No ryanlab.bench.v1 records to display.</p>
       ) : (
-        view.series.map((series) => <SeriesTable key={series.id} series={series} />)
+        view.series.map((series) => (
+          <SeriesTable key={seriesGroupKey(series.key)} series={series} />
+        ))
       )}
       {issues.length > 0 ? (
         <div role="alert" className="rounded border border-red-300 p-3 text-sm" data-testid="bench-issues">

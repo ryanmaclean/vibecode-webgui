@@ -20,8 +20,9 @@ describe('BenchResultsView', () => {
     ])
     render(<BenchResultsView records={records} />)
 
-    const series = screen.getByTestId('bench-series')
-    expect(series).toHaveAttribute('data-series-id', 'smolfire/freebsd-pvh/ffs/bop-state-crash-recovery-v1')
+    const series = screen.getByRole('region', {
+      name: 'Benchmark series smolfire/freebsd-pvh/ffs/bop-state-crash-recovery-v1',
+    })
     expect(within(series).getByText('2 runs · latest', { exact: false })).toBeInTheDocument()
     expect(within(series).getByText(/abcdef123456/)).toBeInTheDocument()
 
@@ -35,6 +36,21 @@ describe('BenchResultsView', () => {
 
     // null metrics are not rendered as values at all
     expect(series.querySelector('tr[data-metric="recovery_ms"]')).toBeNull()
+  })
+
+  it('keeps metrics measured only in the previous run as not measured', () => {
+    const { records } = parseBenchRecords([
+      { ...base, timestamp: '2026-09-23T00:00:00Z', metrics: { boot_ms: 100, fsync_us_p50: 12 } },
+      { ...base, timestamp: '2026-09-23T01:00:00Z', metrics: { boot_ms: 90, fsync_us_p50: null } },
+    ])
+    render(<BenchResultsView records={records} />)
+    const series = screen.getByRole('region', {
+      name: 'Benchmark series smolfire/freebsd-pvh/ffs/bop-state-crash-recovery-v1',
+    })
+    const fsync = series.querySelector('tr[data-metric="fsync_us_p50"]') as HTMLElement
+    expect(fsync).not.toBeNull()
+    expect(within(fsync).getByText('not measured')).toBeInTheDocument()
+    expect(within(fsync).getByText('—')).toHaveAttribute('data-verdict', 'not-comparable')
   })
 
   it('validates raw input and lists rejected records', () => {

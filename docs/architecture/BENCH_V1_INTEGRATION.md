@@ -21,9 +21,9 @@ from a record is presentation. The raw record stays the only benchmark fact.
 | Surface | Path | Role |
 |---|---|---|
 | Validator (zod mirror of the JSON Schema) | `src/lib/bench/v1.ts` | Parse JSON record, array, `{records}` envelope or NDJSON; keep valid records, report invalid ones by index and path |
-| Presentation projection | `src/lib/bench/view.ts` | Group by `project/runtime/filesystem/workload`, sort by time, latest-vs-previous deltas, unit formatting |
-| Agent API | `GET/POST /api/v1/bench/view` | `GET`: descriptor (`vibecode.endpoint.v1`). `POST`: records -> `vibecode.bench-view.v1`. Stateless, 1 MiB / 5000-record cap |
-| UI | `src/components/bench/`, `/monitoring/benchmarks` | Paste or load a file; parsed in the browser; never uploaded |
+| Presentation projection | `src/lib/bench/view.ts` | Group by the `(project, runtime, filesystem, workload)` tuple (collision-free key; the `a/b/c/d` series id is display-only), sort by time, latest-vs-previous deltas, unit formatting |
+| Agent API | `GET/POST /api/v1/bench/view` | `GET`: descriptor (`vibecode.endpoint.v1`). `POST`: records -> `vibecode.bench-view.v1`. Stateless. 1 MiB body cap enforced while streaming; more than 5000 candidate records is rejected (413) before validation; at most 500 issues returned, with the exact total in `issue_count` / `rejected_issue_count` |
+| UI | `src/components/bench/`, `/monitoring/benchmarks` | Paste or load a file; parsed in the browser under the same limits; never uploaded |
 
 ## Contract rules carried into the code
 

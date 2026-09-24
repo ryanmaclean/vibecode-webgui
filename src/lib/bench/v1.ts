@@ -86,9 +86,29 @@ export interface BenchIssue {
   message: string
 }
 
+/**
+ * Bounds for batch parsing. Both default to unbounded; callers that accept
+ * untrusted input (the API route, the browser importer) must set them.
+ */
+export interface BenchParseOptions {
+  /**
+   * Maximum number of candidate records (array items, envelope items or
+   * non-blank NDJSON lines). When the input has more, nothing is validated
+   * and the result is `{ truncated: true }` with no records or issues.
+   */
+  maxCandidates?: number
+  /** Maximum number of issues kept in `issues`; `issueCount` is still exact. */
+  maxIssues?: number
+}
+
 export interface BenchParseResult {
   records: BenchRecordV1[]
+  /** Validation issues, at most `maxIssues` of them. */
   issues: BenchIssue[]
+  /** Total number of issues found, including any dropped by `maxIssues`. */
+  issueCount: number
+  /** True when the input exceeded `maxCandidates` and was not validated. */
+  truncated: boolean
 }
 
 export type BenchParseOne =
@@ -110,11 +130,52 @@ export function parseBenchRecord(input: unknown, index = 0): BenchParseOne {
   return { ok: false, issues: toIssues(result.error, index) }
 }
 
+/** Accumulates records and a bounded list of issues with an exact total. */
+class ParseAccumulator {
+  readonly records: BenchRecordV1[] = []
+  readonly issues: BenchIssue[] = []
+  issueCount = 0
+
+  constructor(private readonly maxIssues: number) {}
+
+  addIssues(issues: readonly BenchIssue[]): void {
+    this.issueCount += issues.length
+    const room = this.maxIssues - this.issues.length
+    if (room > 0) this.issues.push(...issues.slice(0, room))
+  }
+
+  add(candidate: unknown, index: number): void {
+    const parsed = parseBenchRecord(candidate, index)
+    if (parsed.ok) this.records.push(parsed.record)
+    else this.addIssues(parsed.issues)
+  }
+
+  result(): BenchParseResult {
+    return {
+      records: this.records,
+      issues: this.issues,
+      issueCount: this.issueCount,
+      truncated: false,
+    }
+  }
+}
+
+function truncatedResult(): BenchParseResult {
+  return { records: [], issues: [], issueCount: 0, truncated: true }
+}
+
+function emptyResult(): BenchParseResult {
+  return { records: [], issues: [], issueCount: 0, truncated: false }
+}
+
 /**
  * Validate a batch. Accepts a single record, an array of records, or an
  * envelope `{ records: [...] }`. Valid records are kept even when others fail.
+ * The candidate count is checked against `maxCandidates` before any record is
+ * validated.
  */
-export function parseBenchRecords(input: unknown): BenchParseResult {
+export function parseBenchRecords(input: unknown, options: BenchParseOptions = {}): BenchParseResult {
+  const { maxCandidates = Infinity, maxIssues = Infinity } = options
   let candidates: unknown[]
   if (Array.isArray(input)) {
     candidates = input
@@ -129,50 +190,46 @@ export function parseBenchRecords(input: unknown): BenchParseResult {
     candidates = [input]
   }
 
-  const records: BenchRecordV1[] = []
-  const issues: BenchIssue[] = []
-  candidates.forEach((candidate, index) => {
-    const parsed = parseBenchRecord(candidate, index)
-    if (parsed.ok) records.push(parsed.record)
-    else issues.push(...parsed.issues)
-  })
-  return { records, issues }
+  if (candidates.length > maxCandidates) return truncatedResult()
+
+  const acc = new ParseAccumulator(maxIssues)
+  candidates.forEach((candidate, index) => acc.add(candidate, index))
+  return acc.result()
 }
 
 /**
  * Parse text that is either JSON (record, array, or envelope) or NDJSON
  * (one record per line; blank lines ignored). NDJSON is the natural format
- * for append-only benchmark logs.
+ * for append-only benchmark logs. `options` bounds work as in
+ * {@link parseBenchRecords}; for NDJSON, non-blank lines are counted before
+ * any line is parsed.
  */
-export function parseBenchText(text: string): BenchParseResult {
+export function parseBenchText(text: string, options: BenchParseOptions = {}): BenchParseResult {
   const trimmed = text.trim()
-  if (trimmed === '') return { records: [], issues: [] }
+  if (trimmed === '') return emptyResult()
 
   try {
-    return parseBenchRecords(JSON.parse(trimmed))
+    return parseBenchRecords(JSON.parse(trimmed), options)
   } catch {
     // Not a single JSON document: fall through to NDJSON.
   }
 
-  const records: BenchRecordV1[] = []
-  const issues: BenchIssue[] = []
-  let index = 0
-  for (const line of trimmed.split(/\r?\n/)) {
-    if (line.trim() === '') continue
+  const { maxCandidates = Infinity, maxIssues = Infinity } = options
+  const lines = trimmed.split(/\r?\n/).filter((line) => line.trim() !== '')
+  if (lines.length > maxCandidates) return truncatedResult()
+
+  const acc = new ParseAccumulator(maxIssues)
+  lines.forEach((line, index) => {
     let value: unknown
     try {
       value = JSON.parse(line)
     } catch {
-      issues.push({ index, path: '', message: 'line is not valid JSON' })
-      index++
-      continue
+      acc.addIssues([{ index, path: '', message: 'line is not valid JSON' }])
+      return
     }
-    const parsed = parseBenchRecord(value, index)
-    if (parsed.ok) records.push(parsed.record)
-    else issues.push(...parsed.issues)
-    index++
-  }
-  return { records, issues }
+    acc.add(value, index)
+  })
+  return acc.result()
 }
 
 /** Numeric value of a metric, or null when absent/not measured/non-numeric. */

@@ -136,7 +136,39 @@ describe('parseBenchText', () => {
   })
 
   it('returns nothing for empty input', () => {
-    expect(parseBenchText('  \n ')).toEqual({ records: [], issues: [] })
+    expect(parseBenchText('  \n ')).toEqual({ records: [], issues: [], issueCount: 0, truncated: false })
+  })
+})
+
+describe('parse bounds', () => {
+  it('refuses more candidates than maxCandidates before validating any of them', () => {
+    const empties = Array.from({ length: 11 }, () => ({}))
+    for (const input of [empties, { records: empties }]) {
+      expect(parseBenchRecords(input, { maxCandidates: 10 })).toEqual({
+        records: [],
+        issues: [],
+        issueCount: 0,
+        truncated: true,
+      })
+    }
+    expect(parseBenchText(JSON.stringify(empties), { maxCandidates: 10 }).truncated).toBe(true)
+  })
+
+  it('counts non-blank NDJSON lines against maxCandidates', () => {
+    const lines = Array.from({ length: 3 }, () => JSON.stringify(record()))
+    expect(parseBenchText(lines.join('\n\n'), { maxCandidates: 3 }).records).toHaveLength(3)
+    expect(parseBenchText([...lines, '{}'].join('\n'), { maxCandidates: 3 }).truncated).toBe(true)
+  })
+
+  it('caps returned issues but reports the exact total', () => {
+    const result = parseBenchRecords([record(), {}, {}, {}], { maxIssues: 2 })
+    expect(result.records).toHaveLength(1)
+    expect(result.issues).toHaveLength(2)
+    expect(result.issueCount).toBeGreaterThan(2)
+    expect(result.truncated).toBe(false)
+    const ndjson = parseBenchText(['oops', 'nope', JSON.stringify(record())].join('\n'), { maxIssues: 1 })
+    expect(ndjson.issues).toEqual([{ index: 0, path: '', message: 'line is not valid JSON' }])
+    expect(ndjson.issueCount).toBe(2)
   })
 })
 

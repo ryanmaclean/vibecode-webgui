@@ -10,6 +10,8 @@ import {
   formatMetricValue,
   type MetricDelta,
   metricSpec,
+  seriesGroupKey,
+  seriesKeyOf,
   seriesId,
 } from '../view'
 import { BENCH_V1_CORE_METRICS } from '../v1'
@@ -129,5 +131,38 @@ describe('buildBenchView', () => {
 
   it('builds stable series ids', () => {
     expect(seriesId({ project: 'p', runtime: null, filesystem: 'zfs', workload: 'w' })).toBe('p/-/zfs/w')
+  })
+
+  it('does not merge series whose display ids collide on /', () => {
+    const records = recs(
+      { project: 'a/b', runtime: 'c', filesystem: null, workload: 'w', metrics: { boot_ms: 10 } },
+      { project: 'a', runtime: 'b/c', filesystem: null, workload: 'w', metrics: { boot_ms: 99 } }
+    )
+    const [first, second] = records
+    if (!first || !second) throw new Error('expected two records')
+    expect(seriesId(seriesKeyOf(first))).toBe(seriesId(seriesKeyOf(second)))
+    const view = buildBenchView(records)
+    expect(view.series).toHaveLength(2)
+    expect(view.series.every((s) => s.records.length === 1 && s.deltas.length === 0)).toBe(true)
+    expect(view.series.map((s) => s.key.project).sort()).toEqual(['a', 'a/b'])
+  })
+
+  it('does not merge a null dimension with a literal -', () => {
+    const records = recs(
+      { runtime: null, metrics: { boot_ms: 10 } },
+      { runtime: '-', metrics: { boot_ms: 99 } }
+    )
+    const view = buildBenchView(records)
+    expect(view.series).toHaveLength(2)
+    expect(view.series.map((s) => s.key.runtime)).toEqual(expect.arrayContaining([null, '-']))
+    expect(view.series.every((s) => s.deltas.length === 0)).toBe(true)
+  })
+
+  it('gives distinct keys distinct group keys', () => {
+    const base = { project: 'p', filesystem: null, workload: 'w' }
+    expect(seriesGroupKey({ ...base, runtime: null })).not.toBe(seriesGroupKey({ ...base, runtime: '-' }))
+    expect(seriesGroupKey({ project: 'a/b', runtime: 'c', filesystem: null, workload: 'w' })).not.toBe(
+      seriesGroupKey({ project: 'a', runtime: 'b/c', filesystem: null, workload: 'w' })
+    )
   })
 })

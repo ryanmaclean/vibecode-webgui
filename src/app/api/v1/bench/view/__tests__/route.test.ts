@@ -1,9 +1,38 @@
 /**
  * @jest-environment node
  */
-import { NextRequest } from 'next/server'
+import { ReadableStream as NodeReadableStream } from 'node:stream/web'
+import type { NextRequest } from 'next/server'
 import { GET, POST } from '../route'
-import { BENCH_VIEW_MAX_BYTES } from '@/lib/bench/endpoint'
+import {
+  BENCH_VIEW_MAX_BYTES,
+  BENCH_VIEW_MAX_ISSUES,
+  BENCH_VIEW_MAX_RECORDS,
+} from '@/lib/bench/endpoint'
+
+// tests/jest.setup.js replaces next/server with a mock whose NextRequest has
+// no body stream, and tests/jest.polyfills.js stubs ReadableStream. The route
+// only reads `headers` and the `body` byte stream, so build that surface
+// directly with Node's spec ReadableStream.
+const CHUNK = 64 * 1024
+
+function streamOf(bytes: Uint8Array): ReadableStream<Uint8Array> {
+  let offset = 0
+  return new NodeReadableStream<Uint8Array>({
+    pull(controller) {
+      if (offset >= bytes.byteLength) {
+        controller.close()
+        return
+      }
+      controller.enqueue(bytes.subarray(offset, offset + CHUNK))
+      offset += CHUNK
+    },
+  }) as unknown as ReadableStream<Uint8Array>
+}
+
+function requestWith(body: ReadableStream<Uint8Array> | null, headers: Record<string, string>): NextRequest {
+  return { headers: new Headers(headers), body } as unknown as NextRequest
+}
 
 // Synthetic test record: values are fixtures, not measurements.
 const rec = (overrides: Record<string, unknown> = {}) => ({
@@ -15,11 +44,10 @@ const rec = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 
-function post(body: string, headers: Record<string, string> = {}) {
-  return new NextRequest('http://localhost/api/v1/bench/view', {
-    method: 'POST',
-    body,
-    headers: { 'content-type': 'application/json', ...headers },
+function post(body: string, headers: Record<string, string> = {}): NextRequest {
+  return requestWith(streamOf(new TextEncoder().encode(body)), {
+    'content-type': 'application/json',
+    ...headers,
   })
 }
 
@@ -72,5 +100,50 @@ describe('POST /api/v1/bench/view', () => {
     expect(res.status).toBe(413)
     const big = await POST(post(' '.repeat(BENCH_VIEW_MAX_BYTES + 1)))
     expect(big.status).toBe(413)
+  })
+
+  it('stops reading a streamed body without Content-Length once it passes the limit', async () => {
+    const chunk = new Uint8Array(CHUNK).fill(0x20)
+    let pulled = 0
+    let cancelled = false
+    // An endless body: the route must stop shortly after the limit, not drain it.
+    const stream = new NodeReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled++
+        controller.enqueue(chunk)
+      },
+      cancel() {
+        cancelled = true
+      },
+    }) as unknown as ReadableStream<Uint8Array>
+    const res = await POST(requestWith(stream, { 'content-type': 'application/json' }))
+    expect(res.status).toBe(413)
+    expect((await res.json()).error.code).toBe('payload_too_large')
+    expect(cancelled).toBe(true)
+    expect(pulled * CHUNK).toBeLessThan(BENCH_VIEW_MAX_BYTES + 4 * CHUNK)
+  })
+
+  it('rejects too many candidates before validating them', async () => {
+    const body = JSON.stringify(Array.from({ length: BENCH_VIEW_MAX_RECORDS + 1 }, () => ({})))
+    const res = await POST(post(body))
+    expect(res.status).toBe(413)
+    const json = await res.json()
+    expect(json.error.code).toBe('too_many_records')
+    expect(json.error.issues).toBeUndefined()
+  })
+
+  it('caps the issues returned for invalid candidates', async () => {
+    const body = JSON.stringify(Array.from({ length: BENCH_VIEW_MAX_RECORDS }, () => ({})))
+    const res = await POST(post(body))
+    expect(res.status).toBe(422)
+    const json = await res.json()
+    expect(json.error.issues).toHaveLength(BENCH_VIEW_MAX_ISSUES)
+    expect(json.error.issue_count).toBeGreaterThan(BENCH_VIEW_MAX_ISSUES)
+
+    const mixed = await POST(post(JSON.stringify([rec(), ...Array.from({ length: 200 }, () => ({}))])))
+    expect(mixed.status).toBe(200)
+    const view = await mixed.json()
+    expect(view.rejected).toHaveLength(BENCH_VIEW_MAX_ISSUES)
+    expect(view.rejected_issue_count).toBeGreaterThan(BENCH_VIEW_MAX_ISSUES)
   })
 })

@@ -9,6 +9,8 @@ import { BENCH_VIEW_SCHEMA } from './view'
 export const BENCH_VIEW_ENDPOINT = '/api/v1/bench/view' as const
 export const BENCH_VIEW_MAX_BYTES = 1024 * 1024
 export const BENCH_VIEW_MAX_RECORDS = 5000
+/** Issues returned per response (in `rejected` or `error.issues`); totals are reported separately. */
+export const BENCH_VIEW_MAX_ISSUES = 500
 
 export interface BenchViewEndpointDescriptor {
   schema: 'vibecode.endpoint.v1'
@@ -20,7 +22,7 @@ export interface BenchViewEndpointDescriptor {
   output_schema: typeof BENCH_VIEW_SCHEMA
   accepted_content_types: string[]
   accepted_shapes: string[]
-  limits: { max_bytes: number; max_records: number }
+  limits: { max_bytes: number; max_records: number; max_issues: number }
   persistence: 'none'
 }
 
@@ -35,7 +37,11 @@ export function describeBenchViewEndpoint(): BenchViewEndpointDescriptor {
     output_schema: BENCH_VIEW_SCHEMA,
     accepted_content_types: ['application/json', 'application/x-ndjson', 'text/plain'],
     accepted_shapes: ['record', 'record[]', '{ records: record[] }', 'ndjson'],
-    limits: { max_bytes: BENCH_VIEW_MAX_BYTES, max_records: BENCH_VIEW_MAX_RECORDS },
+    limits: {
+      max_bytes: BENCH_VIEW_MAX_BYTES,
+      max_records: BENCH_VIEW_MAX_RECORDS,
+      max_issues: BENCH_VIEW_MAX_ISSUES,
+    },
     persistence: 'none',
   }
 }

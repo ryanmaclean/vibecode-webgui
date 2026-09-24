@@ -110,8 +110,18 @@ export function seriesKeyOf(record: BenchRecordV1): BenchSeriesKey {
   }
 }
 
+/**
+ * Human-readable series label. For display only: it is ambiguous when a
+ * dimension contains '/' or equals '-' (the null placeholder), so it must
+ * never be used to group or deduplicate series. Use {@link seriesGroupKey}.
+ */
 export function seriesId(key: BenchSeriesKey): string {
   return [key.project, key.runtime ?? '-', key.filesystem ?? '-', key.workload].join('/')
+}
+
+/** Collision-free identity for grouping: distinct keys always map to distinct strings. */
+export function seriesGroupKey(key: BenchSeriesKey): string {
+  return JSON.stringify([key.project, key.runtime, key.filesystem, key.workload])
 }
 
 export type DeltaVerdict = 'better' | 'worse' | 'same' | 'changed' | 'not-comparable'
@@ -182,15 +192,17 @@ export function buildBenchView(records: readonly BenchRecordV1[]): BenchView {
   const groups = new Map<string, { key: BenchSeriesKey; records: BenchRecordV1[] }>()
   for (const record of records) {
     const key = seriesKeyOf(record)
-    const id = seriesId(key)
-    const group = groups.get(id)
+    const groupKey = seriesGroupKey(key)
+    const group = groups.get(groupKey)
     if (group) group.records.push(record)
-    else groups.set(id, { key, records: [record] })
+    else groups.set(groupKey, { key, records: [record] })
   }
 
   const series: BenchSeriesView[] = Array.from(groups.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([id, group]) => {
+    .map(([groupKey, group]) => ({ groupKey, id: seriesId(group.key), group }))
+    // Order by display id; the group key breaks ties between colliding labels.
+    .sort((a, b) => a.id.localeCompare(b.id) || a.groupKey.localeCompare(b.groupKey))
+    .map(({ id, group }) => {
       const sorted = [...group.records].sort((a, b) => timeOf(a) - timeOf(b))
       // Groups are created with one record, so `latest` always exists.
       const latest = sorted[sorted.length - 1] as BenchRecordV1
