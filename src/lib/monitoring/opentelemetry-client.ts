@@ -32,7 +32,7 @@ if (!isDockerBuild) {
     const autoInstrumentationsWeb = require('@opentelemetry/auto-instrumentations-web');
     const instrumentation = require('@opentelemetry/instrumentation');
     const sdkTraceBase = require('@opentelemetry/sdk-trace-base');
-    const otlpExporter = require('@opentelemetry/exporter-otlp-http');
+    const otlpExporter = require('@opentelemetry/exporter-trace-otlp-http');
     
     WebTracerProvider = sdkTraceWeb.WebTracerProvider;
     Resource = resources.Resource;
