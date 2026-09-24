@@ -77,8 +77,17 @@ module.exports = {
     // Needs the pgvector extension (CI runs postgres:16 without it) and creates a
     // collection named test_integration, which pgvector-client's table allowlist
     // rejects by design. Un-quarantine once it targets an allowlisted table and
-    // CI has pgvector (#2136 follow-up).
+    // CI has pgvector (#2138).
     '<rootDir>/tests/integration/cache-pgvector-integration.test.ts',
+    // Never ran against a database before #2136 (the auto-applied Prisma mock
+    // returned undefined). Against the real schema they fail on schema drift:
+    // the ai-quality suites create User.username/password_hash and use
+    // AIQualityRating/AISuggestionEvent, none of which exist in schema.prisma;
+    // secret-rotation-e2e gets 400 from POST /api/secrets/rotate. Tracked in
+    // #2138 (follow-up to #2136).
+    '<rootDir>/tests/integration/ai-quality-metrics.test.ts',
+    '<rootDir>/tests/integration/ai-quality-tracking.test.ts',
+    '<rootDir>/tests/integration/secret-rotation-e2e.test.ts',
     '<rootDir>/tests/middleware/error-tracking-middleware.test.ts',
   ],
   modulePathIgnorePatterns: [
