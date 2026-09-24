@@ -20,8 +20,14 @@ COPY package.json package-lock.json ./
 COPY src/ ./src/
 COPY public/ ./public/
 COPY tsconfig.json ./
+# tsconfig.json extends this base config; next build fails with TS5083 without it
+COPY config/typescript/tsconfig.base.json ./config/typescript/tsconfig.base.json
 COPY prisma/ ./prisma/
-COPY config/next.config.mjs ./next.config.mjs
+# next-intl message catalogs imported by src/i18n/request.ts
+COPY messages/ ./messages/
+# Root next.config.mjs is the config the app is built with (next-intl plugin,
+# tiktoken externals); config/next.config.mjs is a stale copy without them.
+COPY next.config.mjs ./next.config.mjs
 
 # Generate Prisma client
 RUN npx prisma generate
