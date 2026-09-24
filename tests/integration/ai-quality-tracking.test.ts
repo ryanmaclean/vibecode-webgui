@@ -1,4 +1,6 @@
 /**
+ * @jest-environment node
+ *
  * End-to-End Integration Tests for AI Quality Metrics Tracking
  *
  * Tests the complete quality tracking lifecycle:
@@ -18,13 +20,16 @@ import { QualityReportGenerator, createQualityReportGenerator } from '@/lib/ai/q
 import { calculateCodeEditDistance } from '@/lib/ai/edit-distance';
 import type { IMetricsProvider } from '@/lib/monitoring/metrics-provider';
 
-// Mock Prisma Client
-jest.mock('@prisma/client');
-
-const prisma = new PrismaClient();
+// Real Prisma client against the CI Postgres (#2136). The manual mock in
+// tests/__mocks__/@prisma/client.ts cannot persist rows, so these
+// create-then-read flows could never pass against it.
+jest.unmock('@prisma/client');
 
 // Skip tests if PostgreSQL is not available (set by jest.globalSetup.js)
 const SKIP_E2E = process.env.SKIP_POSTGRES_TESTS === '1';
+
+// Construct only when the suite runs: an ungenerated client throws in its constructor.
+const prisma = (SKIP_E2E ? undefined : new PrismaClient()) as PrismaClient;
 const describeIf = SKIP_E2E ? describe.skip : describe;
 
 // =============================================================================
