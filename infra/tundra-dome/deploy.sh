@@ -518,6 +518,10 @@ case "${1:-}" in
         ;;
     --stack-only)
         check_prerequisites
+        # Idempotent (dry-run | apply): a fresh cluster (e.g. the KinD smoke in
+        # CI) has neither namespace, and deploy_datadog needs both plus secrets.
+        create_namespaces
+        create_secrets
         install_crds
         deploy_datadog
         deploy_stack
