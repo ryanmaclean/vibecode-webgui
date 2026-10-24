@@ -532,3 +532,10 @@ PROMISE_VERIFICATION_REPORT.md
 logs/security/
 # Generated test data files
 test-data/
+
+# misplaced-1024 cleanup
+/gitea/
+.pre-commit-cache/
+*.bak
+*.tfstate
+*.tfstate.*
