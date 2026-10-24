@@ -1,67 +1,36 @@
 title = "Vibecode Secrets Policy"
 
+# Gate: `gitleaks dir --config .gitleaks.toml --redact .` must report 0 findings
+# (gitleaks 8.30.1, see .github/workflows/gitleaks.yml). Known test fixtures are
+# allowlisted by fingerprint in .gitleaksignore, never by directory or stopword.
+
 [extend]
-# Extend with default gitleaks rules
 useDefault = true
 
 [allowlist]
-# Allow common test fixture directories and node_modules
+description = "Vendored deps and password-masking code (not secrets)"
 paths = [
-  "docs/",
-  "archive/",
-  "code-server/",
-  "services/ai-gateway/node_modules/",
-  "extensions/vibecode-ai-assistant/node_modules/",
-  "docs/node_modules/",
-  # Files containing password masking/sanitization code (not actual secrets)
-  "src/lib/vector-db/DatabaseTracing.ts",
-  "src/lib/monitoring/distributed-tracing.ts",
+  '''(^|/)node_modules/''',
+  '''^src/lib/vector-db/DatabaseTracing\.ts$''',
+  '''^src/lib/monitoring/distributed-tracing\.ts$''',
 ]
-
-# Regex patterns to allow (e.g., password masking code, test fixtures)
 regexes = [
-  # Password masking/sanitization patterns (replacing passwords with ***)
+  # Password masking (replacing values with ***)
   '''password\s*=\s*['"]\*{1,}['"]''',
-  # Example/placeholder API keys in documentation
+  # Obvious placeholders
   '''sk-[xX]{20,}''',
   '''AKIA[X]{16}''',
-  # Test fixture patterns
-  '''test[-_]?secret[-_]?key''',
-  '''dummy[-_]?api[-_]?key''',
-  '''example[-_]?token''',
 ]
 
-# Allow specific commits if needed (empty for now)
-commits = []
-
-# Allow specific stopwords in paths (files with these patterns are ignored)
-stopwords = [
-  "test",
-  "mock",
-  "fixture",
-  "example",
-  "sample",
-  "sanitiz",
-  "mask",
-]
-
-# Custom rules
 [[rules]]
 id = "datadog-api-key-pattern"
-# Datadog API keys often start with dapi_ and are long
+description = "Datadog dapi_ token"
 regex = '''dapi_[A-Za-z0-9]{20,}'''
-secretGroup = 0
-entropy = 0.0
 keywords = ["dapi_"]
 
 [[rules]]
-id = "generic-32-char-token"
-regex = '''(?i)(?<![A-Za-z0-9])[A-Za-z0-9]{32}(?![A-Za-z0-9])'''
-secretGroup = 0
-entropy = 0.0
-
-[[rules]]
 id = "env-var-datadog-keys"
-regex = '''(?i)(DD_API_KEY|DATADOG_API_KEY|DD_APP_KEY|DATADOG_APP_KEY)\s*[:=]\s*['\"]?[A-Za-z0-9_\-]{16,}['\"]?'''
-secretGroup = 0
-entropy = 0.0
+description = "Datadog API (32 hex) or application (40 hex) key assigned to a DD_* variable"
+regex = '''(?i)\b(?:DD_API_KEY|DATADOG_API_KEY|DD_APP_KEY|DD_APPLICATION_KEY|DATADOG_APP_KEY|DATADOG_APPLICATION_KEY)['"]?\s*[:=]\s*['"]?([a-f0-9]{40}|[a-f0-9]{32})\b'''
+secretGroup = 1
+keywords = ["dd_api_key", "datadog_api_key", "dd_app_key", "dd_application_key", "datadog_app_key", "datadog_application_key"]

@@ -21,7 +21,7 @@ description: "Summary of automatic random password generation implementation"
 
 **Example Generated Password:**
 ```
-Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=
+<redacted>
 ```
 
 ### ✅ Auto-Configuration of Both Services
@@ -128,7 +128,7 @@ $ docker exec openvscode-server cat /home/.openvscode-server/data/User/settings.
   "workspaceRag.pgPort": 5432,
   "workspaceRag.pgDatabase": "workspace_rag",
   "workspaceRag.pgUser": "postgres",
-  "workspaceRag.pgPassword": "Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=",
+  "workspaceRag.pgPassword": "<redacted>",
   "workspaceRag.useLocalMLX": false
 }
 ```
@@ -139,10 +139,10 @@ Note: `workspaceRag.useMLX` is still accepted for backward compatibility.
 
 ```bash
 $ docker exec openvscode-server cat /run/secrets/db_password
-Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=
+<redacted>
 
 $ docker exec postgres-pgvector cat /run/secrets/db_password
-Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=
+<redacted>
 
 # ✅ Passwords match!
 ```

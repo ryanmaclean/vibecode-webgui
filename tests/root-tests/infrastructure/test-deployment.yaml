@@ -10,9 +10,9 @@ metadata:
   name: mongodb-secret
   namespace: vibecode-test
 type: Opaque
-data:
-  mongodb-root-password: dGVzdC1yb290LXBhc3N3b3Jk  # test-root-password
-  mongodb-password: dGVzdC1jaGF0dWktcGFzc3dvcmQ=  # test-chatui-password
+stringData:
+  mongodb-root-password: "<set-me>"
+  mongodb-password: "<set-me>"
 
 ---
 apiVersion: apps/v1
@@ -142,7 +142,7 @@ spec:
         - name: PUBLIC_ORIGIN
           value: "http://localhost:3000"
         - name: MONGODB_URL
-          value: "mongodb://chatui:test-chatui-password@mongodb:27017/chatui"
+          value: "mongodb://chatui:<set-me>@mongodb:27017/chatui"
         - name: ENABLE_ASSISTANTS
           value: "true"
         - name: ENABLE_ASSISTANTS_RAG

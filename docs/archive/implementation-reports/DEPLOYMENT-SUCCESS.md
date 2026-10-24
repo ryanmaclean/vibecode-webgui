@@ -61,7 +61,7 @@ kubectl port-forward svc/argocd-server -n argocd 8080:80
 
 # URL: http://localhost:8080
 # Username: admin  
-# Password: -TZmaGOD6TLMGbh7
+# Password: <redacted>
 ```
 
 ### Test Application
@@ -177,11 +177,11 @@ examples/testing/
 ### Sourced from .env.local
 ```env
 ✅ NEXTAUTH_SECRET=vibecode-development-secret-key-change-in-production
-✅ OPENROUTER_API_KEY=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
+✅ OPENROUTER_API_KEY=<redacted>
 ✅ DATABASE_URL=postgresql://vibecode:vibecode@localhost:5432/vibecode
 ✅ REDIS_URL=redis://localhost:6379
-✅ DD_API_KEY=7ff60a7cdd44e0a596562bad2fd89342
-✅ DD_APP_KEY=c3b4bb992dcaed57d6378d097dad41f781b25fc5
+✅ DD_API_KEY=<redacted>
+✅ DD_APP_KEY=<redacted>
 ✅ DD_ENV=dev
 ✅ DD_SERVICE=vibecode-webgui
 ```

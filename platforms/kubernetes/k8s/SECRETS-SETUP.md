@@ -4,28 +4,39 @@ This guide explains how to properly configure the Kubernetes secrets for externa
 
 ## ⚠️ SECURITY WARNING
 
-The current secret files (`vibecode-secrets.yaml` and `oauth-secrets.yaml`) contain **PLACEHOLDER VALUES** that must be replaced before deploying to any external environment.
+Real secret manifests are never committed. The repository only ships placeholder
+templates; copy one, fill it locally and apply it. The copies are git-ignored
+(`**/*-secret.yaml`, `**/*-secrets.yaml`), and CI runs gitleaks on every PR
+(`.github/workflows/gitleaks.yml`).
+
+| Template (committed) | Local copy (ignored) |
+|---|---|
+| `datadog-secret.example.yaml` | `datadog-secret.yaml` |
+| `vector-secrets.example.yaml` | `vector-secrets.yaml` |
+| `postgres-secret.example.yaml` | `postgres-secret.yaml` |
+| `oauth-secrets.example.yaml` | `oauth-secrets.yaml` |
+
+```bash
+cd platforms/kubernetes/k8s
+cp oauth-secrets.example.yaml oauth-secrets.yaml
+$EDITOR oauth-secrets.yaml        # replace every "<set-me>"
+kubectl apply -f oauth-secrets.yaml
+```
+
+The templates use `stringData:`, so values are plain text (Kubernetes base64-encodes them).
+Manifests that embed a Secret (`datadog-agent-with-postgres.yaml`,
+`postgres-with-monitoring.yaml`, `postgresql-aks-statefulset.yaml`) carry `<set-me>`
+placeholders too; fill them in a local copy or create the Secret separately.
 
 ## Required Secret Replacements
 
-### 1. OAuth Secrets (`k8s/oauth-secrets.yaml`)
+### 1. OAuth Secrets (`oauth-secrets.yaml`, from `oauth-secrets.example.yaml`)
 
-Replace these base64-encoded placeholder values:
+Set `GITHUB_ID`, `GITHUB_SECRET`, `GOOGLE_ID`, `GOOGLE_SECRET`, `NEXTAUTH_SECRET` and `NEXTAUTH_URL`.
 
-```yaml
-# Current placeholders (all decode to "changeme"):
-GITHUB_ID: Y2hhbmdlbWU=          # changeme
-GITHUB_SECRET: Y2hhbmdlbWU=     # changeme
-GOOGLE_ID: Y2hhbmdlbWU=         # changeme
-GOOGLE_SECRET: Y2hhbmdlbWU=     # changeme
-NEXTAUTH_SECRET: Y2hhbmdlbWU=   # changeme
-```
-
-**How to replace:**
-1. Get actual OAuth credentials from GitHub and Google developer consoles
-2. Generate a secure NextAuth secret: `openssl rand -base64 32`
-3. Base64 encode each value: `echo "your-actual-secret" | base64`
-4. Replace the placeholder values in the YAML file
+1. Get OAuth credentials from the GitHub and Google developer consoles
+2. Generate a NextAuth secret: `openssl rand -base64 32`
+3. Put the plain values in your local copy (no base64 needed with `stringData:`)
 
 ### 2. VibeCode Application Secrets (`k8s/vibecode-secrets.yaml`)
 
