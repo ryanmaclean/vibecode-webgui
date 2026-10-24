@@ -984,7 +984,7 @@ To control costs, we use a two-tier CI/CD strategy:
 ### Creating Release Branches
 ```bash
 # Create release branch for full testing
-./create-release-branch.sh v1.2.0
+./scripts/create-release-branch.sh v1.2.0
 ```
 
 ## 🧪 Testing Infrastructure

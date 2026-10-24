@@ -65,7 +65,7 @@
 - **Fix:** Added `ALLOWED_TABLE_NAMES` set derived from `COLLECTION_SCHEMAS` and `validateTableName()` function with regex + allowlist validation. Applied to all 10 methods that interpolate table names in SQL queries.
 
 ### H4. ~~`shell=True` in Python Subprocess~~ FIXED
-- **File:** `scripts/security_updates.py:120-126`
+- **File:** `security_updates.py:120-126` (root script; removed as obsolete on 2026-10-24 in the #2125 cleanup)
 - **Fix:** Removed `shell=True`, replaced string commands with `shlex.split()` argument lists. Removed shell-specific syntax (pipes, redirections) from all `run_cmd()` callers — `capture_output=True` already handles stderr capture.
 
 ### H5. ~~Server-Side Request Forgery in Webhook Execution~~ FIXED
