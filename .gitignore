@@ -532,3 +532,24 @@ PROMISE_VERIFICATION_REPORT.md
 logs/security/
 # Generated test data files
 test-data/
+
+# Gas Town / Tundra-Dome runtime state and trees (moved to ryanmaclean/gt, WS3 2026-10-24)
+/.feed.jsonl
+/mayor/
+/deacon/
+/rig
+/polecat_branches.txt
+/gt_nudge_both.sh
+/mbp_m1/
+/.gastown/
+/daemon/
+/td/
+/tundra-dome/
+/settings/
+/data/beads.json
+/.beads/formulas/
+/.beads/export-state/
+/.beads/bead-*.json
+/.beads/interactions.jsonl
+/.beads/*.tmp.*
+/.beads/.gt-types-configured
