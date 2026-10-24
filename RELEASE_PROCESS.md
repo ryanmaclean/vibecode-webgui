@@ -217,6 +217,7 @@ gh release upload v4.2.0 alpine-3.22-arm64-kernel
 
 ```bash
 # Using the provided script
+# moved 2026-10-24 to ryanmaclean/genoa, run from its imports/vibecode-webgui/ directory:
 scripts/benchmarks/build-minimal-initramfs.sh
 ```
 

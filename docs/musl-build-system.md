@@ -1,5 +1,7 @@
 # Musl libc Build System
 
+> **Moved (2026-10-24):** the image builders referenced on this page (`infrastructure/packer/`, `scripts/release-testing/`, and the `scripts/benchmarks` kernel, initramfs and rootfs builders with `kernel-configs/`) now live in [ryanmaclean/genoa `imports/vibecode-webgui/`](https://github.com/ryanmaclean/genoa/tree/main/imports/vibecode-webgui). The relative paths are unchanged, so run the commands below from that directory. Benchmarks and launchers moved to ryanmaclean/smolfire.
+
 Complete build system for creating optimized musl-based binaries and containers with automated benchmarking and Datadog metrics integration.
 
 ## Overview
