@@ -30,7 +30,7 @@ public/       - Static assets
 scripts/      - Build and utility scripts
 src/          - Main application source (Next.js/React)
 tests/        - Test files
-tools/        - CLI tools and SDK
+tools/        - CLI tools (the Python agent SDK moved to ryanmaclean/moth contrib/vibecode/sdk-python)
 types/        - TypeScript type definitions
 ```
 

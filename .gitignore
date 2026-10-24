@@ -532,3 +532,9 @@ PROMISE_VERIFICATION_REPORT.md
 logs/security/
 # Generated test data files
 test-data/
+
+# Python build/test state (WS7 split 2026-10-24). The agent SDK moved to ryanmaclean/moth.
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
