@@ -12,6 +12,8 @@ set -euo pipefail
 init_log_aggregation
 
 
+# datadog-operations lives in ryanmaclean/skills (datadog-operations/) since 2026-10-24; install or
+# symlink it at SKILL_ROOT.
 SKILL_ROOT="${SKILL_ROOT:-$HOME/.agents/skills/datadog-operations}"
 SCRIPTS_DIR="${SKILL_ROOT}/scripts"
 LIB_DIR="${SCRIPTS_DIR}/lib"

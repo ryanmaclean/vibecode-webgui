@@ -532,3 +532,12 @@ PROMISE_VERIFICATION_REPORT.md
 logs/security/
 # Generated test data files
 test-data/
+
+# WS4 split (2026-10-24): agent skills moved to ryanmaclean/skills; keep scratch editor/agent
+# configs and packaged skill archives out of the tree.
+/.opencode.json
+/.windsurf-mcp-config*.json
+.codex/package-lock.json
+.codex/node_modules/
+/*.skill
+.claude/skills/**/__pycache__/
