@@ -1,5 +1,7 @@
 # Tundra NAT64
 
+> **Moved 2026-10-24 (WS3):** `.gastown/`, root `tundra-dome/`, `airflow/dags/`, `settings/`, `plugins/datadog/`, the Gas Town `scripts/monitoring` emitters and the gastown/openclaw Datadog dashboards now live in ryanmaclean/gt (private; gt#4 and gt#5). Paths to them below refer to that repo.
+
 This repo vendors `tundra-nat64` as a module for polecat IP scaling and per-role address pools.
 
 ## Module
