@@ -1,5 +1,7 @@
 # Gas Town Operations Skill
 
+> **Moved 2026-10-24 (WS3):** `daemon/` (kafka-dsm, gitea-kafka-bridge, disk-guard), `td/`, `.github/workflows/tundra-ci.yml` and `scripts/check-kafka-topics.sh` now live in ryanmaclean/gt (private; gt#4 and gt#5). Paths to them below refer to that repo.
+
 Manage Gas Town agent orchestration, bead lifecycle, Kafka messaging, Airflow DAGs, and multi-rig coordination.
 
 ## Vocabulary
