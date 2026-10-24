@@ -188,7 +188,7 @@ import { getSession } from '@/lib/auth'
 
 **Circular Dependency Issues:**
 ```
-src/app/api/agents → server/graceful-shutdown → src/app/api/health → server/
+src/app/api/agents → tools/server/graceful-shutdown → src/app/api/health → tools/server/
 ```
 
 ---
@@ -549,7 +549,7 @@ import { getSession } from '@/lib/auth'
 
 **Dependency Chain:**
 ```
-src/app/api/agents → server/graceful-shutdown → src/app/api/health → server/
+src/app/api/agents → tools/server/graceful-shutdown → src/app/api/health → tools/server/
 ```
 
 **Impact:** High
@@ -878,7 +878,7 @@ import { aiGateway } from '../ai-gateway'
 **Example Violations:**
 ```javascript
 // daemon/disk-guard/monitor.js
-const { gracefulShutdown } = require('../../server/graceful-shutdown')
+const { gracefulShutdown } = require('../../tools/server/graceful-shutdown')
 
 // daemon/kafka-dsm/src/consumer.ts
 import { types } from '@/types'
