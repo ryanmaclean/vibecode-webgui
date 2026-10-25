@@ -14,7 +14,7 @@ archive root. Each PR in the WS10 series adds its manifest here. All files are T
 | `pass2-removed.tsv` | WS10 4 (pass 2) | Exact duplicates found after WS1/WS5/WS9 landed (same columns as dedupe-removed.tsv; hash base d93725032 (main)). |
 | `pass2-moves.tsv` | WS10 4 (pass 2) | `archive/infra-1024/` (WS9), the last docs/sessions and docs/reports files, two root-cleanup leftovers, SPEC_SHEET.md and SECURITY-AUDIT.md moved into docs/archive. |
 | `fix1-restored.tsv` | WS10 fix 1 | docs/feature-audit and docs/feature-audits moved back out of the archive: tests/feature-audit reads them. |
-| `pass3-moves.tsv` | WS10 5 | RELEASE_PROCESS.md to docs/releases/ after WS6 #2155 landed. |
+| `pass3-moves.tsv` | WS10 5, 6 | RELEASE_PROCESS.md to docs/releases/ after WS6 #2155 landed; docker_setup.py + test (relocated to archive/root-cleanup by WS8 #2154) into docs/archive/root-cleanup/. |
 
 ## How the kept copy is chosen
 

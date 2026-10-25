@@ -889,10 +889,12 @@ docs/archive/root-cleanup/TRIAGE_COMPLETE.md	archive/root-cleanup/TRIAGE_COMPLET
 docs/archive/root-cleanup/budget.json	archive/root-cleanup/budget.json	2026-02-05	moved-ws10
 docs/archive/root-cleanup/cliff.toml	archive/root-cleanup/cliff.toml	2026-02-05	moved-ws10
 docs/archive/root-cleanup/docker-compose.yml	archive/root-cleanup/docker-compose.yml	2026-02-05	moved-ws10
+docs/archive/root-cleanup/docker_setup.py	archive/root-cleanup/docker_setup.py	2026-10-25	moved-ws10
 docs/archive/root-cleanup/netlify.toml	archive/root-cleanup/netlify.toml	2026-02-05	moved-ws10
 docs/archive/root-cleanup/railway.json	archive/root-cleanup/railway.json	2026-02-05	moved-ws10
 docs/archive/root-cleanup/state.json	archive/root-cleanup/state.json	2026-02-05	moved-ws10
 docs/archive/root-cleanup/static-analysis.datadog.yml	archive/root-cleanup/static-analysis.datadog.yml	2026-02-05	moved-ws10
+docs/archive/root-cleanup/test_docker_setup.py	archive/root-cleanup/test_docker_setup.py	2026-10-25	moved-ws10
 docs/archive/root-cleanup/tsconfig.json	archive/root-cleanup/tsconfig.json	2026-02-05	moved-ws10
 docs/archive/root-cleanup/tsconfig.lite.json	archive/root-cleanup/tsconfig.lite.json	2026-02-05	moved-ws10
 docs/archive/root-cleanup/tsconfig.precommit.json	archive/root-cleanup/tsconfig.precommit.json	2026-02-05	moved-ws10
