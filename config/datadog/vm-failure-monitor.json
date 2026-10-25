@@ -1,0 +1,15 @@
+{
+  "name": "VibeCode VM Start Failure",
+  "type": "metric alert",
+  "query": "sum(last_5m):sum:vibecode.vm.start.failure{*}.as_count() > 3",
+  "message": "VibeCode VM start failures detected. {{#is_alert}}More than 3 VMs failed to start in the last 5 minutes.{{/is_alert}}",
+  "tags": ["service:vibecode", "alert:vm-failure"],
+  "options": {
+    "thresholds": {
+      "critical": 3,
+      "warning": 1
+    },
+    "notify_no_data": false,
+    "notify_audit": false
+  }
+}
