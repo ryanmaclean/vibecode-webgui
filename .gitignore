@@ -533,6 +533,13 @@ logs/security/
 # Generated test data files
 test-data/
 
+# misplaced-1024 cleanup
+/gitea/
+.pre-commit-cache/
+*.bak
+*.tfstate
+*.tfstate.*
+
 # --- WS2 (2026-10-24): generated, vendored and binary artifacts untracked from the tip ---
 # Go modules are fetched from go.sum; `go mod vendor` output is not committed.
 /vendor/
