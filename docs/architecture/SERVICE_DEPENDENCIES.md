@@ -772,7 +772,7 @@ cd td && ./bin/td kafka status
 
 - [Architecture Documentation](../ARCHITECTURE.md)
 - [API Documentation](../api/)
-- [Deployment Guide](../../RELEASE_PROCESS.md)
+- [Deployment Guide](../releases/RELEASE_PROCESS.md)
 - [Environment Variables](../../.env.example)
 - [Docker Compose](../../config/docker/docker-compose.dev.yml)
 - [Prisma Schema](../../prisma/schema.prisma)

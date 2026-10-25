@@ -154,7 +154,7 @@ The web interface intentionally **does not duplicate** Git functionality because
 - `docs/feature-audits/feature-audit-branch-management.md` - This audit
 - `docs/feature-audits/feature-audit-1437-git-integration.md` - Git integration audit
 - `docs/features/git-integration.md` - User guide
-- `docs/sessions/archive-worklogs/RELEASE_NOTES.md` - v1.5.0 release notes (line 221)
+- `docs/archive/sessions/archive-worklogs/RELEASE_NOTES.md` - v1.5.0 release notes (line 221)
 
 ## Conclusion
 

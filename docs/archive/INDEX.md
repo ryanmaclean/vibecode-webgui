@@ -60,7 +60,7 @@ elsewhere under `docs/`.
 | `.env.ide.example`, `SPEC_SHEET.md`, `SECURITY-AUDIT.md` | `docs/archive/root-docs/` |
 | `archive/infra-1024/` (WS9, #2163) | `docs/archive/infra-1024/` (its own INDEX.md lists each leaf) |
 
-`docs/feature-audit/` and `docs/feature-audits/` stay live because `tests/feature-audit/` reads them (#2168). Still at the old
-path because an open PR edits it: `archive/root-cleanup/secret.yaml` (#2139, empty file) and `RELEASE_PROCESS.md` (#2155).
+`docs/feature-audit/` and `docs/feature-audits/` stay live because `tests/feature-audit/` reads them (#2168). `RELEASE_PROCESS.md` moved to
+`docs/releases/`. Still at the old path because an open PR deletes it: `archive/root-cleanup/secret.yaml` (#2139, empty file).
 `feature_audit/`, `docs/test_output.txt` and `docs/branches-to-delete.txt` were generated output. They
 were deleted and are now in `.gitignore`.
