@@ -26,7 +26,7 @@
 
 The VibeCode platform implements a sophisticated multi-agent orchestration system that enables parallel task execution, autonomous agent coordination, and intelligent workflow management. The system consists of two primary orchestration layers:
 
-1. **`docs/archive/agent-briefs/` (archived `.agents/`) Framework** - Manual multi-agent coordination for complex project tasks
+1. **`.agents/` Framework** - Manual multi-agent coordination for complex project tasks (historical; archived in `docs/archive/agent-briefs/`)
 2. **`.auto-claude/` System** - Automated task orchestration with Claude Code integration
 
 ### Key Capabilities
@@ -58,7 +58,7 @@ graph TB
     end
 
     subgraph "Orchestration Layer"
-        COORD[docs/archive/agent-briefs Coordinator<br/>Multi-Agent Planning]
+        COORD[.agents/ Coordinator<br/>Multi-Agent Planning]
         AUTOCL[.auto-claude/<br/>Automated Orchestration]
         KAFKA[Kafka Event Bus<br/>Agent Communication]
     end
@@ -144,12 +144,14 @@ graph LR
 
 ## Multi-Agent Coordination System
 
+> **Historical (2026-10-25, WS10):** the `.agents/` coordination framework is retired and its task briefs are archived read-only in `docs/archive/agent-briefs/`. Do not create new coordination files there or in `.agents/`. Live coordination state belongs in GitHub issues/BOP (see AGENTS.md).
+
 ### .agents/ Directory Structure
 
-The `docs/archive/agent-briefs/` (archived `.agents/`) directory provides manual coordination for complex multi-agent projects:
+The `.agents/` directory provides manual coordination for complex multi-agent projects:
 
 ```
-docs/archive/agent-briefs/
+.agents/
 ├── README.md                    # Agent assignment overview
 ├── COORDINATION.md              # Dependency graph & execution order
 └── tasks/
@@ -174,7 +176,7 @@ sequenceDiagram
     COORD->>COORD: Analyze dependencies
     COORD->>COORD: Assign agents
 
-    Note over COORD: Create docs/archive/agent-briefs/COORDINATION.md
+    Note over COORD: Create .agents/COORDINATION.md
     COORD->>A1: Assign Task 1 (no deps)
     COORD->>A2: Assign Task 2 (no deps)
 

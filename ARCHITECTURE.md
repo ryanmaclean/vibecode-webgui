@@ -363,7 +363,7 @@ This section provides links to comprehensive architecture documentation covering
 
 - **[Agent Orchestration Architecture](docs/architecture/AGENT_ORCHESTRATION.md)**
   - Multi-agent framework and coordination patterns
-  - `docs/archive/agent-briefs/` (archived `.agents/`) and `.auto-claude/` orchestration systems
+  - `.agents/` (retired; briefs archived in `docs/archive/agent-briefs/`) and `.auto-claude/` orchestration systems
   - Task management, memory systems, and tool capabilities
   - Agent communication patterns and security architecture
   - Includes 12+ Mermaid diagrams covering agent workflows and coordination
