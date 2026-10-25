@@ -82,7 +82,7 @@
   ],
   "synthetics": {
     "enabled": true,
-    "configPath": "monitoring/datadog/synthetics/*.json",
+    "configPath": "infrastructure/monitoring/datadog/synthetics/*.json",
     "publicIds": ["vib-ecd-aig-perf"]
   }
 }
