@@ -34,3 +34,9 @@ description = "Datadog API (32 hex) or application (40 hex) key assigned to a DD
 regex = '''(?i)\b(?:DD_API_KEY|DATADOG_API_KEY|DD_APP_KEY|DD_APPLICATION_KEY|DATADOG_APP_KEY|DATADOG_APPLICATION_KEY)['"]?\s*[:=]\s*['"]?([a-f0-9]{40}|[a-f0-9]{32})\b'''
 secretGroup = 1
 keywords = ["dd_api_key", "datadog_api_key", "dd_app_key", "dd_application_key", "datadog_app_key", "datadog_application_key"]
+
+[[rules]]
+id = "openrouter-api-key"
+description = "OpenRouter API key (sk-or-v1- + 64 hex); gitleaks 8.30.1 has no default rule for it"
+regex = '''\bsk-or-v1-[a-f0-9]{64}\b'''
+keywords = ["sk-or-v1-"]

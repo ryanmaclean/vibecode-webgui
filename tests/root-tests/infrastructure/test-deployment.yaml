@@ -13,6 +13,8 @@ type: Opaque
 stringData:
   mongodb-root-password: "<set-me>"
   mongodb-password: "<set-me>"
+  # Full URL with the same password, percent-encoded: mongodb://chatui:<password>@mongodb:27017/chatui
+  mongodb-url: "<set-me>"
 
 ---
 apiVersion: apps/v1
@@ -142,7 +144,10 @@ spec:
         - name: PUBLIC_ORIGIN
           value: "http://localhost:3000"
         - name: MONGODB_URL
-          value: "mongodb://chatui:<set-me>@mongodb:27017/chatui"
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: mongodb-url
         - name: ENABLE_ASSISTANTS
           value: "true"
         - name: ENABLE_ASSISTANTS_RAG

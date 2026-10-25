@@ -176,9 +176,9 @@ examples/testing/
 
 ### Sourced from .env.local
 ```env
-✅ NEXTAUTH_SECRET=vibecode-development-secret-key-change-in-production
+✅ NEXTAUTH_SECRET=<redacted>
 ✅ OPENROUTER_API_KEY=<redacted>
-✅ DATABASE_URL=postgresql://vibecode:vibecode@localhost:5432/vibecode
+✅ DATABASE_URL=postgresql://vibecode:<redacted>@localhost:5432/vibecode
 ✅ REDIS_URL=redis://localhost:6379
 ✅ DD_API_KEY=<redacted>
 ✅ DD_APP_KEY=<redacted>

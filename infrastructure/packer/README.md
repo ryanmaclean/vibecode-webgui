@@ -116,7 +116,7 @@ packer build infrastructure/packer/vibecode-openindiana.pkr.hcl
 1. Select "Text Installer and command line"
 2. Choose keyboard layout
 3. Select "Use entire disk" for ZFS root pool
-4. Set root password: `vibecode`
+4. Set the root password to the value you exported as `PKR_VAR_ssh_password`
 5. Set hostname: `vibecode-oi`
 6. Enable SSH server
 7. Wait for installation to complete and reboot

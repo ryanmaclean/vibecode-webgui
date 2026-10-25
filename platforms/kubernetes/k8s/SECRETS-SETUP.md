@@ -28,6 +28,9 @@ Manifests that embed a Secret (`datadog-agent-with-postgres.yaml`,
 `postgres-with-monitoring.yaml`, `postgresql-aks-statefulset.yaml`) carry `<set-me>`
 placeholders too; fill them in a local copy or create the Secret separately.
 
+If you create the Secret separately, delete the embedded `kind: Secret` document from your local
+copy before `kubectl apply`: applying the full manifest overwrites the live Secret with `<set-me>`.
+
 ## Required Secret Replacements
 
 ### 1. OAuth Secrets (`oauth-secrets.yaml`, from `oauth-secrets.example.yaml`)
