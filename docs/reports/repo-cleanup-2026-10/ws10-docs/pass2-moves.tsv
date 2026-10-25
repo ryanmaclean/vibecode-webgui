@@ -47,8 +47,6 @@ archive/infra-1024/platforms/electron-vibecode/package.json	docs/archive/infra-1
 archive/infra-1024/platforms/electron-vibecode/preload.js	docs/archive/infra-1024/platforms/electron-vibecode/preload.js
 archive/root-cleanup/budget.json	docs/archive/root-cleanup/budget.json
 archive/root-cleanup/cliff.toml	docs/archive/root-cleanup/cliff.toml
-docs/feature-audits/1304-faster-startup-time.md	docs/archive/feature-audits/1304-faster-startup-time.md
-docs/feature-audits/1305-reduced-memory-footprint.md	docs/archive/feature-audits/1305-reduced-memory-footprint.md
 docs/reports/ANSWER_HAVE_EXPERIMENTS_RUN.md	docs/archive/reports/ANSWER_HAVE_EXPERIMENTS_RUN.md
 docs/reports/EXPERIMENTS_DATADOG_VERIFIED.md	docs/archive/reports/EXPERIMENTS_DATADOG_VERIFIED.md
 docs/sessions/archive-worklogs/MONDAY_MORNING_QUICKSTART.md	docs/archive/sessions/archive-worklogs/MONDAY_MORNING_QUICKSTART.md
