@@ -12,7 +12,8 @@ archive root. Each PR in the WS10 series adds its manifest here. All files are T
 | `fold-deleted.tsv` | WS10 2 (fold) | Generated output removed from the tip (now in `.gitignore`). |
 | `images-removed.tsv` | WS10 3 (entrypoints) | Large unreferenced image removed from the tip, with blob id. |
 | `pass2-removed.tsv` | WS10 4 (pass 2) | Exact duplicates found after WS1/WS5/WS9 landed (same columns as dedupe-removed.tsv; hash base d93725032 (main)). |
-| `pass2-moves.tsv` | WS10 4 (pass 2) | `archive/infra-1024/` (WS9), the last docs/sessions and docs/reports files, two root-cleanup leftovers and SPEC_SHEET.md moved into docs/archive. |
+| `pass2-moves.tsv` | WS10 4 (pass 2) | `archive/infra-1024/` (WS9), the last docs/sessions and docs/reports files, two root-cleanup leftovers, SPEC_SHEET.md and SECURITY-AUDIT.md moved into docs/archive. |
+| `fix1-restored.tsv` | WS10 fix 1 | docs/feature-audit and docs/feature-audits moved back out of the archive: tests/feature-audit reads them. |
 
 ## How the kept copy is chosen
 
