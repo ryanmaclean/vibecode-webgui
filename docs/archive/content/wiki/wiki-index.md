@@ -19,20 +19,20 @@ Welcome to the comprehensive VibeCode documentation. This wiki provides complete
 
 ### 🎨 Tailwind CSS v4 Implementation
 - **[Tailwind CSS v4 Migration Guide](./wiki)** - Complete implementation guide with three production-ready approaches
-- **[Tailwind CSS v4 Success Guide](./tailwind-v4-success)** - Production-ready implementation details
-- **[Tailwind CSS v4 Testing Report](./tailwind-v4-testing-report)** - Comprehensive test results across all environments
-- **[x86-64 Production Test Report](./x86-production-test-report)** - Production architecture verification
-- **[Comprehensive Environment Test Report](./comprehensive-environment-test-report)** - Complete validation across local dev, Docker, KIND, and Kubernetes
-- **[Migration Notes](./tailwind-v4-migration-notes)** - Complete migration journey and resolution
+- **[Tailwind CSS v4 Success Guide](../../../src/content/docs/tailwind-v4-success)** - Production-ready implementation details
+- **[Tailwind CSS v4 Testing Report](../../../src/content/docs/tailwind-v4-testing-report)** - Comprehensive test results across all environments
+- **[x86-64 Production Test Report](../../../src/content/docs/x86-production-test-report)** - Production architecture verification
+- **[Comprehensive Environment Test Report](../../../src/content/docs/comprehensive-environment-test-report)** - Complete validation across local dev, Docker, KIND, and Kubernetes
+- **[Migration Notes](../../../src/content/docs/tailwind-v4-migration-notes)** - Complete migration journey and resolution
 
 ### 🏗️ Development & Operations
-- **[Project Roadmap](./project-todo)** - Technical roadmap and development tasks
+- **[Project Roadmap](../../../src/content/docs/project-todo)** - Technical roadmap and development tasks
 - **[Repository Scan Report](REPOSITORY_SCAN_REPORT_JULY_2025.md)** - Current project status
 - **[Enhanced AI Features](ENHANCED_AI_FEATURES.md)** - New AI capabilities
 - **[Missing AI Libraries Analysis](MISSING_AI_LIBRARIES_ANALYSIS.md)** - AI ecosystem gaps
 - **[Authentication Guide](AUTHENTICATION_SUMMARY.md)** - Security implementation
 - **[Testing Guide](AUTHENTICATION_TESTING_GUIDE.md)** - Authentication testing
-- **[Consolidated Documentation](./consolidated-documentation)** - Complete documentation index
+- **[Consolidated Documentation](../../../src/content/docs/consolidated-documentation)** - Complete documentation index
 
 ### 🔧 Infrastructure & Deployment
 - **[Helm Deployment Guide](./helm-deployment-guide)** - Production-ready Helm charts with environment scaling
