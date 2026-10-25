@@ -396,6 +396,9 @@ All commits follow conventional commit format with clear security context:
 
 ## Detailed Changes by File
 
+> **Note (2026-10-24, WS9 cleanup):** `config/alternatives/requirements-dev.txt` was a byte-identical copy of
+> `docs/requirements/requirements-dev.txt` and has been removed. The rows below are the historical record of the fix.
+
 | File | urllib3 | Werkzeug | Alert # | Severity | Status | Test Result |
 |------|---------|----------|---------|----------|--------|-------------|
 | config/alternatives/requirements-dev.txt | 2.5.0 → >=2.6.3 | - | #337 | HIGH | ✅ Fixed | pip install verified |
