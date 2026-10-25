@@ -4,7 +4,7 @@ Issue: #1304
 
 ## Current signals in repo
 - Tauri Rust backend present: `platforms/tauri/src/*`.
-- Electron wrapper launches Rust backend binary in `platforms/electron-vibecode/main.js`.
+- Electron wrapper launches Rust backend binary in `archive/infra-1024/platforms/electron-vibecode/main.js`.
 - Performance test script tracks startup time: `platforms/docker/scripts/vibecode_optimized/performance_test.py`.
 
 ## Gaps / missing info
