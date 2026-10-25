@@ -29,7 +29,7 @@ Everything is automated and tested. You have **two options**:
 ### Step 1: Open Terminal (1 minute)
 
 ```bash
-cd /Users/studio/Documents/vibecode-webgui/infrastructure/packer
+cd genoa/imports/vibecode-webgui/infrastructure/packer   # in a ryanmaclean/genoa checkout
 ```
 
 ### Step 2: Run the Build (1 command, 20-30 minutes)
