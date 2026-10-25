@@ -104,8 +104,8 @@
 This repo is the VibeCode product: web IDE, Tauri desktop app, and their docs. Agent runtime, VM and
 image tooling moved to sibling repos in October 2026. The list of what moved where, with commit ids,
 is in [AGENTS.md, "Moved out"](AGENTS.md#moved-out-2026-10-split). Historical docs are under
-[`docs/archive/`](docs/archive/INDEX.md). Product surface status is tracked in #2126 (classification
-proposed in PR #2153).
+[`docs/archive/`](docs/archive/INDEX.md). Product surface status is in
+[`docs/architecture/CANONICAL_SURFACES.md`](docs/architecture/CANONICAL_SURFACES.md) (#2126).
 
 ---
 
