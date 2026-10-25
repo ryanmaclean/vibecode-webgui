@@ -36,9 +36,9 @@ This file only classifies surfaces. Deletions and moves happen in follow-up PRs 
 | VM configs | `config/vfkit`, `config/lima`, `config/colima`, cloud-init | owner | Runtime code itself is externalized (next row). |
 | VM/microVM runtime and experiments | `scripts/vfkit`, `tests/vm*`, `experiments/microvm`, `fast-openvscode-vm`, `tools/nodejs-vm`, `swift/`, macOS VZ trees | externalized | Target: `ryanmaclean/smolfire` (#2130). |
 | Image/rootfs builders | `infrastructure/packer`, `scripts/release-testing`, kernel/initramfs builders | externalized | Target: `ryanmaclean/genoa`. |
-| Agent harness tools | `src/lib/ai-cli-tools`, `tools/sdk/python`, `tools/ralph_loop` | externalized | Target: `ryanmaclean/moth`. |
+| Agent harness tools | `src/lib/ai-cli-tools`, `tools/sdk/sdk/python`, `tools/ralph_loop` | externalized | Target: `ryanmaclean/moth`. |
 | Gas Town / Tundra-Dome runtime | `.gastown`, `daemon/`, `td/`, `tundra-dome/`, `infra/tundra-dome`, `airflow/dags`, `settings/` | externalized | Target: `ryanmaclean/gt` (private). |
-| Agent skills | `.claude/skills/*` (generic ones), `.codex/personas` | externalized | Target: `ryanmaclean/skills`. |
+| Agent skills | generic `.claude/skills/*` (listed in the JSON block), `.codex/personas` | externalized | Target: `ryanmaclean/skills`. |
 | Electron app | `platforms/electron-vibecode` | historical | Replaced by Tauri (#488, #509). |
 | Dead product code | `src/components/workflow`, `src/types/shared`, `src/lib/database`, `src/lib/prisma/client.ts`, root `index.html` | experiment | No app, route or script imports these. They are removed in the WS8 follow-up PR. |
 | Test-only vector adapters | `src/lib/vector` | experiment | Only tests import it, one of them the quarantined `tests/integration/offline-vector-storage.test.ts`. It stays until that quarantine is resolved (#2135, #2138). The live vector code is `src/lib/vector-db` and `src/lib/vector-store.ts`. |
@@ -59,9 +59,9 @@ This file only classifies surfaces. Deletions and moves happen in follow-up PRs 
   "externalized": {
     "ryanmaclean/smolfire": ["scripts/vfkit", "tests/vm", "tests/vm-integration", "tests/acceptance", "experiments/microvm", "fast-openvscode-vm", "tools/nodejs-vm", "swift"],
     "ryanmaclean/genoa": ["infrastructure/packer", "scripts/release-testing"],
-    "ryanmaclean/moth": ["src/lib/ai-cli-tools", "tools/sdk/python", "tools/ralph_loop"],
+    "ryanmaclean/moth": ["src/lib/ai-cli-tools", "tools/sdk/sdk/python", "tools/ralph_loop"],
     "ryanmaclean/gt": [".gastown", "daemon", "td", "tundra-dome", "infra/tundra-dome", "airflow/dags", "settings"],
-    "ryanmaclean/skills": [".codex/personas"]
+    "ryanmaclean/skills": [".claude/skills/datadog-operations", ".claude/skills/differential-review", ".claude/skills/systematic-debugging", ".claude/skills/verification-before-completion", ".claude/skills/context-graph", ".claude/skills/gastown-ops", ".claude/skills/apple-silicon", ".claude/skills/openrouter-models", ".claude/skills/henshu", ".codex/personas"]
   },
   "historical": ["platforms/electron-vibecode", "archive", "release-archive", "docs/archive"],
   "experiment_test_only": ["src/lib/vector"],
