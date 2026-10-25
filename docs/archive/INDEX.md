@@ -3,7 +3,7 @@
 `docs/archive/` is the single archive root of this repo (WS10 of the 2026-10 split plan, #2125 phase 2,
 #2129). Everything here is **historical**: session logs, old reports, superseded guides and retired build
 trees. It is not part of the docs site build, it is not linted, and Jest ignores it. Current docs live
-elsewhere under `docs/`, and `docs/architecture/CANONICAL_SURFACES.md` says which product surfaces are current.
+elsewhere under `docs/`.
 
 - Machine-readable: [`INDEX.json`](INDEX.json) (schema `vibecode.docs-archive-index.v1`) and the
   per-file [`INDEX.tsv`](INDEX.tsv) (`path, original_path, last_changed, origin`).
