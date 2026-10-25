@@ -499,6 +499,8 @@ npm install @vibecode/agent-sdk
 pip install vibecode-agents
 ```
 
+The `vibecode-agents` Python SDK source lives in [ryanmaclean/moth `contrib/vibecode/sdk-python/`](https://github.com/ryanmaclean/moth/tree/main/contrib/vibecode/sdk-python).
+
 **Go:**
 ```bash
 go get github.com/vibecode/agent-sdk-go
