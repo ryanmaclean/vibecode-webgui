@@ -337,51 +337,16 @@ await executeWorkflowTemplate('bug-fix', {
 });
 ```
 
-## Visual Workflow Builder
+## Visual Workflow Builder and Execution Viewer
 
-```typescript
-import { WorkflowEditor } from '@/components/workflow/WorkflowEditor';
+The React components that used to live in `src/components/workflow/` (`WorkflowEditor`,
+`WorkflowExecutionViewer`, `WorkflowBuilder`, `NodePalette`, `ApprovalGate`, `AuditTrailViewer`) were removed
+on 2026-10-24 in the #2125 cleanup (WS8): no page or route imported them. The engine in this directory is
+unchanged. To bring the components back, restore them from `129302a73`:
 
-function MyWorkflowPage() {
-  return (
-    <WorkflowEditor
-      workflow={initialWorkflow}
-      onChange={handleChange}
-      onSave={handleSave}
-      onExecute={handleExecute}
-    />
-  );
-}
+```bash
+git checkout 129302a73 -- src/components/workflow
 ```
-
-Features:
-- Drag-and-drop node palette
-- Visual connection editor
-- Real-time validation
-- Node configuration panel
-- Export to YAML
-
-## Execution Monitoring
-
-```typescript
-import { WorkflowExecutionViewer } from '@/components/workflow/WorkflowExecutionViewer';
-
-function MyExecutionPage() {
-  return (
-    <WorkflowExecutionViewer
-      execution={execution}
-      showLogs={true}
-    />
-  );
-}
-```
-
-Features:
-- Real-time status updates
-- Node execution timeline
-- Detailed logs per node
-- Error tracking
-- Progress visualization
 
 ## Integration
 

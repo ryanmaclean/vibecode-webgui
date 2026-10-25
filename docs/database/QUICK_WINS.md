@@ -454,7 +454,7 @@ npm run test:integration -- workspace-access
 npx prisma migrate dev --name optimize_vector_indexes
 npx prisma migrate dev --name add_fulltext_search
 
-# Update query patterns in src/lib/database/query-optimizer.ts
+# Update query patterns in the live query layer (src/lib/database/ was removed in the #2125 cleanup; it had no callers)
 # Update API routes to use optimized queries
 ```
 
@@ -491,7 +491,7 @@ npx prisma migrate dev --name add_fulltext_search
 
 ### Add Performance Tracking
 
-**Update** `src/lib/database/query-optimizer.ts`:
+**Update** the live query layer (the old `src/lib/database/query-optimizer.ts` was removed in the #2125 cleanup; it had no callers):
 
 ```typescript
 // Add Datadog metric tracking
