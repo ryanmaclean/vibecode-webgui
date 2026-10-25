@@ -534,3 +534,29 @@ PROMISE_VERIFICATION_REPORT.md
 logs/security/
 # Generated test data files
 test-data/
+
+# --- WS2 (2026-10-24): generated, vendored and binary artifacts untracked from the tip ---
+# Go modules are fetched from go.sum; `go mod vendor` output is not committed.
+/vendor/
+# CI and Dockerfiles use npm (package-lock.json); bun lockfiles are not used.
+bun.lock
+bun.lockb
+# Build outputs (td/scripts/build.sh, Swift VM builds, vsce package)
+/td/bin/
+/vibecode-vm-dist
+/fast-openvscode-vm-arm64/vmlinuz-*
+/platforms/tauri/resources/extensions/*.vsix
+# Helm subchart archive restored by `helm dependency build` (Chart.lock pins 3.60.0)
+/platforms/kubernetes/helm/vibecode-platform/charts/datadog-*.tgz
+# Runtime state and local tool databases
+/airflow/airflow.db
+/.opencode/
+# Test and run output
+/tests/results/
+/tests/e2e/test-results/
+/docs/archive/playwright-report/
+/docs/archive/logs/
+# macOS app bundles and screenshot evidence produced by the SwiftUI e2e runs
+/platforms/azure/azure/SwiftUI-Apps/*.app/
+/platforms/azure/azure/SwiftUI-Apps/*.png
+/platforms/azure/azure/SwiftUI-Apps/playwright-screenshots/
