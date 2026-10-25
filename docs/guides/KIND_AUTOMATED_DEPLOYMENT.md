@@ -144,7 +144,7 @@ spec:
 ### Step 1: Create KIND Cluster
 
 ```bash
-kind create cluster --name my-cluster --config archive/infra-1024/infrastructure/kind/cluster-config.yaml
+kind create cluster --name my-cluster --config docs/archive/infra-1024/infrastructure/kind/cluster-config.yaml
 ```
 
 > The maintained KIND config is `platforms/kubernetes/k8s/kind-cluster-config.yaml` (used by `scripts/quick-setup-kind.sh`).
@@ -260,7 +260,7 @@ Create the APM service as shown in Step 3 above, ensuring the selector matches y
 |------|---------|
 | `scripts/kind-full-automation.sh` | Complete bootstrap script |
 | `platforms/kubernetes/k8s/datadog-values-kind.yaml` | Datadog Helm values with DSM |
-| `archive/infra-1024/infrastructure/kind/cluster-config.yaml` | KIND cluster configuration |
+| `docs/archive/infra-1024/infrastructure/kind/cluster-config.yaml` | KIND cluster configuration |
 | `docs/guides/DATADOG_OPENLINEAGE_INTEGRATION.md` | OpenLineage setup guide |
 
 ---

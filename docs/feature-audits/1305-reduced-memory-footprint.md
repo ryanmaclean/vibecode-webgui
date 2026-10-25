@@ -4,7 +4,7 @@ Issue: #1305
 
 ## Current signals in repo
 - Tauri backend present (`platforms/tauri/src/*`).
-- Electron wrapper exists (`archive/infra-1024/platforms/electron-vibecode/*`).
+- Electron wrapper exists (`docs/archive/infra-1024/platforms/electron-vibecode/*`).
 - Performance test script tracks memory usage: `platforms/docker/scripts/vibecode_optimized/performance_test.py`.
 
 ## Gaps / missing info

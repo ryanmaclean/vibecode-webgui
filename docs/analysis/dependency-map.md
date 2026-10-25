@@ -40,9 +40,9 @@ graph TB
     subgraph "Backend Services"
         Server[Server<br/>server/]
         AIGateway[AI Gateway<br/>infrastructure/services/ai-gateway]
-        WebhookService[Webhook Service<br/>archive/infra-1024/infrastructure/services/webhook-service]
-        GitHubWebhook[GitHub Webhook<br/>archive/infra-1024/infrastructure/services/github-webhook]
-        QueueWorker[Queue Worker<br/>archive/infra-1024/infrastructure/queue-worker]
+        WebhookService[Webhook Service<br/>docs/archive/infra-1024/infrastructure/services/webhook-service]
+        GitHubWebhook[GitHub Webhook<br/>docs/archive/infra-1024/infrastructure/services/github-webhook]
+        QueueWorker[Queue Worker<br/>docs/archive/infra-1024/infrastructure/queue-worker]
     end
 
     subgraph "Daemon Services"
@@ -53,7 +53,7 @@ graph TB
 
     subgraph "Platform Wrappers"
         Tauri[Tauri Desktop<br/>platforms/tauri]
-        Electron[Electron Desktop<br/>archive/infra-1024/platforms/electron-vibecode]
+        Electron[Electron Desktop<br/>docs/archive/infra-1024/platforms/electron-vibecode]
         MacOS[macOS Menubar<br/>platforms/macos]
         WebDashboard[Web Dashboard<br/>platforms/web-dashboard]
     end
@@ -144,7 +144,7 @@ graph TB
 
 **Dependents:**
 - `platforms/tauri` - Desktop wrapper
-- `archive/infra-1024/platforms/electron-vibecode` - Alternative desktop wrapper
+- `docs/archive/infra-1024/platforms/electron-vibecode` - Alternative desktop wrapper
 - `platforms/web-dashboard` - Management UI
 - Extensions (Claude Code, AI Assistant, etc.)
 
@@ -246,7 +246,7 @@ ai-gateway → src/app/api/ai/chat → ai-gateway (for model routing)
 
 ---
 
-#### GitHub Webhook Service (`archive/infra-1024/infrastructure/services/github-webhook`)
+#### GitHub Webhook Service (`docs/archive/infra-1024/infrastructure/services/github-webhook`)
 
 **Purpose:** Process GitHub webhook events
 **Type:** Event processor
@@ -266,7 +266,7 @@ GitHub → Webhook Service → Kafka → Queue Worker → Database
 
 ---
 
-#### Webhook Service (`archive/infra-1024/infrastructure/services/webhook-service`)
+#### Webhook Service (`docs/archive/infra-1024/infrastructure/services/webhook-service`)
 
 **Purpose:** Generic webhook handling
 **Type:** Event processor
@@ -282,7 +282,7 @@ GitHub → Webhook Service → Kafka → Queue Worker → Database
 
 ---
 
-#### Queue Worker (`archive/infra-1024/infrastructure/queue-worker`)
+#### Queue Worker (`docs/archive/infra-1024/infrastructure/queue-worker`)
 
 **Purpose:** Process Kafka queue messages
 **Type:** Background worker
@@ -379,7 +379,7 @@ npm run build:tauri → Next.js build → Tauri bundle
 
 ---
 
-#### Electron Desktop (`archive/infra-1024/platforms/electron-vibecode`)
+#### Electron Desktop (`docs/archive/infra-1024/platforms/electron-vibecode`)
 
 **Purpose:** Alternative desktop app (Electron)
 **Type:** Desktop platform
@@ -857,7 +857,7 @@ import { GET as agentStatus } from '@/app/api/agents/status/route'
 // infrastructure/services/ai-gateway/src/index.ts
 import { webhookService } from '../webhook-service'
 
-// archive/infra-1024/infrastructure/services/webhook-service/src/index.ts
+// docs/archive/infra-1024/infrastructure/services/webhook-service/src/index.ts
 import { aiGateway } from '../ai-gateway'
 ```
 
