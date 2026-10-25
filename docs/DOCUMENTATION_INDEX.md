@@ -11,7 +11,7 @@ Complete documentation index for the VibeCode WebGUI project, organized by Waves
 - [API Reference](./api/) - Backend API endpoints and schemas
 - [Features](./features/) - Feature documentation and roadmap
 - [Implementation Guides](./guides/) - Testing, security, performance best practices
-- [Development Sessions](./sessions/) - Wave reports and progress tracking
+- [Development Sessions](./archive/sessions/) - Wave reports and progress tracking
 - [Root TODO](../TODO.md) - Current priorities and action items
 - [Friction Log](../FRICTION_LOG.md) - Active blockers and resolved issues
 
@@ -193,7 +193,7 @@ Complete documentation index for the VibeCode WebGUI project, organized by Waves
 ## Development Sessions
 
 ### Wave 12: Feature Foundations & Coverage Push
-**File**: [sessions/wave-12-complete.md](./sessions/wave-12-complete.md)
+**File**: [sessions/wave-12-complete.md](./archive/sessions/wave-12-complete.md)
 **Agents**: AGENTS 101-110 (10 agents)
 **Duration**: ~12 hours
 **Grade**: A- (92.7/100)
@@ -229,18 +229,18 @@ Complete documentation index for the VibeCode WebGUI project, organized by Waves
 - AGENT 110 (Phase2Planner): A- (91/100)
 
 **Documentation**:
-- [Wave 12 Complete Report](./sessions/wave-12-complete.md) (13KB, full narrative)
-- [Finalization Report](./sessions/WAVE12_FINALIZATION_REPORT.md) (20KB, verification)
-- [Verification Evidence](./sessions/WAVE12_VERIFICATION_EVIDENCE.md) (11KB, CLI outputs)
-- [Executive Summary](./sessions/WAVE12_EXECUTIVE_SUMMARY.md) (7.8KB, strategic view)
-- [Quick Reference Card](./sessions/WAVE12_QUICK_REFERENCE.txt) (3.9KB, at-a-glance)
+- [Wave 12 Complete Report](./archive/sessions/wave-12-complete.md) (13KB, full narrative)
+- [Finalization Report](./archive/sessions/WAVE12_FINALIZATION_REPORT.md) (20KB, verification)
+- [Verification Evidence](./archive/sessions/WAVE12_VERIFICATION_EVIDENCE.md) (11KB, CLI outputs)
+- [Executive Summary](./archive/sessions/WAVE12_EXECUTIVE_SUMMARY.md) (7.8KB, strategic view)
+- [Quick Reference Card](./archive/sessions/WAVE12_QUICK_REFERENCE.txt) (3.9KB, at-a-glance)
 
 **Overall Assessment**: Exemplary wave execution, achieved primary mission with feature foundations and exceeded coverage target. Minor blockers (CI, 12 test failures) have clear resolution paths. Ready for Phase 2 integration.
 
 ---
 
 ### Wave 10: Validation & Foundation
-**File**: [sessions/wave-10-validation-foundation.md](./sessions/wave-10-validation-foundation.md)
+**File**: [sessions/wave-10-validation-foundation.md](./archive/sessions/wave-10-validation-foundation.md)
 **Supervisor**: AGENT 93 (Wave10Supervisor)
 **Agents**: AGENT 90, 91, 92
 **Grade**: B+ (4/5 criteria met)
@@ -267,7 +267,7 @@ Complete documentation index for the VibeCode WebGUI project, organized by Waves
 ---
 
 ### Wave 9: Comprehensive System Hardening
-**File**: [sessions/wave-09-comprehensive-hardening.md](./sessions/wave-09-comprehensive-hardening.md)
+**File**: [sessions/wave-09-comprehensive-hardening.md](./archive/sessions/wave-09-comprehensive-hardening.md)
 **Supervisor**: AGENT 89 (Wave9Supervisor)
 **Agents**: AGENT 85, 86, 87, 88
 **Grade**: A- (Excellent execution with minor caveats)
@@ -334,7 +334,7 @@ Complete documentation index for the VibeCode WebGUI project, organized by Waves
 
 ### For Product Managers
 1. Review [Feature Roadmap](./features/feature-roadmap.md) for planning
-2. Check [Wave 10 Report](./sessions/wave-10-validation-foundation.md) for current status
+2. Check [Wave 10 Report](./archive/sessions/wave-10-validation-foundation.md) for current status
 3. See [TODO.md](../TODO.md) for delivery timelines
 4. Monitor [Monitoring Dashboard](./features/monitoring-dashboard.md) for infrastructure
 

@@ -17,7 +17,7 @@ Centralise the cadence, validation, and observability expectations for shipping 
    - `scripts/test-code-server-kind.sh` KinD smoke (port-forward, NodePort, editor/aider/goose checks).
    - `docker run --platform linux/amd64|arm64 <ci tag> bash -lc "aider --version && goose -version"` steps succeed.
 4. Review Datadog dashboards (Code-Server Shipping, Infra Cost Control) and acknowledge any open alerts.
-5. Complete the release digest entry (template below) under `docs/logs/releases/code-server/<YYYY-MM-DD>.md` and link to the workflow run.
+5. Complete the release digest entry (template below) under `docs/archive/logs/releases/code-server/<YYYY-MM-DD>.md` and link to the workflow run.
 6. Post summary + outstanding risks in `#shipping-dashboard`.
 
 ### Release Digest Template
@@ -39,13 +39,13 @@ Centralise the cadence, validation, and observability expectations for shipping 
 - **Stable tags:** `ghcr.io/<owner>/vibecode-codeserver:latest` and commit SHA tags promote only after the Ops sign-off checklist is completed.
 - **Nightly tag:** `:nightly` updates solely from the scheduled run; if a night fails, retain the previous nightly tag and record the miss in the release digest.
 - **Canary tags (planned):** `:amd64-canary` and `:arm64-canary` will stage traffic ahead of `:latest` once Release Engineering finalises safeguards (see staging cues in [`docs/handoff/shipping-dashboard.md`](./shipping-dashboard.md#version--cross-links)).
-- **Release digests:** Each run logs to `docs/logs/releases/code-server/<YYYY-MM-DD>.md`; reference that entry in the `#shipping-dashboard` announcement.
+- **Release digests:** Each run logs to `docs/archive/logs/releases/code-server/<YYYY-MM-DD>.md`; reference that entry in the `#shipping-dashboard` announcement.
 - **Rollback guidance:** Pending Ops update—will live in a dedicated subsection under the Rollback Trigger Matrix once authored.
 
 ## Cross-References
 - Shipping dashboard snapshot: [`docs/handoff/shipping-dashboard.md`](./shipping-dashboard.md#version--cross-links) (owner roster, cadence, nightly status).
-- Optional tooling audit: `docs/logs/issues/docker-multiarch-audit.md` (architecture guard rationale).
-- Workflow tracker: `docs/logs/workflow-issues/docker-multiarch.yml.md` (job breakdown, observability hooks).
+- Optional tooling audit: `docs/archive/logs/issues/docker-multiarch-audit.md` (architecture guard rationale).
+- Workflow tracker: `docs/archive/logs/workflow-issues/docker-multiarch.yml.md` (job breakdown, observability hooks).
 - AI tooling parity plan: [`docs/tooling/ai-tooling-parity.md`](../tooling/ai-tooling-parity.md) (GH issue #413).
 - Observability runbook: [`docs/observability/codeserver-ci.md`](../observability/codeserver-ci.md) (GH issue #412).
 
@@ -67,7 +67,7 @@ Centralise the cadence, validation, and observability expectations for shipping 
 2. Confirm all automated gates in the latest workflow run are green and no retry steps exceeded 2 attempts.
 3. Review Datadog monitors `codeserver.build.duration.p95`, `codeserver.kind.smoke.failure`, and `codeserver.deploy.error`—acknowledge or remediate any active alerts.
 4. Check `TODO.md` for open code-server items; move stale entries (older than 14 days) to Archive or assign a new owner/date.
-5. Capture the sign-off note in `docs/logs/releases/code-server/<YYYY-MM-DD>.md` and post the confirmation thread in `#shipping-dashboard` with workflow + digest links.
+5. Capture the sign-off note in `docs/archive/logs/releases/code-server/<YYYY-MM-DD>.md` and post the confirmation thread in `#shipping-dashboard` with workflow + digest links.
 6. Notify the backup approver of completion; if primary signs off, backup adds an emoji confirmation, and vice versa.
 
 ## Rollback Trigger Matrix
@@ -81,7 +81,7 @@ Centralise the cadence, validation, and observability expectations for shipping 
 7. **Communications:**
    - Post in `#release-ops` Slack thread with root cause, commands executed, ETA for recovery.
    - Create/update incident ticket (`OPS-####` in Jira) documenting digest, commands, workflow status.
-   - Add rollback note to `docs/logs/releases/code-server/<date>.md` referencing the incident ticket.
+   - Add rollback note to `docs/archive/logs/releases/code-server/<date>.md` referencing the incident ticket.
 8. **Post-rollback validation:**
    - Run `npm run test:unit`, `npm run test:integration`, `npm run test:production:smoke`.
    - Provision staging workspace using restored tag; confirm logs show success.
@@ -98,7 +98,7 @@ Centralise the cadence, validation, and observability expectations for shipping 
 ## TODO Hygiene Cadence
 - Every Monday 16:00 UTC, the primary approver leads a 15-minute async sweep of `TODO.md` and the shipping dashboard open actions, tagging owners with refreshed due dates.
 - Backup approver reviews the automation surfacing (see `TODO.md`) each weekday at 09:00 local time and flags items older than 10 business days in `#platform-ops-sync`.
-- Record completed clean-ups in `docs/logs/COORDINATION_LOG.md` under the "code-server" section for traceability.
+- Record completed clean-ups in `docs/archive/logs/COORDINATION_LOG.md` under the "code-server" section for traceability.
 
 ## Workflow Runbook (`.github/workflows/codeserver-multiarch.yml`)
 1. **Triggers**
@@ -149,8 +149,8 @@ _Tracking: GitHub issue #412._
 - ⚠️ Verify workflow artifacts retain KinD logs for 14 days; if not, mirror to long-term storage (S3 bucket TBD).
 
 ## References
-- `docs/logs/workflow-issues/docker-multiarch.yml.md`
-- `docs/logs/issues/code-server-cloud-deployment.md`
+- `docs/archive/logs/workflow-issues/docker-multiarch.yml.md`
+- `docs/archive/logs/issues/code-server-cloud-deployment.md`
 - `docs/handoff/shipping-dashboard.md`
 - `scripts/test-code-server-kind.sh`
 - `TODO.md`

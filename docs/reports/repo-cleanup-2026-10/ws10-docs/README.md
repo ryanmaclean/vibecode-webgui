@@ -7,6 +7,9 @@ archive root. Each PR in the WS10 series adds its manifest here. All files are T
 |---|---|---|
 | `dedupe-removed.tsv` | WS10 1 (dedupe) | `blob_sha, bytes, removed_path, kept_path`: exact duplicates removed from the tip. The removed copy and the kept copy had the same git blob id at base `24e77ca06`. |
 | `dedupe-relinks.tsv` | WS10 1 (dedupe) | `file, old_link, new_link`: relative Markdown links repointed from a removed copy to its kept copy. |
+| `fold-moves.tsv` | WS10 2 (fold) | `old_path, new_path`: every rename into `docs/archive/` (and `SERVICE_DEPENDENCIES.md` to `docs/architecture/`, release notes to `docs/releases/v5.1.0-beta/`). |
+| `fold-relinks.tsv` | WS10 2 (fold) | Relative Markdown links rewritten because the linking file or its target moved. |
+| `fold-deleted.tsv` | WS10 2 (fold) | Generated output removed from the tip (now in `.gitignore`). |
 
 ## How the kept copy is chosen
 

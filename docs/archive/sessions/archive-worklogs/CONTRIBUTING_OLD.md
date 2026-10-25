@@ -4,7 +4,7 @@ Thanks for your interest in contributing! This project demonstrates **pgvector +
 
 ## 📋 Code of Conduct
 
-This project follows the [Contributor Covenant Code of Conduct](../../../archive/root-cleanup/CODE_OF_CONDUCT.md). By participating, you agree to uphold this code. Please report any violations to conduct@vibecode.dev.
+This project follows the [Contributor Covenant Code of Conduct](../../root-cleanup/CODE_OF_CONDUCT.md). By participating, you agree to uphold this code. Please report any violations to conduct@vibecode.dev.
 
 ## 🚀 Quick Start for Contributors
 
