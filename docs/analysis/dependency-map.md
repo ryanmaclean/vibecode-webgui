@@ -5,6 +5,8 @@ status: Initial Analysis
 priority: Critical
 ---
 
+> **Moved 2026-10-24 (WS3):** `daemon/` (kafka-dsm, gitea-kafka-bridge, disk-guard), `td/`, `.github/workflows/tundra-ci.yml` and `scripts/check-kafka-topics.sh` now live in ryanmaclean/gt (private; gt#4 and gt#5). Paths to them below refer to that repo.
+
 # Module Dependency Map & Circular Dependency Analysis
 
 This document maps the current module dependencies across VibeCode's multi-service architecture, identifies circular dependencies, and provides visual diagrams showing service relationships.
@@ -188,7 +190,7 @@ import { getSession } from '@/lib/auth'
 
 **Circular Dependency Issues:**
 ```
-src/app/api/agents → server/graceful-shutdown → src/app/api/health → server/
+src/app/api/agents → tools/server/graceful-shutdown → src/app/api/health → tools/server/
 ```
 
 ---
@@ -549,7 +551,7 @@ import { getSession } from '@/lib/auth'
 
 **Dependency Chain:**
 ```
-src/app/api/agents → server/graceful-shutdown → src/app/api/health → server/
+src/app/api/agents → tools/server/graceful-shutdown → src/app/api/health → tools/server/
 ```
 
 **Impact:** High
@@ -878,7 +880,7 @@ import { aiGateway } from '../ai-gateway'
 **Example Violations:**
 ```javascript
 // daemon/disk-guard/monitor.js
-const { gracefulShutdown } = require('../../server/graceful-shutdown')
+const { gracefulShutdown } = require('../../tools/server/graceful-shutdown')
 
 // daemon/kafka-dsm/src/consumer.ts
 import { types } from '@/types'
