@@ -15,11 +15,6 @@ on:
         required: false
         type: boolean
         default: false
-      skip_initramfs:
-        description: 'Skip initramfs builds'
-        required: false
-        type: boolean
-        default: false
       skip_alpine:
         description: 'Skip Alpine kernel downloads'
         required: false
@@ -145,109 +140,8 @@ jobs:
           path: dist/cli/
           retention-days: 90
 
-  # Job 2: Build initramfs variants
-  build-initramfs:
-    name: Build Initramfs
-    runs-on: ubuntu-latest
-    if: ${{ !inputs.skip_initramfs }}
-    strategy:
-      matrix:
-        variant:
-          - name: minimal
-            script: build-minimal-initramfs.sh
-          - name: busybox
-            script: build-busybox-musl.sh
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag || github.ref }}
-          fetch-depth: 0
-
-      - name: Get version info
-        id: version
-        run: |
-          if [ -n "${{ inputs.tag }}" ]; then
-            TAG="${{ inputs.tag }}"
-          else
-            TAG="${GITHUB_REF#refs/tags/}"
-          fi
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
-          echo "commit=${GITHUB_SHA}" >> $GITHUB_OUTPUT
-          echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build ${{ matrix.variant.name }} initramfs
-        env:
-          TAG: ${{ steps.version.outputs.tag }}
-        run: |
-          set -euo pipefail
-
-          # Create output directory
-          mkdir -p dist/initramfs
-
-          # Run build script
-          cd scripts/benchmarks
-
-          if [ -f "${{ matrix.variant.script }}" ]; then
-            bash "${{ matrix.variant.script }}"
-
-            # Find and copy the generated initramfs
-            INITRAMFS_FILE=$(find . -name "*initramfs*" -o -name "*.cpio.gz" | head -1)
-
-            if [ -n "$INITRAMFS_FILE" ]; then
-              OUTPUT_NAME="initramfs-${{ matrix.variant.name }}-${TAG}.cpio.gz"
-              cp "$INITRAMFS_FILE" "../../dist/initramfs/${OUTPUT_NAME}"
-
-              # Generate SHA256
-              (cd ../../dist/initramfs && sha256sum "${OUTPUT_NAME}" > "${OUTPUT_NAME}.sha256")
-
-              echo "Built ${OUTPUT_NAME} ($(stat -c%s "../../dist/initramfs/${OUTPUT_NAME}" | numfmt --to=iec-i --suffix=B))"
-            else
-              echo "Warning: No initramfs file generated"
-            fi
-          else
-            echo "Error: Script ${{ matrix.variant.script }} not found"
-            exit 1
-          fi
-
-      - name: Create initramfs manifest
-        env:
-          VARIANT: ${{ matrix.variant.name }}
-          TAG: ${{ steps.version.outputs.tag }}
-          COMMIT: ${{ steps.version.outputs.commit }}
-          BUILD_DATE: ${{ steps.version.outputs.date }}
-          SCRIPT: ${{ matrix.variant.script }}
-        run: |
-          cat > dist/initramfs/manifest-${VARIANT}.json << EOF
-          {
-            "type": "initramfs",
-            "variant": "${VARIANT}",
-            "version": "${TAG}",
-            "commit": "${COMMIT}",
-            "build_date": "${BUILD_DATE}",
-            "script": "${SCRIPT}"
-          }
-          EOF
-
-      - name: Upload initramfs to release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          files: |
-            dist/initramfs/initramfs-*
-            dist/initramfs/manifest-*.json
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Backup initramfs to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: initramfs-${{ matrix.variant.name }}-${{ steps.version.outputs.tag }}
-          path: dist/initramfs/
-          retention-days: 90
+  # Initramfs builds moved out with scripts/benchmarks (image builders: ryanmaclean/genoa;
+  # VM benches: ryanmaclean/smolfire imports/vibecode). This pipeline no longer builds them.
 
   # Job 3: Download Alpine kernels
   download-alpine-kernels:
@@ -431,7 +325,7 @@ jobs:
   # Job 5: Create release metadata
   create-release-metadata:
     name: Create Release Metadata
-    needs: [build-cli-binaries, build-initramfs, download-alpine-kernels, create-source-tarballs]
+    needs: [build-cli-binaries, download-alpine-kernels, create-source-tarballs]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -494,10 +388,6 @@ jobs:
                 "go_version": "1.23",
                 "source": "cmd/vibecode"
               },
-              "initramfs": {
-                "variants": ["minimal", "busybox"],
-                "build_scripts": ["build-minimal-initramfs.sh", "build-busybox-musl.sh"]
-              },
               "alpine_kernels": {
                 "versions": ["3.19", "3.22"],
                 "architecture": "aarch64",
@@ -558,7 +448,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Assets Built:" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ CLI Binaries (4 platforms)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Initramfs (2 variants)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Alpine Kernels (2 versions)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Source Tarballs (tar.gz + zip)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

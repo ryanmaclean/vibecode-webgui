@@ -1,5 +1,7 @@
 # Private keys and certificates (security)
 fast-openvscode-vm/certs/openvscode-local-key.pem
+# Runtime dev TLS certs for scripts/dev/start-openvscode-https.sh (the VM tree moved to ryanmaclean/smolfire)
+/fast-openvscode-vm/
 gitea/data/jwt/private.pem
 *.key
 

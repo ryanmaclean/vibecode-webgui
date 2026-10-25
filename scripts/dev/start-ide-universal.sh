@@ -18,10 +18,15 @@ launch_chrome() {
   open -a "$CHROME_APP" --args --kiosk --app="$url" --disable-translate --no-first-run --user-data-dir="$PROFILE_DIR"
 }
 
+# The vfkit microVM launcher (vscode_microvm.sh) moved to ryanmaclean/smolfire
+# imports/vibecode/scripts/benchmarks/ on 2026-10-24. Point VSCODE_MICROVM_SCRIPT at a copy
+# to use it; without it this script uses Lima or host mode.
+MICROVM_SCRIPT=${VSCODE_MICROVM_SCRIPT:-}
+
 start_vfkit() {
   log "Detected arm64 + vfkit; launching fast microVM"
   export MICROVM_ARCH=${MICROVM_ARCH:-x86_64}
-  scripts/benchmarks/vscode_microvm.sh start
+  "$MICROVM_SCRIPT" start
   log "Waiting for http://127.0.0.1:3600/healthz"
   until curl -fsS http://127.0.0.1:3600/healthz >/dev/null 2>&1; do sleep 1; done
   launch_chrome "http://127.0.0.1:3600"
@@ -37,7 +42,7 @@ start_host() {
   LIMA_DISABLED=1 scripts/dev/start-chromium-ide.sh
 }
 
-if [[ $ARCH == "arm64" && $(command -v vfkit >/dev/null 2>&1 && echo 1 || echo 0) == 1 ]]; then
+if [[ $ARCH == "arm64" && -n "$MICROVM_SCRIPT" && -x "$MICROVM_SCRIPT" && $(command -v vfkit >/dev/null 2>&1 && echo 1 || echo 0) == 1 ]]; then
   start_vfkit
 elif command -v limactl >/dev/null 2>&1; then
   start_lima

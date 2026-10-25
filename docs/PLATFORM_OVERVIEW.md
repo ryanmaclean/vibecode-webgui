@@ -349,12 +349,12 @@ fly scale count 3
 
 ### Setup Guides
 - **[Demo Environment](./VFKIT_DEMO_GUIDE.md)** - Alpine ARM64 setup
-- **[Quick Start](../scripts/vfkit/QUICK_START.md)** - Get started fast
-- **[Valkey Compilation](../scripts/vfkit/compile-valkey-musl.sh)** - ARM64 optimization
+- **[Quick Start](https://github.com/ryanmaclean/smolfire/blob/main/imports/vibecode/scripts/vfkit/QUICK_START.md)** - Get started fast
+- **[Valkey Compilation](https://github.com/ryanmaclean/smolfire/blob/main/imports/vibecode/scripts/vfkit/compile-valkey-musl.sh)** - ARM64 optimization
 
 ### Advanced Topics
-- **[Performance Tuning](../scripts/vfkit/BOOT_TIME_COMPARISON.md)** - Optimization
-- **[Kernel Optimization](../scripts/vfkit/KERNEL_OPTIMIZATION_ANALYSIS.md)** - Custom kernels
+- **[Performance Tuning](https://github.com/ryanmaclean/smolfire/blob/main/imports/vibecode/scripts/vfkit/BOOT_TIME_COMPARISON.md)** - Optimization
+- **[Kernel Optimization](https://github.com/ryanmaclean/smolfire/blob/main/imports/vibecode/scripts/vfkit/KERNEL_OPTIMIZATION_ANALYSIS.md)** - Custom kernels
 - **[M-Series Testing](./M2_ULTRA_FINAL_SESSION_SUMMARY.md)** - Hardware validation
 
 ---

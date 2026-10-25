@@ -391,6 +391,11 @@ func run(name string, args ...string) error {
 	return cmd.Run()
 }
 
+// movedScriptsNote explains where VM/benchmark scripts went when they are not found locally.
+const movedScriptsNote = "VM benchmarks and vfkit scripts moved to https://github.com/ryanmaclean/smolfire/tree/main/imports/vibecode/scripts " +
+	"and kernel/initramfs builders to https://github.com/ryanmaclean/genoa (2026-10-24). " +
+	"Set VIBECODE_VM_SCRIPTS_DIR to a checkout's scripts directory to run them from here."
+
 func runScript(name string, args ...string) {
 	// Find script in scripts directory
 	scriptPaths := []string{
@@ -398,6 +403,13 @@ func runScript(name string, args ...string) {
 		filepath.Join("scripts", "benchmarks", name),
 		filepath.Join("scripts", "vfkit", name),
 		name,
+	}
+	if dir := os.Getenv("VIBECODE_VM_SCRIPTS_DIR"); dir != "" {
+		scriptPaths = append(scriptPaths,
+			filepath.Join(dir, "benchmarks", name),
+			filepath.Join(dir, "vfkit", name),
+			filepath.Join(dir, name),
+		)
 	}
 
 	for _, p := range scriptPaths {
@@ -412,7 +424,8 @@ func runScript(name string, args ...string) {
 			return
 		}
 	}
-	fmt.Printf("Script not found: %s\n", name)
+	fmt.Fprintf(os.Stderr, "Script not found: %s\n%s\n", name, movedScriptsNote)
+	os.Exit(1)
 }
 
 func interactiveMode() {
