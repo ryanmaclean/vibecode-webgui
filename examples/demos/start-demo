@@ -4,6 +4,9 @@
 
 set -e
 
+# Run from the repository root (this script lives in examples/demos/).
+cd "$(dirname "$0")/../.."
+
 # Colors
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
