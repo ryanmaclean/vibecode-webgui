@@ -541,11 +541,6 @@ test-data/
 /polecat_branches.txt
 /gt_nudge_both.sh
 /mbp_m1/
-/.gastown/
-/daemon/
-/td/
-/tundra-dome/
-/settings/
 /data/beads.json
 /.beads/formulas/
 /.beads/export-state/
