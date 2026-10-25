@@ -105,6 +105,11 @@ docker run hello-world
 
 ### Directory Layout
 
+> **Note (2026-10-24, WS9 cleanup):** `azure/build-unified-services-with-datadog.sh` was a wrapper that only
+> delegated to `scripts/build-unified-vm.sh` (not in this repo) or to a script under `~/vibecode-webgui/azure/`
+> outside the repo, so it was removed. The layout and commands below describe that legacy `vibecode-vm`
+> checkout. The Azure and SwiftUI VM tooling tracked here lives under `platforms/azure/` (see #2128).
+
 ```
 vibecode-vm/
 ├── azure/                                  # Build scripts and VM components
