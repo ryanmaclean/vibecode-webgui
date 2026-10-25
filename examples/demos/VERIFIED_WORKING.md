@@ -21,7 +21,7 @@ from ddtrace.llmobs import LLMObs
 LLMObs.enable(
     ml_app="vibecode-agentless-proof",
     agentless_enabled=True,
-    api_key="0e4c744e925521aeb1f97486ac8e3884",
+    api_key="<redacted>",
     site="datadoghq.com"
 )
 
