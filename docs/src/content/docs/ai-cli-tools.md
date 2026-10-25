@@ -7,7 +7,7 @@ description: ai cli tools documentation
 
 > **Moved 2026-10-24:** the `src/lib/ai-cli-tools/` wrappers now live in
 > [ryanmaclean/moth `contrib/vibecode/ai-cli-tools/`](https://github.com/ryanmaclean/moth/tree/main/contrib/vibecode/ai-cli-tools).
-> This page is kept for history. The paths below are no longer in this repo.
+> This page is kept for history. The `src/lib/ai-cli-tools/` paths below are no longer in this repo.
 
 **Date**: January 20, 2025  
 **Status**: Phase 1 Complete - Ready for Testing  

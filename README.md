@@ -940,7 +940,7 @@ A native macOS status bar app is available to control the environment:
 ## 🔄 Ralph Loop
 The Ralph-loop runner (`ralph_loop.py`, Codex/Ollama backends) moved to
 [ryanmaclean/moth `contrib/vibecode/ralph_loop/`](https://github.com/ryanmaclean/moth/tree/main/contrib/vibecode/ralph_loop) on 2026-10-24.
-There never was a `scripts/ralph_loop.py` in this repo, so the old command here did not work.
+The old `scripts/ralph_loop.py` was removed from this repo in dd97a6bdc, so the old `python3 scripts/ralph_loop.py` command no longer works.
 
 ## 📦 Legacy & Migration
 - **Gas Town:** Use `python3 scripts/gt_shim.py` for legacy commands.
