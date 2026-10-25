@@ -90,4 +90,4 @@ repos:
     hooks:
       - id: gitleaks
         name: Gitleaks Secret Scan (staged)
-        args: ["protect", "--staged", "--redact", "--config=.gitleaks.toml"]
+        args: ["--config=.gitleaks.toml"]

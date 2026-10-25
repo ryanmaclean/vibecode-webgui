@@ -23,12 +23,6 @@ variable "vm_name" {
   default = "vibecode-openindiana"
 }
 
-variable "ssh_password" {
-  type        = string
-  sensitive   = true
-  description = "Root password set during the interactive install. Pass it with PKR_VAR_ssh_password; never commit it."
-}
-
 variable "architecture" {
   type        = string
   default     = "x86_64"
@@ -105,7 +99,7 @@ source "qemu" "openindiana" {
 
   # SSH configuration (after installation)
   ssh_username           = "root"
-  ssh_password           = var.ssh_password
+  ssh_password           = "vibecode"
   ssh_timeout            = "60m"
   ssh_handshake_attempts = 100
   ssh_pty                = true

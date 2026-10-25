@@ -103,9 +103,7 @@ manifest following Oracle Solaris 11 documentation patterns.
 # Initialize and build OpenIndiana image
 packer init infrastructure/packer/vibecode-openindiana.pkr.hcl
 
-# Build with VNC access for installation monitoring.
-# The root password you set in the installer is passed in, never committed:
-#   read -rs PKR_VAR_ssh_password; export PKR_VAR_ssh_password
+# Build with VNC access for installation monitoring
 packer build infrastructure/packer/vibecode-openindiana.pkr.hcl
 
 # During build, connect to VNC to monitor installation:
