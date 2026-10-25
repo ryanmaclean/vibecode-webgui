@@ -5,6 +5,8 @@ status: Initial Analysis
 priority: Critical
 ---
 
+> **Moved 2026-10-24 (WS3):** `daemon/` (kafka-dsm, gitea-kafka-bridge, disk-guard), `td/`, `.github/workflows/tundra-ci.yml` and `scripts/check-kafka-topics.sh` now live in ryanmaclean/gt (private; gt#4 and gt#5). Paths to them below refer to that repo.
+
 # Module Dependency Map & Circular Dependency Analysis
 
 This document maps the current module dependencies across VibeCode's multi-service architecture, identifies circular dependencies, and provides visual diagrams showing service relationships.
