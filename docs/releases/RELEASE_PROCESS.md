@@ -616,6 +616,6 @@ A: Delete the corrupt asset and re-upload. GitHub Releases supports clobbering: 
 
 ## See Also
 
-- [CHANGELOG.md](./CHANGELOG.md) - Release history and changes
-- [.github/workflows/release.yml](./.github/workflows/release.yml) - Automated release CI/CD
-- [Makefile](./Makefile) - Build targets for CLI and assets
+- [CHANGELOG.md](../../CHANGELOG.md) - Release history and changes
+- [.github/workflows/release.yml](../../.github/workflows/release.yml) - Automated release CI/CD
+- [Makefile](../../Makefile) - Build targets for CLI and assets
