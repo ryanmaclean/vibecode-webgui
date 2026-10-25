@@ -1,5 +1,7 @@
 # Tundra Dome (local + ssh studio)
 
+> **Moved 2026-10-24 (WS3):** `daemon/` (kafka-dsm, gitea-kafka-bridge, disk-guard), `td/`, `.github/workflows/tundra-ci.yml` and `scripts/check-kafka-topics.sh` now live in ryanmaclean/gt (private; gt#4 and gt#5). Paths to them below refer to that repo.
+
 Tundra Dome is the local coordination layer that pushes/consumes Gas Town events via Kafka and runs Airflow DAGs for routing + policy enforcement.
 
 ## What’s running (observed)
