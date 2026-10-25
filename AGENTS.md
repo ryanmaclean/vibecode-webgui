@@ -47,16 +47,19 @@ unless a VibeCode-specific requirement is demonstrated.
 ## Moved out (2026-10 split)
 
 Source commit for every move is `129302a73` (2026-10-24). Each target keeps a provenance note
-("Moved from ryanmaclean/vibecode-webgui@<sha> on 2026-10-24"). Look in the target repo, not here.
+("Moved from ryanmaclean/vibecode-webgui@<sha> on 2026-10-24"). The target copy is canonical. Where the
+status says **pending**, the files are still tracked here until that removal PR merges. Do not edit them
+here. Change the target repo instead.
 
-| Content | Now in | Companion (merge commit) | Removal here |
+| Content | Now in | Companion (merge commit) | Status here |
 |---|---|---|---|
-| Gas Town / Tundra-Dome runtime: `.gastown/`, `daemon/`, `td/`, `tundra-dome/`, `airflow/dags`, `settings/`, `plugins/datadog`, gastown/openclaw dashboards, `infra/tundra-dome` | `ryanmaclean/gt` (private, MIT) `imports/vibecode-webgui/` | gt#4 `21ec9061`, gt#5 `e647c650` | #2141, #2142, #2143 merged; #2157 (`infra/tundra-dome`) pending |
-| Agent skills: `.claude/skills/{datadog-operations,gastown-ops,apple-silicon,openrouter-models,context-graph}`, `datadog-dashboard-ops.skill`, `.codex/personas` | `ryanmaclean/skills` (MIT) | skills#12 `18f030a2` (datadog-operations and datadog-dashboard-ops were later split out of skills main by the owner; full copy at that commit) | #2144, #2145 |
-| VM/microVM tooling: `scripts/vfkit`, VM benches and launchers, `tests/vm*`, `tests/acceptance`, `experiments/microvm`, `tools/nodejs-vm`, qemu, Apple VZ experiments | `ryanmaclean/smolfire` (Apache-2.0; MIT notice in `LICENSES/vibecode-webgui-MIT.txt`) `imports/vibecode/`, `experiments/apple-vz/` | smolfire#133 `f9a252fb` | #2151 |
-| Image builders: `infrastructure/packer`, kernel/initramfs/rootfs builders, kernel configs, release-testing | `ryanmaclean/genoa` (BSD-2-Clause; MIT notice kept) `imports/vibecode-webgui/` | genoa#5 `1078977c` | #2155 |
-| Agent SDK (`tools/sdk` Python), `tools/ralph_loop`, `src/lib/ai-cli-tools` | `ryanmaclean/moth` (MIT) `contrib/vibecode/` | moth#6 `901274c7` | #2140 |
-| Historical docs, session logs, old reports, root `archive/`, `release-archive/`, `.agents/` | in tree: `docs/archive/` ([INDEX](docs/archive/INDEX.md)) | n/a | WS10 #2164, #2165 |
+| Gas Town / Tundra-Dome runtime: `.gastown/`, `daemon/`, `td/`, `tundra-dome/`, `airflow/dags`, `settings/`, `plugins/datadog`, gastown/openclaw dashboards | `ryanmaclean/gt` (private, MIT) `imports/vibecode-webgui/` | gt#4 `21ec9061` | removed (#2141, #2142, #2143) |
+| `infra/tundra-dome` and its workflows | `ryanmaclean/gt` | gt#5 `e647c650` | **pending** #2157 (waits on #2137) |
+| Agent skills: `.claude/skills/{datadog-operations,gastown-ops,apple-silicon,openrouter-models,context-graph}`, `datadog-dashboard-ops.skill`, `.codex/personas` | `ryanmaclean/skills` (MIT) | skills#12 `18f030a2` (the owner later split datadog-operations and datadog-dashboard-ops out of skills main; full copy at that commit) | **pending** #2144, #2145 |
+| VM/microVM tooling: `scripts/vfkit`, VM benches and launchers, `tests/vm*`, `tests/acceptance`, `experiments/microvm`, `tools/nodejs-vm`, qemu, Apple VZ experiments | `ryanmaclean/smolfire` (Apache-2.0; MIT notice in `LICENSES/vibecode-webgui-MIT.txt`) `imports/vibecode/`, `experiments/apple-vz/` | smolfire#133 `f9a252fb` | **pending** #2151 |
+| Image builders: `infrastructure/packer`, kernel/initramfs/rootfs builders, kernel configs, release-testing | `ryanmaclean/genoa` (BSD-2-Clause; MIT notice kept) `imports/vibecode-webgui/` | genoa#5 `1078977c` | **pending** #2155 |
+| Agent SDK (`tools/sdk` Python), `tools/ralph_loop`, `src/lib/ai-cli-tools` | `ryanmaclean/moth` (MIT) `contrib/vibecode/` | moth#6 `901274c7` | **pending** #2140 |
+| Historical docs, session logs, old reports, root `archive/`, `release-archive/`, `.agents/` | in tree: `docs/archive/` ([INDEX](docs/archive/INDEX.md)) | n/a | WS10: duplicates removed (#2164); fold #2165 |
 
 The split plan and per-workstream results are in #2125 (comment "Split plan for vibecode-webgui").
 

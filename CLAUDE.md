@@ -3,8 +3,8 @@
 Instructions for Claude Code and other coding agents working in this repository.
 
 Read [`AGENTS.md`](AGENTS.md) first. It says what VibeCode owns, which sibling repos own the rest, and
-where content moved in the 2026-10 split. Current product surfaces are classified in
-`docs/architecture/CANONICAL_SURFACES.md` (#2126).
+where content moved in the 2026-10 split. Which product surfaces are canonical is tracked in #2126 (the
+classification document is proposed in PR #2153).
 
 Repository notes:
 
