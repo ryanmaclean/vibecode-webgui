@@ -486,7 +486,7 @@ See [VFKIT_DEMO_GUIDE.md](./VFKIT_DEMO_GUIDE.md) for complete setup with:
 ## References
 
 - [pgvector Documentation](https://github.com/pgvector/pgvector)
-- [Valkey Compilation Guide](../scripts/vfkit/compile-valkey-musl.sh)
+- [Valkey Compilation Guide](https://github.com/ryanmaclean/smolfire/blob/main/imports/vibecode/scripts/vfkit/compile-valkey-musl.sh)
 - [Demo Environment Setup](./VFKIT_DEMO_GUIDE.md)
 - [OpenAI Embeddings](https://platform.openai.com/docs/guides/embeddings)
 

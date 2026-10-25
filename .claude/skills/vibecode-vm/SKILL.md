@@ -5,6 +5,11 @@ description: Build and manage native macOS VMs using Apple Virtualization Framew
 
 # VibeCode VM Skill
 
+> **Moved 2026-10-24:** the `scripts/vfkit/` scripts this skill runs now live in
+> [ryanmaclean/smolfire `imports/vibecode/scripts/vfkit/`](https://github.com/ryanmaclean/smolfire/tree/main/imports/vibecode/scripts/vfkit).
+> Run the commands below from `imports/vibecode/` in a smolfire checkout. The paths are unchanged
+> relative to that directory. Path map: `docs/virtualization/MOVED-TO-SMOLFIRE.md`.
+
 Build and manage native macOS VMs using Apple's Virtualization Framework (vfkit).
 
 ## Quick Setup
