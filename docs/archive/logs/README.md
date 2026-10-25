@@ -89,8 +89,8 @@ This directory contains structured logs extracted from TODO.md to keep it focuse
 ## Related Documentation
 
 - [TODO.md](../../TODO.md) - Current work and active tasks
-- [AGENTS.md](../../AGENTS.md) - Agent coordination guidelines
-- [CONTRIBUTING.md](../../CONTRIBUTING.md) - Contribution guidelines
+- [AGENTS.md](../../../AGENTS.md) - Agent coordination guidelines
+- [CONTRIBUTING.md](../../../CONTRIBUTING.md) - Contribution guidelines
 
 ---
 

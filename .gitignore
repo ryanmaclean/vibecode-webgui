@@ -608,3 +608,9 @@ bun.lockb
 /platforms/azure/azure/SwiftUI-Apps/*.app/
 /platforms/azure/azure/SwiftUI-Apps/*.png
 /platforms/azure/azure/SwiftUI-Apps/playwright-screenshots/
+
+# WS10 docs consolidation (2026-10-25): generated docs output, folded archive roots
+/docs/test_output.txt
+/docs/branches-to-delete.txt
+/feature_audit/
+/release-archive/

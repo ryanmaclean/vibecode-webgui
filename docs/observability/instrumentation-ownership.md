@@ -106,7 +106,7 @@ the [Vercel platform](https://vercel.com/docs/observability/otel-overview). It w
 present in `src/instrumentation.ts` but **VibeCode does not deploy to Vercel** — the
 primary deployment targets are Docker/Kubernetes and Azure (see
 `config/platforms/` and `platforms/azure/`). The Vercel configuration in the
-repository is archived (`archive/root-cleanup/vercel.json`).
+repository is archived (`docs/archive/root-cleanup/vercel.json`).
 
 Removing `@vercel/otel` from `dependencies`:
 - Eliminates an unused transitive dependency tree from the lockfile.

@@ -16,7 +16,7 @@ How-to guides and best practices for development workflows.
 - [Docker Layer Optimization](guides/docker-optimization.md)
 - [Branch Protection Setup](guides/branch-protection.md)
 - [TypeScript Baseline Restoration](guides/typescript-baseline.md)
-- [Testing & Mocking Guide](../testing/MOCKING_GUIDE.md)
+- [Testing & Mocking Guide](../../testing/MOCKING_GUIDE.md)
 
 ### [Architecture](architecture/)
 System design decisions and technical architecture documentation.
@@ -77,14 +77,14 @@ Enhancement proposals and strategic planning documents.
 ## 📖 Key Documents
 
 ### For New Contributors
-1. [Architecture Overview](../ARCHITECTURE.md)
-2. [Testing Guide](../testing/)
+1. [Architecture Overview](../../ARCHITECTURE.md)
+2. [Testing Guide](../../testing/)
 3. [Multi-Agent Coordination](guides/multi-agent-coordination.md)
 
 ### For DevOps/Infrastructure
 1. [Docker Optimization Guide](guides/docker-optimization.md)
 2. [Branch Protection Setup](guides/branch-protection.md)
-3. [Security Checklist](../SECURITY.md)
+3. [Security Checklist](../../SECURITY.md)
 
 ### For Product/Planning
 1. [Session Summaries](sessions/)

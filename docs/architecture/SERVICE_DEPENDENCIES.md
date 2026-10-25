@@ -719,7 +719,7 @@ docker-compose -f config/docker/docker-compose.dev.yml up
 npm run dev
 
 # Option 3: VM Backend
-python3 release-v5.1.0-beta/launch_ubuntu_vm.py
+python3 docs/archive/releases/v5.1.0-beta/launch_ubuntu_vm.py  # archived (WS10); historical
 npm run tauri:dev
 ```
 
@@ -770,12 +770,12 @@ cd td && ./bin/td kafka status
 
 ## References
 
-- [Architecture Documentation](./docs/ARCHITECTURE.md)
-- [API Documentation](./docs/api/)
-- [Deployment Guide](./RELEASE_PROCESS.md)
-- [Environment Variables](./.env.example)
-- [Docker Compose](./config/docker/docker-compose.dev.yml)
-- [Prisma Schema](./prisma/schema.prisma)
+- [Architecture Documentation](../ARCHITECTURE.md)
+- [API Documentation](../api/)
+- [Deployment Guide](../../RELEASE_PROCESS.md)
+- [Environment Variables](../../.env.example)
+- [Docker Compose](../../config/docker/docker-compose.dev.yml)
+- [Prisma Schema](../../prisma/schema.prisma)
 
 ---
 

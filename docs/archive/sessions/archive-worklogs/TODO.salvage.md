@@ -1207,8 +1207,8 @@ The systematic E2E methodology has been successfully **validated across multiple
 - [CHANGELOG.md](./CHANGELOG.md) - Complete project history and achievements
 - [docs/](./docs/) - Comprehensive project documentation
 - [GitHub Issues](https://github.com/ryanmaclean/vibecode-webgui/issues) - Detailed task tracking
-- [MCP_Context7.md](../../src/content/docs/mcp-context7.md) - Context management framework
-- [MCP_Sequential.md](../../src/content/docs/mcp-sequential.md) - Sequential thinking framework
-- [MCP_Playwright.md](../../guides/development/MCP_Playwright.md) - UI testing automation
-- [MCP_Serena.md](../../src/content/docs/mcp-serena.md) - Code-server integration
-- [MCP_IMPLEMENTATION.md](../../src/content/docs/mcp-implementation.md) - Implementation roadmap for MCP components
+- [MCP_Context7.md](../../../src/content/docs/mcp-context7.md) - Context management framework
+- [MCP_Sequential.md](../../../src/content/docs/mcp-sequential.md) - Sequential thinking framework
+- [MCP_Playwright.md](../../../guides/development/MCP_Playwright.md) - UI testing automation
+- [MCP_Serena.md](../../../src/content/docs/mcp-serena.md) - Code-server integration
+- [MCP_IMPLEMENTATION.md](../../../src/content/docs/mcp-implementation.md) - Implementation roadmap for MCP components

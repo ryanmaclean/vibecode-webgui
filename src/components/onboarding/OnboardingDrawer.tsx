@@ -232,7 +232,7 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
                 <a href="/chat" className="no-underline">{t('onboarding.aiConsole')}</a>
               </Badge>
               <Badge variant="secondary">
-                <a href="/docs/logs/AGENT_ACTIVITY_LOG.md" target="_blank" rel="noreferrer" className="no-underline">
+                <a href="/docs/archive/logs/AGENT_ACTIVITY_LOG.md" target="_blank" rel="noreferrer" className="no-underline">
                   {t('onboarding.activityLog')}
                 </a>
               </Badge>
