@@ -1,5 +1,7 @@
 # Private keys and certificates (security)
 fast-openvscode-vm/certs/openvscode-local-key.pem
+# Runtime dev TLS certs for scripts/dev/start-openvscode-https.sh (the VM tree moved to ryanmaclean/smolfire)
+/fast-openvscode-vm/
 gitea/data/jwt/private.pem
 *.key
 
@@ -551,6 +553,14 @@ PROMISE_VERIFICATION_REPORT.md
 logs/security/
 # Generated test data files
 test-data/
+
+# WS4 split (2026-10-24): agent skills moved to ryanmaclean/skills; keep scratch editor/agent
+# configs and packaged skill archives out of the tree.
+/.opencode.json
+/.windsurf-mcp-config*.json
+.codex/node_modules/
+/*.skill
+.claude/skills/**/__pycache__/
 
 # Python build/test state (WS7 split 2026-10-24). The agent SDK moved to ryanmaclean/moth.
 *.egg-info/
