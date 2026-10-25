@@ -281,8 +281,8 @@ test: add tests for GitHub integration
 - [GitHub Authentication](https://docs.github.com/en/authentication)
 
 ### Internal Documentation
-- **Branch Management Audit:** `docs/feature-audits/feature-audit-branch-management.md`
-- **Git Integration Audit:** `docs/feature-audits/feature-audit-1437-git-integration.md`
+- **Branch Management Audit:** `docs/archive/feature-audits/feature-audit-branch-management.md`
+- **Git Integration Audit:** `docs/archive/feature-audits/feature-audit-1437-git-integration.md`
 - **GitHub Integration Code:** `src/lib/github/integration.ts`
 - **CI Self-Healing:** `src/lib/ci-self-healing/`
 

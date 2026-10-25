@@ -17,8 +17,6 @@
   "globs": [
     "README.md",
     "docs/NAS_DEPLOYMENT.md",
-    "docs/wiki/**/*.md",
-    "docs/logs/**/*.md",
     "docker/code-server/README.md",
     "docker/code-server/DEPLOYMENT_GUIDE.md",
     "TODO.md",

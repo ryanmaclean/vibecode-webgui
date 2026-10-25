@@ -73,7 +73,7 @@ Guide to enabling TypeScript strict checks and fixing type errors systematically
 
 ## Testing
 
-### [Testing & Mocking Guide](../../testing/MOCKING_GUIDE.md)
+### [Testing & Mocking Guide](../../../testing/MOCKING_GUIDE.md)
 **Status:** Complete | **Size:** 1,470 lines
 
 Comprehensive guide to mocking in the VibeCode test suite.
@@ -191,7 +191,7 @@ Guidelines for documenting API endpoints with JSDoc.
 | Docker Optimization | 🔄 In Progress | Faster builds | 2-4 hours |
 | Branch Protection | ✅ Ready | Security hardening | 5 minutes |
 | TypeScript Baseline | 🔄 Phase 1 | Type safety | 4-6 hours per phase |
-| [Testing & Mocking](../../testing/MOCKING_GUIDE.md) | ✅ Complete | Test development | Read: 1 hour |
+| [Testing & Mocking](../../../testing/MOCKING_GUIDE.md) | ✅ Complete | Test development | Read: 1 hour |
 
 ---
 

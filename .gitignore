@@ -614,3 +614,9 @@ release-test-results/
 infrastructure/packer/output-*/
 infrastructure/packer/packer_cache/
 infrastructure/packer/manifest*.json
+
+# WS10 docs consolidation (2026-10-25): generated docs output, folded archive roots
+/docs/test_output.txt
+/docs/branches-to-delete.txt
+/feature_audit/
+/release-archive/

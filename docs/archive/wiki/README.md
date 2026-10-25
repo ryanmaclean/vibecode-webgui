@@ -5,7 +5,7 @@ Comprehensive documentation wiki for VibeCode development.
 ## 🚀 Quick Start
 
 **New to VibeCode Development?**
-1. Read the [Architecture Overview](../ARCHITECTURE.md)
+1. Read the [Architecture Overview](../../ARCHITECTURE.md)
 2. Browse [Session Summaries](sessions/) to understand recent work
 3. Check [Development Guides](guides/) for workflows
 4. Review [Proposals](proposals/) for strategic direction
@@ -176,17 +176,17 @@ docs/wiki/
 ## 🗂️ Related Documentation
 
 ### Core Documentation
-- [Main README](../../README.md) - Project overview
-- [Architecture](../ARCHITECTURE.md) - System architecture
-- [Testing Guide](../testing/) - Test infrastructure
+- [Main README](../../../README.md) - Project overview
+- [Architecture](../../ARCHITECTURE.md) - System architecture
+- [Testing Guide](../../testing/) - Test infrastructure
 
 ### Development
-- [API Documentation](../api/) - API endpoints and schemas
-- [Deployment](../deployment/) - Deployment guides
-- [Security](../SECURITY.md) - Security guidelines
+- [API Documentation](../../api/) - API endpoints and schemas
+- [Deployment](../../deployment/) - Deployment guides
+- [Security](../../SECURITY.md) - Security guidelines
 
 ### Community
-- [Contributing Guidelines](../../CONTRIBUTING.md)
+- [Contributing Guidelines](../../../CONTRIBUTING.md)
 - [Code of Conduct](../../CODE_OF_CONDUCT.md)
 
 ---

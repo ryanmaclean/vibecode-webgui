@@ -139,7 +139,7 @@ Guidelines for documenting API endpoints with JSDoc.
 
 ### Adding a New Guide
 
-1. **Create the guide** in `docs/wiki/guides/[guide-name].md`
+1. **Create the guide** in `docs/src/content/docs/wiki/guides/[guide-name].md` (the old `docs/wiki/` tree is archived under `docs/archive/wiki/`)
 2. **Follow the template:**
    ```markdown
    # Guide Title
