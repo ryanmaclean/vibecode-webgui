@@ -141,12 +141,14 @@ graph TD
 
 ## Agent Orchestration System
 
+> **Historical (2026-10-25, WS10):** the `.agents/` coordination framework shown here is retired; its task briefs are archived read-only in `docs/archive/agent-briefs/`. Do not create new coordination files there or in `.agents/`. Live coordination state belongs in GitHub issues/BOP (see AGENTS.md).
+
 ### Multi-Agent Framework Overview
 
 ```mermaid
 graph TB
     subgraph "Agent Orchestration Layer"
-        COORD[docs/archive/agent-briefs Coordinator<br/>Multi-Agent Planning]
+        COORD[.agents/ Coordinator<br/>Multi-Agent Planning]
         AUTOCL[.auto-claude/<br/>Task Automation]
         KAFKA[Kafka Event Bus<br/>Agent Communication]
     end
@@ -209,7 +211,7 @@ sequenceDiagram
     PM->>COORD: Define project goals
     COORD->>COORD: Decompose into tasks
     COORD->>COORD: Analyze dependencies
-    COORD->>COORD: Create docs/archive/agent-briefs/COORDINATION.md
+    COORD->>COORD: Create .agents/COORDINATION.md
 
     COORD->>KAFKA: Publish task assignments
     KAFKA->>A1: Task 1 (no dependencies)
@@ -327,7 +329,7 @@ graph LR
 
 **Key Agent Features:**
 
-- **Multi-Agent Coordination** - `docs/archive/agent-briefs/` (archived `.agents/`) directory for parallel task execution
+- **Multi-Agent Coordination** - `.agents/` directory for parallel task execution
 - **Auto-Claude Orchestration** - `.auto-claude/` for automated task workflows
 - **Event-Driven Communication** - Kafka topics for agent messaging
 - **Memory Persistence** - PostgreSQL with pgvector for agent memory
@@ -970,7 +972,7 @@ graph TB
 
 VibeCode's architecture is designed around:
 
-1. **Multi-Agent Orchestration** - `docs/archive/agent-briefs/` (archived `.agents/`) and `.auto-claude/` frameworks for parallel task execution
+1. **Multi-Agent Orchestration** - `.agents/` and `.auto-claude/` frameworks for parallel task execution
 2. **Native macOS Integration** - Swift 5 + Virtualization.framework
 3. **Hybrid Authentication** - Swift auth + Caddy proxy + JWT
 4. **VM Flexibility** - Support for vfkit, QEMU, Lima
