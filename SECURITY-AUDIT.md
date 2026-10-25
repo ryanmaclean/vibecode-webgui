@@ -1,5 +1,7 @@
 # Security Audit Report: vibecode-webgui
 
+> **Moved 2026-10-24 (WS3):** `daemon/` (kafka-dsm, gitea-kafka-bridge, disk-guard), `td/`, `.github/workflows/tundra-ci.yml` and `scripts/check-kafka-topics.sh` now live in ryanmaclean/gt (private; gt#4 and gt#5). Paths to them below refer to that repo.
+
 **Date:** 2026-02-19 (updated 2026-04-30)
 **Branch:** `claude/install-trusted-skills-bPxQK`
 **Scope:** Full codebase (TypeScript 1297, Go 1126, Python 393, TSX 244, JS 185 files)
