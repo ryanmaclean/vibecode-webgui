@@ -15,3 +15,5 @@ Each plugin is a directory containing:
 - event: Trigger-based (startup, heartbeat)
 
 See docs/deacon-plugins.md for full documentation.
+
+The Datadog plugin (`datadog/`: gastown agent check, trace and priority-routing hooks) moved to ryanmaclean/gt on 2026-10-24 (gt#4).

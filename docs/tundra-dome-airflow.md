@@ -1,5 +1,7 @@
 # Tundra Dome Airflow Playbook
 
+> **Moved 2026-10-24 (WS3):** `.gastown/`, root `tundra-dome/`, `airflow/dags/`, `settings/`, `plugins/datadog/`, the Gas Town `scripts/monitoring` emitters and the gastown/openclaw Datadog dashboards now live in ryanmaclean/gt (private; gt#4 and gt#5). Paths to them below refer to that repo.
+
 This documents how to recreate and operate the Airflow DAGs that coordinate slings, timed jobs, and maintenance backlogs for Tundra Dome.
 
 ## DAGs in this repo
