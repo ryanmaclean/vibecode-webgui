@@ -68,10 +68,10 @@ metadata:
   name: postgres-secret
   namespace: vibecode-platform
 type: Opaque
-data:
-  POSTGRES_PASSWORD: dmliZWNvZGVfcGFzc3dvcmQ=  # vibecode_password
-  POSTGRES_USER: dmliZWNvZGU=  # vibecode
-  POSTGRES_DB: dmliZWNvZGU=  # vibecode
+stringData:
+  POSTGRES_PASSWORD: "<set-me>"
+  POSTGRES_USER: "<set-me>"
+  POSTGRES_DB: "<set-me>"
 
 ---
 apiVersion: apps/v1

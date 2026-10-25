@@ -222,7 +222,7 @@ npm run lint                    # ESLint
 npm run type-check              # TypeScript
 npm run format:check            # Prettier
 npm test -- --maxWorkers=2      # Tests
-npx gitleaks detect --no-git    # Secret scanning
+gitleaks dir --redact --config .gitleaks.toml .  # Secret scanning (same gate as .github/workflows/gitleaks.yml)
 
 # Validate a commit message
 echo "feat: my commit message" | npx commitlint

@@ -11,7 +11,7 @@ import urllib.error
 
 OPENROUTER_API_KEY = os.getenv(
     "OPENROUTER_API_KEY",
-    "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"
+    ""
 )
 
 # Preferred free models in priority order (best for coding tasks first)

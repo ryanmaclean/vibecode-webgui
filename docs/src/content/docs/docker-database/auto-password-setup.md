@@ -34,7 +34,7 @@ init-secrets:
     fi"
 ```
 
-**Generated password example:** `Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=`
+**Generated password example:** `<redacted>`
 
 ### 2. Shared Volume for Password
 
@@ -142,7 +142,7 @@ docker logs init-secrets
 docker exec openvscode-server cat /run/secrets/db_password
 
 # Example output:
-# Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=
+# <redacted>
 ```
 
 ### Verify Both Containers Use Same Password
@@ -154,7 +154,7 @@ docker exec openvscode-server cat /home/.openvscode-server/data/User/settings.js
 # Should show:
 # {
 #   "workspaceRag.pgHost": "postgres-pgvector",
-#   "workspaceRag.pgPassword": "Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=",
+#   "workspaceRag.pgPassword": "<redacted>",
 #   ...
 # }
 
