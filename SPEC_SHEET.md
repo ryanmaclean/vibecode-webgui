@@ -467,7 +467,7 @@ openai → openrouter → anthropic
 
 ### 8.3 Dashboards
 
-- Service Health Dashboard (infrastructure/dashboards/service-health.json)
+- Service Health Dashboard (archive/infra-1024/infrastructure/dashboards/service-health.json, archived)
 - AI Usage & Cost Dashboard
 - VM Performance Dashboard
 - Connection Pool Monitor (/monitoring/connection-pool)
