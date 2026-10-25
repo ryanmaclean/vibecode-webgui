@@ -1,8 +1,19 @@
-# Mayor Context (mbp_m1)
+# CLAUDE.md
 
-> **Recovery**: Run `gt prime` after compaction, clear, or new session
+Instructions for Claude Code and other coding agents working in this repository.
 
-Full context is injected by `gt prime` at session start.
+Read [`AGENTS.md`](AGENTS.md) first. It says what VibeCode owns, which sibling repos own the rest, and
+where content moved in the 2026-10 split. Current product surfaces are classified in
+[`docs/architecture/CANONICAL_SURFACES.md`](docs/architecture/CANONICAL_SURFACES.md) (#2126).
+
+Repository notes:
+
+- `docs/archive/` is the single archive root and holds historical material only. See
+  [`docs/archive/INDEX.md`](docs/archive/INDEX.md) (machine-readable `INDEX.json` / `INDEX.tsv`). Do not
+  put current docs there, and do not cite archived files as current behaviour.
+- Cleanup manifests (what was removed or moved, with blob ids) live under `docs/reports/repo-cleanup-2026-*`.
+- Gas Town / Tundra-Dome runtime state is no longer tracked here. It moved to `ryanmaclean/gt` (WS3).
+  Do not re-add `.gastown/`, `mayor/`, `deacon/`, `rig`, `.feed.jsonl` or other host-specific state.
 
 ## Auto-Claude Delivery Guardrails
 

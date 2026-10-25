@@ -10,6 +10,7 @@ archive root. Each PR in the WS10 series adds its manifest here. All files are T
 | `fold-moves.tsv` | WS10 2 (fold) | `old_path, new_path`: every rename into `docs/archive/` (and `SERVICE_DEPENDENCIES.md` to `docs/architecture/`, release notes to `docs/releases/v5.1.0-beta/`). |
 | `fold-relinks.tsv` | WS10 2 (fold) | Relative Markdown links rewritten because the linking file or its target moved. |
 | `fold-deleted.tsv` | WS10 2 (fold) | Generated output removed from the tip (now in `.gitignore`). |
+| `images-removed.tsv` | WS10 3 (entrypoints) | Large unreferenced image removed from the tip, with blob id. |
 
 ## How the kept copy is chosen
 
