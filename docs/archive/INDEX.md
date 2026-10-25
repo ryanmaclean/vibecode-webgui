@@ -9,7 +9,7 @@ elsewhere under `docs/`.
   per-file [`INDEX.tsv`](INDEX.tsv) (`path, original_path, last_changed, origin`).
 - Source commit for every move and date: `24e77ca06`. `last_changed` is the date of the last commit that
   touched the original path before WS10.
-- 1146 files, 469 of them moved here by WS10. Exact duplicates were removed first; the manifest
+- 1148 files, 471 of them moved here by WS10. Exact duplicates were removed first; the manifest
   with blob ids is `docs/reports/repo-cleanup-2026-10/ws10-docs/dedupe-removed.tsv`.
 - Do not add new material here unless it is historical. A file that becomes current again moves out
   and leaves a pointer.
@@ -35,7 +35,7 @@ elsewhere under `docs/`.
 | [`releases/`](releases/) | 3 | 2026-01-31 to 2026-05-07 | release-v5.1.0-beta |
 | [`releases-index/`](releases-index/) | 3 | 2026-02-13 to 2026-02-13 | release-archive |
 | [`reports/`](reports/) | 156 | 2025-10-27 to 2026-10-25 | docs/reports, docs/archive/reports |
-| [`root-cleanup/`](root-cleanup/) | 23 | 2026-02-05 to 2026-02-07 | archive |
+| [`root-cleanup/`](root-cleanup/) | 25 | 2026-02-05 to 2026-10-25 | archive |
 | [`root-docs/`](root-docs/) | 3 | 2026-01-20 to 2026-10-25 | .env.ide.example, SECURITY-AUDIT.md, SPEC_SHEET.md |
 | [`root-md-files/`](root-md-files/) | 60 | 2025-10-28 to 2026-04-30 | docs/archive/root-md-files |
 | [`sessions/`](sessions/) | 144 | 2025-10-28 to 2026-04-30 | docs/sessions |
