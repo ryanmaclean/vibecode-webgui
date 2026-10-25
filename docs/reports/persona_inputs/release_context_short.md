@@ -1,4 +1,0 @@
-- BUILD_STATUS 2025-10-01 06:45 UTC: 40% complete, ai building, web/full queued.
-- DEPLOYMENT_SUMMARY 2025-10-01 07:24 UTC: 60% complete, minimal/standard/ai verified, web/full building.
-- Issue #410: ai/web/full builds unchecked; buildx commands listed; need manifest verification.
-- Issue #418: workflow dispatch review requires unique validation tag, concurrency guard, SBOM fail-fast, Datadog metrics proof before merge.
