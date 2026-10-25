@@ -1,6 +1,6 @@
 /**
  * vfkit Provider
- * Ports existing bash scripts from scripts/vfkit/ to TypeScript
+ * Ports the bash scripts formerly in scripts/vfkit/ (now ryanmaclean/smolfire imports/vibecode/scripts/vfkit/) to TypeScript
  * Uses Apple Virtualization.framework for native macOS performance
  */
 
@@ -1294,7 +1294,7 @@ export class VfkitProvider implements VMProvider {
     throw new Error(
       `Rootfs creation is not yet implemented. Expected rootfs at ${rootfsPath}. ` +
       `Please provide a pre-built Alpine rootfs with Node.js 24, or run the existing bash scripts ` +
-      `from scripts/vfkit/08-create-node24-rootfs.sh to create one.`
+      `from ryanmaclean/smolfire imports/vibecode/scripts/vfkit/08-create-node24-rootfs.sh to create one.`
     );
   }
   
