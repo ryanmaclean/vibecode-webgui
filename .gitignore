@@ -141,6 +141,15 @@ src-tauri/release-artifacts/
 # Datadog logs
 datadog/*.txt
 ops/monitoring/datadog/*.txt
+# WS9 infra dedupe (2026-10-24): upload test output, dashboard backups, dated Datadog exports
+/config/data/uploads/
+/data/uploads/
+/infrastructure/datadog/dashboards/.backups/
+/infrastructure/datadog/dbm-*-20[0-9][0-9]*
+/infrastructure/datadog/kind-agent-*-20[0-9][0-9]*
+/infrastructure/datadog/trace-summary-*
+/infrastructure/datadog/vibecode-webgui-*traces-*
+/infrastructure/datadog/vibecode-webgui-smoke-trace-summary-*
 
 # Swift app binaries (compiled)
 azure/SwiftUI-Apps/*App
