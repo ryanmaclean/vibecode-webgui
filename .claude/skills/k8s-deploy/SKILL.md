@@ -3,6 +3,8 @@ name: k8s-deploy
 description: Helm and Kubernetes deployment operations for ACR/AKS production, KIND local development, and resource management. Use for deploying charts, managing pods/services, configuring ingress, and troubleshooting K8s workloads.
 ---
 
+> **Moved 2026-10-24 (WS3):** `infra/tundra-dome/` and its workflows (`tundra-deploy.yaml`, `tundra-dome-kind.yml`) now live in ryanmaclean/gt (private; gt#5, which also carries the #2137 fixes). Paths to them below refer to that repo.
+
 # Kubernetes Deployment Skill
 
 Comprehensive Helm and Kubernetes deployment automation for production (ACR/AKS) and local development (KIND).
