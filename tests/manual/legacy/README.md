@@ -6,7 +6,6 @@ These HTML files are kept for quick manual validation of authentication flows. T
 
 - `test-gui-auth.html` – exercises GUI login flows against the local dev server.
 - `test-web-auth.html` – minimal client for verifying web auth redirect behaviour.
-- `manual-gui-test-legacy.html` – archived pre-consolidation harness kept for backward compatibility.
 
 ## Usage
 

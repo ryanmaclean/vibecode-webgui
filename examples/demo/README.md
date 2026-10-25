@@ -60,8 +60,7 @@ This demo showcases how to monitor GenAI workloads using PostgreSQL with pgvecto
 
 3. Run the demo script:
    ```bash
-   cd demo
-   npx ts-node genai-workflow.ts
+   npx tsx examples/demos/postgresql-genai-workflow.ts
    ```
 
 ## Monitoring with Datadog
