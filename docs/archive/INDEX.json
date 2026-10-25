@@ -4,8 +4,8 @@
   "source_repo": "ryanmaclean/vibecode-webgui",
   "source_commit": "24e77ca06",
   "archive_root": "docs/archive/",
-  "files": 1244,
-  "moved_by_ws10": 564,
+  "files": 1096,
+  "moved_by_ws10": 416,
   "per_file_index": "docs/archive/INDEX.tsv",
   "sections": [
     {"section": "agent-briefs", "files": 22, "first_changed": "2026-01-31", "last_changed": "2026-01-31", "original_paths": ".agents"},
@@ -16,7 +16,6 @@
     {"section": "consolidated-wiki", "files": 88, "first_changed": "2025-10-28", "last_changed": "2026-04-30", "original_paths": "docs/archive/consolidated-wiki"},
     {"section": "content", "files": 128, "first_changed": "2026-01-20", "last_changed": "2026-04-30", "original_paths": "docs/archive/content"},
     {"section": "experiments", "files": 2, "first_changed": "2026-01-20", "last_changed": "2026-01-20", "original_paths": "docs/archive/experiments"},
-    {"section": "feature-audits", "files": 148, "first_changed": "2026-01-31", "last_changed": "2026-04-30", "original_paths": "docs/feature-audits, docs/feature-audit"},
     {"section": "historical", "files": 40, "first_changed": "2025-10-27", "last_changed": "2025-10-28", "original_paths": "docs/historical"},
     {"section": "implementation-reports", "files": 4, "first_changed": "2025-10-28", "last_changed": "2026-04-30", "original_paths": "docs/archive/implementation-reports"},
     {"section": "incomplete-script-consolidation", "files": 6, "first_changed": "2025-10-28", "last_changed": "2025-10-28", "original_paths": "docs/archive/incomplete-script-consolidation"},

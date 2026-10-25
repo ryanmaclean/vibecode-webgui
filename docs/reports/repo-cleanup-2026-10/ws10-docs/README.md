@@ -11,6 +11,7 @@ archive root. Each PR in the WS10 series adds its manifest here. All files are T
 | `fold-relinks.tsv` | WS10 2 (fold) | Relative Markdown links rewritten because the linking file or its target moved. |
 | `fold-deleted.tsv` | WS10 2 (fold) | Generated output removed from the tip (now in `.gitignore`). |
 | `images-removed.tsv` | WS10 3 (entrypoints) | Large unreferenced image removed from the tip, with blob id. |
+| `fix1-restored.tsv` | WS10 fix 1 | docs/feature-audit and docs/feature-audits moved back out of the archive: tests/feature-audit reads them. |
 
 ## How the kept copy is chosen
 

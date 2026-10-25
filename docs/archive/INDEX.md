@@ -9,7 +9,7 @@ elsewhere under `docs/`.
   per-file [`INDEX.tsv`](INDEX.tsv) (`path, original_path, last_changed, origin`).
 - Source commit for every move and date: `24e77ca06`. `last_changed` is the date of the last commit that
   touched the original path before WS10.
-- 1244 files, 564 of them moved here by WS10. Exact duplicates were removed first; the manifest
+- 1096 files, 416 of them moved here by WS10. Exact duplicates were removed first; the manifest
   with blob ids is `docs/reports/repo-cleanup-2026-10/ws10-docs/dedupe-removed.tsv`.
 - Do not add new material here unless it is historical. A file that becomes current again moves out
   and leaves a pointer.
@@ -26,7 +26,6 @@ elsewhere under `docs/`.
 | [`consolidated-wiki/`](consolidated-wiki/) | 88 | 2025-10-28 to 2026-04-30 | docs/archive/consolidated-wiki |
 | [`content/`](content/) | 128 | 2026-01-20 to 2026-04-30 | docs/archive/content |
 | [`experiments/`](experiments/) | 2 | 2026-01-20 to 2026-01-20 | docs/archive/experiments |
-| [`feature-audits/`](feature-audits/) | 148 | 2026-01-31 to 2026-04-30 | docs/feature-audits, docs/feature-audit |
 | [`historical/`](historical/) | 40 | 2025-10-27 to 2025-10-28 | docs/historical |
 | [`implementation-reports/`](implementation-reports/) | 4 | 2025-10-28 to 2026-04-30 | docs/archive/implementation-reports |
 | [`incomplete-script-consolidation/`](incomplete-script-consolidation/) | 6 | 2025-10-28 to 2025-10-28 | docs/archive/incomplete-script-consolidation |
@@ -53,14 +52,14 @@ elsewhere under `docs/`.
 | `docs/wiki/` | `docs/archive/wiki/` (merged; no name collisions) |
 | `docs/logs/` | `docs/archive/logs/` |
 | `docs/reports/` (static reports) | `docs/archive/reports/` (merged). `docs/reports/CLEANUP_AUDIT_REPORT.md` and `docs/reports/repo-cleanup-2026-*` stay live |
-| `docs/feature-audit/`, `docs/feature-audits/` | `docs/archive/feature-audits/` |
 | `archive/` (root) | `docs/archive/` (`archive/root-cleanup/` is now `docs/archive/root-cleanup/`) |
 | `release-archive/` | `docs/archive/releases-index/` |
 | `release-v5.1.0-beta/*.py` | `docs/archive/releases/v5.1.0-beta/` (the release notes went to `docs/releases/v5.1.0-beta/`) |
 | `.agents/` | `docs/archive/agent-briefs/` |
 | `.env.ide.example` | `docs/archive/root-docs/` |
 
-Some files were left at their old paths for now, because a still-open PR edits them (#2152 WS1, #2151 WS5,
-#2163 WS9, #2154 WS8, #2155 WS6). A follow-up WS10 PR moves them after those land and updates this index.
+`docs/feature-audit/` and `docs/feature-audits/` stay live: `tests/feature-audit/` reads `docs/feature-audit/index.json`, the doc stubs it lists, and
+`docs/feature-audits/feature-audit-1442-*.md`. WS10 had folded them into the archive (#2165); this was reverted after the
+main coverage run failed. A later WS10 PR folds `archive/infra-1024/` and the last leftovers.
 `feature_audit/`, `docs/test_output.txt` and `docs/branches-to-delete.txt` were generated output. They
 were deleted and are now in `.gitignore`.
