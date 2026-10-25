@@ -13,7 +13,7 @@ Accepted
 VibeCode has two desktop runtime paths:
 
 1. **Tauri** (`platforms/tauri/`) — Rust-backed, lightweight, native OS webview, built into the primary CI and release pipeline.
-2. **Electron** (`platforms/electron-vibecode/`) — Chromium-backed, heavier, added for extension-compatibility experiments; **not actively shipped** in production releases.
+2. **Electron** (`archive/infra-1024/platforms/electron-vibecode/`) — Chromium-backed, heavier, added for extension-compatibility experiments; **not actively shipped** in production releases.
 
 Maintaining both desktop runtimes increases:
 
@@ -27,14 +27,14 @@ Maintaining both desktop runtimes increases:
 **Tauri is the one canonical desktop runtime for VibeCode.**
 
 - All desktop-related build scripts, CI jobs, and release automation target Tauri.
-- `platforms/electron-vibecode/` is preserved in the repository for reference and optional local experimentation but is **not shipped, not CI-tested, and not supported**.
+- `archive/infra-1024/platforms/electron-vibecode/` is preserved in the repository for reference and optional local experimentation but is **not shipped, not CI-tested, and not supported**.
 - New desktop features are implemented against the Tauri path only.
 
 ## Consequences
 
-- Contributors must not add new desktop features to `platforms/electron-vibecode/` without first discussing the decision with the team.
+- Contributors must not add new desktop features to `archive/infra-1024/platforms/electron-vibecode/` without first discussing the decision with the team.
 - The `start:electron` npm script in the root `package.json` remains available for local use but carries no support guarantee.
-- `platforms/electron-vibecode/README.md` documents its legacy/optional status to avoid confusion.
+- `archive/infra-1024/platforms/electron-vibecode/README.md` documents its legacy/optional status to avoid confusion.
 - If the team later decides to revive Electron for a specific use-case (e.g., full VS Code extension host), a new ADR should supersede this one.
 
 ## Alternatives Considered
