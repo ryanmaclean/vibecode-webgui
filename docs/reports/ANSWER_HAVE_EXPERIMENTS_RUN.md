@@ -24,7 +24,7 @@
 **Solution:** Found credentials in backup file and added them:
 ```bash
 NEXT_PUBLIC_DATADOG_APPLICATION_ID="52590244-d98c-4d53-a756-cfe50a8e868b"
-NEXT_PUBLIC_DATADOG_CLIENT_TOKEN="pub91c2b093bc1483a4bfb5881c3511cde6"
+NEXT_PUBLIC_DATADOG_CLIENT_TOKEN="<redacted>"
 ```
 
 ### 2. Created Server-Side Tracker
@@ -284,7 +284,7 @@ This will generate metrics for 100 users across all 3 experiments.
 
 - [x] Datadog agent installed at `/opt/datadog-agent/`
 - [x] Datadog agent running (3 processes)
-- [x] Agent API key configured (`f5be780e66c1e53a6d36b79c7c6c0178`)
+- [x] Agent API key configured (`<redacted>`)
 - [x] DogStatsD listening on localhost:8125
 - [x] RUM credentials in `.env.local`
 - [x] OpenAI API key in `.env.local`

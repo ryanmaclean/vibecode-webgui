@@ -16,8 +16,8 @@ All 8 scripts tested and working correctly:
 ## Test Environment
 
 ```bash
-export DD_API_KEY="aeddc924cd52267806839b4637964f4a"
-export DD_APP_KEY="7c06330802d39275b4c273a2580bf1a0a2417c6f"
+export DD_API_KEY="<redacted>"
+export DD_APP_KEY="<redacted>"
 export DD_SITE="datadoghq.com"
 ```
 
