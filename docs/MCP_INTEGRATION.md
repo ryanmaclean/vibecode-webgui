@@ -15,7 +15,7 @@ For detailed examples of MCP server integration, see [examples/mcp-servers/](../
 
 ### Zen MCP Server
 
-The [Zen MCP Server](https://github.com/BeehiveInnovations/zen-mcp-server) provides mindfulness and focus tools for AI workflows. See [examples/mcp-servers/zen-mcp-server/](../examples/mcp-servers/zen-mcp-server/) for:
+The [Zen MCP Server](https://github.com/BeehiveInnovations/zen-mcp-server) is a multi-model MCP server; see its upstream README for setup. The in-repo example tree was removed in the #2125 cleanup. Older notes covered:
 
 - **Neovim configuration** with Avante.nvim
 - **VSCode/Cursor/Windsurf** setup
