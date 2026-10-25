@@ -97,7 +97,7 @@ vibecode.experiments.metrics.quality_score:0.85|h|#experiment:multi_model_select
 
 ✅ **Datadog Agent Running**
 - Location: `/opt/datadog-agent/`
-- API Key: `f5be780e66c1e53a6d36b79c7c6c0178`
+- API Key: `<redacted>`
 - Site: `datadoghq.com`
 - Processes:
   - Main agent (PID 4449)
@@ -173,7 +173,7 @@ vibecode.experiments.metrics.quality_score:0.85|h|#experiment:multi_model_select
 **`.env.local`** - Now includes RUM credentials:
 ```bash
 NEXT_PUBLIC_DATADOG_APPLICATION_ID="52590244-d98c-4d53-a756-cfe50a8e868b"
-NEXT_PUBLIC_DATADOG_CLIENT_TOKEN="pub91c2b093bc1483a4bfb5881c3511cde6"
+NEXT_PUBLIC_DATADOG_CLIENT_TOKEN="<redacted>"
 NEXT_PUBLIC_DATADOG_SITE="datadoghq.com"
 ```
 

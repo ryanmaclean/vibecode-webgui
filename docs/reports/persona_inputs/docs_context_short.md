@@ -1,3 +1,0 @@
-- Build snapshot 06:45 UTC 40%; deployment 07:24 UTC 60%; docs need consistent status reference.
-- Issue #411 outstanding: CHANGELOG, DEPLOYMENT_REPORT update, verification guide, README refresh, troubleshooting.
-- Deadlines: release digest 2025-10-02 18:00, docs handoff 2025-10-06; addendum awaiting persona outputs.
