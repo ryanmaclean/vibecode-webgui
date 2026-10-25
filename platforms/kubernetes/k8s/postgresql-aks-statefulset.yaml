@@ -7,10 +7,9 @@ metadata:
   name: postgresql-credentials
   namespace: vibecode-platform
 type: Opaque
-data:
-  # Base64 encoded values - replace with actual values
-  postgres-password: cG9zdGdyZXNfc2VjdXJlX3Bhc3N3b3JkXzEyMw==  # postgres_secure_password_123
-  replication-password: cmVwbGljYXRpb25fc2VjdXJlX3Bhc3N3b3JkXzEyMw==  # replication_secure_password_123
+stringData:
+  postgres-password: "<set-me>"
+  replication-password: "<set-me>"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -97,12 +96,12 @@ data:
     CREATE EXTENSION IF NOT EXISTS pgcrypto;
     
     -- Create application user
-    CREATE USER vibecode_app WITH PASSWORD 'app_secure_password_123';
+    CREATE USER vibecode_app WITH PASSWORD '<set-me>';
     GRANT ALL PRIVILEGES ON DATABASE vibecode TO vibecode_app;
     GRANT ALL ON SCHEMA public TO vibecode_app;
     
     -- Create replication user
-    CREATE USER replication WITH REPLICATION PASSWORD 'replication_secure_password_123';
+    CREATE USER replication WITH REPLICATION PASSWORD '<set-me>';  -- must match replication-password in the Secret above
     
     -- Verify extensions
     SELECT extname, extversion FROM pg_extension WHERE extname IN ('vector', 'pg_stat_statements', 'pgcrypto');
@@ -377,9 +376,9 @@ metadata:
   name: postgresql-ssl-certs
   namespace: vibecode-platform
 type: Opaque
-data:
-  server.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t  # Base64 encoded cert
-  ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t     # Base64 encoded CA cert
+stringData:
+  server.crt: "<set-me>"
+  ca.crt: "<set-me>"
 ---
 apiVersion: v1
 kind: Secret
@@ -387,8 +386,8 @@ metadata:
   name: postgresql-ssl-private
   namespace: vibecode-platform
 type: Opaque
-data:
-  server.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t  # Base64 encoded private key
+stringData:
+  server.key: "<set-me>"
 ---
 # Pod Disruption Budget
 apiVersion: policy/v1

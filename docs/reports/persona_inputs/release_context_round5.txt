@@ -1,5 +1,0 @@
-- Build tracker (BUILD_STATUS.md) last updated 2025-10-01 06:45 UTC: 40% complete; ai building; web/full queued.
-- Deployment summary (07:24 UTC) claims 60% complete with minimal/standard/ai verified.
-- Latest codeserver-multiarch runs 18173489520, 18173488125, 18173477874 failed immediately on 2025-10-01 19:34 UTC.
-- Issue #410 still lists ai/web/full builds unchecked; need manifest evidence before closing.
-- Issue #418 reviewer notes: unique validation tag must include run & SHA, add concurrency guard, enforce SBOM fail-fast, attach Datadog metrics proof.
