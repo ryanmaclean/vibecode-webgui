@@ -1,4 +1,0 @@
-- Bats coverage: happy path, MOCK_TOOL_MISSING, MOCK_KUBECTL_EXEC_FAIL, MOCK_TIMEOUT_EXIT, MOCK_KUBECTL_WAIT_FAIL, retry with MOCK_KUBECTL_GET_SEQUENCE + MOCK_KUBECTL_EXEC_FAIL_ONCE.
-- No tests assert telemetry `tool=/status=/duration_ms=` or secret masking.
-- PATH-missing kubectl and Ready pod exhaustion not covered.
-- Goal (#417): add these tests, then gate CI via `npm run test:scripts`.

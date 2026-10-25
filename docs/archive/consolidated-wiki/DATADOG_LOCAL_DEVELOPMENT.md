@@ -298,7 +298,7 @@ docker-compose logs -f datadog-agent
 
 ## 📚 Related Documentation
 
-- [DATADOG_MONITORING_CONFIGURATION.md](./DATADOG_MONITORING_CONFIGURATION.md) - Complete monitoring setup
+- [DATADOG_MONITORING_CONFIGURATION.md](../content/wiki/DATADOG_MONITORING_CONFIGURATION.md) - Complete monitoring setup
 - [COMPREHENSIVE_TESTING_GUIDE.md](./COMPREHENSIVE_TESTING_GUIDE.md) - Testing all components
 - [README.md](./README.md) - Project overview and setup
 

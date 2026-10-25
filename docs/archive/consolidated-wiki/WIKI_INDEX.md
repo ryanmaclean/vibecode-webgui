@@ -18,51 +18,51 @@ Welcome to the comprehensive VibeCode documentation. This wiki provides complete
 - **[Docker Troubleshooting](DOCKER_TROUBLESHOOTING_SUMMARY.md)** - Docker Doctor TUI documentation
 
 ### 🏗️ Development & Operations
-- **[Repository Scan Report](REPOSITORY_SCAN_REPORT_JULY_2025.md)** - Current project status
-- **[Enhanced AI Features](ENHANCED_AI_FEATURES.md)** - New AI capabilities
-- **[Missing AI Libraries Analysis](MISSING_AI_LIBRARIES_ANALYSIS.md)** - AI ecosystem gaps
-- **[Authentication Guide](AUTHENTICATION_SUMMARY.md)** - Security implementation
+- **[Repository Scan Report](../content/wiki/REPOSITORY_SCAN_REPORT_JULY_2025.md)** - Current project status
+- **[Enhanced AI Features](../content/wiki/ENHANCED_AI_FEATURES.md)** - New AI capabilities
+- **[Missing AI Libraries Analysis](../content/wiki/MISSING_AI_LIBRARIES_ANALYSIS.md)** - AI ecosystem gaps
+- **[Authentication Guide](../content/wiki/AUTHENTICATION_SUMMARY.md)** - Security implementation
 - **[Testing Guide](AUTHENTICATION_TESTING_GUIDE.md)** - Authentication testing
 
 ### 🔧 Infrastructure & Deployment
-- **[Azure Infrastructure](AZURE_INFRASTRUCTURE_SUMMARY.md)** - Cloud deployment
-- **[Production Status](production-status.md)** - Current production state
-- **[Comprehensive Testing](COMPREHENSIVE_TESTING_ASSESSMENT.md)** - Test coverage analysis
-- **[Container Manifest](CONTAINER_MANIFEST.md)** - Container configurations
+- **[Azure Infrastructure](../content/wiki/AZURE_INFRASTRUCTURE_SUMMARY.md)** - Cloud deployment
+- **[Production Status](../../src/content/docs/production-status.md)** - Current production state
+- **[Comprehensive Testing](../content/wiki/COMPREHENSIVE_TESTING_ASSESSMENT.md)** - Test coverage analysis
+- **[Container Manifest](../content/wiki/CONTAINER_MANIFEST.md)** - Container configurations
 
 ### 🤖 AI & Machine Learning
-- **[GenAI Integration](GENAI_INTEGRATION_ARCHITECTURE.md)** - AI architecture
-- **[GenAI Enhancement Summary](GENAI_ENHANCEMENT_SUMMARY.md)** - Recent AI improvements
-- **[AI CLI Tools Implementation](AI_CLI_TOOLS_IMPLEMENTATION_SUMMARY.md)** - CLI AI features
-- **[Docker Model Runner](DOCKER_MODEL_RUNNER_SETUP.md)** - AI model deployment
+- **[GenAI Integration](../content/wiki/GENAI_INTEGRATION_ARCHITECTURE.md)** - AI architecture
+- **[GenAI Enhancement Summary](../content/wiki/GENAI_ENHANCEMENT_SUMMARY.md)** - Recent AI improvements
+- **[AI CLI Tools Implementation](../content/wiki/AI_CLI_TOOLS_IMPLEMENTATION_SUMMARY.md)** - CLI AI features
+- **[Docker Model Runner](../content/wiki/DOCKER_MODEL_RUNNER_SETUP.md)** - AI model deployment
 
 ### 📊 Data & Integrations
 - **[Prisma pgvector Tests](PRISMA_PGVECTOR_TEST_RESULTS.md)** - Vector database integration
-- **[Redis/Valkey Guide](REDIS_VALKEY_INTEGRATION_GUIDE.md)** - Caching implementation
-- **[Temporal Integration](TEMPORAL_INTEGRATION_SUMMARY.md)** - Workflow orchestration
+- **[Redis/Valkey Guide](../content/wiki/REDIS_VALKEY_INTEGRATION_GUIDE.md)** - Caching implementation
+- **[Temporal Integration](../content/wiki/TEMPORAL_INTEGRATION_SUMMARY.md)** - Workflow orchestration
 - **[Datadog Compatibility](DATADOG_COMPATIBILITY_SUMMARY.md)** - Monitoring setup
 
 ### 🔌 Extensions & Tools
-- **[VS Code Extension Config](VSCODE_EXTENSION_CONFIGURATION.md)** - Extension setup
-- **[Mastra Integration](MASTRA_INTEGRATION_GUIDE.md)** - Framework integration
-- **[Microsoft Extensions](MICROSOFT_VSCODE_EXTENSIONS_MIT_BSD.md)** - Licensed extensions
-- **[Third Party Notices](THIRD_PARTY_NOTICES_EXTENSIONS.md)** - Legal compliance
+- **[VS Code Extension Config](../content/wiki/VSCODE_EXTENSION_CONFIGURATION.md)** - Extension setup
+- **[Mastra Integration](../content/wiki/MASTRA_INTEGRATION_GUIDE.md)** - Framework integration
+- **[Microsoft Extensions](../content/wiki/MICROSOFT_VSCODE_EXTENSIONS_MIT_BSD.md)** - Licensed extensions
+- **[Third Party Notices](../content/wiki/THIRD_PARTY_NOTICES_EXTENSIONS.md)** - Legal compliance
 
 ### 📈 Monitoring & Optimization
-- **[Test Infrastructure](TEST_INFRASTRUCTURE_SUMMARY.md)** - Testing framework
-- **[Pre-commit Optimization](PRECOMMIT_OPTIMIZATION_SUMMARY.md)** - Development workflow
-- **[Comprehensive Test Report](COMPREHENSIVE_TEST_REPORT.md)** - Latest test results
-- **[KIND Validation](KIND_VALIDATION_REPORT.md)** - Environment validation
+- **[Test Infrastructure](../content/wiki/TEST_INFRASTRUCTURE_SUMMARY.md)** - Testing framework
+- **[Pre-commit Optimization](../content/wiki/PRECOMMIT_OPTIMIZATION_SUMMARY.md)** - Development workflow
+- **[Comprehensive Test Report](../content/wiki/COMPREHENSIVE_TEST_REPORT.md)** - Latest test results
+- **[KIND Validation](../content/wiki/KIND_VALIDATION_REPORT.md)** - Environment validation
 
 ### 📝 Configuration & Environment
 - **[Environment Variables](ENV_VARIABLES.md)** - Configuration guide
-- **[Development Credentials](DEVELOPMENT_CREDENTIALS.md)** - Local development setup
-- **[Documentation Plan](DOCS_CONSOLIDATION_PLAN.md)** - Documentation strategy
+- **[Development Credentials](../content/wiki/DEVELOPMENT_CREDENTIALS.md)** - Local development setup
+- **[Documentation Plan](../content/wiki/DOCS_CONSOLIDATION_PLAN.md)** - Documentation strategy
 
 ### 📜 Legal & Compliance
-- **[License Sweep](LICENSE_SWEEP_GENAI_LIBRARIES.md)** - GenAI library licenses
-- **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute
-- **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community standards
+- **[License Sweep](../content/wiki/LICENSE_SWEEP_GENAI_LIBRARIES.md)** - GenAI library licenses
+- **[Contributing Guidelines](../content/wiki/CONTRIBUTING.md)** - How to contribute
+- **[Code of Conduct](../content/wiki/CODE_OF_CONDUCT.md)** - Community standards
 
 ## 🔄 Recent Updates
 
@@ -99,7 +99,7 @@ cd docs && npm run build
 
 - **Issues:** [GitHub Issues](https://github.com/vibecode/webgui/issues)
 - **Documentation:** This wiki
-- **Status:** [Production Status](production-status.md)
+- **Status:** [Production Status](../../src/content/docs/production-status.md)
 
 ---
 

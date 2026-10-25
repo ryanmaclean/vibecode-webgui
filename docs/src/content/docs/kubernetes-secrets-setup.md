@@ -9,11 +9,11 @@ This guide explains how to properly configure the Kubernetes secrets for externa
 
 ## ⚠️ SECURITY WARNING
 
-The current secret files (`vibecode-secrets.yaml` and `oauth-secrets.yaml`) contain **PLACEHOLDER VALUES** that must be replaced before deploying to any external environment.
+The secret files (`vibecode-secrets.yaml` and the `oauth-secrets.example.yaml` template, copied to the git-ignored `oauth-secrets.yaml`) contain **PLACEHOLDER VALUES** that must be replaced before deploying to any external environment.
 
 ## Required Secret Replacements
 
-### 1. OAuth Secrets (`k8s/oauth-secrets.yaml`)
+### 1. OAuth Secrets (`platforms/kubernetes/k8s/oauth-secrets.example.yaml` copied to `oauth-secrets.yaml`)
 
 Replace these base64-encoded placeholder values:
 

@@ -363,7 +363,7 @@ helm upgrade vibecode-prod ./helm/vibecode-platform \
 
 - [Helm Deployment Guide](./helm-deployment-guide) - Complete deployment instructions
 - [Storage Sizing Analysis](./storage-sizing-analysis) - Storage optimization strategy
-- [KIND Troubleshooting Guide](./kind-troubleshooting) - Local development setup
+- [KIND Troubleshooting Guide](../../../src/content/docs/kind-troubleshooting) - Local development setup
 
 ---
 
