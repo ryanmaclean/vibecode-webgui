@@ -1387,4 +1387,4 @@ The phased implementation approach ensures incremental delivery of value while m
 - [Tauri Commands Documentation](https://tauri.app/v2/guides/features/command/)
 - [Ollama API Documentation](https://github.com/ollama/ollama/blob/main/docs/api.md)
 - [Model Context Protocol Spec](https://modelcontextprotocol.io/)
-- [Roundtable-AI MCP Proposal](/docs/wiki/proposals/roundtable-mcp-subagents.md)
+- [Roundtable-AI MCP Proposal](/docs/archive/wiki/proposals/roundtable-mcp-subagents.md)
