@@ -4,8 +4,8 @@ description: "Complete guide for running OpenVSCode Server with PostgreSQL using
 ---
 
 > **Archived (2026-10-24):** `docker-compose.openvscode.yml` now lives at
-> `archive/infra-1024/docker-compose.openvscode.yml`. It is not maintained or tested. To try it, run it from the
-> repo root with `docker compose -f archive/infra-1024/docker-compose.openvscode.yml --project-directory . up`.
+> `docs/archive/infra-1024/docker-compose.openvscode.yml`. It is not maintained or tested. To try it, run it from the
+> repo root with `docker compose -f docs/archive/infra-1024/docker-compose.openvscode.yml --project-directory . up`.
 
 # Docker Compose Setup - OpenVSCode with PostgreSQL RAG
 

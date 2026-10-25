@@ -9,7 +9,7 @@ elsewhere under `docs/`.
   per-file [`INDEX.tsv`](INDEX.tsv) (`path, original_path, last_changed, origin`).
 - Source commit for every move and date: `24e77ca06`. `last_changed` is the date of the last commit that
   touched the original path before WS10.
-- 1244 files, 564 of them moved here by WS10. Exact duplicates were removed first; the manifest
+- 1295 files, 618 of them moved here by WS10. Exact duplicates were removed first; the manifest
   with blob ids is `docs/reports/repo-cleanup-2026-10/ws10-docs/dedupe-removed.tsv`.
 - Do not add new material here unless it is historical. A file that becomes current again moves out
   and leaves a pointer.
@@ -23,22 +23,23 @@ elsewhere under `docs/`.
 | [`agents/`](agents/) | 15 | 2025-10-28 to 2025-10-28 | docs/archive/agents |
 | [`archive/`](archive/) | 28 | 2025-10-28 to 2025-10-31 | docs/archive/archive |
 | [`benchmark-results/`](benchmark-results/) | 1 | 2026-01-20 to 2026-01-20 | docs/archive/benchmark-results |
-| [`consolidated-wiki/`](consolidated-wiki/) | 88 | 2025-10-28 to 2026-04-30 | docs/archive/consolidated-wiki |
-| [`content/`](content/) | 128 | 2026-01-20 to 2026-04-30 | docs/archive/content |
+| [`consolidated-wiki/`](consolidated-wiki/) | 86 | 2025-10-28 to 2026-04-30 | docs/archive/consolidated-wiki |
+| [`content/`](content/) | 127 | 2026-01-20 to 2026-04-30 | docs/archive/content |
 | [`experiments/`](experiments/) | 2 | 2026-01-20 to 2026-01-20 | docs/archive/experiments |
-| [`feature-audits/`](feature-audits/) | 148 | 2026-01-31 to 2026-04-30 | docs/feature-audits, docs/feature-audit |
+| [`feature-audits/`](feature-audits/) | 150 | 2026-01-31 to 2026-10-25 | docs/feature-audits, docs/feature-audit |
 | [`historical/`](historical/) | 40 | 2025-10-27 to 2025-10-28 | docs/historical |
 | [`implementation-reports/`](implementation-reports/) | 4 | 2025-10-28 to 2026-04-30 | docs/archive/implementation-reports |
 | [`incomplete-script-consolidation/`](incomplete-script-consolidation/) | 6 | 2025-10-28 to 2025-10-28 | docs/archive/incomplete-script-consolidation |
+| [`infra-1024/`](infra-1024/) | 45 | 2026-10-25 to 2026-10-25 | archive |
 | [`logs/`](logs/) | 76 | 2025-10-27 to 2025-10-28 | docs/logs |
 | [`old-reports/`](old-reports/) | 24 | 2025-10-28 to 2025-10-28 | docs/archive/old-reports |
 | [`releases/`](releases/) | 3 | 2026-01-31 to 2026-05-07 | release-v5.1.0-beta |
 | [`releases-index/`](releases-index/) | 3 | 2026-02-13 to 2026-02-13 | release-archive |
-| [`reports/`](reports/) | 154 | 2025-10-27 to 2026-04-30 | docs/reports, docs/archive/reports |
-| [`root-cleanup/`](root-cleanup/) | 21 | 2026-02-05 to 2026-02-07 | archive |
-| [`root-docs/`](root-docs/) | 1 | 2026-01-20 to 2026-01-20 | .env.ide.example |
+| [`reports/`](reports/) | 156 | 2025-10-27 to 2026-10-25 | docs/reports, docs/archive/reports |
+| [`root-cleanup/`](root-cleanup/) | 23 | 2026-02-05 to 2026-02-07 | archive |
+| [`root-docs/`](root-docs/) | 2 | 2026-01-20 to 2026-10-25 | .env.ide.example, SPEC_SHEET.md |
 | [`root-md-files/`](root-md-files/) | 60 | 2025-10-28 to 2026-04-30 | docs/archive/root-md-files |
-| [`sessions/`](sessions/) | 142 | 2025-10-28 to 2026-04-30 | docs/sessions |
+| [`sessions/`](sessions/) | 144 | 2025-10-28 to 2026-04-30 | docs/sessions |
 | [`status-reports/`](status-reports/) | 8 | 2025-10-28 to 2025-10-28 | docs/archive/status-reports |
 | (top-level files) | 20 | 2025-10-28 to 2026-04-30 | docs/archive/ |
 | [`vibecode-v1.4a-package/`](vibecode-v1.4a-package/) | 6 | 2026-01-20 to 2026-01-20 | docs/archive/vibecode-v1.4a-package |
@@ -58,9 +59,10 @@ elsewhere under `docs/`.
 | `release-archive/` | `docs/archive/releases-index/` |
 | `release-v5.1.0-beta/*.py` | `docs/archive/releases/v5.1.0-beta/` (the release notes went to `docs/releases/v5.1.0-beta/`) |
 | `.agents/` | `docs/archive/agent-briefs/` |
-| `.env.ide.example` | `docs/archive/root-docs/` |
+| `.env.ide.example`, `SPEC_SHEET.md` | `docs/archive/root-docs/` |
+| `archive/infra-1024/` (WS9, #2163) | `docs/archive/infra-1024/` (its own INDEX.md lists each leaf) |
 
-Some files were left at their old paths for now, because a still-open PR edits them (#2152 WS1, #2151 WS5,
-#2163 WS9, #2154 WS8, #2155 WS6). A follow-up WS10 PR moves them after those land and updates this index.
+Still at the old path because an open PR edits it: `archive/root-cleanup/secret.yaml` (#2139, empty file),
+`RELEASE_PROCESS.md` (#2155), `SECURITY-AUDIT.md` (#2154). A later WS10 PR moves them after those land.
 `feature_audit/`, `docs/test_output.txt` and `docs/branches-to-delete.txt` were generated output. They
 were deleted and are now in `.gitignore`.

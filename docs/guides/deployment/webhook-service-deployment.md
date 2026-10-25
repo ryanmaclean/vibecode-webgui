@@ -1,6 +1,6 @@
 # Webhook Service Deployment
 
-> **Archived (2026-10-24):** the webhook service now lives at `archive/infra-1024/infrastructure/services/webhook-service/`.
+> **Archived (2026-10-24):** the webhook service now lives at `docs/archive/infra-1024/infrastructure/services/webhook-service/`.
 > It is not built or tested in CI. Replace `services/webhook-service` below with that path.
 
 This guide covers running the webhook service locally with Docker Compose and deploying it to Kubernetes.

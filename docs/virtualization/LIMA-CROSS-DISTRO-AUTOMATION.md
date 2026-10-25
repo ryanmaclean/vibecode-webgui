@@ -7,7 +7,7 @@ BSD-based images when running on Azure or similar cloud hosts.
 
 ## Assets Introduced
 
-- `archive/infra-1024/infrastructure/lima/vibecode-dev.yaml` (archived 2026-10-24) – Ubuntu 24.04 VM definition with Node.js,
+- `docs/archive/infra-1024/infrastructure/lima/vibecode-dev.yaml` (archived 2026-10-24) – Ubuntu 24.04 VM definition with Node.js,
   Docker, and Playwright dependencies preinstalled.
 - `scripts/automate-lima-vibecode.sh` – One-touch bootstrap that starts the VM,
   syncs the repository, installs dependencies, and runs smoke checks inside the
