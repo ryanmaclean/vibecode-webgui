@@ -1,4 +1,6 @@
 /**
+ * @jest-environment node
+ *
  * End-to-End Integration Tests for Secret Rotation System
  *
  * Tests the complete secret lifecycle from registration to rotation.
@@ -33,8 +35,19 @@ jest.mock('@/lib/logging', () => ({
   })),
 }));
 
-// Mock the logger
-jest.mock('@/lib/logger', () => ({
+// Mock the logger. @/lib/prisma -> server-monitoring calls createLogger() and
+// uses `logger` at import time, so both must exist on the mock.
+jest.mock('@/lib/logger', () => {
+  const mockLog = () => ({
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    child: jest.fn(() => mockLog()),
+  });
+  return {
+  logger: mockLog(),
+  createLogger: jest.fn(() => mockLog()),
   default: {
     info: jest.fn(),
     warn: jest.fn(),
@@ -47,7 +60,8 @@ jest.mock('@/lib/logger', () => ({
     error: jest.fn(),
     debug: jest.fn(),
   })),
-}));
+  };
+});
 
 // Mock the macOS keychain module
 jest.mock('@/lib/security/macos-keychain', () => ({
@@ -70,7 +84,11 @@ jest.mock('@/lib/security/macos-keychain', () => ({
 const SKIP_E2E = process.env.SKIP_POSTGRES_TESTS === '1';
 const describeIf = SKIP_E2E ? describe.skip : describe;
 
-const prisma = new PrismaClient();
+// Real Prisma client against the CI Postgres (#2136); the auto-applied manual
+// mock in tests/__mocks__/@prisma/client.ts cannot persist rows.
+jest.unmock('@prisma/client');
+// Construct only when the suite runs: an ungenerated client throws in its constructor.
+const prisma = (SKIP_E2E ? undefined : new PrismaClient()) as PrismaClient;
 
 // Test data
 const TEST_SECRET_PREFIX = 'e2e_test_secret_';

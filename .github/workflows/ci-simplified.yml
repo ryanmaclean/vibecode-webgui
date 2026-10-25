@@ -192,28 +192,50 @@ jobs:
 
           echo "Waiting for Redis..."
           attempt=1
-          until redis-cli -h localhost -p 6379 ping > /dev/null 2>&1 || [ $attempt -eq $max_attempts ]; do
+          # NOTE: redis-cli is not preinstalled on GitHub-hosted ubuntu runners
+          # (unlike pg_isready, which ships with the PostgreSQL client package),
+          # so we probe TCP reachability with nc instead of shelling out to a
+          # binary that doesn't exist on the host.
+          until nc -z localhost 6379 || [ $attempt -eq $max_attempts ]; do
             echo "Redis not ready, attempt $attempt/$max_attempts"
             sleep 2
             attempt=$((attempt + 1))
           done
-          if ! redis-cli -h localhost -p 6379 ping > /dev/null 2>&1; then
+          if ! nc -z localhost 6379; then
             echo "❌ Redis failed to become ready after $max_attempts attempts"
             exit 1
           fi
           echo "✅ Redis is ready"
 
-      - name: Run unit tests
+      # #2136: never trust a cached/stale generated client, and give the
+      # DB-backed suites (tests/integration/experiments-e2e.test.ts) real tables.
+      # postgres:16 has no pgvector, so the optional Unsupported("vector(...)")
+      # embedding columns are dropped from the pushed copy only; the generated
+      # client never selects Unsupported fields, so it is unaffected.
+      - name: Prepare Prisma client and test schema
         run: |
-          npm test -- --passWithNoTests \
-            --testPathIgnorePatterns="tests/e2e|tests/k8s" \
-            --runInBand
+          npx prisma validate
+          npx prisma generate
+          grep -v 'Unsupported("vector' prisma/schema.prisma > "$RUNNER_TEMP/schema.ci.prisma"
+          npx prisma db push --schema "$RUNNER_TEMP/schema.ci.prisma" --skip-generate --accept-data-loss
+
+      # Do NOT pass --testPathIgnorePatterns here: on the CLI it replaces the
+      # config list, which silently un-quarantined ~60 suites and ran
+      # extensions/, examples/ and config/alternatives/ tests (#2136).
+      # tests/e2e is already ignored by config/jest.config.js; tests/integration
+      # runs in the next step.
+      # --forceExit: in run 36048879268 every suite finished (387 passed,
+      # 1 skipped) but open handles (live Postgres/Redis clients, dd-trace CI
+      # visibility) kept jest alive until the 25-minute job timeout.
+      - name: Run unit tests
+        run: npm test -- --passWithNoTests --runInBand --forceExit
         env:
           NODE_OPTIONS: -r dd-trace/ci/init
+          JEST_EXCLUDE_INTEGRATION: '1'
 
       - name: Run integration tests
         run: |
-          if npm run test:integration --if-present; then
+          if npm run test:integration --if-present -- --forceExit; then
             echo "✅ Integration tests passed"
           else
             echo "❌ Integration tests failed"
