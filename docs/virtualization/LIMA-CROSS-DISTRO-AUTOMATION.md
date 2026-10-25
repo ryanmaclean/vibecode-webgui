@@ -1,5 +1,7 @@
 # Lima Cross-Distro Automation for Vibecode
 
+> **Moved (2026-10-24):** the image builders referenced on this page (`infrastructure/packer/`, `scripts/release-testing/`, and the `scripts/benchmarks` kernel, initramfs and rootfs builders with `kernel-configs/`) now live in [ryanmaclean/genoa `imports/vibecode-webgui/`](https://github.com/ryanmaclean/genoa/tree/main/imports/vibecode-webgui). The relative paths are unchanged, so run builder commands from that directory in a genoa checkout. Benchmark, comparison and launcher scripts (for example `*_bench.sh`, `docker-musl-vs-glibc.sh`, `test-musl-builds.sh`, `vscode_microvm.sh`) moved to [ryanmaclean/smolfire `imports/vibecode/`](https://github.com/ryanmaclean/smolfire/tree/main/imports/vibecode); run those from that directory in a smolfire checkout.
+
 This guide ports the Lima and VM orchestration patterns introduced in the ZFS
 Datadog integration into the Vibecode WebGUI toolchain. It documents how to spin up
 reproducible dev/test VMs, reuse the new helper scripts, and extend the workflow to

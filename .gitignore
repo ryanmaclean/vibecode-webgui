@@ -609,6 +609,12 @@ bun.lockb
 /platforms/azure/azure/SwiftUI-Apps/*.png
 /platforms/azure/azure/SwiftUI-Apps/playwright-screenshots/
 
+# WS6 2026-10-24: outputs of the image builders that moved to ryanmaclean/genoa
+release-test-results/
+infrastructure/packer/output-*/
+infrastructure/packer/packer_cache/
+infrastructure/packer/manifest*.json
+
 # WS10 docs consolidation (2026-10-25): generated docs output, folded archive roots
 /docs/test_output.txt
 /docs/branches-to-delete.txt

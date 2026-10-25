@@ -1,5 +1,7 @@
 # Issue #574 Quick Start Guide
 
+> **Moved (2026-10-24):** the image builders referenced on this page (`infrastructure/packer/`, `scripts/release-testing/`, and the `scripts/benchmarks` kernel, initramfs and rootfs builders with `kernel-configs/`) now live in [ryanmaclean/genoa `imports/vibecode-webgui/`](https://github.com/ryanmaclean/genoa/tree/main/imports/vibecode-webgui). The relative paths are unchanged, so run builder commands from that directory in a genoa checkout. Benchmark, comparison and launcher scripts (for example `*_bench.sh`, `docker-musl-vs-glibc.sh`, `test-musl-builds.sh`, `vscode_microvm.sh`) moved to [ryanmaclean/smolfire `imports/vibecode/`](https://github.com/ryanmaclean/smolfire/tree/main/imports/vibecode); run those from that directory in a smolfire checkout.
+
 ## MiniVim arm64 6.17.x Kernel Refresh for Apple Silicon
 
 This guide provides step-by-step instructions for building and validating the MiniVim kernel on Apple Silicon (M1/M2/M3/M4).

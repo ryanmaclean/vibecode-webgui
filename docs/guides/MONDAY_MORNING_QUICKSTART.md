@@ -1,5 +1,7 @@
 # Monday Morning Quick-Start - VibeCode on OmniOS ARM64
 
+> **Moved (2026-10-24):** the image builders referenced on this page (`infrastructure/packer/`, `scripts/release-testing/`, and the `scripts/benchmarks` kernel, initramfs and rootfs builders with `kernel-configs/`) now live in [ryanmaclean/genoa `imports/vibecode-webgui/`](https://github.com/ryanmaclean/genoa/tree/main/imports/vibecode-webgui). The relative paths are unchanged, so run builder commands from that directory in a genoa checkout. Benchmark, comparison and launcher scripts (for example `*_bench.sh`, `docker-musl-vs-glibc.sh`, `test-musl-builds.sh`, `vscode_microvm.sh`) moved to [ryanmaclean/smolfire `imports/vibecode/`](https://github.com/ryanmaclean/smolfire/tree/main/imports/vibecode); run those from that directory in a smolfire checkout.
+
 **Date:** October 28, 2025 (Monday)
 **Time to Complete:** 5 minutes setup + 20-30 minutes automated build
 **Status:** 🚀 **READY TO EXECUTE**
@@ -27,7 +29,7 @@ Everything is automated and tested. You have **two options**:
 ### Step 1: Open Terminal (1 minute)
 
 ```bash
-cd /Users/studio/Documents/vibecode-webgui/infrastructure/packer
+cd genoa/imports/vibecode-webgui/infrastructure/packer   # in a ryanmaclean/genoa checkout
 ```
 
 ### Step 2: Run the Build (1 command, 20-30 minutes)

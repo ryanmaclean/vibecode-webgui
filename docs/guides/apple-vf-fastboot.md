@@ -1,5 +1,7 @@
 # Apple VF Micro-VM Fast Boot Experiment
 
+> **Moved (2026-10-24):** the image builders referenced on this page (`infrastructure/packer/`, `scripts/release-testing/`, and the `scripts/benchmarks` kernel, initramfs and rootfs builders with `kernel-configs/`) now live in [ryanmaclean/genoa `imports/vibecode-webgui/`](https://github.com/ryanmaclean/genoa/tree/main/imports/vibecode-webgui). The relative paths are unchanged, so run the commands below from that directory. Benchmarks and launchers (including `applevf_fastboot_bench.sh`) moved to [ryanmaclean/smolfire `imports/vibecode/`](https://github.com/ryanmaclean/smolfire/tree/main/imports/vibecode); run those from that directory in a smolfire checkout.
+
 This document describes the fast boot optimization experiment for Apple Virtualization Framework (VF) using EFI-stub kernel and trimmed BusyBox initramfs.
 
 ## Goals
@@ -68,7 +70,7 @@ Optimized `/init` that:
 | `scripts/benchmarks/kernel-configs/efi-stub-arm64.config` | EFI-stub kernel configuration |
 | `scripts/benchmarks/build-minimal-initramfs.sh` | Builds trimmed BusyBox initramfs |
 | `scripts/benchmarks/build-efi-stub-kernel.sh` | Builds EFI-stub kernel for arm64 |
-| `scripts/benchmarks/applevf_fastboot_bench.sh` | Benchmarking script for Apple VF |
+| `scripts/benchmarks/applevf_fastboot_bench.sh` | Benchmarking script for Apple VF (moved to [ryanmaclean/smolfire `imports/vibecode/scripts/benchmarks/`](https://github.com/ryanmaclean/smolfire/tree/main/imports/vibecode/scripts/benchmarks); run it from `imports/vibecode/` in a smolfire checkout) |
 
 ### Build Instructions
 
