@@ -1,5 +1,0 @@
-- Release drift unresolved (#410/#418); build reruns failed 2025-10-01 19:34 UTC.
-- QA telemetry/sanitisation/Ready pods gaps block CI gating (#417).
-- Security deliverables due 10-05/08/10/11 (#416); Dockerfile downloads unguarded.
-- Docs deliverables due 10-02 18:00 (release digest) and 10-06 (handoff) (#411).
-- Cross-team checkpoint scheduled 2025-10-02 12:00; need aligned remediation plan and reporting.

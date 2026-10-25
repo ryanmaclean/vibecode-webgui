@@ -285,11 +285,11 @@ helm install vibecode-prod ./helm/vibecode-platform \
 
 ## 🔗 Related Documentation
 
-- **[Production Deployment Guide](./production-deployment-guide/)** - Complete production deployment workflow
+- **[Production Deployment Guide](../../../src/content/docs/production-deployment-guide/)** - Complete production deployment workflow
 - **[PostgreSQL + pgvector Setup](./prisma-pgvector/)** - Database setup with secure credential management
 - **[Helm Deployment Guide](./helm-deployment-guide/)** - Kubernetes deployment instructions
-- **[Azure OpenAI Monitoring](./azure-openai-monitoring/)** - Azure OpenAI monitoring with secure secret management
-- **[Deploy Azure OpenAI Monitoring](./deploy-azure-openai-monitoring/)** - Automated deployment with Terraform secrets management
+- **[Azure OpenAI Monitoring](../../../src/content/docs/azure-openai-monitoring/)** - Azure OpenAI monitoring with secure secret management
+- **[Deploy Azure OpenAI Monitoring](../../../src/content/docs/deploy-azure-openai-monitoring/)** - Automated deployment with Terraform secrets management
 - **[Datadog Monitoring Configuration](./DATADOG_MONITORING_CONFIGURATION/)** - Production monitoring setup
 
 ---
