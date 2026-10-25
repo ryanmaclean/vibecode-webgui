@@ -20,6 +20,9 @@ This file only classifies surfaces. Deletions and moves happen in follow-up PRs 
 
 ## Surfaces
 
+When paths overlap, the most specific matching path wins. For example `src/lib/vector` is
+`experiment_test_only` even though `src/lib` is `canonical`. The JSON block follows the same rule.
+
 | Surface | Path(s) | Status | Notes |
 |---|---|---|---|
 | Next.js web application | `src/app`, `src/components`, `src/lib`, `src/middleware.ts`, `next.config.mjs` | canonical | 256 page/route files (189 under `api`). |
@@ -33,7 +36,7 @@ This file only classifies surfaces. Deletions and moves happen in follow-up PRs 
 | CLIs | `vibecode` (bash), `cmd/vibecode` (Go), `packages/vibecode-cli` (Ink) | owner | Three overlapping CLIs. Recommendation: bash stays canonical until Go has parity. The `Makefile` targets a missing `./cmd/vibecode-demo`. |
 | MCP and agent framework | `src/lib/mcp`, `src/lib/agent-framework`, `src/lib/gastown` | owner | `src/lib/mcp` has no importers. |
 | Platform dashboards and container variants | `platforms/web-dashboard`, `platforms/docker`, `platforms/azure` | owner | Platform matrix: #2128. |
-| VM configs | `config/vfkit`, `config/lima`, `config/colima`, cloud-init | owner | Runtime code itself is externalized (next row). |
+| VM configs | `config/vfkit`, `config/lima`, `config/colima`, `config/cloud-init` | owner | Runtime code itself is externalized (next row). |
 | VM/microVM runtime and experiments | `scripts/vfkit`, `tests/vm*`, `experiments/microvm`, `fast-openvscode-vm`, `tools/nodejs-vm`, `swift/`, macOS VZ trees | externalized | Target: `ryanmaclean/smolfire` (#2130). |
 | Image/rootfs builders | `infrastructure/packer`, `scripts/release-testing`, kernel/initramfs builders | externalized | Target: `ryanmaclean/genoa`. |
 | Agent harness tools | `src/lib/ai-cli-tools`, `tools/sdk/sdk/python`, `tools/ralph_loop` | externalized | Target: `ryanmaclean/moth`. |
@@ -48,14 +51,18 @@ This file only classifies surfaces. Deletions and moves happen in follow-up PRs 
 
 ## Machine-readable form
 
+The JSON block lists every row of the table. Glob rows (`scripts/verify-*`, `scripts/test-*`) appear as
+globs, and the one row with no single path (kernel/initramfs builders) appears under `notes`.
+
 ```json
 {
   "schema": "vibecode.canonical-surfaces.v1",
   "source_commit": "129302a73",
   "date": "2026-10-24",
+  "precedence": "most_specific_path_wins",
   "canonical": ["src/app", "src/components", "src/lib", "src/middleware.ts", "src/instrumentation.ts", "src/instrument.ts", "next.config.mjs", "prisma/schema.prisma", "prisma/migrations", "public"],
   "supported_secondary": ["platforms/tauri", "next.config.tauri.js", "tools/server", "platforms/macos/VibeCodeSwift", "platforms/macos/VibeCode-VMs", "platforms/macos/homebrew-vibecode"],
-  "owner": ["vibecode", "cmd/vibecode", "packages/vibecode-cli", "src/lib/mcp", "src/lib/agent-framework", "src/lib/gastown", "platforms/web-dashboard", "platforms/docker", "platforms/azure", "config/vfkit", "config/lima", "config/colima"],
+  "owner": ["vibecode", "cmd/vibecode", "packages/vibecode-cli", "src/lib/mcp", "src/lib/agent-framework", "src/lib/gastown", "platforms/web-dashboard", "platforms/docker", "platforms/azure", "config/vfkit", "config/lima", "config/colima", "config/cloud-init"],
   "externalized": {
     "ryanmaclean/smolfire": ["scripts/vfkit", "tests/vm", "tests/vm-integration", "tests/acceptance", "experiments/microvm", "fast-openvscode-vm", "tools/nodejs-vm", "swift"],
     "ryanmaclean/genoa": ["infrastructure/packer", "scripts/release-testing"],
@@ -65,7 +72,9 @@ This file only classifies surfaces. Deletions and moves happen in follow-up PRs 
   },
   "historical": ["platforms/electron-vibecode", "archive", "release-archive", "docs/archive"],
   "experiment_test_only": ["src/lib/vector"],
-  "experiment_dead": ["src/components/workflow", "src/types/shared", "src/lib/database", "src/lib/prisma/client.ts", "index.html", "instrumentation.ts", "server", "tools/debug", "tools/test"]
+  "experiment_dead": ["src/components/workflow", "src/types/shared", "src/lib/database", "src/lib/prisma/client.ts", "index.html", "instrumentation.ts", "server", "tools/debug", "tools/test", "scripts/verify-*", "scripts/test-*"],
+  "generated": ["node_modules", "vendor", ".next", "*.tfstate", ".opencode", "gitea"],
+  "notes": {"kernel/initramfs builders": "externalized to ryanmaclean/genoa (Image/rootfs builders row)"}
 }
 ```
 
