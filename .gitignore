@@ -2,6 +2,17 @@
 fast-openvscode-vm/certs/openvscode-local-key.pem
 gitea/data/jwt/private.pem
 *.key
+
+# Secrets hygiene (WS1, 2026-10-24): real credentials and runtime state stay out of git.
+# Copy a *.example.yaml / *.example file and fill it locally; the copy is ignored.
+**/*-secret.yaml
+**/*-secrets.yaml
+!**/*.example.yaml
+**/airflow.cfg
+**/airflow.db
+**/simple_auth_manager_passwords.json.generated
+**/terraform.tfvars
+
 *.p12
 *.pfx
 *.jks

@@ -5,9 +5,9 @@ metadata:
   name: datadog-secret
   namespace: datadog
 type: Opaque
-data:
-  api-key: ZHVtbXkta2V5LWZvci1sb2NhbC1kZXY=  # dummy-key-for-local-dev
-  app-key: ZHVtbXktYXBwLWtleS1mb3ItbG9jYWwtZGV2  # dummy-app-key-for-local-dev
+stringData:
+  api-key: "<set-me>"
+  app-key: "<set-me>"
 
 ---
 apiVersion: v1
