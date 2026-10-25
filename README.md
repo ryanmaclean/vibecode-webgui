@@ -99,6 +99,16 @@
 
 ---
 
+## 🗺️ Repository map (2026-10 split)
+
+This repo is the VibeCode product: web IDE, Tauri desktop app, and their docs. Agent runtime, VM and
+image tooling moved to sibling repos in October 2026. The list of what moved where, with commit ids,
+is in [AGENTS.md, "Moved out"](AGENTS.md#moved-out-2026-10-split). Historical docs are under
+[`docs/archive/`](docs/archive/INDEX.md). Product surface status is in
+[`docs/architecture/CANONICAL_SURFACES.md`](docs/architecture/CANONICAL_SURFACES.md) (#2126).
+
+---
+
 ## 🎯 What is VibeCode?
 
 **VibeCode is a next-generation AI-native IDE** that brings the power of 321+ AI models directly into your development workflow. Unlike traditional IDEs with AI bolt-ons, VibeCode is built from the ground up for AI-assisted development, combining the flexibility of VS Code with unprecedented AI model access and semantic code intelligence.
