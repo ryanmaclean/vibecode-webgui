@@ -303,9 +303,8 @@ platforms/kubernetes/*
 !platforms/docker/
 platforms/docker/*
 !platforms/docker/scripts/
-!platforms/electron-vibecode/
-platforms/electron-vibecode/*
-!platforms/electron-vibecode/README.md
+archive/infra-1024/platforms/electron-vibecode/dist/
+archive/infra-1024/platforms/electron-vibecode/node_modules/
 !platforms/web-dashboard/
 platforms/web-dashboard/*
 !platforms/web-dashboard/README.md
