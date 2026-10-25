@@ -1,3 +1,0 @@
-- Build snapshot 06:45 UTC 40% vs deployment snapshot 07:24 UTC 60%; need unified story.
-- Issue #411 deliverables pending: CHANGELOG, DEPLOYMENT_REPORT update, verification guide, README refresh, troubleshooting addendum.
-- Deadlines: release digest 2025-10-02 18:00 UTC; docs handoff 2025-10-06.

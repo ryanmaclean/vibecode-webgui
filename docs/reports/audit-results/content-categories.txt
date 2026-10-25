@@ -1,5 +1,0 @@
-=== Documentation Categories ===
-Testing docs: 428
-API docs: 334
-Infrastructure docs: 351
-Architecture docs: 238
