@@ -552,6 +552,14 @@ logs/security/
 # Generated test data files
 test-data/
 
+# WS4 split (2026-10-24): agent skills moved to ryanmaclean/skills; keep scratch editor/agent
+# configs and packaged skill archives out of the tree.
+/.opencode.json
+/.windsurf-mcp-config*.json
+.codex/node_modules/
+/*.skill
+.claude/skills/**/__pycache__/
+
 # Python build/test state (WS7 split 2026-10-24). The agent SDK moved to ryanmaclean/moth.
 *.egg-info/
 .pytest_cache/
