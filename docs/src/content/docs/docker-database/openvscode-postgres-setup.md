@@ -3,6 +3,10 @@ title: "OpenVSCode + PostgreSQL Complete Setup"
 description: "Production-ready setup for OpenVSCode Server with PostgreSQL and workspace-rag extension"
 ---
 
+> **Archived (2026-10-24):** `docker-compose.openvscode.yml` now lives at
+> `archive/infra-1024/docker-compose.openvscode.yml`. It is not maintained or tested. To try it, run it from the
+> repo root with `docker compose -f archive/infra-1024/docker-compose.openvscode.yml --project-directory . up`.
+
 # OpenVSCode Server + PostgreSQL RAG - Setup Complete ✅
 
 **Date:** November 18, 2025
