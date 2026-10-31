@@ -1,8 +1,8 @@
 transformers
-torch==2.11.0
+torch==2.13.0
 python-dotenv
 huggingface_hub
 accelerate
 
 # Security: Pin urllib3 to address CVE vulnerabilities
-urllib3==2.6.3
+urllib3==2.8.0
