@@ -620,3 +620,16 @@ infrastructure/packer/manifest*.json
 /docs/branches-to-delete.txt
 /feature_audit/
 /release-archive/
+
+# Repo cleanup (#2125, #2137, #2139): generated/runtime artifacts that were tracked
+/td/tools/kafka_tui/target/
+/gitea/
+/.pre-commit-cache/
+**/.beads-backups/
+*.backup
+*.bak
+*.bak.*
+*.conflict-backup-*
+*.from-merge
+*.tfstate
+*.tfstate.*
