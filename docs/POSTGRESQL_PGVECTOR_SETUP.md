@@ -211,7 +211,7 @@ Connection Details:
   Port:     5432
   Database: vibecode
   User:     vibecode
-  Password: vibecode_prod_2024
+  Password: <vibecode_password>
 ```
 
 ### Step 5: Verify Installation
@@ -248,7 +248,7 @@ Update your `.env` file:
 
 ```bash
 # PostgreSQL Connection
-DATABASE_URL="postgresql://vibecode:vibecode_prod_2024@localhost:5432/vibecode?sslmode=require"
+DATABASE_URL="postgresql://vibecode:<vibecode_password>@localhost:5432/vibecode?sslmode=require"
 
 # Connection Pool Settings
 POSTGRES_POOL_SIZE=20
@@ -825,7 +825,7 @@ WHERE name IN ('shared_buffers', 'work_mem', 'maintenance_work_mem');
 ```bash
 # Reset password
 psql -U postgres
-ALTER USER vibecode WITH PASSWORD 'vibecode_prod_2024';
+ALTER USER vibecode WITH PASSWORD '<new-password>';
 
 # Check pg_hba.conf
 cat /var/lib/postgresql/data/pg_hba.conf

@@ -55,7 +55,9 @@ setup: |
   
   # Create vibecode user
   adduser -D -s /bin/bash vibecode
-  echo "vibecode:vibecode" | chpasswd
+  VIBECODE_PW=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')
+  (umask 077; printf '%s' "$VIBECODE_PW" > /root/.vibecode-password)
+  echo "vibecode:$VIBECODE_PW" | chpasswd
   adduser vibecode wheel
   
   # Configure code-server
@@ -63,9 +65,12 @@ setup: |
   cat > /home/vibecode/.config/code-server/config.yaml <<EOF
 bind-addr: 0.0.0.0:8080
 auth: password
-password: vibecode
+password: $VIBECODE_PW
 cert: false
 EOF
+  unset VIBECODE_PW
+  chmod 600 /home/vibecode/.config/code-server/config.yaml
+  chown -R vibecode:vibecode /home/vibecode/.config
   
   # Install VibeCode dependencies
   cd /workspace
