@@ -526,3 +526,17 @@ This Helm chart is licensed under the MIT License - see the [LICENSE](LICENSE) f
 - GitHub Issues: [vibecode/vibecode-platform/issues](https://github.com/vibecode/vibecode-platform/issues)
 - Documentation: [docs.vibecode.dev](https://docs.vibecode.dev)
 - Community: [Discord](https://discord.gg/vibecode)
+
+## Subchart archives
+
+`charts/datadog-3.60.0.tgz` is not committed (untracked 2026-10-24). Before
+`helm template`, `helm lint` or `helm install`, restore the subcharts pinned by
+`Chart.lock`:
+
+```sh
+helm repo add datadog https://helm.datadoghq.com
+helm dependency build platforms/kubernetes/helm/vibecode-platform
+```
+
+`charts/mongodb-14.0.0.tgz` stays committed for now because the Bitnami public
+chart catalog changed in 2025 and that exact archive may not be fetchable again.

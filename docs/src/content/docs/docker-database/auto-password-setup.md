@@ -3,6 +3,10 @@ title: "Auto-Generated Password Setup"
 description: "Automatic secure password generation for PostgreSQL and OpenVSCode Server with Docker Compose"
 ---
 
+> **Archived (2026-10-24):** `docker-compose.openvscode.yml` now lives at
+> `docs/archive/infra-1024/docker-compose.openvscode.yml`. It is not maintained or tested. To try it, run it from the
+> repo root with `docker compose -f docs/archive/infra-1024/docker-compose.openvscode.yml --project-directory . up`.
+
 # Auto-Generated Password Setup - Complete ✅
 
 **Date:** November 18, 2025
@@ -30,7 +34,7 @@ init-secrets:
     fi"
 ```
 
-**Generated password example:** `Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=`
+**Generated password example:** `<redacted>`
 
 ### 2. Shared Volume for Password
 
@@ -138,7 +142,7 @@ docker logs init-secrets
 docker exec openvscode-server cat /run/secrets/db_password
 
 # Example output:
-# Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=
+# <redacted>
 ```
 
 ### Verify Both Containers Use Same Password
@@ -150,7 +154,7 @@ docker exec openvscode-server cat /home/.openvscode-server/data/User/settings.js
 # Should show:
 # {
 #   "workspaceRag.pgHost": "postgres-pgvector",
-#   "workspaceRag.pgPassword": "Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=",
+#   "workspaceRag.pgPassword": "<redacted>",
 #   ...
 # }
 

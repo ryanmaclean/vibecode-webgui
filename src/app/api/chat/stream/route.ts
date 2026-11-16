@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: model || 'anthropic/claude-sonnet-4-20250514',
+        model: model || 'anthropic/claude-sonnet-4-6',
         messages: chatMessages,
         stream: true,
         temperature: 0.7,

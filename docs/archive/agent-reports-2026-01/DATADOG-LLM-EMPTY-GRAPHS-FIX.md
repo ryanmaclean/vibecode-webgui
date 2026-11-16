@@ -124,7 +124,7 @@ npm run dev 2>&1 | grep -i "llmobs\|datadog"
 ```bash
 # Check API key is set
 echo $DD_API_KEY
-# Should output: 0e4c744e925521aeb1f97486ac8e3884
+# Should output: <redacted>
 
 # Verify it's valid
 curl -H "DD-API-KEY: $DD_API_KEY" \

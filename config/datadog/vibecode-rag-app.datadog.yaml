@@ -39,7 +39,7 @@ links:
   - name: RAG Metrics Configuration
     type: doc
     provider: github
-    url: https://github.com/vibecode/vibecode-webgui/blob/main/monitoring/datadog/dashboards/vector-database-dashboard.json
+    url: https://github.com/ryanmaclean/vibecode-webgui/blob/main/infrastructure/datadog/vector-database-dashboard.json
 tags:
   - env:production
   - component:rag
@@ -54,7 +54,7 @@ extensions:
     source_patterns:
       - k8s/rag-app-deployment.yaml
       - src/lib/services/**
-      - monitoring/datadog/dashboards/vector-database-dashboard.json
+      - infrastructure/datadog/vector-database-dashboard.json
   datadoghq.com/cd-visibility:
     deployment_patterns:
       - Deploy RAG Application to AKS

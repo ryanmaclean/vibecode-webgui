@@ -16,7 +16,7 @@ import type {
   PRCreationResult,
 } from './types'
 
-const DEFAULT_MODEL = 'claude-sonnet-4-20250514'
+const DEFAULT_MODEL = 'claude-sonnet-4-6'
 
 export class FixGenerator {
   private anthropic: Anthropic

@@ -599,15 +599,15 @@ fi
 # Deploy secrets
 log_info "Deploying secrets..."
 if [ "$DRY_RUN" = true ]; then
-    [ -f "$K8S_MANIFESTS_DIR/postgres-secret.yaml" ] && log_info "Would deploy: $K8S_MANIFESTS_DIR/postgres-secret.yaml" || log_warning "postgres-secret.yaml not found"
-    [ -f "$K8S_MANIFESTS_DIR/oauth-secrets.yaml" ] && log_info "Would deploy: $K8S_MANIFESTS_DIR/oauth-secrets.yaml" || log_warning "oauth-secrets.yaml not found"
+    [ -f "$K8S_MANIFESTS_DIR/postgres-secret.yaml" ] && log_info "Would deploy: $K8S_MANIFESTS_DIR/postgres-secret.yaml" || log_warning "postgres-secret.yaml not found (copy postgres-secret.example.yaml)"
+    [ -f "$K8S_MANIFESTS_DIR/oauth-secrets.yaml" ] && log_info "Would deploy: $K8S_MANIFESTS_DIR/oauth-secrets.yaml" || log_warning "oauth-secrets.yaml not found (copy oauth-secrets.example.yaml)"
     [ -f "$K8S_MANIFESTS_DIR/vibecode-secrets.yaml" ] && log_info "Would deploy: $K8S_MANIFESTS_DIR/vibecode-secrets.yaml" || log_warning "vibecode-secrets.yaml not found"
 else
     if [ -f "$K8S_MANIFESTS_DIR/postgres-secret.yaml" ]; then
         kubectl apply -f "$K8S_MANIFESTS_DIR/postgres-secret.yaml"
         log_success "PostgreSQL secrets deployed"
     else
-        log_warning "postgres-secret.yaml not found, skipping..."
+        log_warning "postgres-secret.yaml not found (copy postgres-secret.example.yaml and fill it), skipping..."
     fi
 
     if [ -f "$K8S_MANIFESTS_DIR/oauth-secrets.yaml" ]; then

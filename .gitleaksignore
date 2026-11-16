@@ -1,0 +1,118 @@
+# gitleaks fingerprint allowlist (gitleaks 8.30.1, dir mode: path:rule:line).
+# Each entry was checked on 2026-10-24 (WS1, vibecode split plan) by value shape only:
+# env-var references ($TOKEN, YOUR_API_KEY), word-dash placeholders (test-jwt-secret-...),
+# key names, truncated examples (abc123...), and the log-sanitizer test fixtures.
+# A line move breaks the fingerprint on purpose: re-review the finding, then update it here.
+# Never add real credentials here; remove them from the tree instead.
+
+
+# docs/api/ai-endpoints.md: documentation placeholder
+docs/api/ai-endpoints.md:curl-auth-header:175
+docs/api/ai-endpoints.md:curl-auth-header:179
+docs/api/ai-endpoints.md:curl-auth-header:191
+
+# docs/api/ENDPOINTS.md: documentation placeholder
+docs/api/ENDPOINTS.md:curl-auth-header:1527
+docs/api/ENDPOINTS.md:curl-auth-header:1598
+
+# docs/architecture/WEBGUI-AI-DATADOG-AZURE-STACK.md: documentation placeholder
+docs/architecture/WEBGUI-AI-DATADOG-AZURE-STACK.md:curl-auth-header:351
+docs/architecture/WEBGUI-AI-DATADOG-AZURE-STACK.md:curl-auth-header:412
+
+# docs/archive/agent-reports-2026-01/AGENT-AD-QUICK-START.md: documentation placeholder
+docs/archive/agent-reports-2026-01/AGENT-AD-QUICK-START.md:curl-auth-user:221
+
+# docs/archive/agent-reports-2026-01/AGENT-U-SECURITY-HARDENING.md: documentation placeholder
+docs/archive/agent-reports-2026-01/AGENT-U-SECURITY-HARDENING.md:generic-api-key:134
+docs/archive/agent-reports-2026-01/AGENT-U-SECURITY-HARDENING.md:generic-api-key:142
+
+# docs/ENVIRONMENT_SETUP_GUIDE.md: documentation placeholder
+docs/ENVIRONMENT_SETUP_GUIDE.md:generic-api-key:518
+
+# docs/experiments/api-reference.md: documentation placeholder
+docs/experiments/api-reference.md:curl-auth-header:50
+
+# docs/PLUGIN_MARKETPLACE.md: documentation placeholder
+docs/PLUGIN_MARKETPLACE.md:curl-auth-header:437
+docs/PLUGIN_MARKETPLACE.md:curl-auth-header:648
+
+# docs/setup/DOCKER_COMPOSE_SETUP.md: documentation placeholder
+docs/setup/DOCKER_COMPOSE_SETUP.md:curl-auth-header:572
+docs/setup/DOCKER_COMPOSE_SETUP.md:curl-auth-header:775
+
+# examples/python/vector_search.py: non-secret parameter
+examples/python/vector_search.py:generic-api-key:209
+
+# infrastructure/services/ai-gateway/README.md: documentation placeholder
+infrastructure/services/ai-gateway/README.md:curl-auth-header:102
+infrastructure/services/ai-gateway/README.md:curl-auth-header:108
+infrastructure/services/ai-gateway/README.md:curl-auth-header:304
+infrastructure/services/ai-gateway/README.md:curl-auth-header:305
+
+# platforms/azure/azure/docs/demos/DATADOG-TUTORIAL.md: documentation placeholder
+platforms/azure/azure/docs/demos/DATADOG-TUTORIAL.md:generic-api-key:115
+platforms/azure/azure/docs/demos/DATADOG-TUTORIAL.md:generic-api-key:42
+
+# scripts/security/INTEGRATION_GUIDE.md: log sanitizer patterns / fixtures
+scripts/security/INTEGRATION_GUIDE.md:curl-auth-header:251
+scripts/security/INTEGRATION_GUIDE.md:curl-auth-header:32
+scripts/security/INTEGRATION_GUIDE.md:generic-api-key:125
+scripts/security/INTEGRATION_GUIDE.md:generic-api-key:25
+scripts/security/INTEGRATION_GUIDE.md:generic-api-key:408
+scripts/security/INTEGRATION_GUIDE.md:generic-api-key:448
+scripts/security/INTEGRATION_GUIDE.md:generic-api-key:585
+
+# scripts/security/log_sanitizer.py: log sanitizer patterns / fixtures
+scripts/security/log_sanitizer.py:curl-auth-header:113
+scripts/security/log_sanitizer.py:curl-auth-header:409
+scripts/security/log_sanitizer.py:generic-api-key:463
+scripts/security/log_sanitizer.py:generic-api-key:502
+scripts/security/log_sanitizer.py:generic-api-key:60
+scripts/security/log_sanitizer.py:generic-api-key:80
+scripts/security/log_sanitizer.py:private-key:189
+scripts/security/log_sanitizer.py:private-key:193
+
+# scripts/security/tests/test_log_sanitizer.py: log sanitizer patterns / fixtures
+scripts/security/tests/test_log_sanitizer.py:env-var-datadog-keys:156
+scripts/security/tests/test_log_sanitizer.py:generic-api-key:149
+scripts/security/tests/test_log_sanitizer.py:generic-api-key:251
+scripts/security/tests/test_log_sanitizer.py:generic-api-key:411
+scripts/security/tests/test_log_sanitizer.py:generic-api-key:419
+scripts/security/tests/test_log_sanitizer.py:generic-api-key:443
+scripts/security/tests/test_log_sanitizer.py:generic-api-key:507
+scripts/security/tests/test_log_sanitizer.py:generic-api-key:538
+scripts/security/tests/test_log_sanitizer.py:generic-api-key:744
+scripts/security/tests/test_log_sanitizer.py:generic-api-key:761
+scripts/security/tests/test_log_sanitizer.py:generic-api-key:778
+scripts/security/tests/test_log_sanitizer.py:generic-api-key:86
+scripts/security/tests/test_log_sanitizer.py:github-pat:623
+scripts/security/tests/test_log_sanitizer.py:github-pat:668
+scripts/security/tests/test_log_sanitizer.py:jwt:347
+scripts/security/tests/test_log_sanitizer.py:jwt:354
+scripts/security/tests/test_log_sanitizer.py:jwt:604
+scripts/security/tests/test_log_sanitizer.py:private-key:297
+scripts/security/tests/test_log_sanitizer.py:private-key:315
+
+# src/lib/experiments/scenarios/speech-to-text.ts: credential key names, not values
+src/lib/experiments/scenarios/speech-to-text.ts:generic-api-key:507
+src/lib/experiments/scenarios/speech-to-text.ts:generic-api-key:508
+
+# tests/integration/datadog-metrics-retrieval.test.ts: unit-test placeholder
+tests/integration/datadog-metrics-retrieval.test.ts:generic-api-key:193
+
+# tests/k8s/monitoring-deployment.test.ts: unit-test placeholder
+tests/k8s/monitoring-deployment.test.ts:generic-api-key:90
+
+# tests/lib/security/csrf.test.ts: unit-test placeholder
+tests/lib/security/csrf.test.ts:generic-api-key:22
+
+# tests/__mocks__/datadog-mock.ts: unit-test placeholder
+tests/__mocks__/datadog-mock.ts:generic-api-key:64
+
+# tests/security/monitoring-security.test.ts: unit-test placeholder
+tests/security/monitoring-security.test.ts:generic-api-key:58
+
+# tests/unit/lib/auth-jwt-utils.test.ts: unit-test placeholder
+tests/unit/lib/auth-jwt-utils.test.ts:generic-api-key:135
+tests/unit/lib/auth-jwt-utils.test.ts:generic-api-key:141
+tests/unit/lib/auth-jwt-utils.test.ts:generic-api-key:147

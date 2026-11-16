@@ -1,0 +1,12 @@
+schema = "ryanlab.project.v1"
+name = "vibecode-webgui"
+status = "active"
+role = "User-facing IDE and control surface"
+
+canonical_for = ["ide-ui", "workspace-ui", "desktop-web-surfaces", "user-facing-mcp"]
+integrates_with = ["bop", "moth", "smolfire", "genoa", "skills"]
+do_not_implement = ["scheduler-database", "actor-runtime", "vm-image-factory", "canonical-lineage"]
+
+registry = "ryanmaclean/skills:docs/PROJECTS.md"
+glossary = "ryanmaclean/skills:docs/GLOSSARY.md"
+benchmark_schema = "ryanmaclean/skills:schemas/bench.v1.schema.json"

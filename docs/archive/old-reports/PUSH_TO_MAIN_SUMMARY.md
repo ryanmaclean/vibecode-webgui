@@ -140,13 +140,13 @@ with Datadog agent integration.
 ### Datadog Agent
 ✅ Running at `/opt/datadog-agent/`
 ✅ DogStatsD active on `localhost:8125`
-✅ API Key: `f5be780e66c1e53a6d36b79c7c6c0178`
+✅ API Key: `<redacted>`
 ✅ Forwarding to `datadoghq.com`
 ✅ 3 processes running (agent, process-agent, trace-agent)
 
 ### RUM Configuration
 ✅ Application ID: `52590244-d98c-4d53-a756-cfe50a8e868b`
-✅ Client Token: `pub91c2b093bc1483a4bfb5881c3511cde6`
+✅ Client Token: `<redacted>`
 ✅ Site: `datadoghq.com`
 ✅ RUM client configured in `src/lib/monitoring/rum-client.ts`
 

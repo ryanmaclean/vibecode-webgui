@@ -86,6 +86,7 @@ const config = {
     '<rootDir>/azure/', // Azure SwiftUI apps - Playwright tests excluded from Jest runs
     '\\.spec\\.[jt]sx?$', // Exclude all Playwright-style .spec.ts files from Jest
     '<rootDir>/archive/', // Archived code and tests - excluded from Jest runs
+    '<rootDir>/docs/archive/', // Single archive root (WS10)
     '<rootDir>/code-server/',
     '<rootDir>/openvscode-server/',
     '/openvscode-server/',
@@ -102,7 +103,7 @@ const config = {
   // Prevent haste-map collisions from duplicate directories
   modulePathIgnorePatterns: [
     '<rootDir>/archive/', // Archived code - excluded from Jest module resolution
-    '<rootDir>/docs/archive/old-builds/',
+    '<rootDir>/docs/archive/', // Single archive root (WS10): old builds, folded archive/ trees
     '<rootDir>/vibecode-optimized/',
     '<rootDir>/vibecode-v1.4a-package/',
     '<rootDir>/src/extensions/', // Extensions have their own package.json files

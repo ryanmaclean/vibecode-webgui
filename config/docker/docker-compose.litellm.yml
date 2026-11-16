@@ -183,7 +183,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
       - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-      - ./monitoring/datadog/conf.d:/etc/datadog-agent/conf.d:ro
+      - ../../infrastructure/monitoring/datadog/conf.d:/etc/datadog-agent/conf.d:ro
     ports:
       - "8126:8126"  # APM traces
       - "8125:8125/udp"  # DogStatsD

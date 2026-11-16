@@ -8,15 +8,6 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/ai/models',
 }));
 
-// Mock lucide-react icons
-jest.mock('lucide-react', () => ({
-  Brain: (props: any) => <svg data-testid="brain-icon" {...props} />,
-  Sparkles: (props: any) => <svg data-testid="sparkles-icon" {...props} />,
-  Loader2: (props: any) => <svg data-testid="loader-icon" {...props} />,
-  AlertCircle: (props: any) => <svg data-testid="alert-icon" {...props} />,
-  RefreshCw: (props: any) => <svg data-testid="refresh-icon" {...props} />,
-}));
-
 // Mock UI components
 jest.mock('@/components/ui/card', () => ({
   Card: ({ children, ...props }: any) => <div {...props}>{children}</div>,

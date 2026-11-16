@@ -31,7 +31,7 @@ if (!isDockerBuild) {
     // Dynamic imports to prevent static analysis issues
     const sdkNode = require('@opentelemetry/sdk-node');
     const autoInstrumentations = require('@opentelemetry/auto-instrumentations-node');
-    const otlpExporter = require('@opentelemetry/exporter-otlp-http');
+    const otlpExporter = require('@opentelemetry/exporter-trace-otlp-http');
     const prometheusExporter = require('@opentelemetry/exporter-prometheus');
     const resources = require('@opentelemetry/resources');
     const semanticConventions = require('@opentelemetry/semantic-conventions');

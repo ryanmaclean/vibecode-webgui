@@ -370,7 +370,7 @@ curl -X POST https://auth.vibecode.local/login \
 
 # Response:
 # {
-#   "token": "eyJhbGciOiJIUzI1NiIs...",
+#   "token": "<redacted>",
 #   "expires_in": 3600
 # }
 ```

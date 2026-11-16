@@ -611,7 +611,7 @@ USER coder
 COPY --chown=coder:coder extensions/vibecode-ai-assistant /home/coder/.vscode/extensions/vibecode-ai-assistant
 COPY --chown=coder:coder extensions/vibecode-inline-edit /home/coder/.vscode/extensions/vibecode-inline-edit
 COPY --chown=coder:coder extensions/vibecode-codebase-chat /home/coder/.vscode/extensions/vibecode-codebase-chat
-COPY --chown=coder:coder extensions/claude-code-vscode /home/coder/.vscode/extensions/claude-code-vscode
+# extensions/claude-code-vscode was a package.json-only stub (no source) and was removed; the real anthropic.claude-code extension is installed from the marketplace.
 
 # Official Microsoft Extensions Only (MIT Licensed) - install with fallback
 RUN /usr/bin/code-server --install-extension ms-vscode.vscode-typescript-next || echo "TypeScript extension failed" \

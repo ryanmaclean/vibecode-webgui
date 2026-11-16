@@ -706,7 +706,7 @@ pub async fn chat(&self, request: AIChatRequest) -> Result<AIChatResponse, Strin
 
 - [AI Architecture](./AI_ARCHITECTURE.md)
 - [MCP Server Design](../platform/MCP_SERVER_DESIGN.md)
-- [Roundtable Proposal](../wiki/proposals/roundtable-mcp-subagents.md)
+- [Roundtable Proposal](../archive/wiki/proposals/roundtable-mcp-subagents.md)
 
 ---
 
