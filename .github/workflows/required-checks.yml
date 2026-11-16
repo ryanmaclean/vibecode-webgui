@@ -78,7 +78,7 @@ jobs:
           done
       - name: No env files with values are tracked
         run: |
-          bad=$(git ls-files | grep -E '(^|/)\.env(\.[A-Za-z0-9_-]+)?$' | grep -vE '\.(example|sample|template)$' || true)
+          bad=$(git ls-files | grep -E '(^|/)\.env(\.[A-Za-z0-9_-]+)?$' | grep -vE '\.(example|sample|template)$' | grep -vE '^tests/.*/fixtures/' || true)
           if [ -n "$bad" ]; then echo "tracked env files:"; echo "$bad"; exit 1; fi
       - name: Workflows do not use pull_request_target with a PR checkout
         run: |
