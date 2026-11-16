@@ -9,7 +9,7 @@ services:
     ports:
       - "${CODE_SERVER_PORT:-8765}:8765"
     environment:
-      PASSWORD: ${CODE_SERVER_PASSWORD:-changeme}
+      PASSWORD: ${CODE_SERVER_PASSWORD:?CODE_SERVER_PASSWORD must be set}
       TZ: ${TZ:-UTC}
       SHELL: /bin/bash
 

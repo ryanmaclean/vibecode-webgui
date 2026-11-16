@@ -788,7 +788,7 @@ beforeEach(() => {
 it('returns user for valid credentials', async () => {
   const user = await credentialsProvider.authorize({
     email: 'admin@vibecode.dev',
-    password: 'admin123',
+    password: '<dev-admin-password>',
   })
 
   expect(user).toEqual({

@@ -18,7 +18,7 @@ services:
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://vibecode:vibecode@postgres:5432/vibecode}
+      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL must be set}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
       - NEXT_TELEMETRY_DISABLED=1
       - DD_IAST_ENABLED=true
@@ -59,13 +59,13 @@ services:
     environment:
       - POSTGRES_DB=vibecode
       - POSTGRES_USER=vibecode
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-vibecode123}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
       - DD_SERVICE=${DD_SERVICE:-postgres}
       - DD_ENV=${DD_ENV:-development}
       - DD_VERSION=${DD_VERSION:-0.1.0}
       - DD_TAGS=team:platform,component:infra
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -83,7 +83,7 @@ services:
     container_name: vibecode-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
     environment:
@@ -128,9 +128,9 @@ services:
     container_name: vibecode-code-server
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
-      - PASSWORD=${CODE_SERVER_PASSWORD:-vibecode123}
+      - PASSWORD=${CODE_SERVER_PASSWORD:?CODE_SERVER_PASSWORD must be set}
       - DD_SERVICE=${DD_SERVICE:-code-server}
       - DD_ENV=${DD_ENV:-development}
       - DD_VERSION=${DD_VERSION:-0.1.0}
@@ -152,7 +152,7 @@ services:
     container_name: vibecode-prometheus
     restart: unless-stopped
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus

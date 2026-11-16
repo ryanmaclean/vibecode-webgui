@@ -21,13 +21,13 @@ container volume create vibecode-data || true
 echo "Starting code-server..."
 container run -d \
   --name vibecode-code-server \
-  -p 8080:8080 \
-  -e PASSWORD="${CODE_SERVER_PASSWORD:-vibecode123}" \
+  -p 127.0.0.1:8080:8080 \
+  -e PASSWORD="${CODE_SERVER_PASSWORD:?set CODE_SERVER_PASSWORD}" \
   -v vibecode-data:/home/coder \
   codercom/code-server:latest
 
 echo "✅ code-server started on http://localhost:8080"
-echo "   Password: ${CODE_SERVER_PASSWORD:-vibecode123}"
+echo "   Password: (the value of CODE_SERVER_PASSWORD)"
 echo ""
 
 # Start Datadog agent if API key is set

@@ -13,7 +13,7 @@ Wait ~30 seconds for boot and SSH server startup.
 ```bash
 # Direct connection
 ssh root@192.168.64.3
-# Password: vibecode
+# Password: <set-a-strong-password>
 
 # Or with sshpass (no password prompt)
 sshpass -p vibecode ssh root@192.168.64.3
@@ -23,7 +23,7 @@ sshpass -p vibecode ssh root@192.168.64.3
 ```bash
 # Create tunnel in background
 ssh -L 3000:localhost:3000 -N -f root@192.168.64.3
-# Password: vibecode
+# Password: <set-a-strong-password>
 
 # Access OpenVSCode
 open http://localhost:3000

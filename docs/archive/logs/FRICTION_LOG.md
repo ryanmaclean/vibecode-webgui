@@ -18,7 +18,7 @@ This log captures friction points to help improve developer experience and ident
 - Direct Azure access fails with `Can't reach database server` / `User was denied access`
 - A local Docker container (`vibecode-pgvector` @ `192.168.107.2:5432`) holds 225 embeddings and is healthy
 
-**Workaround:** Update `.env.local` `DATABASE_URL` to the local container (`postgresql://vibecode:vibecode123@192.168.107.2:5432/vibecode?schema=public&sslmode=disable`). RAG demo now succeeds; Datadog spans pending Trace Search propagation.  
+**Workaround:** Update `.env.local` `DATABASE_URL` to the local container (`postgresql://vibecode:<set-a-strong-password>@192.168.107.2:5432/vibecode?schema=public&sslmode=disable`). RAG demo now succeeds; Datadog spans pending Trace Search propagation.  
 **Status:** MITIGATED LOCALLY — still blocked on Azure firewall for production parity  
 **Owner:** Agent Codex (local fallback) / Infrastructure team (Azure access)
 

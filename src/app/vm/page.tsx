@@ -11,7 +11,7 @@ const connectionCards = [
     name: 'SSH',
     icon: Terminal,
     command: 'ssh -p 2222 root@localhost',
-    description: 'Password: vibecode',
+    description: 'Password: see build output',
   },
   {
     name: 'PostgreSQL',

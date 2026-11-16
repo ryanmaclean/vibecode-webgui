@@ -40,7 +40,7 @@ ip addr show eth0  # ✅ eth0 will exist
 ping 8.8.8.8       # ✅ Internet works
 
 # 4. Test Valkey
-valkey-cli -a VibeCodeChangeMe2025 ping  # ✅ Returns PONG
+valkey-cli -a <set-a-strong-password> ping  # ✅ Returns PONG
 ```
 
 **Pros**:
@@ -281,7 +281,7 @@ VM_IP=$(limactl shell vibecode-valkey ip -4 addr show eth0 | grep inet | awk '{p
 ssh -L 6379:localhost:6379 -N root@${VM_IP} &
 
 # 3. Test from host
-valkey-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping
+valkey-cli -h localhost -p 6379 -a <set-a-strong-password> ping
 # ✅ PONG
 ```
 
@@ -301,7 +301,7 @@ echo "load anchor \"vfkit-valkey\" from \"/etc/pf.anchors/vfkit-valkey\"" | sudo
 sudo pfctl -ef /etc/pf.conf
 
 # 4. Test
-valkey-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping
+valkey-cli -h localhost -p 6379 -a <set-a-strong-password> ping
 ```
 
 ---
@@ -324,11 +324,11 @@ limactl shell vibecode-valkey nslookup google.com
 # ✅ Should resolve to IP address
 
 # Test 4: Check Valkey responds
-limactl shell vibecode-valkey valkey-cli -a VibeCodeChangeMe2025 ping
+limactl shell vibecode-valkey valkey-cli -a <set-a-strong-password> ping
 # ✅ Should return: "PONG"
 
 # Test 5: Check from host (with port forwarding)
-valkey-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping
+valkey-cli -h localhost -p 6379 -a <set-a-strong-password> ping
 # ✅ Should return: "PONG"
 ```
 

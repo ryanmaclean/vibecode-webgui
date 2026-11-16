@@ -24,7 +24,7 @@ vibecode-vm status
 
 # SSH access
 vibecode-vm ssh
-# Password: vibecode
+# Password: <set-a-strong-password>
 
 # Stop VM
 vibecode-vm stop
@@ -36,7 +36,7 @@ Get VM IP from status, then:
 
 | Service | Access |
 |---------|--------|
-| **SSH** | `ssh root@<VM_IP>` (password: vibecode) |
+| **SSH** | `ssh root@<VM_IP>` (password: <set-a-strong-password>) |
 | **OpenVSCode** | `http://<VM_IP>:8080` (in browser) |
 | **Valkey** | `redis-cli -h <VM_IP> -p 6379` |
 | **PostgreSQL** | `psql -h <VM_IP> -p 5432 -U postgres` |

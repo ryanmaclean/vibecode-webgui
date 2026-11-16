@@ -54,7 +54,7 @@ sshpass -p vibecode ssh -p 2222 root@localhost
 
 # Or without password prompt
 ssh root@localhost -p 2222
-# Enter password: vibecode
+# Enter password: <set-a-strong-password>
 ```
 
 ### OpenVSCode Terminal Test

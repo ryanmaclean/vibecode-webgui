@@ -343,7 +343,7 @@ tail -f /tmp/vibecode-console-*.log
 **Example Usage:**
 ```bash
 ssh root@192.168.64.3
-# Password: vibecode
+# Password: <set-a-strong-password>
 ```
 
 **Reusability:** Proven pattern can be copied to any new VM build
@@ -588,7 +588,7 @@ grep -E "(ERROR|FAIL|✗)" /tmp/vibecode-console-*.log
 ```bash
 # Wait 35 seconds after launch, then:
 ssh root@192.168.64.3
-# Password: vibecode
+# Password: <set-a-strong-password>
 ```
 
 ### Test Services:

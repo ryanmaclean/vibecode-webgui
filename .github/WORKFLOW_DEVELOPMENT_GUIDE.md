@@ -372,7 +372,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: <set-a-strong-password>
         options: >-
           --health-cmd pg_isready
           --health-interval 10s

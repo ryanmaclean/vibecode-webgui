@@ -63,7 +63,7 @@ to be used to sandbox vibecoded apps and vibecoding agents
 **Evidence**: ACCESS CREDENTIALS section displays:
 ```
 === ACCESS CREDENTIALS ===
-SSH:        ssh root@192.168.64.x (password: vibecode)
+SSH:        ssh root@192.168.64.x (password: <set-a-strong-password>)
 Valkey:     valkey-cli (no password)
 PostgreSQL: psql -U postgres (trust authentication)
 OpenVSCode: http://192.168.64.x:8080 (no authentication)

@@ -19,7 +19,7 @@ data:
   CONNECTION_POOL_MAX_CONNECTIONS: "10"
   CONNECTION_POOL_MIN_CONNECTIONS: "2"
   NEXTAUTH_URL: "http://localhost:3000"
-  DATABASE_URL: "postgresql://test_user:test_password@postgres:5432/vibecode_test"
+  DATABASE_URL: "postgresql://test_user:REPLACE_WITH_TEST_DB_PASSWORD@postgres:5432/vibecode_test"
 
 ---
 apiVersion: v1
@@ -29,8 +29,8 @@ metadata:
   namespace: vibecode-test
 type: Opaque
 stringData:
-  NEXTAUTH_SECRET: "test-secret-for-kind-validation"
-  POSTGRES_PASSWORD: "test_password"
+  NEXTAUTH_SECRET: "REPLACE_WITH_TEST_NEXTAUTH_SECRET"
+  POSTGRES_PASSWORD: "REPLACE_WITH_TEST_DB_PASSWORD"
   
 ---
 apiVersion: apps/v1

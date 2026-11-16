@@ -151,7 +151,7 @@ open http://localhost:8080
 ```bash
 # SSH into VM and check manually
 ssh -p 2222 root@localhost
-# Password: vibecode
+# Password: <set-a-strong-password>
 ls -la /root/.openvscode-server/extensions/
 ```
 

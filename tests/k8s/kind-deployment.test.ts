@@ -541,7 +541,7 @@ describe('KIND Deployment Tests', () => {
         data: {
           POSTGRES_DB: 'vibecode',
           POSTGRES_USER: 'vibecode',
-          POSTGRES_PASSWORD: 'vibecode_password'
+          POSTGRES_PASSWORD: 'mock-fixture-value'
         }
       };
       execSync.mockReturnValueOnce(JSON.stringify(mockConfigMap));
@@ -551,7 +551,7 @@ describe('KIND Deployment Tests', () => {
 
       expect(configMap.data.POSTGRES_DB).toBe('vibecode');
       expect(configMap.data.POSTGRES_USER).toBe('vibecode');
-      expect(configMap.data.POSTGRES_PASSWORD).toBe('vibecode_password');
+      expect(configMap.data.POSTGRES_PASSWORD).toBe('mock-fixture-value');
     });
 
     test('should have init SQL script in ConfigMap', () => {

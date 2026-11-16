@@ -52,7 +52,7 @@ const mockDockerResponses = {
   db:
     environment:
       POSTGRES_DB: vibecode_dev
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: mock-fixture-value
       POSTGRES_USER: vibecode
     healthcheck:
       interval: 10s
@@ -138,7 +138,7 @@ volumes:
   db:
     environment:
       POSTGRES_DB: vibecode_dev
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: mock-fixture-value
       POSTGRES_USER: vibecode
     healthcheck:
       interval: 10s

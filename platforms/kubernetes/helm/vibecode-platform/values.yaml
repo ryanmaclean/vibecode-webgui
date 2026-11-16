@@ -6,9 +6,9 @@ mongodb:
   enabled: true
   auth:
     enabled: true
-    rootPassword: "vibecode-root"
+    rootPassword: ""
     username: "vibecode"
-    password: "vibecode-password"
+    password: ""
     database: "vibecode-db"
   architecture: "standalone"
   persistence:
@@ -421,3 +421,10 @@ environments:
     security:
       podSecurityStandards:
         enforce: restricted
+
+# Used only when externalSecrets.enabled is false. Provide these at install time
+# (for example with --set or a values file kept out of version control).
+localSecrets:
+  codeServerPassword: ""
+  databaseUrl: ""
+  jwtSecret: ""

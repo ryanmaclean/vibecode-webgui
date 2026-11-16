@@ -41,7 +41,7 @@ Breaking this down into verifiable requirements:
 **Evidence** (from RALPH-LOOP-FINAL-SUCCESS.md):
 ```
 ✓ SSH server running (PID: 190)
-  Connect: ssh root@192.168.64.10 (password: vibecode)
+  Connect: ssh root@192.168.64.10 (password: <set-a-strong-password>)
 ```
 **Confidence**: 95%
 
@@ -96,7 +96,7 @@ Breaking this down into verifiable requirements:
 
 === SSH Server ===
 ✓ SSH server running (PID: 190)
-  Connect: ssh root@192.168.64.10 (password: vibecode)
+  Connect: ssh root@192.168.64.10 (password: <set-a-strong-password>)
 
 === Valkey Server ===
 ✓ Valkey running (PID: 191)

@@ -145,7 +145,7 @@ open http://192.168.64.3:8080
 
 # SSH
 ssh root@192.168.64.3
-# Password: vibecode (or as configured)
+# Password: <set-a-strong-password> (or as configured)
 ```
 
 **Production checklist:**

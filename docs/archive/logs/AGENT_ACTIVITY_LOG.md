@@ -249,7 +249,7 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Protocol working perfectly
 
 ### Agent Codex - RAG Local Fallback (2025-09-30 00:51-00:53 UTC)
-- Updated `.env.local` `DATABASE_URL` to the `vibecode-pgvector` container (`postgresql://vibecode:vibecode123@192.168.107.2:5432/vibecode?schema=public&sslmode=disable`).
+- Updated `.env.local` `DATABASE_URL` to the `vibecode-pgvector` container (`postgresql://vibecode:<set-a-strong-password>@192.168.107.2:5432/vibecode?schema=public&sslmode=disable`).
 - Verified container health via `docker exec vibecode-pgvector psql -U vibecode -d vibecode -c 'SELECT COUNT(*) FROM document_embeddings;'` (225 rows).
 - Re-ran `npx tsx -r dd-trace/init scripts/rag-local-demo.ts "Summarize the Datadog agentless setup."`; script returned top matches and an OpenRouter response.
 - Follow-up `scripts/poll-traces.sh 'service:vibecode-rag-demo env:development' 'now-30m'` still reports `{ "errors": ["Not found"] }`; traces pending ingestion.

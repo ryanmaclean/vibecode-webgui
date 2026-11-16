@@ -199,7 +199,7 @@ process_config.enabled: true
 ```bash
 # Default credentials (change in production!)
 User: root
-Password: vibecode
+Password: <set-a-strong-password>
 
 # SSH in
 ssh root@<vm-ip>

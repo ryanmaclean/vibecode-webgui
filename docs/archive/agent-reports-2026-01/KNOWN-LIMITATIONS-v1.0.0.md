@@ -88,7 +88,7 @@ Security sandboxing features (AppArmor, SELinux) are not implemented. Services r
 
 **Current Security Model**:
 - Single-user VM (root only)
-- SSH only via password "vibecode"
+- SSH only via password "<set-a-strong-password>"
 - No firewall rules
 - Suitable for development/testing, not production isolation
 
@@ -136,7 +136,7 @@ Security sandboxing features (AppArmor, SELinux) are not implemented. Services r
 SSH access works but only via password authentication. Public key authentication has not been tested.
 
 **Current Behavior**:
-- Password authentication: `ssh root@192.168.64.10` with password "vibecode"
+- Password authentication: `ssh root@192.168.64.10` with password "<set-a-strong-password>"
 - Public key authentication: Not configured
 - No sudo support
 

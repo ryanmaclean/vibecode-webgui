@@ -147,7 +147,7 @@ Error loading shared library libutmps.so.0.1: No such file or directory (needed 
 ```
 === SSH Server ===
 ✓ SSH server running (PID: 196)
-  Connect: ssh root@192.168.64.10 (password: vibecode)
+  Connect: ssh root@192.168.64.10 (password: <set-a-strong-password>)
 ```
 
 ✅ **SSH server now starts successfully and is accepting connections!**

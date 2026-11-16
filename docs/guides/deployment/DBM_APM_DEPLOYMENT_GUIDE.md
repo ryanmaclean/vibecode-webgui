@@ -55,7 +55,7 @@ POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=vibecode
 POSTGRES_USER=postgres
-POSTGRES_PASSWORD=password
+POSTGRES_PASSWORD=<set-a-strong-password>
 
 # Application Configuration
 NODE_ENV=development

@@ -233,7 +233,7 @@ limactl shell vibecode-valkey sh -c "find /var/log -name '*.gz' -delete"
 limactl shell vibecode-valkey sh -c "apk cache clean"
 
 # Check Valkey status
-limactl shell vibecode-valkey sh -c "valkey-cli -h 127.0.0.1 -p 6379 -a VibeCodeChangeMe2025 INFO persistence"
+limactl shell vibecode-valkey sh -c "valkey-cli -h 127.0.0.1 -p 6379 -a <set-a-strong-password> INFO persistence"
 ```
 
 ## Conclusion

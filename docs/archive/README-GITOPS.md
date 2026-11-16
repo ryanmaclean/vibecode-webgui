@@ -97,7 +97,7 @@ NEXTAUTH_URL=http://localhost:3000
 OPENROUTER_API_KEY=your-openrouter-key
 
 # Database & Cache
-DATABASE_URL=postgresql://vibecode:vibecode@localhost:5432/vibecode
+DATABASE_URL=postgresql://vibecode:<set-a-strong-password>@localhost:5432/vibecode
 REDIS_URL=redis://localhost:6379
 
 # Monitoring & Observability

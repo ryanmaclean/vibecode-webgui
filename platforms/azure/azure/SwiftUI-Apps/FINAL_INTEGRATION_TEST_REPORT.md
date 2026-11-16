@@ -50,7 +50,7 @@ Uptime: 4 min, 0 users, load average: 0.00, 0.00, 0.00
 
 **Findings:**
 - SSH daemon running correctly
-- Authentication working (password: vibecode)
+- Authentication working (password: <set-a-strong-password>)
 - Command execution successful
 - No connection delays or timeouts
 

@@ -7,7 +7,7 @@ The authentication system has been properly configured and tested. All 10 develo
 ## 🔐 **Test Credentials (All Working)**
 
 ### **Admin Users (2 accounts)**
-- **admin@vibecode.dev** / **admin123** (VibeCode Admin)
+- **admin@vibecode.dev** / **<dev-admin-password>** (VibeCode Admin)
 - **lead@vibecode.dev** / **lead123** (Lisa Thompson)
 
 ### **Developer Users (3 accounts)**

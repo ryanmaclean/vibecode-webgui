@@ -415,7 +415,7 @@
           nobody:x:65534:65534:nobody:/:/bin/false
         mode: '0644'
 
-    - name: Create /etc/shadow (password is vibecode)
+    - name: Create /etc/shadow (root hash from ANSIBLE_ROOT_PASSWORD_HASH, locked if unset)
       copy:
         dest: "{{ rootfs_dir }}/etc/shadow"
         # Password hash for 'vibecode' generated with openssl passwd -6 -salt vibecode vibecode
@@ -703,7 +703,7 @@
               # -s disables password login for root, so we omit it to allow password auth
               /usr/sbin/dropbear -R -E 2>&1 &
               sleep 1
-              ps | grep -v grep | grep -q dropbear && echo "SSH OK on port {{ services.ssh.port }} (password: vibecode)" || echo "SSH FAIL"
+              ps | grep -v grep | grep -q dropbear && echo "SSH OK on port {{ services.ssh.port }}" || echo "SSH FAIL"
           else
               echo "Dropbear binary not found"
           fi

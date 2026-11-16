@@ -260,7 +260,7 @@ QEMU_PID=$!
   sleep 1
   echo "auth: password"
   sleep 1
-  echo "password: vibecode"
+  echo "password: <set-a-strong-password>"
   sleep 1
   echo "EOF"
   sleep 3

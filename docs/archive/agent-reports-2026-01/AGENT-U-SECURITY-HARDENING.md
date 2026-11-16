@@ -50,7 +50,7 @@ The VM currently operates with:
 **Current Implementation**:
 ```bash
 # Line 1011-1015
-# /etc/shadow (password: vibecode)
+# /etc/shadow (password: <set-a-strong-password>)
 cat > "$initramfs/etc/shadow" << 'EOF'
 root:$6$rounds=4096$SALT$ZjJKqN6xqZ0rLU8bv6RkL4WF7XKJ4kPZF9QvL7WHQJ3KZ5F:19000:0:99999:7:::
 postgres:*:19000:0:99999:7:::
@@ -78,7 +78,7 @@ nmap -p 22 192.168.64.0/24
 
 # Attacker SSH with known password
 ssh root@192.168.64.10
-Password: vibecode
+Password: <set-a-strong-password>
 
 # Attacker has root access - game over
 ```

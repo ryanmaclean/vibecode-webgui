@@ -120,7 +120,7 @@ ssh snas "
   sudo docker rm vibecode-codeserver || true &&
   sudo docker run -d --name vibecode-codeserver \
     -p 8765:8765 -p 46203:46203 \
-    -e PASSWORD=vibecode \
+    -e PASSWORD=<set-a-strong-password> \
     -v /volume1/docker/vibecode-codeserver/workspace:/home/coder/workspace \
     --restart unless-stopped \
     ryanmaclean/vibecode-codeserver:1.1.0-standard

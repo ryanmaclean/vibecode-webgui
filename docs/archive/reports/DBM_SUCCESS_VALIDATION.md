@@ -154,7 +154,7 @@ shared_preload_libraries = 'pg_stat_statements'
 docker run -d --name postgres-monitoring \
   -e POSTGRES_DB=vibecode \
   -e POSTGRES_USER=vibecode \
-  -e POSTGRES_PASSWORD=vibecode_password \
+  -e POSTGRES_PASSWORD=<set-a-strong-password> \
   -p 5432:5432 postgres:16
 
 # Setup monitoring user and extensions

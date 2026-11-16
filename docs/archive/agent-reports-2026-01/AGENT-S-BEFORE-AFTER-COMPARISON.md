@@ -70,7 +70,7 @@ if [ -n "$SSH_PID" ]; then
     if ps | grep -v grep | grep -q dropbear; then
         echo "✓ SSH server running (PID: $SSH_PID)"
         if [ -n "$VM_IP" ] && [ "$VM_IP" != "localhost" ]; then
-            echo "  Connect: ssh root@$VM_IP (password: vibecode)"
+            echo "  Connect: ssh root@$VM_IP (password: <set-a-strong-password>)"
         else
             echo "  Connect: ssh root@localhost"
         fi
@@ -150,7 +150,7 @@ if [ -n "$SSH_PID" ]; then
     if check_service_health "SSH" "22" "10" "$SSH_CHECK"; then
         echo "✓ SSH server responding on port 22"
         if [ -n "$VM_IP" ] && [ "$VM_IP" != "localhost" ]; then
-            echo "  Connect: ssh root@$VM_IP (password: vibecode)"
+            echo "  Connect: ssh root@$VM_IP (password: <set-a-strong-password>)"
         else
             echo "  Connect: ssh root@localhost"
         fi
@@ -215,7 +215,7 @@ Services Running:
   - Valkey:      redis://localhost:6379
   - PostgreSQL:  postgresql://localhost:5432
   - OpenVSCode:  http://localhost:8080
-  - SSH:         ssh root@localhost (password: vibecode)
+  - SSH:         ssh root@localhost (password: <set-a-strong-password>)
 
 Log files:
   - /tmp/valkey.log
@@ -274,7 +274,7 @@ Services Running:
   - Valkey:      redis://localhost:6379
   - PostgreSQL:  postgresql://localhost:5432
   - OpenVSCode:  http://localhost:8080
-  - SSH:         ssh root@localhost (password: vibecode)
+  - SSH:         ssh root@localhost (password: <set-a-strong-password>)
 
 Health Check Results:
 SSH: Ready

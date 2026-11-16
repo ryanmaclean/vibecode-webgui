@@ -10,7 +10,7 @@ metadata:
   name: health-check-config
   namespace: vibecode-test
 data:
-  DATABASE_URL: "postgresql://vibecode:vibecode_password@postgres-service.vibecode:5432/vibecode"
+  DATABASE_URL: "postgresql://vibecode:REPLACE_WITH_DB_PASSWORD@postgres-service.vibecode:5432/vibecode"
   REDIS_URL: "redis://redis-service.vibecode:6379"
   NEXTAUTH_URL: "http://localhost:3000"
   NODE_ENV: "production"

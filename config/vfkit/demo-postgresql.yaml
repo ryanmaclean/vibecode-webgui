@@ -79,11 +79,13 @@ EOF
   
   # Create vibecode database and user
   sleep 2
-  su - postgres -c "psql -c \"CREATE USER vibecode WITH PASSWORD 'vibecode';\""
+  VIBECODE_DB_PW=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')
+  (umask 077; printf '%s' "$VIBECODE_DB_PW" > /root/.vibecode-db-password)
+  su - postgres -c "psql -c \"CREATE USER vibecode WITH PASSWORD '$VIBECODE_DB_PW';\""
   su - postgres -c "psql -c \"CREATE DATABASE vibecode OWNER vibecode;\""
   su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE vibecode TO vibecode;\""
   
   echo "PostgreSQL ready at localhost:5432"
   echo "Database: vibecode"
   echo "User: vibecode"
-  echo "Password: vibecode"
+  echo "Password: stored in /root/.vibecode-db-password inside the VM"

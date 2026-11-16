@@ -63,13 +63,14 @@ write_files:
       VibeCode OpenVSCode Server VM
       VSCode Server Ready
       Access: http://<vm-ip>:8080
-      Password: vibecode
+      Password: see /home/vibecode/.config/code-server/config.yaml
   
   - path: /home/vibecode/.config/code-server/config.yaml
     content: |
       bind-addr: 0.0.0.0:8080
       auth: password
-      password: vibecode
+      # Replace CHANGE_ME_CODE_SERVER_PASSWORD with a strong password before use
+      password: CHANGE_ME_CODE_SERVER_PASSWORD
       cert: false
     owner: vibecode:vibecode
   

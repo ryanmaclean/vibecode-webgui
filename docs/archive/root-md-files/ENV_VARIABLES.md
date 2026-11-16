@@ -41,11 +41,11 @@ DD_DATABASE_MONITORING_ENABLED=true
 ### Examples by Environment
 ```bash
 # Local Development
-DATABASE_URL=postgresql://vibecode:vibecode@localhost:5432/vibecode
+DATABASE_URL=postgresql://vibecode:<set-a-strong-password>@localhost:5432/vibecode
 REDIS_URL=redis://localhost:6379
 
 # KIND Cluster
-DATABASE_URL=postgresql://vibecode:vibecode@postgres-service:5432/vibecode
+DATABASE_URL=postgresql://vibecode:<set-a-strong-password>@postgres-service:5432/vibecode
 REDIS_URL=redis://redis-service:6379
 
 # Production

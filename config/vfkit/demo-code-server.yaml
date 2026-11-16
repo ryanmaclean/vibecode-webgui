@@ -80,4 +80,4 @@ EOF
   sudo -u vibecode code-server --bind-addr 0.0.0.0:8080 &
   
   echo "code-server ready at http://localhost:8080"
-  echo "Password: vibecode"
+  echo "Password: stored in /root/.vibecode-password inside the VM"

@@ -69,7 +69,7 @@
 ### Check Services
 ```bash
 # SSH
-ssh root@192.168.64.10 (password: vibecode)
+ssh root@192.168.64.10 (password: <set-a-strong-password>)
 
 # Valkey
 redis-cli -h 192.168.64.10 PING

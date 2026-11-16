@@ -136,7 +136,7 @@
 - **L2.** ~~Placeholder secrets in `OneClickDeploy.tsx:119-126`~~ FIXED — Replaced with clearly non-secret placeholders (`<your-api-key>`, `<generate-with-openssl-rand-base64-32>`) and added clarifying comment
 - **L3.** ~~SSH StrictHostKeyChecking disabled in QEMU provider (`qemu.ts:160`)~~ FIXED — Changed to `StrictHostKeyChecking=accept-new`, removed `UserKnownHostsFile=/dev/null`
 - **L4.** ~~Incomplete log sanitization (`src/lib/logger.ts:246`)~~ FIXED — Added 7 sanitization categories: Bearer tokens, Authorization headers, API keys (sk-/pk-/api_/key- prefixes), passwords in URLs, key=value credentials, database connection strings
-- **L5.** ~~Default SSH password "vibecode" in VM launch script (`vibecode:475`)~~ FIXED — Removed hardcoded password, reads from `$VM_SSH_PASSWORD` env var. Changed SSH to `StrictHostKeyChecking=accept-new`
+- **L5.** ~~Default SSH password "<set-a-strong-password>" in VM launch script (`vibecode:475`)~~ FIXED — Removed hardcoded password, reads from `$VM_SSH_PASSWORD` env var. Changed SSH to `StrictHostKeyChecking=accept-new`
 
 ---
 

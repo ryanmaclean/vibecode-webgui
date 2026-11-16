@@ -86,7 +86,7 @@ Testing conducted on the **vibecode-valkey** Lima VM. Results show **2 of 4 serv
 #### Performance Notes:
 - Latency: < 1ms response time
 - Data persistence: Functional RDB snapshots
-- Authentication: Working (VibeCodeChangeMe2025)
+- Authentication: Working (<set-a-strong-password>)
 
 #### Critical Issues:
 - **DISK SPACE ERROR on subsequent PING**: `MISCONF Errors writing to the AOF file: No space left on device`
@@ -216,13 +216,13 @@ PID   SERVICE
 
 2. **Disable AOF persistence** (if not required):
    ```bash
-   redis-cli -h 127.0.0.1 -p 6379 -a VibeCodeChangeMe2025 CONFIG SET appendonly no
+   redis-cli -h 127.0.0.1 -p 6379 -a <set-a-strong-password> CONFIG SET appendonly no
    ```
 
 3. **Monitor disk usage**:
    ```bash
-   redis-cli -h 127.0.0.1 -p 6379 -a VibeCodeChangeMe2025 INFO memory
-   redis-cli -h 127.0.0.1 -p 6379 -a VibeCodeChangeMe2025 DBSIZE
+   redis-cli -h 127.0.0.1 -p 6379 -a <set-a-strong-password> INFO memory
+   redis-cli -h 127.0.0.1 -p 6379 -a <set-a-strong-password> DBSIZE
    ```
 
 #### For Full Service Testing

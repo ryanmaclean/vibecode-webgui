@@ -304,7 +304,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         postgresInfoMenuItem?.setAccessibilityLabel("PostgreSQL service information. Click to copy connection command.")
         menu?.addItem(postgresInfoMenuItem!)
 
-        sshInfoMenuItem = NSMenuItem(title: "SSH: ssh root@[IP] (password: vibecode)", action: #selector(copySSHCommand), keyEquivalent: "4")
+        sshInfoMenuItem = NSMenuItem(title: "SSH: ssh root@[IP] (password: see build output)", action: #selector(copySSHCommand), keyEquivalent: "4")
         sshInfoMenuItem?.target = self
         sshInfoMenuItem?.keyEquivalentModifierMask = [.command]
         sshInfoMenuItem?.isHidden = true

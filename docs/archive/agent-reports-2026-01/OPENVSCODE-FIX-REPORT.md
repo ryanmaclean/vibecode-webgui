@@ -62,7 +62,7 @@ Services Running:
   - Valkey:      redis://localhost:6379
   - PostgreSQL:  postgresql://localhost:5432
   - OpenVSCode:  http://localhost:8080
-  - SSH:         ssh root@localhost (password: vibecode)
+  - SSH:         ssh root@localhost (password: <set-a-strong-password>)
 ```
 
 ### Service Health Checks

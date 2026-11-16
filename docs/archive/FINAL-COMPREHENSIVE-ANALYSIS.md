@@ -161,7 +161,7 @@ Gradio stderr: ModuleNotFoundError: No module named 'gradio'
 
 **10 Test Users Available**:
 ```javascript
-admin@vibecode.dev / admin123 (admin role)
+admin@vibecode.dev / <dev-admin-password> (admin role)
 developer@vibecode.dev / dev123 (developer role)
 lead@vibecode.dev / lead123 (lead role)
 frontend@vibecode.dev / frontend123

@@ -613,7 +613,7 @@ cd /path/to/vm-build-scripts
 c) **SSH into VM and check manually:**
 ```bash
 ssh -p 2222 root@localhost
-# Password: vibecode
+# Password: <set-a-strong-password>
 
 ls -la /root/.openvscode-server/extensions/
 ```

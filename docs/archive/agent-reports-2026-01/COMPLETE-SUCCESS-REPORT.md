@@ -17,7 +17,7 @@
 ### ✅ SSH Server - WORKING
 - **Status**: Running (PID: 206)
 - **Port**: 22
-- **Access**: `ssh root@192.168.64.10` (password: vibecode)
+- **Access**: `ssh root@192.168.64.10` (password: <set-a-strong-password>)
 - **Fix**: Agent K added utmps-libs-0.1.3.2-r0.apk
 
 ### ✅ Valkey Server - WORKING  

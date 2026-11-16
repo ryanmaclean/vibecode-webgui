@@ -48,7 +48,7 @@ postgresql:
   enabled: true
   auth:
     username: vibecode
-    password: dev-password
+    password: REPLACE_WITH_PASSWORD
     database: vibecode_dev
   primary:
     resources:
@@ -65,7 +65,7 @@ postgresql:
 redis:
   enabled: true
   auth:
-    password: dev-password
+    password: REPLACE_WITH_PASSWORD
   master:
     resources:
       requests:

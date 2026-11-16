@@ -95,7 +95,7 @@ All 4 services operational (100%)
 **Console Output**:
 ```
 === ACCESS CREDENTIALS ===
-SSH:        ssh root@192.168.64.x (password: vibecode)
+SSH:        ssh root@192.168.64.x (password: <set-a-strong-password>)
 Valkey:     valkey-cli (no password required)
 PostgreSQL: psql -U postgres (trust authentication)
 OpenVSCode: http://192.168.64.x:8080 (no authentication)
@@ -324,7 +324,7 @@ vfkit \
 
 **SSH (Port 22) - 7 Tests**:
 1. ✅ Port 22 listening (nc -z test)
-2. ✅ SSH authentication (password: vibecode)
+2. ✅ SSH authentication (password: <set-a-strong-password>)
 3. ✅ Command execution (ls, pwd, etc.)
 4. ✅ File operations (touch, rm, cat)
 5. ✅ SSH restart survives

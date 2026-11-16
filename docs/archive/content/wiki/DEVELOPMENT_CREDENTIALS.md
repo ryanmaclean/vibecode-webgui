@@ -12,7 +12,7 @@ This file contains test user credentials for development authentication until OA
 ### Admin Users (Full Access)
 | Email | Password | Name | Role |
 |-------|----------|------|------|
-| admin@vibecode.dev | admin123 | VibeCode Admin | admin |
+| admin@vibecode.dev | <dev-admin-password> | VibeCode Admin | admin |
 | lead@vibecode.dev | lead123 | Lisa Thompson | admin |
 
 ### Developer Users (Standard Access)
@@ -56,7 +56,7 @@ You can use any of these credentials to sign in at:
 ## 🛠️ Testing Different Scenarios
 
 ### Admin Access Testing
-Use `admin@vibecode.dev / admin123` or `lead@vibecode.dev / lead123` to test:
+Use `admin@vibecode.dev / <dev-admin-password>` or `lead@vibecode.dev / lead123` to test:
 - Full monitoring dashboard access
 - Administrative functions
 - System health checks
@@ -87,7 +87,7 @@ curl -X POST http://localhost:3000/api/auth/signin \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@vibecode.dev",
-    "password": "admin123"
+    "password": "<dev-admin-password>"
   }'
 
 # Example sign-in with developer user

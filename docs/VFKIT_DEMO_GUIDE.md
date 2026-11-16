@@ -59,7 +59,7 @@ mkdir -p ~/.config/code-server
 cat > ~/.config/code-server/config.yaml <<EOF
 bind-addr: 0.0.0.0:8080
 auth: password
-password: vibecode
+password: <set-a-strong-password>
 cert: false
 EOF
 
@@ -79,7 +79,7 @@ rc-update add postgresql
 
 # Create database
 psql -U postgres -c "CREATE DATABASE vibecode;"
-psql -U postgres -c "CREATE USER vibecode WITH PASSWORD 'vibecode';"
+psql -U postgres -c "CREATE USER vibecode WITH PASSWORD '<set-a-strong-password>';"
 psql -U postgres -c "GRANT ALL ON DATABASE vibecode TO vibecode;"
 ```
 
@@ -151,8 +151,8 @@ rc-update add nginx
 
 ## Access Services
 
-- **code-server**: http://localhost:8080 (password: vibecode)
-- **PostgreSQL**: localhost:5432 (user: vibecode, password: vibecode)
+- **code-server**: http://localhost:8080 (password: <set-a-strong-password>)
+- **PostgreSQL**: localhost:5432 (user: vibecode, password: <set-a-strong-password>)
 - **Valkey**: localhost:6379 (Redis-compatible)
 - **nginx**: http://localhost:80
 

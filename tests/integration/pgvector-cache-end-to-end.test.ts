@@ -131,7 +131,7 @@ class PgvectorCacheIntegrationTest {
       port: 5432,
       database: 'vibecode',
       user: 'vibecode',
-      password: 'vibecode_password',
+      password: process.env.POSTGRES_PASSWORD ?? '',
       max: 5,
       connectionTimeoutMillis: 5000
     });

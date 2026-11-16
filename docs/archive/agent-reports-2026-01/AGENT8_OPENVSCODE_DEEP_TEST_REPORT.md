@@ -169,7 +169,7 @@ CREATE EXTENSION
 OpenVSCode OK at http://192.168.64.10:8080 (PID: 282)
 
 === Dropbear SSH ===
-SSH OK on port 22 (password: vibecode)
+SSH OK on port 22 (password: <set-a-strong-password>)
 
 =========================================
   vibecode-vm Ready

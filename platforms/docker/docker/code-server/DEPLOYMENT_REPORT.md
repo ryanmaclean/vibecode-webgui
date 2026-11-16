@@ -149,7 +149,7 @@ Users can install these manually if they have access to Microsoft Marketplace.
 docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.0.0
 docker run -d --name vibecode-codeserver \
   -p 8765:8765 -p 46203:46203 \
-  -e PASSWORD=vibecode \
+  -e PASSWORD=<set-a-strong-password> \
   -v /volume1/docker/vibecode-codeserver/workspace:/home/coder/workspace \
   --restart unless-stopped \
   ghcr.io/ryanmaclean/vibecode-codeserver:1.0.0

@@ -962,7 +962,7 @@ services:
       - "9001:9001"
     environment:
       - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_ROOT_PASSWORD=<set-a-strong-password>
     volumes:
       - minio-data:/data
     command: server /data --console-address ":9001"
@@ -974,7 +974,7 @@ services:
       - "5432:5432"
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=<set-a-strong-password>
       - POSTGRES_DB=airflow
     volumes:
       - postgres-data:/var/lib/postgresql/data

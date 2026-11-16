@@ -137,7 +137,7 @@ postgresql:
   enabled: true
   auth:
     username: vibecode
-    password: changeme
+    password: <set-a-strong-password>
     database: vibecode_production
 ```
 
@@ -165,7 +165,7 @@ externalPostgresql:
 redis:
   enabled: true
   auth:
-    password: changeme
+    password: <set-a-strong-password>
 ```
 
 #### External Redis (Production)

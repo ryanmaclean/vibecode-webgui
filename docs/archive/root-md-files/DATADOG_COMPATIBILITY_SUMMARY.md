@@ -110,7 +110,7 @@ This requires the `vector` extension, which is now available in all deployments 
 
 1. **Test Schema Migration**:
    ```bash
-   export DATABASE_URL="postgresql://vibecode:vibecode123@localhost:5432/vibecode_dev"
+   export DATABASE_URL="postgresql://vibecode:<set-a-strong-password>@localhost:5432/vibecode_dev"
    npx prisma db push
    ```
 

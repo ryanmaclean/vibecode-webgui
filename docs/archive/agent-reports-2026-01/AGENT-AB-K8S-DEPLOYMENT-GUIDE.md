@@ -280,7 +280,7 @@ kubectl apply -f k8s-manifests/namespace.yaml
 
 # Create secrets (update values first!)
 kubectl create secret generic vibecode-secrets \
-  --from-literal=database.url="postgresql://vibecode:vibecode123@postgres-service:5432/vibecode" \
+  --from-literal=database.url="postgresql://vibecode:<set-a-strong-password>@postgres-service:5432/vibecode" \
   --from-literal=redis.url="redis://valkey-service:6379" \
   --from-literal=nextauth.secret="$(openssl rand -hex 32)" \
   --from-literal=jwt.secret="$(openssl rand -hex 32)" \

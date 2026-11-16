@@ -125,7 +125,7 @@ FEATURES (v${VERSION})
 -----------------
 ✅ Menubar app (no Dock icon)
 ✅ All 5 services accessible on localhost:
-   - SSH: ssh -p 2222 root@localhost (password: vibecode)
+   - SSH: ssh -p 2222 root@localhost (password: see build output)
    - OpenVSCode: http://localhost:8080
    - Valkey/Redis: redis-cli -p 6379
    - PostgreSQL: psql -h localhost -p 5432 -U postgres

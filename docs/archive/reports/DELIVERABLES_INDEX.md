@@ -209,7 +209,7 @@
   - Password authentication (root/vibecode)
   - Port 22 standard SSH
   - Automatic /root permissions fix
-- **Access**: `ssh root@192.168.64.3` (password: vibecode)
+- **Access**: `ssh root@192.168.64.3` (password: <set-a-strong-password>)
 - **Reusability**: Proven pattern for any new VM build
 
 #### Network Stack

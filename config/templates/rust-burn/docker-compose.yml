@@ -12,7 +12,7 @@ services:
       dockerfile: Dockerfile
     container_name: vibecode-rust-burn-dev
     ports:
-      - "8080:8080"    # VS Code Server
+      - "127.0.0.1:8080:8080"    # VS Code Server
       - "3000:3000"    # Application dev server
       - "8000:8000"    # Alternative dev server
     volumes:
@@ -53,8 +53,8 @@ services:
       - TOKENIZERS_PARALLELISM=false
       
       # VS Code settings
-      - PASSWORD=${CODE_SERVER_PASSWORD:-vibecode123}
-      - SUDO_PASSWORD=${CODE_SERVER_PASSWORD:-vibecode123}
+      - PASSWORD=${CODE_SERVER_PASSWORD:?CODE_SERVER_PASSWORD must be set}
+      - SUDO_PASSWORD=${CODE_SERVER_PASSWORD:?CODE_SERVER_PASSWORD must be set}
     working_dir: /workspace/current-project
     restart: unless-stopped
     healthcheck:
@@ -122,7 +122,7 @@ services:
       dockerfile: Dockerfile
     container_name: vibecode-rust-burn-gpu
     ports:
-      - "8081:8080"    # VS Code Server (GPU variant)
+      - "127.0.0.1:8081:8080"    # VS Code Server (GPU variant)
     volumes:
       - .:/workspace/current-project:cached
       - rust-cargo-cache-gpu:/home/developer/.cargo
@@ -153,8 +153,8 @@ services:
       - jupyter-data:/home/jovyan/.jupyter
     environment:
       - JUPYTER_ENABLE_LAB=yes
-      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-vibecode123}
-    command: start-notebook.sh --NotebookApp.token=${JUPYTER_TOKEN:-vibecode123}
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:?JUPYTER_TOKEN must be set}
+    command: start-notebook.sh --NotebookApp.token=${JUPYTER_TOKEN:?JUPYTER_TOKEN must be set}
     profiles:
       - jupyter  # Only start with --profile jupyter
     networks:
@@ -165,7 +165,7 @@ services:
     image: redis:7-alpine
     container_name: vibecode-redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
     command: redis-server --appendonly yes
@@ -183,14 +183,14 @@ services:
     image: postgres:16-alpine
     container_name: vibecode-postgres
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     environment:
       - POSTGRES_DB=vibecode_burn
       - POSTGRES_USER=vibecode
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-vibecode123}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
       - POSTGRES_INITDB_ARGS=--encoding=UTF-8
     restart: unless-stopped
     healthcheck:
@@ -206,7 +206,7 @@ services:
     image: prom/prometheus:latest
     container_name: vibecode-prometheus
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus

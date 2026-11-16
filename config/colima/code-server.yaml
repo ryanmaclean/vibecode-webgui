@@ -17,12 +17,13 @@ mounts:
     writable: true
 
 # Auto-start code-server container
+# Replace CHANGE_ME_CODE_SERVER_PASSWORD with a strong password before use
 autoStart:
   - docker run -d \
       --name code-server \
-      -p 8080:8080 \
+      -p 127.0.0.1:8080:8080 \
       -v "$HOME:/home/coder/workspace" \
-      -e PASSWORD=vibecode \
+      -e PASSWORD=CHANGE_ME_CODE_SERVER_PASSWORD \
       codercom/code-server:latest
 
 # Network configuration

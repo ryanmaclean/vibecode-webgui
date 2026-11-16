@@ -22,7 +22,7 @@ data:
       - host: host.docker.internal
         port: 5432
         username: datadog
-        password: datadog_monitoring_password
+        password: REPLACE_WITH_DATADOG_MONITORING_PASSWORD
         dbm: true
         collect_schemas:
           enabled: true

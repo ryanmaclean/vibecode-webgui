@@ -262,7 +262,7 @@ metadata:
   namespace: vibecode
 type: Opaque
 stringData:
-  DATABASE_URL: "mongodb://vibecode:vibecode-password@mongodb:27017/vibecode-db"
+  DATABASE_URL: "mongodb://vibecode:<set-a-strong-password>@mongodb:27017/vibecode-db"
   NEXTAUTH_SECRET: "dev-secret-change-in-production"
   DD_API_KEY: "your-datadog-api-key"
 
@@ -360,7 +360,7 @@ spec:
         - name: MONGO_INITDB_ROOT_USERNAME
           value: "vibecode"
         - name: MONGO_INITDB_ROOT_PASSWORD
-          value: "vibecode-password"
+          value: "<set-a-strong-password>"
         - name: MONGO_INITDB_DATABASE
           value: "vibecode-db"
         volumeMounts:

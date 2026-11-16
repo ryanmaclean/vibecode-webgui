@@ -91,7 +91,6 @@ elif [ -n "${DD_POSTGRES_PASSWORD:-}" ]; then
 else
     MONITORING_PASSWORD=""
 fi
-DEFAULT_MONITORING_PASSWORD="datadog_monitoring_password"
 # SSL mode for Datadog Postgres integration: disable|require|verify-ca|verify-full
 SSL_MODE="${SSL_MODE:-disable}"
 
@@ -138,10 +137,8 @@ if [ "$USE_SECRET_PASSWORD" = "true" ] && [ -z "$MONITORING_PASSWORD" ]; then
 fi
 
 if [ -z "$MONITORING_PASSWORD" ]; then
-    MONITORING_PASSWORD="$DEFAULT_MONITORING_PASSWORD"
-    if [ -z "$MONITORING_PASSWORD_SOURCE" ]; then
-        MONITORING_PASSWORD_SOURCE="default value"
-    fi
+    error "No monitoring password found. Set MONITORING_PASSWORD or DD_POSTGRES_PASSWORD, or create the secret '$MONITORING_SECRET_NAME'."
+    exit 1
 fi
 
 if [ -n "$MONITORING_PASSWORD_SOURCE" ]; then

@@ -309,7 +309,7 @@
 
 **BibTeX Entry:**
 ```bibtex
-@software{vibecode2024,
+@software{<set-a-strong-password>,
   title={VibeCode: Template Method Pattern Framework for Apple Virtualization.framework},
   author={{VibeCode Contributors}},
   year={2024},
@@ -533,7 +533,7 @@ This project demonstrates that **open-source educational software can achieve co
 
 ### Citation
 ```bibtex
-@software{vibecode2024,
+@software{<set-a-strong-password>,
   title={VibeCode: Template Method Pattern Framework for Apple Virtualization.framework},
   author={{VibeCode Contributors}},
   year={2024},

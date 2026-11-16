@@ -1,3 +1,5 @@
+# Requires POSTGRES_TEST_PASSWORD and NEXTAUTH_SECRET_TEST in the environment or an --env-file
+# (see .env.example). Example: docker compose --env-file .env -f config/docker/docker-compose.test.yml up
 version: '3.8'
 
 services:
@@ -6,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: vibecode_test
       POSTGRES_USER: test_user
-      POSTGRES_PASSWORD: ${POSTGRES_TEST_PASSWORD:-test_password}
+      POSTGRES_PASSWORD: ${POSTGRES_TEST_PASSWORD:?POSTGRES_TEST_PASSWORD must be set}
       DD_SERVICE: ${DD_SERVICE:-postgres}
       DD_ENV: ${DD_ENV:-development}
       DD_VERSION: ${DD_VERSION:-0.1.0}
@@ -48,9 +50,9 @@ services:
       - "3003:3000"
     environment:
       - NODE_ENV=test
-      - DATABASE_URL=postgresql://test_user:${POSTGRES_TEST_PASSWORD:-test_password}@postgres:5432/vibecode_test
+      - DATABASE_URL=postgresql://test_user:${POSTGRES_TEST_PASSWORD:?POSTGRES_TEST_PASSWORD must be set}@postgres:5432/vibecode_test
       - REDIS_URL=redis://redis:6379
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET_TEST:-test-secret-for-kind-testing}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET_TEST:?NEXTAUTH_SECRET_TEST must be set}
       - NEXTAUTH_URL=http://localhost:3003
       - USE_CONNECTION_POOL=true
       - CONNECTION_POOL_MAX_CONNECTIONS=10

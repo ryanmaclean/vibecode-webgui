@@ -62,7 +62,7 @@ vfkit \
 # Generate SSH key (if you don't have one)
 ssh-keygen -t ed25519 -f ~/.ssh/vibecode_vm -N ""
 
-# Copy key to VM (password: vibecode)
+# Copy key to VM (password: <set-a-strong-password>)
 ssh-copy-id -i ~/.ssh/vibecode_vm.pub root@192.168.64.10
 
 # Add to SSH config

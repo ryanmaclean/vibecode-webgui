@@ -24,7 +24,7 @@ async function runScaleTest() {
     port: 5432,
     database: 'vibecode',
     user: 'vibecode',
-    password: 'vibecode123',
+    password: process.env.POSTGRES_PASSWORD ?? '',
     max: 10,
     connectionTimeoutMillis: 5000
   });

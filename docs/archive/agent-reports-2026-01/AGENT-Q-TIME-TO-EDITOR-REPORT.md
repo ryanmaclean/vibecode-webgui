@@ -85,7 +85,7 @@ All measured test runs confirmed operational status for all services:
 
 ### Services Verified as Running
 - **SSH Server** (port 22): ✓ Confirmed running
-  - Access: `ssh root@192.168.64.10` (password: vibecode)
+  - Access: `ssh root@192.168.64.10` (password: <set-a-strong-password>)
 
 - **Valkey** (port 6379): ✓ Confirmed running
   - Cache/session data store operational

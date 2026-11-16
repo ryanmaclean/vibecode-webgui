@@ -30,7 +30,7 @@ Look for these success messages:
 
 ```bash
 ssh root@192.168.64.3
-# Password: vibecode
+# Password: <set-a-strong-password>
 ```
 
 Once connected, you can:
@@ -136,7 +136,7 @@ ls -la /usr/bin/postgres         # Verify postgres binary
 | VM Boot | ✅ Working | ~35 seconds |
 | Network | ✅ Working | 192.168.64.3/24 |
 | Console Logs | ✅ Working | /tmp/vibecode-console-*.log |
-| SSH (Dropbear) | ✅ Working | Port 22, password: vibecode |
+| SSH (Dropbear) | ✅ Working | Port 22, password: <set-a-strong-password> |
 | OpenVSCode Internal | ✅ Working | localhost:3000 |
 | OpenVSCode External | ❌ Not Working | 192.168.64.3:8080 connection refused |
 | Valkey | ❌ Not Working | Port 6379 not listening |

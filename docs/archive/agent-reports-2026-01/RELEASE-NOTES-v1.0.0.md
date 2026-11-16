@@ -114,7 +114,7 @@ ACCESS CREDENTIALS:
 ```bash
 # SSH into VM
 ssh root@192.168.64.10
-# Password: vibecode
+# Password: <set-a-strong-password>
 
 # Test PostgreSQL
 psql -h 192.168.64.10 -U postgres -c "SELECT version();"

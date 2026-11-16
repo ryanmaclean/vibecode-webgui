@@ -42,7 +42,7 @@ postgres:
 
 **Test Command**:
 ```bash
-export DATABASE_URL="postgresql://vibecode:vibecode123@localhost:5432/vibecode_dev"
+export DATABASE_URL="postgresql://vibecode:<set-a-strong-password>@localhost:5432/vibecode_dev"
 npx prisma db push
 ```
 
@@ -71,7 +71,7 @@ postgres:
 # Manual extension creation required for existing databases
 docker-compose -f docker-compose.production.yml exec postgres psql -U vibecode -d vibecode -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
-export DATABASE_URL="postgresql://vibecode:vibecode123@localhost:5432/vibecode"
+export DATABASE_URL="postgresql://vibecode:<set-a-strong-password>@localhost:5432/vibecode"
 npx prisma db push
 ```
 
@@ -99,7 +99,7 @@ containers:
   - name: POSTGRES_USER
     value: "vibecode"
   - name: POSTGRES_PASSWORD
-    value: "vibecode123"
+    value: "<set-a-strong-password>"
 ```
 
 **Test Commands**:
@@ -125,7 +125,7 @@ kubectl exec -n vibecode deployment/postgres -- psql -U vibecode -d vibecode_dev
 
 # Test schema
 kubectl port-forward -n vibecode service/postgres-service 5432:5432 &
-export DATABASE_URL="postgresql://vibecode:vibecode123@localhost:5432/vibecode_dev"
+export DATABASE_URL="postgresql://vibecode:<set-a-strong-password>@localhost:5432/vibecode_dev"
 npx prisma db push
 ```
 
@@ -160,7 +160,7 @@ data:
 
 **Test Command**:
 ```bash
-export DATABASE_URL="postgresql://vibecode:vibecode123@localhost:5432/vibecode_dev"
+export DATABASE_URL="postgresql://vibecode:<set-a-strong-password>@localhost:5432/vibecode_dev"
 npx prisma db push
 ```
 

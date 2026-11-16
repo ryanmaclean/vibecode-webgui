@@ -135,7 +135,7 @@ Look for hosts with tags:
 # Find VM IP (will be added to VibeCode UI later)
 # For now, VMs use NAT networking
 
-# SSH in (password: vibecode)
+# SSH in (password: <set-a-strong-password>)
 ssh root@<vm-ip>
 
 # Check Datadog status

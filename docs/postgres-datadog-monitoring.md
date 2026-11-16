@@ -142,7 +142,7 @@ ad.datadoghq.com/postgres.instances: |
     "host": "%%host%%",
     "port": 5432,
     "username": "datadog",
-    "password": "datadog_monitoring_password",
+    "password": "<datadog-monitoring-password>",
     "dbname": "vibecode",
     "dbm": true,
     "collect_schemas": {"enabled": true},
@@ -180,7 +180,7 @@ kubectl port-forward -n vibecode-platform service/postgres-service 5432:5432
 ```bash
 # Recreate monitoring user
 kubectl exec -n vibecode-platform deployment/postgres -- \
-  psql -U vibecode -d postgres -c "ALTER USER datadog WITH PASSWORD 'datadog_monitoring_password';"
+  psql -U vibecode -d postgres -c "ALTER USER datadog WITH PASSWORD '<datadog-monitoring-password>';"
 ```
 
 #### 2. pg_stat_statements Extension Missing

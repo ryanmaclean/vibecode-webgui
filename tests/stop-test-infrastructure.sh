@@ -12,6 +12,7 @@ echo "🛑 Stopping test infrastructure..."
 if [ "$1" == "--clean" ]; then
     echo "🧹 Removing volumes and data..."
     docker-compose -f docker-compose.test.yml down -v
+    rm -f .env
     echo "✅ Test infrastructure stopped and cleaned"
 else
     docker-compose -f docker-compose.test.yml down

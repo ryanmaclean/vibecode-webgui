@@ -9,6 +9,23 @@ cd "$SCRIPT_DIR"
 
 echo "🚀 Starting test infrastructure..."
 
+# Credentials are generated once and kept in tests/.env (gitignored, mode 600).
+# docker compose reads that file automatically, so a plain
+# `docker compose -f docker-compose.test.yml down` works without extra flags,
+# and reruns reuse the same values (the named volumes keep the old passwords).
+if [ ! -f .env ]; then
+    ( umask 077
+      {
+        echo "POSTGRES_TEST_PASSWORD=$(openssl rand -hex 16)"
+        echo "MONGO_TEST_PASSWORD=$(openssl rand -hex 16)"
+        echo "MONGO_EXPRESS_PASSWORD=$(openssl rand -hex 16)"
+      } > .env )
+fi
+chmod 600 .env
+set -a
+. ./.env
+set +a
+
 # Check if Docker is running
 if ! docker info > /dev/null 2>&1; then
     echo "❌ Error: Docker is not running"
@@ -64,23 +81,23 @@ done
 echo "  ✓ MongoDB is ready"
 
 # Export environment variables for tests
-export DATABASE_URL="postgresql://vibecode_test:vibecode_test_password@localhost:5432/vibecode_test"
+export DATABASE_URL="postgresql://vibecode_test:${POSTGRES_TEST_PASSWORD}@localhost:5432/vibecode_test"
 export REDIS_HOST="localhost"
 export REDIS_PORT="6379"
-export MONGODB_URI="mongodb://vibecode_test:vibecode_test_password@localhost:27017/vibecode_test?authSource=admin"
+export MONGODB_URI="mongodb://vibecode_test:${MONGO_TEST_PASSWORD}@localhost:27017/vibecode_test?authSource=admin"
 
 echo ""
 echo "✅ Test infrastructure is running!"
 echo ""
 echo "📋 Service URLs:"
-echo "  PostgreSQL: postgresql://vibecode_test:vibecode_test_password@localhost:5432/vibecode_test"
+echo "  PostgreSQL: postgresql://vibecode_test:<POSTGRES_TEST_PASSWORD>@localhost:5432/vibecode_test"
 echo "  Redis:      redis://localhost:6379"
-echo "  MongoDB:    mongodb://vibecode_test:vibecode_test_password@localhost:27017/vibecode_test"
+echo "  MongoDB:    mongodb://vibecode_test:<MONGO_TEST_PASSWORD>@localhost:27017/vibecode_test"
 echo ""
 echo "🔧 Admin Tools:"
 echo "  Adminer (Postgres):     http://localhost:8080"
 echo "  Redis Commander:        http://localhost:8081"
-echo "  Mongo Express:          http://localhost:8082 (admin/admin)"
+echo "  Mongo Express:          http://localhost:8082 (user admin, password in tests/.env)"
 echo ""
 echo "📝 To run tests with infrastructure:"
 echo "  export DATABASE_URL='$DATABASE_URL'"

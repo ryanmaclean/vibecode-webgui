@@ -19,7 +19,7 @@ make -f Makefile.vm vm-build
 make -f Makefile.vm vm-start
 
 # Access services
-# - SSH: ssh root@localhost (password: vibecode)
+# - SSH: ssh root@localhost (password: <set-a-strong-password>)
 # - Valkey: redis://localhost:6379
 # - PostgreSQL: postgresql://localhost:5432
 # - OpenVSCode: http://localhost:8080
@@ -72,7 +72,7 @@ make -f Makefile.vm vm-status
 redis-cli -h <VM_IP> ping              # Should return PONG
 psql -h <VM_IP> -U postgres -c "SELECT 1;"  # Should return 1
 curl http://<VM_IP>:8080               # Should load OpenVSCode
-ssh root@<VM_IP>                       # Should connect (password: vibecode)
+ssh root@<VM_IP>                       # Should connect (password: <set-a-strong-password>)
 ```
 
 ---
@@ -176,7 +176,7 @@ cat AGENT-W-CICD-DESIGN.md
 
 | Service | Port | Access | Default Credentials |
 |---------|------|--------|---------------------|
-| SSH | 22 | `ssh root@<VM_IP>` | Password: vibecode |
+| SSH | 22 | `ssh root@<VM_IP>` | Password: <set-a-strong-password> |
 | Valkey | 6379 | `redis-cli -h <VM_IP>` | No auth |
 | PostgreSQL | 5432 | `psql -h <VM_IP> -U postgres` | Trust auth |
 | OpenVSCode | 8080 | `http://<VM_IP>:8080` | No auth |

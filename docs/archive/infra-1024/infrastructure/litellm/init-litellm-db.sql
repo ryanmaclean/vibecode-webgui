@@ -3,7 +3,7 @@
 
 -- Create LiteLLM database and user
 CREATE DATABASE litellm;
-CREATE USER litellm WITH ENCRYPTED PASSWORD 'litellm_password';
+CREATE USER litellm WITH ENCRYPTED PASSWORD '<set-a-strong-password>';
 GRANT ALL PRIVILEGES ON DATABASE litellm TO litellm;
 
 -- Connect to LiteLLM database

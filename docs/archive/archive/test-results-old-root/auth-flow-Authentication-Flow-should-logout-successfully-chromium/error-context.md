@@ -14,7 +14,7 @@
   - strong: "Development Test Users:"
 - paragraph:
   - strong: "Admin Users:"
-- paragraph: admin@vibecode.dev / admin123
+- paragraph: admin@vibecode.dev / <dev-admin-password>
 - paragraph: lead@vibecode.dev / lead123
 - paragraph:
   - strong: "Developers:"

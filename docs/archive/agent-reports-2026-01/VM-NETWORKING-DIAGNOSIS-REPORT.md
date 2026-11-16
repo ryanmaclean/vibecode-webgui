@@ -18,7 +18,7 @@ The VM networking is broken at a fundamental level. While the macOS side detects
 - **Verification**:
   - `/root` directory EXISTS ✓
   - `/etc/passwd` EXISTS ✓
-  - `/etc/shadow` EXISTS (with password: vibecode) ✓
+  - `/etc/shadow` EXISTS (with password: <set-a-strong-password>) ✓
   - SSH server binary `/usr/sbin/dropbear` EXISTS ✓
 
 ### 2. Swift App Rebuild ✓
@@ -56,9 +56,9 @@ The VM networking is broken at a fundamental level. While the macOS side detects
 ### 4. Password Configuration ✓
 ```
 User: root
-Password: vibecode
-Hash: $6$vibecode123$xrMGfQmkECwBG5tnCoZCFLvKcOB9X1A.L4DhlO8z6jq1y8mq8Zb3gNOOthahQbBvXvuJ8gmnZXBTq5j48Dodp1
-Method: openssl passwd -6 -salt vibecode123 vibecode
+Password: <set-a-strong-password>
+Hash: $6$<set-a-strong-password>$xrMGfQmkECwBG5tnCoZCFLvKcOB9X1A.L4DhlO8z6jq1y8mq8Zb3gNOOthahQbBvXvuJ8gmnZXBTq5j48Dodp1
+Method: openssl passwd -6 -salt <set-a-strong-password> vibecode
 ```
 
 ### 5. SSH Configuration ✓
