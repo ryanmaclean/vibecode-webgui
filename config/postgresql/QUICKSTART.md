@@ -20,14 +20,14 @@ vfkit --config config/vfkit/postgresql-pgvector-vm.yaml
 # From host machine
 psql -h localhost -p 5432 -U vibecode -d vibecode
 
-# When prompted, enter password: vibecode_prod_2024
+# When prompted, enter the vibecode password you passed to init.sql
 ```
 
 ## Update .env
 
 ```bash
 # Add to .env
-DATABASE_URL="postgresql://vibecode:vibecode_prod_2024@localhost:5432/vibecode?sslmode=require"
+DATABASE_URL="postgresql://vibecode:<vibecode_password>@localhost:5432/vibecode?sslmode=require"
 ```
 
 ## Run Prisma Migrations
@@ -92,7 +92,7 @@ pg_ctl restart -D /var/lib/postgresql/data
 | Port | 5432 |
 | Database | vibecode |
 | User | vibecode |
-| Password | vibecode_prod_2024 |
+| Password | <vibecode_password> (set when you ran init.sql) |
 | SSL Mode | require |
 
 ## Admin Access
@@ -100,7 +100,7 @@ pg_ctl restart -D /var/lib/postgresql/data
 ```bash
 # Connect as superuser
 psql -h localhost -p 5432 -U postgres -d postgres
-# Password: postgres_admin_2024
+# Password: the postgres_password you passed to init.sql
 ```
 
 ## Common Issues

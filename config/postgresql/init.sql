@@ -8,7 +8,7 @@
 -- 4. Creates sample vector tables for testing
 -- 5. Configures security and permissions
 --
--- Usage: psql -U postgres -f init.sql
+-- Usage: psql -U postgres -v postgres_password=... -v vibecode_password=... -f init.sql
 -- Last Updated: 2024-10-28
 
 \set ON_ERROR_STOP on
@@ -22,17 +22,31 @@
 \echo 'Section 1: Creating Database and Users'
 \echo '==================================================================='
 
+-- Passwords are required inputs; none are stored in this file.
+-- (requires psql 13 or newer; a missing variable stops the script with a non-zero exit)
+\if :{?postgres_password}
+\else
+  \echo 'ERROR: pass -v postgres_password=... and -v vibecode_password=... to psql'
+  SELECT 1/0;
+\endif
+\if :{?vibecode_password}
+\else
+  \echo 'ERROR: pass -v postgres_password=... and -v vibecode_password=... to psql'
+  SELECT 1/0;
+\endif
+
 -- Set password for postgres superuser
-ALTER USER postgres WITH PASSWORD 'postgres_admin_2024';
+ALTER USER postgres WITH PASSWORD :'postgres_password';
+SELECT set_config('vibecode.app_password', :'vibecode_password', false) AS _ignored \gset
 
 -- Create vibecode application user
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_user WHERE usename = 'vibecode') THEN
-        CREATE USER vibecode WITH PASSWORD 'vibecode_prod_2024' CREATEDB;
+        EXECUTE format('CREATE USER vibecode WITH PASSWORD %L CREATEDB', current_setting('vibecode.app_password'));
         RAISE NOTICE 'User vibecode created successfully';
     ELSE
-        ALTER USER vibecode WITH PASSWORD 'vibecode_prod_2024' CREATEDB;
+        EXECUTE format('ALTER USER vibecode WITH PASSWORD %L CREATEDB', current_setting('vibecode.app_password'));
         RAISE NOTICE 'User vibecode already exists, password updated';
     END IF;
 END
@@ -453,7 +467,7 @@ ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 \echo '  ✓ Helper functions created'
 \echo ''
 \echo 'Connection String:'
-\echo '  postgresql://vibecode:vibecode_prod_2024@localhost:5432/vibecode?sslmode=require'
+\echo '  postgresql://vibecode:<vibecode_password>@localhost:5432/vibecode?sslmode=require'
 \echo ''
 \echo 'Test Queries:'
 \echo '  -- Find similar code'
