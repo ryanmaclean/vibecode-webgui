@@ -254,7 +254,7 @@ export class Agent extends EventEmitter {
     }
 
     // Request confirmation
-    const confirmationRequest = this.confirmationService.requestConfirmation(
+    const confirmationRequest = await this.confirmationService.requestConfirmation(
       this.agentId,
       actionPreview,
       {
