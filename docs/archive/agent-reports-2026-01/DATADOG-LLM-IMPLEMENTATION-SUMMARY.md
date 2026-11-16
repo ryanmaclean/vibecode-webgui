@@ -215,7 +215,7 @@ Dashboards, Alerts, Analytics
 
 | Variable | Required | Default | Example |
 |----------|----------|---------|---------|
-| `DD_API_KEY` | Yes | - | `0e4c744e925521aeb1f97486ac8e3884` |
+| `DD_API_KEY` | Yes | - | `<redacted>` |
 | `DD_LLMOBS_ENABLED` | **Yes** | `false` | `true` |
 | `DD_LLMOBS_AGENTLESS_ENABLED` | No | `true` | `true` |
 | `DD_LLMOBS_ML_APP` | No | `vibecode-ai` | `vibecode-ai` |

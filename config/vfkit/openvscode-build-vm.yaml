@@ -1,7 +1,7 @@
 # vfkit VM: OpenVSCode Server Build Environment
 # macOS ARM64 - Native build testing for VibeCode
 # Purpose: Test openvscode-server native macOS builds without Docker
-# Usage: ../scripts/vfkit/build-openvscode.sh
+# Usage: scripts/vfkit/build-openvscode.sh (moved to ryanmaclean/smolfire imports/vibecode/scripts/vfkit/ on 2026-10-24)
 
 name: vibecode-openvscode-builder
 vcpus: 8

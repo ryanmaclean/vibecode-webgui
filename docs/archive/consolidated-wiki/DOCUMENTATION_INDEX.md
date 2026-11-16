@@ -11,7 +11,7 @@ This document serves as the central navigation hub for all VibeCode platform doc
 
 ### Getting Started
 - **[README.md](../README.md)** - Main project overview, quick start, and installation
-- **[Quick Start Guide](./guides/quick-start.md)** - Step-by-step setup instructions
+- **[Quick Start Guide](../content/wiki/guides/quick-start.md)** - Step-by-step setup instructions
 - **[Deployment Guide](./DEPLOYMENT.md)** - Production deployment options
 
 ### Architecture & Development
@@ -31,7 +31,7 @@ This document serves as the central navigation hub for all VibeCode platform doc
 ### AI & Integration
 - **[AI Features Overview](./NEW_FEATURES.md)** - AI capabilities and integrations
 - **[LiteLLM Integration](./LITELLM_INTEGRATION_SUMMARY.md)** - Multi-provider AI gateway
-- **[App Generator](./app-generator.md)** - AI-powered project generation
+- **[App Generator](../content/wiki/app-generator.md)** - AI-powered project generation
 - **[OSS Tools Integration](./oss-tools-integration.md)** - Open source tool integrations
 
 ### Infrastructure & Deployment

@@ -291,7 +291,7 @@ cargo build --release
 - **macOS Virtualization Framework:** https://developer.apple.com/documentation/virtualization
 - **Open-VSX Registry:** https://open-vsx.org
 - **Comparison Document:** [docs/CODE_SERVER_COMPARISON.md](./CODE_SERVER_COMPARISON.md)
-- **Build Script:** [scripts/vfkit/build-openvscode.sh](../scripts/vfkit/build-openvscode.sh)
+- **Build Script:** [scripts/vfkit/build-openvscode.sh](https://github.com/ryanmaclean/smolfire/blob/main/imports/vibecode/scripts/vfkit/build-openvscode.sh)
 - **VM Configuration:** [config/vfkit/openvscode-build-vm.yaml](../config/vfkit/openvscode-build-vm.yaml)
 
 ---

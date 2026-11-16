@@ -253,7 +253,7 @@ Consider implementing:
 - [OpenVSCode Server GitHub](https://github.com/gitpod-io/openvscode-server)
 - [Release v1.105.1](https://github.com/gitpod-io/openvscode-server/releases/tag/openvscode-server-v1.105.1)
 - [Fast OpenVSCodium Release Flow](../../wiki/FAST_OPENVSCODIUM_RELEASE_FLOW.md)
-- [OpenVSCode Micro-VM Prototype](./openvscode-microvm.md)
+- [OpenVSCode Micro-VM Prototype](https://github.com/ryanmaclean/smolfire/blob/main/imports/vibecode/docs/virtualization/openvscode-microvm.md)
 
 ### Related Issues
 - [#652](https://github.com/ryanmaclean/vibecode-webgui/issues/652) - Update to v1.105.1 (this issue)

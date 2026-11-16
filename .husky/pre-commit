@@ -6,7 +6,7 @@ echo "Running pre-commit quality gates..."
 # Secret scanning with gitleaks
 echo "1/3 Running secret scanning..."
 if command -v gitleaks > /dev/null 2>&1; then
-    gitleaks protect --staged --verbose || {
+    gitleaks protect --staged --redact --config .gitleaks.toml || {
         echo "Secret scanning failed - potential secrets detected"
         echo "Please remove any secrets and use environment variables"
         exit 1

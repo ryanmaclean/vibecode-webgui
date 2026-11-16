@@ -223,11 +223,11 @@ All three Tailwind CSS v4 approaches are fully tested and production-ready. The 
 This comprehensive guide is part of a complete documentation suite covering all aspects of Tailwind CSS v4 implementation:
 
 ### 📖 Related Documentation
-- [**Tailwind CSS v4 Migration Notes**](./tailwind-v4-migration-notes) - Complete migration journey and troubleshooting
-- [**Tailwind CSS v4 Success Guide**](./tailwind-v4-success) - Production-ready implementation guide  
-- [**Tailwind CSS v4 Testing Report**](./tailwind-v4-testing-report) - Comprehensive test results across all environments
-- [**x86-64 Production Test Report**](./x86-production-test-report) - Production architecture verification
-- [**Comprehensive Environment Test Report**](./comprehensive-environment-test-report) - Complete validation across local dev, Docker, KIND, and Kubernetes
+- [**Tailwind CSS v4 Migration Notes**](../../../src/content/docs/tailwind-v4-migration-notes) - Complete migration journey and troubleshooting
+- [**Tailwind CSS v4 Success Guide**](../../../src/content/docs/tailwind-v4-success) - Production-ready implementation guide  
+- [**Tailwind CSS v4 Testing Report**](../../../src/content/docs/tailwind-v4-testing-report) - Comprehensive test results across all environments
+- [**x86-64 Production Test Report**](../../../src/content/docs/x86-production-test-report) - Production architecture verification
+- [**Comprehensive Environment Test Report**](../../../src/content/docs/comprehensive-environment-test-report) - Complete validation across local dev, Docker, KIND, and Kubernetes
 
 ### 🏗️ Architecture Overview
 The implementation strategy provides three production-ready approaches:

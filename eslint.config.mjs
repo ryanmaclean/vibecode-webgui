@@ -24,7 +24,6 @@ export default [
       "platforms/**",
       "extensions/**",
       "config/**",
-      "release-archive/**",
       "src-tauri/**",
       "go/**",
       "bin/**",

@@ -26,7 +26,7 @@
 
 The VibeCode platform implements a sophisticated multi-agent orchestration system that enables parallel task execution, autonomous agent coordination, and intelligent workflow management. The system consists of two primary orchestration layers:
 
-1. **`.agents/` Framework** - Manual multi-agent coordination for complex project tasks
+1. **`.agents/` Framework** - Manual multi-agent coordination for complex project tasks (historical; archived in `docs/archive/agent-briefs/`)
 2. **`.auto-claude/` System** - Automated task orchestration with Claude Code integration
 
 ### Key Capabilities
@@ -143,6 +143,8 @@ graph LR
 ---
 
 ## Multi-Agent Coordination System
+
+> **Historical (2026-10-25, WS10):** the `.agents/` coordination framework is retired and its task briefs are archived read-only in `docs/archive/agent-briefs/`. Do not create new coordination files there or in `.agents/`. Live coordination state belongs in GitHub issues/BOP (see AGENTS.md).
 
 ### .agents/ Directory Structure
 
@@ -960,8 +962,8 @@ function validateCommand(cmd: string): boolean {
 
 ## Related Documentation
 
-- [Multi-Agent Coordination Methodology](../wiki/guides/multi-agent-coordination.md)
-- [Service Dependencies Map](../../SERVICE_DEPENDENCIES.md)
+- [Multi-Agent Coordination Methodology](../archive/wiki/guides/multi-agent-coordination.md)
+- [Service Dependencies Map](SERVICE_DEPENDENCIES.md)
 - [Architecture Diagram](../ARCHITECTURE_DIAGRAM.md)
 - [Folder Structure](../FOLDER_STRUCTURE.md)
 

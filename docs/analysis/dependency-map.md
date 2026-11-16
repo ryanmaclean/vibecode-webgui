@@ -5,6 +5,8 @@ status: Initial Analysis
 priority: Critical
 ---
 
+> **Moved 2026-10-24 (WS3):** `daemon/` (kafka-dsm, gitea-kafka-bridge, disk-guard), `td/`, `.github/workflows/tundra-ci.yml` and `scripts/check-kafka-topics.sh` now live in ryanmaclean/gt (private; gt#4 and gt#5). Paths to them below refer to that repo.
+
 # Module Dependency Map & Circular Dependency Analysis
 
 This document maps the current module dependencies across VibeCode's multi-service architecture, identifies circular dependencies, and provides visual diagrams showing service relationships.
@@ -38,9 +40,9 @@ graph TB
     subgraph "Backend Services"
         Server[Server<br/>server/]
         AIGateway[AI Gateway<br/>infrastructure/services/ai-gateway]
-        WebhookService[Webhook Service<br/>infrastructure/services/webhook-service]
-        GitHubWebhook[GitHub Webhook<br/>infrastructure/services/github-webhook]
-        QueueWorker[Queue Worker<br/>infrastructure/queue-worker]
+        WebhookService[Webhook Service<br/>docs/archive/infra-1024/infrastructure/services/webhook-service]
+        GitHubWebhook[GitHub Webhook<br/>docs/archive/infra-1024/infrastructure/services/github-webhook]
+        QueueWorker[Queue Worker<br/>docs/archive/infra-1024/infrastructure/queue-worker]
     end
 
     subgraph "Daemon Services"
@@ -51,7 +53,7 @@ graph TB
 
     subgraph "Platform Wrappers"
         Tauri[Tauri Desktop<br/>platforms/tauri]
-        Electron[Electron Desktop<br/>platforms/electron-vibecode]
+        Electron[Electron Desktop<br/>docs/archive/infra-1024/platforms/electron-vibecode]
         MacOS[macOS Menubar<br/>platforms/macos]
         WebDashboard[Web Dashboard<br/>platforms/web-dashboard]
     end
@@ -142,7 +144,7 @@ graph TB
 
 **Dependents:**
 - `platforms/tauri` - Desktop wrapper
-- `platforms/electron-vibecode` - Alternative desktop wrapper
+- `docs/archive/infra-1024/platforms/electron-vibecode` - Alternative desktop wrapper
 - `platforms/web-dashboard` - Management UI
 - Extensions (Claude Code, AI Assistant, etc.)
 
@@ -188,7 +190,7 @@ import { getSession } from '@/lib/auth'
 
 **Circular Dependency Issues:**
 ```
-src/app/api/agents → server/graceful-shutdown → src/app/api/health → server/
+src/app/api/agents → tools/server/graceful-shutdown → src/app/api/health → tools/server/
 ```
 
 ---
@@ -244,7 +246,7 @@ ai-gateway → src/app/api/ai/chat → ai-gateway (for model routing)
 
 ---
 
-#### GitHub Webhook Service (`infrastructure/services/github-webhook`)
+#### GitHub Webhook Service (`docs/archive/infra-1024/infrastructure/services/github-webhook`)
 
 **Purpose:** Process GitHub webhook events
 **Type:** Event processor
@@ -264,7 +266,7 @@ GitHub → Webhook Service → Kafka → Queue Worker → Database
 
 ---
 
-#### Webhook Service (`infrastructure/services/webhook-service`)
+#### Webhook Service (`docs/archive/infra-1024/infrastructure/services/webhook-service`)
 
 **Purpose:** Generic webhook handling
 **Type:** Event processor
@@ -280,7 +282,7 @@ GitHub → Webhook Service → Kafka → Queue Worker → Database
 
 ---
 
-#### Queue Worker (`infrastructure/queue-worker`)
+#### Queue Worker (`docs/archive/infra-1024/infrastructure/queue-worker`)
 
 **Purpose:** Process Kafka queue messages
 **Type:** Background worker
@@ -377,7 +379,7 @@ npm run build:tauri → Next.js build → Tauri bundle
 
 ---
 
-#### Electron Desktop (`platforms/electron-vibecode`)
+#### Electron Desktop (`docs/archive/infra-1024/platforms/electron-vibecode`)
 
 **Purpose:** Alternative desktop app (Electron)
 **Type:** Desktop platform
@@ -549,7 +551,7 @@ import { getSession } from '@/lib/auth'
 
 **Dependency Chain:**
 ```
-src/app/api/agents → server/graceful-shutdown → src/app/api/health → server/
+src/app/api/agents → tools/server/graceful-shutdown → src/app/api/health → tools/server/
 ```
 
 **Impact:** High
@@ -855,7 +857,7 @@ import { GET as agentStatus } from '@/app/api/agents/status/route'
 // infrastructure/services/ai-gateway/src/index.ts
 import { webhookService } from '../webhook-service'
 
-// infrastructure/services/webhook-service/src/index.ts
+// docs/archive/infra-1024/infrastructure/services/webhook-service/src/index.ts
 import { aiGateway } from '../ai-gateway'
 ```
 
@@ -878,7 +880,7 @@ import { aiGateway } from '../ai-gateway'
 **Example Violations:**
 ```javascript
 // daemon/disk-guard/monitor.js
-const { gracefulShutdown } = require('../../server/graceful-shutdown')
+const { gracefulShutdown } = require('../../tools/server/graceful-shutdown')
 
 // daemon/kafka-dsm/src/consumer.ts
 import { types } from '@/types'

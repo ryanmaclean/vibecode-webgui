@@ -10,14 +10,6 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/settings',
 }));
 
-// Mock lucide-react icons
-jest.mock('lucide-react', () => ({
-  Download: (props: any) => <svg data-testid="download-icon" {...props} />,
-  Upload: (props: any) => <svg data-testid="upload-icon" {...props} />,
-  RotateCcw: (props: any) => <svg data-testid="rotate-icon" {...props} />,
-  Wand2: (props: any) => <svg data-testid="wand-icon" {...props} />,
-}));
-
 // Mock OnboardingDrawer component
 jest.mock('@/components/onboarding/OnboardingDrawer', () => ({
   OnboardingDrawer: (props: any) => (
