@@ -1,0 +1,88 @@
+name: Required Checks
+
+# Produces the three status contexts that branch protection on main requires:
+# quick-validation, security-scan and Policy Gate.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: required-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quick-validation:
+    name: quick-validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install from the lockfile
+        run: npm ci --ignore-scripts
+      - name: Validate the Prisma schema
+        run: npx prisma validate
+        env:
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+      - name: package.json parses and declares scripts
+        run: |
+          jq -e '.scripts | length > 0' package.json >/dev/null
+
+  security-scan:
+    name: security-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Install gitleaks (pinned, checksum verified)
+        run: |
+          cd "$RUNNER_TEMP"
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSLo "$tarball" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$tarball"
+          echo "${GITLEAKS_SHA256}  $tarball" | sha256sum --check --strict
+          tar -xzf "$tarball" gitleaks
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - name: Scan the tip for credentials
+        run: gitleaks dir --no-banner --redact --config .gitleaks.toml --exit-code 1 .
+
+  policy-gate:
+    name: Policy Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Required policy files exist
+        run: |
+          for f in LICENSE SECURITY.md .github/CODEOWNERS .gitleaks.toml; do
+            test -s "$f" || { echo "missing required file: $f"; exit 1; }
+          done
+      - name: No env files with values are tracked
+        run: |
+          bad=$(git ls-files | grep -E '(^|/)\.env(\.[A-Za-z0-9_-]+)?$' | grep -vE '\.(example|sample|template)$' || true)
+          if [ -n "$bad" ]; then echo "tracked env files:"; echo "$bad"; exit 1; fi
+      - name: Workflows do not use pull_request_target with a PR checkout
+        run: |
+          hits=$(grep -lE 'pull_request_target' .github/workflows/*.yml 2>/dev/null || true)
+          for f in $hits; do
+            if grep -qE 'ref:.*(head\.sha|head\.ref)' "$f"; then echo "unsafe pull_request_target checkout in $f"; exit 1; fi
+          done
