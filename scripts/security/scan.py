@@ -116,7 +116,6 @@ SKIP_PATTERNS = [
     ".auto-claude/specs/",  # Task specifications and logs
     "/fixtures/",  # Test fixtures that intentionally contain secrets
     "docs/archive/",  # Archived documentation
-    "docs/sessions/",  # Session logs and worklogs
     "docs/reports/",  # Generated reports
     "docs/guides/",  # Documentation guides
     ".astro/",  # Astro build artifacts

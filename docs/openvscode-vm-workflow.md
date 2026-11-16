@@ -145,4 +145,4 @@ See [docs/nightly-vm-verification.md](./nightly-vm-verification.md) for the auto
 See related documentation:
 - [MiniVim Kernel](./virtualization/minivim-kernel.md)
 - [Fast OpenVSCode](../bench-images/README.md)
-- [Benchmarking](../scripts/benchmarks/README-minivim.md)
+- [Benchmarking (MiniVim builders, moved to genoa)](https://github.com/ryanmaclean/genoa/blob/main/imports/vibecode-webgui/scripts/benchmarks/README-minivim.md)

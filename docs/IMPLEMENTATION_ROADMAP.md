@@ -103,7 +103,7 @@ Choose definitive IDE backend and eliminate dual-backend ambiguity.
 ### Deliverables
 - ✅ [docs/BACKEND_DECISION.md](./BACKEND_DECISION.md) - Formal decision document
 - ✅ [docs/CODE_SERVER_COMPARISON.md](./CODE_SERVER_COMPARISON.md) - Technical comparison
-- ✅ [scripts/vfkit/build-openvscode.sh](../scripts/vfkit/build-openvscode.sh) - Build automation
+- ✅ [scripts/vfkit/build-openvscode.sh](https://github.com/ryanmaclean/smolfire/blob/main/imports/vibecode/scripts/vfkit/build-openvscode.sh) - Build automation
 - ✅ [config/vfkit/openvscode-build-vm.yaml](../config/vfkit/openvscode-build-vm.yaml) - VM configuration
 - ✅ README.md updated - Reflects single backend choice
 

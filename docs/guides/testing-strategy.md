@@ -209,8 +209,8 @@ describe('Feature/Endpoint Name', () => {
 
 ## References
 
-- [Wave 9 Comprehensive Hardening Report](../sessions/wave-09-comprehensive-hardening.md)
-- [Wave 10 Validation & Foundation Report](../sessions/wave-10-validation-foundation.md)
+- [Wave 9 Comprehensive Hardening Report](../archive/sessions/wave-09-comprehensive-hardening.md)
+- [Wave 10 Validation & Foundation Report](../archive/sessions/wave-10-validation-foundation.md)
 - [AI API Documentation](../api/ai-endpoints.md)
 - [Performance Optimization Guide](./performance-optimization.md)
 

@@ -1,7 +1,20 @@
 # Private keys and certificates (security)
 fast-openvscode-vm/certs/openvscode-local-key.pem
+# Runtime dev TLS certs for scripts/dev/start-openvscode-https.sh (the VM tree moved to ryanmaclean/smolfire)
+/fast-openvscode-vm/
 gitea/data/jwt/private.pem
 *.key
+
+# Secrets hygiene (WS1, 2026-10-24): real credentials and runtime state stay out of git.
+# Copy a *.example.yaml / *.example file and fill it locally; the copy is ignored.
+**/*-secret.yaml
+**/*-secrets.yaml
+!**/*.example.yaml
+**/airflow.cfg
+**/airflow.db
+**/simple_auth_manager_passwords.json.generated
+**/terraform.tfvars
+
 *.p12
 *.pfx
 *.jks
@@ -141,6 +154,15 @@ src-tauri/release-artifacts/
 # Datadog logs
 datadog/*.txt
 ops/monitoring/datadog/*.txt
+# WS9 infra dedupe (2026-10-24): upload test output, dashboard backups, dated Datadog exports
+/config/data/uploads/
+/data/uploads/
+/infrastructure/datadog/dashboards/.backups/
+/infrastructure/datadog/dbm-*-20[0-9][0-9]*
+/infrastructure/datadog/kind-agent-*-20[0-9][0-9]*
+/infrastructure/datadog/trace-summary-*
+/infrastructure/datadog/vibecode-webgui-*traces-*
+/infrastructure/datadog/vibecode-webgui-smoke-trace-summary-*
 
 # Swift app binaries (compiled)
 azure/SwiftUI-Apps/*App
@@ -283,9 +305,8 @@ platforms/kubernetes/*
 !platforms/docker/
 platforms/docker/*
 !platforms/docker/scripts/
-!platforms/electron-vibecode/
-platforms/electron-vibecode/*
-!platforms/electron-vibecode/README.md
+docs/archive/infra-1024/platforms/electron-vibecode/dist/
+docs/archive/infra-1024/platforms/electron-vibecode/node_modules/
 !platforms/web-dashboard/
 platforms/web-dashboard/*
 !platforms/web-dashboard/README.md
@@ -533,6 +554,20 @@ logs/security/
 # Generated test data files
 test-data/
 
+# WS4 split (2026-10-24): agent skills moved to ryanmaclean/skills; keep scratch editor/agent
+# configs and packaged skill archives out of the tree.
+/.opencode.json
+/.windsurf-mcp-config*.json
+.codex/node_modules/
+/*.skill
+.claude/skills/**/__pycache__/
+
+# Python build/test state (WS7 split 2026-10-24). The agent SDK moved to ryanmaclean/moth.
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
 # Gas Town / Tundra-Dome runtime state and trees (moved to ryanmaclean/gt, WS3 2026-10-24)
 /.feed.jsonl
 /mayor/
@@ -573,3 +608,15 @@ bun.lockb
 /platforms/azure/azure/SwiftUI-Apps/*.app/
 /platforms/azure/azure/SwiftUI-Apps/*.png
 /platforms/azure/azure/SwiftUI-Apps/playwright-screenshots/
+
+# WS6 2026-10-24: outputs of the image builders that moved to ryanmaclean/genoa
+release-test-results/
+infrastructure/packer/output-*/
+infrastructure/packer/packer_cache/
+infrastructure/packer/manifest*.json
+
+# WS10 docs consolidation (2026-10-25): generated docs output, folded archive roots
+/docs/test_output.txt
+/docs/branches-to-delete.txt
+/feature_audit/
+/release-archive/

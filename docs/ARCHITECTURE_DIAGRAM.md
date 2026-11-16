@@ -141,6 +141,8 @@ graph TD
 
 ## Agent Orchestration System
 
+> **Historical (2026-10-25, WS10):** the `.agents/` coordination framework shown here is retired; its task briefs are archived read-only in `docs/archive/agent-briefs/`. Do not create new coordination files there or in `.agents/`. Live coordination state belongs in GitHub issues/BOP (see AGENTS.md).
+
 ### Multi-Agent Framework Overview
 
 ```mermaid

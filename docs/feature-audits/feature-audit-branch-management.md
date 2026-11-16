@@ -2,7 +2,7 @@
 
 **Issue Tracker:** Issue #1437 (Related to Git Integration)  
 **Source Release:** VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance  
-**Release Notes Reference:** `docs/sessions/archive-worklogs/RELEASE_NOTES.md` (line 221)  
+**Release Notes Reference:** `docs/archive/sessions/archive-worklogs/RELEASE_NOTES.md` (line 221)  
 **Audit Date:** 2026-02-01  
 **Status:** ⚠️ Partially Present - Feature exists but not as direct user-facing UI
 
@@ -245,7 +245,7 @@ The "Branch Management - Create, switch, and merge branches" feature **IS presen
 
 ## References
 
-- Release Notes: `docs/sessions/archive-worklogs/RELEASE_NOTES.md` (line 221)
+- Release Notes: `docs/archive/sessions/archive-worklogs/RELEASE_NOTES.md` (line 221)
 - GitHub Integration: `src/lib/github/integration.ts`
 - CI Self-Healing: `src/lib/ci-self-healing/fix-generator.ts`
 - Git Audit: `docs/feature-audits/feature-audit-1437-git-integration.md`
