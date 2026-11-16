@@ -286,13 +286,19 @@ provision:
 
       # Create database and user
       echo "[10/10] Creating VibeCode database and user..."
+      # Generate per-VM passwords; they are kept in a root-only file, never printed
+      umask 077
+      PG_ADMIN_PW=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')
+      PG_APP_PW=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')
+      printf 'postgres=%s\nvibecode=%s\n' "$PG_ADMIN_PW" "$PG_APP_PW" > /root/.vibecode-pg-secrets
+      umask 022
       sudo -u postgres psql <<SQL
       CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
       CREATE EXTENSION IF NOT EXISTS pgvector;
 
-      ALTER USER postgres WITH PASSWORD 'postgres_admin_2024';
+      ALTER USER postgres WITH PASSWORD '$PG_ADMIN_PW';
 
-      CREATE USER vibecode WITH PASSWORD 'vibecode_prod_2024';
+      CREATE USER vibecode WITH PASSWORD '$PG_APP_PW';
       CREATE DATABASE vibecode OWNER vibecode;
 
       \c vibecode
@@ -311,11 +317,11 @@ provision:
       echo "  Port:     5432"
       echo "  Database: vibecode"
       echo "  User:     vibecode"
-      echo "  Password: vibecode_prod_2024"
+      echo "  Password: see /root/.vibecode-pg-secrets in the VM"
       echo ""
       echo "Admin Credentials:"
       echo "  User:     postgres"
-      echo "  Password: postgres_admin_2024"
+      echo "  Password: see /root/.vibecode-pg-secrets in the VM"
       echo ""
       echo "SSL/TLS:  Enabled"
       echo "pgvector: Installed and ready"
@@ -348,10 +354,10 @@ message: |
     Port: 5432
     Database: vibecode
     User: vibecode
-    Password: vibecode_prod_2024
+    Password: <vibecode password from /root/.vibecode-pg-secrets in the VM>
 
   Connection string:
-    postgresql://vibecode:vibecode_prod_2024@localhost:5432/vibecode?sslmode=require
+    postgresql://vibecode:<vibecode_password>@localhost:5432/vibecode?sslmode=require
 
   Test connection:
     psql -h localhost -p 5432 -U vibecode -d vibecode

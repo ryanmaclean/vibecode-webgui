@@ -152,8 +152,9 @@ rc-service docker start
 
 # Start SSH
 ssh-keygen -A
-echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
-echo "root:vibecode" | chpasswd
+# Key-only root login: put your public key in /root/.ssh/authorized_keys
+echo "PermitRootLogin prohibit-password" >> /etc/ssh/sshd_config
+echo "PasswordAuthentication no" >> /etc/ssh/sshd_config
 /usr/sbin/sshd
 
 echo ""
