@@ -3,6 +3,10 @@ title: "Random Password Generation Complete"
 description: "Summary of automatic random password generation implementation"
 ---
 
+> **Archived (2026-10-24):** `docker-compose.openvscode.yml` now lives at
+> `docs/archive/infra-1024/docker-compose.openvscode.yml`. It is not maintained or tested. To try it, run it from the
+> repo root with `docker compose -f docs/archive/infra-1024/docker-compose.openvscode.yml --project-directory . up`.
+
 # Random Password Generation - COMPLETE ✅
 
 **Date:** November 18, 2025
@@ -21,7 +25,7 @@ description: "Summary of automatic random password generation implementation"
 
 **Example Generated Password:**
 ```
-Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=
+<redacted>
 ```
 
 ### ✅ Auto-Configuration of Both Services
@@ -128,7 +132,7 @@ $ docker exec openvscode-server cat /home/.openvscode-server/data/User/settings.
   "workspaceRag.pgPort": 5432,
   "workspaceRag.pgDatabase": "workspace_rag",
   "workspaceRag.pgUser": "postgres",
-  "workspaceRag.pgPassword": "Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=",
+  "workspaceRag.pgPassword": "<redacted>",
   "workspaceRag.useLocalMLX": false
 }
 ```
@@ -139,10 +143,10 @@ Note: `workspaceRag.useMLX` is still accepted for backward compatibility.
 
 ```bash
 $ docker exec openvscode-server cat /run/secrets/db_password
-Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=
+<redacted>
 
 $ docker exec postgres-pgvector cat /run/secrets/db_password
-Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=
+<redacted>
 
 # ✅ Passwords match!
 ```

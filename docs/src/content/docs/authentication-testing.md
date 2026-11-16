@@ -93,7 +93,7 @@ curl -X POST http://localhost:3000/api/code-server/session \
 
 ### **Testing Tools**
 - **`test-auth-direct.js`**: Automated authentication testing
-- **`public/simple-auth-test.html`**: HTML-based testing
+- **`tests/manual/simple-auth-test.html`**: HTML-based testing
 - **`DEVELOPMENT_CREDENTIALS.md`**: Complete credentials reference
 
 ## 🚀 **Ready for Development**

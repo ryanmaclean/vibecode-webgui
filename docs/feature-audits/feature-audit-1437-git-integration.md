@@ -151,6 +151,6 @@ Git integration **IS PRESENT** in VibeCode v1.5.0:
 ## Related Documentation
 
 - **Branch Management Audit:** `docs/feature-audits/feature-audit-branch-management.md`
-- **Release Notes:** `docs/sessions/archive-worklogs/RELEASE_NOTES.md` (line 218-221)
+- **Release Notes:** `docs/archive/sessions/archive-worklogs/RELEASE_NOTES.md` (line 218-221)
 - **GitHub Integration Code:** `src/lib/github/integration.ts`
 - **CI Self-Healing:** `src/lib/ci-self-healing/`

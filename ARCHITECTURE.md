@@ -363,7 +363,7 @@ This section provides links to comprehensive architecture documentation covering
 
 - **[Agent Orchestration Architecture](docs/architecture/AGENT_ORCHESTRATION.md)**
   - Multi-agent framework and coordination patterns
-  - `.agents/` and `.auto-claude/` orchestration systems
+  - `.agents/` (retired; briefs archived in `docs/archive/agent-briefs/`) and `.auto-claude/` orchestration systems
   - Task management, memory systems, and tool capabilities
   - Agent communication patterns and security architecture
   - Includes 12+ Mermaid diagrams covering agent workflows and coordination
@@ -431,7 +431,7 @@ This section provides links to comprehensive architecture documentation covering
 For complementary architectural information, see:
 
 - **[Architecture Diagrams](docs/ARCHITECTURE_DIAGRAM.md)** - Visual system diagrams with Mermaid
-- **[Service Dependencies](SERVICE_DEPENDENCIES.md)** - Service dependency mapping and analysis
+- **[Service Dependencies](docs/architecture/SERVICE_DEPENDENCIES.md)** - Service dependency mapping and analysis
 - **[Folder Structure](docs/FOLDER_STRUCTURE.md)** - Project organization and code layout
 - **[Observability](OBSERVABILITY.md)** - Monitoring and tracing guidance
 

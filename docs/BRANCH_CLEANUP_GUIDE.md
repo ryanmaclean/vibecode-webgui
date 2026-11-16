@@ -57,6 +57,10 @@ gh auth login
 ```
 
 **Steps:**
+> **Note (2026-10-25, WS10):** `docs/branches-to-delete.txt` was generated output and is no longer tracked
+> (it is in `.gitignore`). `scripts/cleanup-branches.sh` and `scripts/update-branch-list.sh` are not in
+> this repo any more; the last tracked copies are at commit 24e77ca06.
+
 ```bash
 # 1. Review the list of branches to delete
 cat docs/branches-to-delete.txt
@@ -168,6 +172,6 @@ To prevent branch accumulation in the future:
 ## Documentation
 
 - Full documentation: [docs/branch-cleanup.md](../docs/branch-cleanup.md)
-- List of branches: [docs/branches-to-delete.txt](../docs/branches-to-delete.txt)
+- List of branches: `docs/branches-to-delete.txt` (generated, untracked)
 - Cleanup script: [scripts/cleanup-branches.sh](cleanup-branches.sh)
 - GitHub workflow: [.github/workflows/cleanup-merged-branches.yml](../.github/workflows/cleanup-merged-branches.yml)
