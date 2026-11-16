@@ -508,7 +508,7 @@ describe('PGVector Cache End-to-End', () => {
   }, 60000); // 60 second timeout for integration tests
 });
 
-// Run tests if executed directly
+// Run tests if executed directly (jest also sets require.main to the test module, so skip under jest)
 async function main() {
   const tester = new PgvectorCacheIntegrationTest();
 
@@ -525,7 +525,7 @@ async function main() {
   }
 }
 
-if (require.main === module) {
+if (require.main === module && !process.env.JEST_WORKER_ID) {
   main();
 }
 
