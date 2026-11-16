@@ -59,7 +59,7 @@ Connection to 192.168.64.10 port 22 [tcp/ssh] succeeded!
 #### Observations
 - Port 22 is accessible and responding
 - SSH daemon accepting connections
-- Password authentication configured (password: vibecode)
+- Password authentication configured (password: <set-a-strong-password>)
 - Service started successfully at boot
 
 #### Notes
@@ -456,7 +456,7 @@ curl http://192.168.64.10:8080 | head -50
 ### SSH Tests
 ```bash
 nc -z -v -w 5 192.168.64.10 22
-ssh root@192.168.64.10  # password: vibecode
+ssh root@192.168.64.10  # password: <set-a-strong-password>
 ```
 
 ---

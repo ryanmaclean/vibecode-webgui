@@ -32,7 +32,7 @@ This document pins the exact sources/versions used for the minimal sandbox tests
     - Contents:
       - `bind-addr: 0.0.0.0:8080`
       - `auth: password`
-      - `password: vibecode`
+      - `password: <set-a-strong-password>`
   - Start (user-level): `nohup code-server >/tmp/code-server.log 2>&1 &`
   - Verify (inside VM): `ss -tlnp | grep 8080` (should show node listening)
   - Verify (host): `curl -I http://127.0.0.1:8080`
@@ -50,7 +50,7 @@ This document pins the exact sources/versions used for the minimal sandbox tests
 1) Start VM: `limactl start -y scripts/lima/vibecode-cs.yaml`
 2) Inside VM, install code-server: `curl -fsSL https://code-server.dev/install.sh | sh`
 3) Configure password auth, then start: `nohup code-server >/tmp/code-server.log 2>&1 &`
-4) Access: http://127.0.0.1:8080 (password: vibecode)
+4) Access: http://127.0.0.1:8080 (password: <set-a-strong-password>)
 
 ## Optional verification
 - OS: `cat /etc/os-release | head -n 2`

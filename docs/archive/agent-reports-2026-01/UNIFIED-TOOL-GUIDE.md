@@ -276,7 +276,7 @@ vibecode-vm ssh
 #### Manual SSH:
 ```bash
 ssh root@<VM_IP>
-# Password: vibecode
+# Password: <set-a-strong-password>
 ```
 
 #### SSH Keys (recommended for automation):

@@ -99,7 +99,7 @@ psql -U postgres -c "SELECT pg_reload_conf();"
 
 # Create replication user
 psql -U postgres << EOF
-CREATE USER debezium WITH REPLICATION PASSWORD 'debezium';
+CREATE USER debezium WITH REPLICATION PASSWORD '<set-a-strong-password>';
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO debezium;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO debezium;
 EOF

@@ -118,7 +118,7 @@ rm -rf /tmp/security-*
 **Use Case**: Developer working alone on local machine
 
 **Current Behavior**:
-- Hardcoded password "vibecode"
+- Hardcoded password "<set-a-strong-password>"
 - No authentication for services
 - Services on 0.0.0.0
 - No firewall
@@ -134,7 +134,7 @@ rm -rf /tmp/security-*
 
 # SSH with known password
 ssh root@192.168.64.10
-Password: vibecode
+Password: <set-a-strong-password>
 ```
 
 ---
@@ -311,7 +311,7 @@ ssh root@192.168.64.10
 
 # Step 5: Verify password changed
 ssh root@192.168.64.10
-# OLD password "vibecode" should NOT work
+# OLD password "<set-a-strong-password>" should NOT work
 ```
 
 #### Option B: SSH Key-Based Authentication

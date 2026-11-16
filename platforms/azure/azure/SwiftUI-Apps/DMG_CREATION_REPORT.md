@@ -67,7 +67,7 @@ Created comprehensive README with:
 **Key Information Included:**
 - All four services with connection examples (SSH, Valkey, PostgreSQL, OpenVSCode)
 - Localhost port mapping (2222, 6379, 5432, 8080)
-- Default credentials (user: root/vibecode, password: vibecode)
+- Default credentials (user: root/vibecode, password: <set-a-strong-password>)
 - Menubar app clarification (no dock icon)
 - ~2 minute boot time expectation
 

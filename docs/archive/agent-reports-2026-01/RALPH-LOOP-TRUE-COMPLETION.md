@@ -117,7 +117,7 @@ mount -t tmpfs -o size=256M tmpfs /dev/shm
 
 === SSH Server ===
 ✓ SSH server running (PID: 206)
-  Connect: ssh root@192.168.64.10 (password: vibecode)
+  Connect: ssh root@192.168.64.10 (password: <set-a-strong-password>)
 
 === Valkey Server ===
 ✓ Valkey running (PID: 207)

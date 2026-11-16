@@ -69,7 +69,7 @@ to be used to sandbox vibecoded apps and vibecoding agents
 
 SSH Access:
   ssh root@192.168.64.10
-  Password: vibecode
+  Password: <set-a-strong-password>
 
 Valkey Access:
   redis-cli -h 192.168.64.10 -p 6379

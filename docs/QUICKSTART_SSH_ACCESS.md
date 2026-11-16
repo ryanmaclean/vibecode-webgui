@@ -232,7 +232,7 @@ Then access `http://localhost:3000` on the remote machine.
            ↓
 [Step 4] Mac Terminal: ssh -L 3000:localhost:3000 root@192.168.64.3
            ↓
-[Step 5] Enter password: vibecode
+[Step 5] Enter password: <set-a-strong-password>
            ↓
 [Step 6] SSH tunnel established
            ↓

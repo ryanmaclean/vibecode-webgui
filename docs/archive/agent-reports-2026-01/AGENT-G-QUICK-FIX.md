@@ -149,7 +149,7 @@ curl http://$VM_IP:8080
 
 # SSH access
 ssh root@$VM_IP
-# Password: vibecode
+# Password: <set-a-strong-password>
 ```
 
 ---

@@ -111,7 +111,7 @@ redis-cli -h localhost -p 6379 ping
 ```bash
 # Connect
 ssh root@localhost -p 2222
-# Password: vibecode
+# Password: <set-a-strong-password>
 ```
 
 ---

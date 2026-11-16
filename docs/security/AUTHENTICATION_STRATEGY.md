@@ -1672,7 +1672,7 @@ public class VibeCodeAuth: ObservableObject {
         // Validate credentials (would check against user database)
         let isValid = try await LocalAuthProvider().validate(
             username: username,
-            password: password
+            password: <set-a-strong-password>
         )
 
         guard isValid else {
@@ -2029,7 +2029,7 @@ struct LoginView: View {
                     do {
                         _ = try await auth.authenticateLocal(
                             username: username,
-                            password: password
+                            password: <set-a-strong-password>
                         )
                     } catch {
                         errorMessage = error.localizedDescription

@@ -210,7 +210,7 @@ bash ~/vibecode-webgui/scripts/launch/launch-unified.sh
 
 # SSH Access (Working)
 ssh root@192.168.64.X
-# Password: vibecode
+# Password: <set-a-strong-password>
 
 # VSCode Internal (Working)
 http://localhost:3000?tkn=TOKEN

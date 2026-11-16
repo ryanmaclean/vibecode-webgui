@@ -397,7 +397,7 @@ Direct users to `VOLUME-MOUNTING-GUIDE.md` for:
      --device virtio-fs,sharedDir=$HOME/vibecode-data,mountTag=hostshare
 
 3. Access services:
-   - SSH: ssh root@<VM_IP> (password: vibecode)
+   - SSH: ssh root@<VM_IP> (password: <set-a-strong-password>)
    - PostgreSQL: postgresql://VM_IP:5432
    - Valkey: redis://VM_IP:6379
    - OpenVSCode: http://VM_IP:8080

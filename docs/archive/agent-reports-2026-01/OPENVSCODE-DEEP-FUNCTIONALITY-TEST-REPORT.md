@@ -76,7 +76,7 @@ Services Running:
   - Valkey:      redis://192.168.64.10:6379
   - PostgreSQL:  postgresql://192.168.64.10:5432
   - OpenVSCode:  http://192.168.64.10:8080
-  - SSH:         ssh root@192.168.64.10 (password: vibecode)
+  - SSH:         ssh root@192.168.64.10 (password: <set-a-strong-password>)
 ```
 
 **Verdict:** VM boots correctly when using vfkit directly.

@@ -183,7 +183,7 @@ vibecode-service reset
 container run -d \
   --name vibecode-dev \
   -p 8080:8080 \
-  -e PASSWORD=vibecode \
+  -e PASSWORD=<set-a-strong-password> \
   --label com.vibecode.managed=true \
   codercom/code-server:latest
 

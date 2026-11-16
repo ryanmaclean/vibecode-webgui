@@ -177,7 +177,7 @@ fi
 
 While investigating the volume mounting, a **secondary issue** was discovered:
 
-**Problem:** Cannot authenticate via SSH with password "vibecode"
+**Problem:** Cannot authenticate via SSH with password "<set-a-strong-password>"
 
 **Investigation:**
 - SSH service is running (port 22 listening)
@@ -804,7 +804,7 @@ Launching services in parallel...
 Checking SSH (port 22, max 10s)... ✓ Ready (0s)
 ✓ SSH server responding on port 22
   ✓ Port 22 LISTENING
-  Connect: ssh root@192.168.64.10 (password: vibecode)
+  Connect: ssh root@192.168.64.10 (password: <set-a-strong-password>)
 ```
 
 ---

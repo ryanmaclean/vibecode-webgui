@@ -48,8 +48,8 @@ monitoring:
     enabled: true
 
 envSecrets:
-  database-url: "postgresql://postgres:postgres@vibecode-postgres-postgresql.vibecode.svc.cluster.local:5432/vibecode"
-  nextauth-secret: "kind-local-secret"
+  database-url: "postgresql://postgres:REPLACE_WITH_DB_PASSWORD@vibecode-postgres-postgresql.vibecode.svc.cluster.local:5432/vibecode"
+  nextauth-secret: "REPLACE_WITH_NEXTAUTH_SECRET"
   openrouter-api-key: ""
   dd-api-key: ""
 
@@ -61,5 +61,5 @@ database:
   port: 5432
   name: vibecode
   username: postgres
-  password: postgres
+  password: REPLACE_WITH_DB_PASSWORD
   ssl: false

@@ -9,6 +9,11 @@ cd "$SCRIPT_DIR"
 
 echo "🚀 Starting test infrastructure..."
 
+# Credentials are generated per run unless provided in the environment
+export POSTGRES_TEST_PASSWORD="${POSTGRES_TEST_PASSWORD:-$(openssl rand -hex 16)}"
+export MONGO_TEST_PASSWORD="${MONGO_TEST_PASSWORD:-$(openssl rand -hex 16)}"
+export MONGO_EXPRESS_PASSWORD="${MONGO_EXPRESS_PASSWORD:-$(openssl rand -hex 16)}"
+
 # Check if Docker is running
 if ! docker info > /dev/null 2>&1; then
     echo "❌ Error: Docker is not running"
@@ -64,23 +69,23 @@ done
 echo "  ✓ MongoDB is ready"
 
 # Export environment variables for tests
-export DATABASE_URL="postgresql://vibecode_test:vibecode_test_password@localhost:5432/vibecode_test"
+export DATABASE_URL="postgresql://vibecode_test:${POSTGRES_TEST_PASSWORD}@localhost:5432/vibecode_test"
 export REDIS_HOST="localhost"
 export REDIS_PORT="6379"
-export MONGODB_URI="mongodb://vibecode_test:vibecode_test_password@localhost:27017/vibecode_test?authSource=admin"
+export MONGODB_URI="mongodb://vibecode_test:${MONGO_TEST_PASSWORD}@localhost:27017/vibecode_test?authSource=admin"
 
 echo ""
 echo "✅ Test infrastructure is running!"
 echo ""
 echo "📋 Service URLs:"
-echo "  PostgreSQL: postgresql://vibecode_test:vibecode_test_password@localhost:5432/vibecode_test"
+echo "  PostgreSQL: postgresql://vibecode_test:${POSTGRES_TEST_PASSWORD}@localhost:5432/vibecode_test"
 echo "  Redis:      redis://localhost:6379"
-echo "  MongoDB:    mongodb://vibecode_test:vibecode_test_password@localhost:27017/vibecode_test"
+echo "  MongoDB:    mongodb://vibecode_test:${MONGO_TEST_PASSWORD}@localhost:27017/vibecode_test"
 echo ""
 echo "🔧 Admin Tools:"
 echo "  Adminer (Postgres):     http://localhost:8080"
 echo "  Redis Commander:        http://localhost:8081"
-echo "  Mongo Express:          http://localhost:8082 (admin/admin)"
+echo "  Mongo Express:          http://localhost:8082 (admin / $MONGO_EXPRESS_PASSWORD)"
 echo ""
 echo "📝 To run tests with infrastructure:"
 echo "  export DATABASE_URL='$DATABASE_URL'"

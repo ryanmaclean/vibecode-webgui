@@ -224,10 +224,10 @@ npm run test:unit
 ./tests/start-test-infrastructure.sh
 
 # Export environment variables
-export DATABASE_URL='postgresql://vibecode_test:vibecode_test_password@localhost:5432/vibecode_test'
+export DATABASE_URL='postgresql://vibecode_test:<set-a-strong-password>@localhost:5432/vibecode_test'
 export REDIS_HOST='localhost'
 export REDIS_PORT='6379'
-export MONGODB_URI='mongodb://vibecode_test:vibecode_test_password@localhost:27017/vibecode_test'
+export MONGODB_URI='mongodb://vibecode_test:<set-a-strong-password>@localhost:27017/vibecode_test'
 
 # Run integration tests
 npm run test:integration

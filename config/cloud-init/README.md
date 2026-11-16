@@ -92,7 +92,7 @@ Installs VS Code Server (code-server) for browser-based development.
 ```bash
 curl http://<vm-ip>:8080/
 # Or open in browser: http://<vm-ip>:8080
-# Password: vibecode
+# Password: <set-a-strong-password>
 ```
 
 ### 5. SSH Configuration (`ssh-user-data.yaml`)

@@ -43,7 +43,7 @@ This log captures architectural and technical decisions made during development.
 - Switching `DATABASE_URL` unblocks agentless dd-trace smoke tests and LLM demos
 
 **Implementation:**
-- Updated `.env.local` to `postgresql://vibecode:vibecode123@192.168.107.2:5432/vibecode?schema=public&sslmode=disable`
+- Updated `.env.local` to `postgresql://vibecode:<set-a-strong-password>@192.168.107.2:5432/vibecode?schema=public&sslmode=disable`
 - Verified container health with `docker exec vibecode-pgvector psql -U vibecode -d vibecode -c 'SELECT COUNT(*) FROM document_embeddings;'`
 - Reran `npx tsx -r dd-trace/init scripts/rag-local-demo.ts` successfully; OpenRouter responded and tracer emitted spans
 
@@ -268,7 +268,7 @@ docs/             # Documentation
 - Enables continuing RAG verification and Datadog tracing exercises without waiting on Azure networking.
 
 **Implementation:**
-- Update `.env.local` to `postgresql://vibecode:vibecode123@<container-ip>:5432/vibecode`.
+- Update `.env.local` to `postgresql://vibecode:<set-a-strong-password>@<container-ip>:5432/vibecode`.
 - Run `docker exec vibecode-pgvector ... COUNT(*)` to confirm row count.
 - Execute `npx tsx -r dd-trace/init scripts/rag-local-demo.ts` against the local DB.
 

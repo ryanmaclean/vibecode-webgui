@@ -261,7 +261,7 @@ echo "Services Running:"
 echo "  - Valkey:      redis://$VM_IP:6379"
 echo "  - PostgreSQL:  postgresql://$VM_IP:5432"
 echo "  - OpenVSCode:  http://$VM_IP:8080"
-echo "  - SSH:         ssh root@$VM_IP (password: vibecode)"
+echo "  - SSH:         ssh root@$VM_IP (password: <set-a-strong-password>)"
 if [ -n "$DD_API_KEY" ]; then
     echo "  - Datadog:     StatsD on 127.0.0.1:8125"
 fi

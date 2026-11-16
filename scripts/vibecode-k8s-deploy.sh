@@ -68,6 +68,15 @@ NAMESPACE_PLATFORM="vibecode-platform"
 NAMESPACE_WEBGUI="vibecode-webgui"
 K8S_MANIFESTS_DIR="platforms/kubernetes/k8s"
 
+# Credentials are generated per run and substituted into the manifests at apply time.
+# Export DB_PASSWORD / ADMIN_PASSWORD beforehand to reuse values from an earlier run
+# (required when the database volume already exists).
+DB_PASSWORD="${DB_PASSWORD:-$(openssl rand -hex 16)}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-$(openssl rand -hex 12)}"
+render_manifest() {
+    sed -e "s/REPLACE_WITH_DB_PASSWORD/${DB_PASSWORD}/g" -e "s/REPLACE_WITH_ADMIN_PASSWORD/${ADMIN_PASSWORD}/g" "$1"
+}
+
 # Helper functions
 log_info() {
     echo -e "${CYAN}${ARROW}${NC} $1"
@@ -618,7 +627,7 @@ else
     fi
 
     if [ -f "$K8S_MANIFESTS_DIR/vibecode-secrets.yaml" ]; then
-        kubectl apply -f "$K8S_MANIFESTS_DIR/vibecode-secrets.yaml"
+        render_manifest "$K8S_MANIFESTS_DIR/vibecode-secrets.yaml" | kubectl apply -f -
         log_success "VibeCode secrets deployed"
     else
         log_warning "vibecode-secrets.yaml not found, skipping..."
@@ -651,7 +660,7 @@ else
     fi
 
     # Apply PostgreSQL deployment
-    if ! kubectl apply -f "$K8S_MANIFESTS_DIR/postgres-deployment.yaml" 2>&1 | tee /tmp/postgres-deploy.log; then
+    if ! render_manifest "$K8S_MANIFESTS_DIR/postgres-deployment.yaml" | kubectl apply -f - 2>&1 | tee /tmp/postgres-deploy.log; then
         log_error "Failed to apply PostgreSQL deployment"
         echo ""
         log_info "Check the deployment file for errors:"
@@ -749,7 +758,7 @@ else
     fi
 
     # Apply VibeCode WebGUI deployment
-    if ! kubectl apply -f "$K8S_MANIFESTS_DIR/vibecode-deployment.yaml" 2>&1 | tee /tmp/vibecode-deploy.log; then
+    if ! render_manifest "$K8S_MANIFESTS_DIR/vibecode-deployment.yaml" | kubectl apply -f - 2>&1 | tee /tmp/vibecode-deploy.log; then
         log_error "Failed to apply VibeCode WebGUI deployment"
         echo ""
         log_info "Check the deployment file for errors:"
@@ -923,7 +932,7 @@ else
         echo ""
         echo -e "${CYAN}Access URL:${NC}  ${BOLD}${GREEN}http://localhost:${VIBECODE_NODEPORT}${NC}"
         echo -e "${CYAN}Login:${NC}       ${BOLD}admin@vibecode.dev${NC}"
-        echo -e "${CYAN}Password:${NC}    ${BOLD}admin123${NC}"
+        echo -e "${CYAN}Password:${NC}    ${BOLD}${ADMIN_PASSWORD}${NC}"
     else
         log_warning "VibeCode service not found or NodePort not configured"
         echo ""

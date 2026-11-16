@@ -29,10 +29,10 @@ Integration tests require Docker and test infrastructure:
 ./tests/start-test-infrastructure.sh
 
 # 2. Export environment variables (output by the script)
-export DATABASE_URL='postgresql://vibecode_test:vibecode_test_password@localhost:5432/vibecode_test'
+export DATABASE_URL='postgresql://vibecode_test:<set-a-strong-password>@localhost:5432/vibecode_test'
 export REDIS_HOST='localhost'
 export REDIS_PORT='6379'
-export MONGODB_URI='mongodb://vibecode_test:vibecode_test_password@localhost:27017/vibecode_test'
+export MONGODB_URI='mongodb://vibecode_test:<set-a-strong-password>@localhost:27017/vibecode_test'
 
 # 3. Run integration tests
 npm run test:integration
@@ -54,9 +54,9 @@ npm run test:all
 
 | Service    | Required For | Default Port | Connection String |
 |------------|--------------|--------------|-------------------|
-| PostgreSQL | Vector DB, RAG, Database operations | 5432 | `postgresql://vibecode_test:vibecode_test_password@localhost:5432/vibecode_test` |
+| PostgreSQL | Vector DB, RAG, Database operations | 5432 | `postgresql://vibecode_test:<set-a-strong-password>@localhost:5432/vibecode_test` |
 | Redis      | Caching, rate limiting | 6379 | `redis://localhost:6379` |
-| MongoDB    | Chat UI, collaboration | 27017 | `mongodb://vibecode_test:vibecode_test_password@localhost:27017/vibecode_test` |
+| MongoDB    | Chat UI, collaboration | 27017 | `mongodb://vibecode_test:<set-a-strong-password>@localhost:27017/vibecode_test` |
 | Docker     | Container tests, K8s tests | - | - |
 | kubectl    | Kubernetes tests | - | - |
 | kind       | KIND cluster tests | - | - |
@@ -109,7 +109,7 @@ docker run -d \
   --name vibecode-test-postgres \
   -e POSTGRES_DB=vibecode_test \
   -e POSTGRES_USER=vibecode_test \
-  -e POSTGRES_PASSWORD=vibecode_test_password \
+  -e POSTGRES_PASSWORD=<set-a-strong-password> \
   -p 5432:5432 \
   pgvector/pgvector:pg16
 
@@ -132,7 +132,7 @@ docker run -d \
 docker run -d \
   --name vibecode-test-mongodb \
   -e MONGO_INITDB_ROOT_USERNAME=vibecode_test \
-  -e MONGO_INITDB_ROOT_PASSWORD=vibecode_test_password \
+  -e MONGO_INITDB_ROOT_PASSWORD=<set-a-strong-password> \
   -p 27017:27017 \
   mongo:7.0
 ```
@@ -143,14 +143,14 @@ docker run -d \
 
 ```bash
 # PostgreSQL
-export DATABASE_URL='postgresql://vibecode_test:vibecode_test_password@localhost:5432/vibecode_test'
+export DATABASE_URL='postgresql://vibecode_test:<set-a-strong-password>@localhost:5432/vibecode_test'
 
 # Redis
 export REDIS_HOST='localhost'
 export REDIS_PORT='6379'
 
 # MongoDB
-export MONGODB_URI='mongodb://vibecode_test:vibecode_test_password@localhost:27017/vibecode_test'
+export MONGODB_URI='mongodb://vibecode_test:<set-a-strong-password>@localhost:27017/vibecode_test'
 ```
 
 ### Optional Configuration
@@ -362,7 +362,7 @@ jobs:
         env:
           POSTGRES_DB: vibecode_test
           POSTGRES_USER: vibecode_test
-          POSTGRES_PASSWORD: vibecode_test_password
+          POSTGRES_PASSWORD: <set-a-strong-password>
         ports:
           - 5432:5432
 
@@ -375,7 +375,7 @@ jobs:
         image: mongo:7.0
         env:
           MONGO_INITDB_ROOT_USERNAME: vibecode_test
-          MONGO_INITDB_ROOT_PASSWORD: vibecode_test_password
+          MONGO_INITDB_ROOT_PASSWORD: <set-a-strong-password>
         ports:
           - 27017:27017
 
@@ -385,10 +385,10 @@ jobs:
       - run: npm ci
       - run: npm run test:all
         env:
-          DATABASE_URL: postgresql://vibecode_test:vibecode_test_password@localhost:5432/vibecode_test
+          DATABASE_URL: postgresql://vibecode_test:<set-a-strong-password>@localhost:5432/vibecode_test
           REDIS_HOST: localhost
           REDIS_PORT: 6379
-          MONGODB_URI: mongodb://vibecode_test:vibecode_test_password@localhost:27017/vibecode_test
+          MONGODB_URI: mongodb://vibecode_test:<set-a-strong-password>@localhost:27017/vibecode_test
 ```
 
 ## Best Practices

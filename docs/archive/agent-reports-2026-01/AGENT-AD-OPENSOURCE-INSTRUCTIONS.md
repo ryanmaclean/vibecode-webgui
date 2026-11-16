@@ -70,7 +70,7 @@
    # Wait for boot (look for "ACCESS CREDENTIALS" section)
    # Then connect:
 
-   ssh root@192.168.64.10        # Password: vibecode
+   ssh root@192.168.64.10        # Password: <set-a-strong-password>
    redis-cli -h 192.168.64.10 PING
    psql -h 192.168.64.10 -U postgres
    open http://192.168.64.10:8080
@@ -391,7 +391,7 @@ Wait for boot (~13 seconds). Look for this output:
 
 SSH Access:
   ssh root@192.168.64.10
-  Password: vibecode
+  Password: <set-a-strong-password>
 
 Valkey Access:
   redis-cli -h 192.168.64.10 -p 6379
@@ -409,7 +409,7 @@ OpenVSCode Access:
 ```bash
 # SSH
 ssh root@192.168.64.10
-# Password: vibecode
+# Password: <set-a-strong-password>
 
 # Redis/Valkey
 redis-cli -h 192.168.64.10 PING

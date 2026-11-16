@@ -308,7 +308,7 @@ services:
     environment:
       - POSTGRES_DB=vibecode
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_PASSWORD=<set-a-strong-password>
     volumes:
       - postgres-data:/var/lib/postgresql/data
     restart: unless-stopped

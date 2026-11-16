@@ -79,7 +79,7 @@ echo "==========================================="
 echo ""
 echo "SSH Access:"
 echo "  ssh root@$VM_IP"
-echo "  Password: vibecode"
+echo "  Password: <set-a-strong-password>"
 echo ""
 echo "Valkey Access:"
 if [ -n "$VALKEY_PID" ]; then
@@ -118,7 +118,7 @@ echo ""
 === SSH Server ===
 Checking SSH (port 22, max 10s)... ✓ Ready (0s)
 ✓ SSH server responding on port 22
-  Connect: ssh root@192.168.64.10 (password: vibecode)
+  Connect: ssh root@192.168.64.10 (password: <set-a-strong-password>)
 ```
 
 ### After Enhancements
@@ -127,7 +127,7 @@ Checking SSH (port 22, max 10s)... ✓ Ready (0s)
 Checking SSH (port 22, max 10s)... ✓ Ready (0s)
 ✓ SSH server responding on port 22
   ✓ Port 22 LISTENING
-  Connect: ssh root@192.168.64.10 (password: vibecode)
+  Connect: ssh root@192.168.64.10 (password: <set-a-strong-password>)
 
 [... similar for all services ...]
 
@@ -137,7 +137,7 @@ Checking SSH (port 22, max 10s)... ✓ Ready (0s)
 
 SSH Access:
   ssh root@192.168.64.10
-  Password: vibecode
+  Password: <set-a-strong-password>
 
 Valkey Access:
   redis-cli -h 192.168.64.10 -p 6379

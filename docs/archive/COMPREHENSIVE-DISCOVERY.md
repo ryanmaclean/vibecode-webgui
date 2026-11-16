@@ -50,7 +50,7 @@ After fixing critical build issues, VibeCode WebGUI is not only running but reve
 ### **Authentication System** (VERIFIED WORKING ✅)
 ```javascript
 // 10 Test Users Available:
-- admin@vibecode.dev / admin123 (admin role)
+- admin@vibecode.dev / <dev-admin-password> (admin role)
 - developer@vibecode.dev / dev123 (developer role)  
 - lead@vibecode.dev / lead123 (lead role)
 - frontend@vibecode.dev / frontend123

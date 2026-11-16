@@ -551,7 +551,7 @@ open ~/vibecode-webgui/azure/SwiftUI-Apps/UnifiedServicesVibeCode.app
 **Console logs:** `/tmp/vibecode-console-*.log`
 
 **Working Services:**
-- SSH: Port 22 accessible (password: vibecode)
+- SSH: Port 22 accessible (password: <set-a-strong-password>)
   - Console shows: "Password auth succeeded for 'root' from 192.168.64.1"
   - /root permissions corrected during boot
   

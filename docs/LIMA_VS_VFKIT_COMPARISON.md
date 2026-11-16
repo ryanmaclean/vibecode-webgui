@@ -794,7 +794,7 @@ esac
    ./scripts/lima-manager.sh start
    ```
 2. **Run connectivity tests**
-   - Test Valkey: `redis-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping`
+   - Test Valkey: `redis-cli -h localhost -p 6379 -a <set-a-strong-password> ping`
    - Test PostgreSQL: `psql -h localhost -p 5432 -U vibecode -d vibecode`
    - Test Node.js: Access mounted workspace
 

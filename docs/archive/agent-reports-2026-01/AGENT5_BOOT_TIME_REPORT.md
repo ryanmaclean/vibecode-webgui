@@ -97,7 +97,7 @@ Agent 4 successfully verified a working VM. Analysis of the console logs from th
 5. SSH/Dropbear (52s from boot)
    ✓ Port 22 listening
    ✓ Keys generated
-   ✓ Password: vibecode
+   ✓ Password: <set-a-strong-password>
 ```
 
 ---

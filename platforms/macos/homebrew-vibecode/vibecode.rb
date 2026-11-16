@@ -35,7 +35,7 @@ class Vibecode < Formula
         vibecode-monitor
 
       Access at: http://localhost:8080
-      Default password: vibecode123
+      Password: the value of CODE_SERVER_PASSWORD
 
       Documentation: #{doc}/README.md
     EOS

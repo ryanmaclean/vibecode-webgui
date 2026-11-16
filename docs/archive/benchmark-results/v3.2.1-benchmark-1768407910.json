@@ -51,7 +51,7 @@
     "app_bundle_size_v321": "288M"
   },
   "included_services": {
-    "ssh": "Port 22/2222 (password: vibecode)",
+    "ssh": "Port 22/2222 (password: <set-a-strong-password>)",
     "valkey": "Port 6379 (key-value store)",
     "postgresql": "Port 5432 (database)",
     "openvscode": "Port 8080 (web IDE with Datadog)"

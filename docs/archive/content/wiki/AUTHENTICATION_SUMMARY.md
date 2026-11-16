@@ -32,7 +32,7 @@ The authentication system has been successfully configured with 10 test user acc
 ## 👥 **Test User Accounts**
 
 ### Admin Users (2 accounts)
-- **admin@vibecode.dev** / admin123 (VibeCode Admin)
+- **admin@vibecode.dev** / <dev-admin-password> (VibeCode Admin)
 - **lead@vibecode.dev** / lead123 (Lisa Thompson)
 
 ### Developer Users (3 accounts)

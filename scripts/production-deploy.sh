@@ -407,7 +407,7 @@ run_health_checks() {
     
     # Test AI endpoints
     log "Testing AI endpoints..."
-    local session_token=$(curl -s -X POST "${app_url}/api/auth/signin" -d "email=admin@vibecode.dev&password=admin123" | jq -r '.sessionToken // empty')
+    local session_token=$(curl -s -X POST "${app_url}/api/auth/signin" -d "email=admin@vibecode.dev&password=${ADMIN_PASSWORD:-}" | jq -r '.sessionToken // empty')
     
     if [ -n "$session_token" ]; then
         if curl -f -s -H "Authorization: Bearer $session_token" "${app_url}/api/ai/health" > /dev/null; then

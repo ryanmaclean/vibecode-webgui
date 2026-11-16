@@ -107,7 +107,7 @@ Generating 256 bit ecdsa key, this may take a while...
 ```
 === SSH Server ===
 ✓ SSH server running (PID: 200)
-  Connect: ssh root@192.168.64.10 (password: vibecode)
+  Connect: ssh root@192.168.64.10 (password: <set-a-strong-password>)
 ```
 
 **Functional Test:** Cannot test from host due to vfkit NAT limitations, but service started successfully.

@@ -251,7 +251,7 @@ cat /var/db/dhcpd_leases | grep "ip_address"
 # Replace <VM_IP> with actual IP
 ssh root@<VM_IP>
 
-# Default password: vibecode
+# Default password: <set-a-strong-password>
 # Or use private key if configured
 ```
 

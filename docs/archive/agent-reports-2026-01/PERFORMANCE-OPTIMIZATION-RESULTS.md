@@ -148,7 +148,7 @@ vfkit \
 OpenVSCode:  http://<VM_IP>:8080
 Valkey:      redis://<VM_IP>:6379
 PostgreSQL:  postgresql://<VM_IP>:5432
-SSH:         ssh root@<VM_IP>  (password: vibecode)
+SSH:         ssh root@<VM_IP>  (password: <set-a-strong-password>)
 ```
 
 ---

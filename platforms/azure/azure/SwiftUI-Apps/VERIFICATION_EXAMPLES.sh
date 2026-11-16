@@ -165,7 +165,7 @@ example_troubleshooting() {
   echo "open http://localhost:8080"
   echo ""
   echo "# SSH into VM manually"
-  echo "ssh -p 2222 root@localhost  # password: vibecode"
+  echo "ssh -p 2222 root@localhost  # password: see build output"
   echo "ls -la /root/.openvscode-server/extensions/"
   echo ""
   echo "# View screenshots"

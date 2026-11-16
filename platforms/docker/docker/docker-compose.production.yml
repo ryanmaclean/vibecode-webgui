@@ -18,7 +18,7 @@ services:
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://vibecode:vibecode@postgres:5432/vibecode}
+      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL must be set}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
       - DD_IAST_ENABLED=true
       - DD_DBM_PROPAGATION_MODE=full
@@ -51,9 +51,9 @@ services:
     environment:
       - POSTGRES_DB=vibecode
       - POSTGRES_USER=vibecode
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-vibecode123}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -71,7 +71,7 @@ services:
     container_name: vibecode-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
     networks:
@@ -113,9 +113,9 @@ services:
     container_name: vibecode-code-server
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
-      - PASSWORD=${CODE_SERVER_PASSWORD:-vibecode123}
+      - PASSWORD=${CODE_SERVER_PASSWORD:?CODE_SERVER_PASSWORD must be set}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/healthz"]
       interval: 30s
@@ -139,7 +139,7 @@ services:
     container_name: vibecode-prometheus
     restart: unless-stopped
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
       interval: 30s
@@ -162,7 +162,7 @@ services:
     ports:
       - "3001:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:?GRAFANA_PASSWORD must be set}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s

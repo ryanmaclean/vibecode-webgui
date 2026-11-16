@@ -21,7 +21,7 @@ Found **11 legacy user accounts** with plaintext passwords in production authent
 
 All accounts use `@vibecode.dev` email domain with weak plaintext passwords:
 
-1. `admin@vibecode.dev` → `admin123` (admin role)
+1. `admin@vibecode.dev` → `<dev-admin-password>` (admin role)
 2. `developer@vibecode.dev` → `dev123` (developer role)
 3. `lead@vibecode.dev` → `lead123` (lead role)
 4. `frontend@vibecode.dev` → `frontend123` (developer role)

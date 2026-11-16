@@ -332,7 +332,7 @@ module.exports = {
 
 ```bash
 # Database
-DATABASE_URL=postgresql://vibecode:vibecode@localhost:5432/vibecode
+DATABASE_URL=postgresql://vibecode:<set-a-strong-password>@localhost:5432/vibecode
 
 # Cache
 VALKEY_HOST=localhost

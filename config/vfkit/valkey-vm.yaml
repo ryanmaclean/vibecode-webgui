@@ -92,7 +92,7 @@ tcp-keepalive 300
 # ============================================
 # IMPORTANT: Set requirepass in production!
 # Generate with: openssl rand -base64 32
-requirepass VibeCodeChangeMe2025
+requirepass CHANGE_ME_VALKEY_PASSWORD
 protected-mode yes
 
 # Disable dangerous commands
@@ -253,7 +253,7 @@ EOF
   sleep 3
 
   # Verify Valkey is running
-  if valkey-cli -a VibeCodeChangeMe2025 ping | grep -q PONG; then
+  if valkey-cli -a CHANGE_ME_VALKEY_PASSWORD ping | grep -q PONG; then
     echo "✓ Valkey is running successfully"
   else
     echo "✗ Valkey failed to start"
@@ -261,31 +261,31 @@ EOF
   fi
 
   # Test session storage
-  valkey-cli -a VibeCodeChangeMe2025 SET test:session:1 "user_session_data" EX 3600
-  valkey-cli -a VibeCodeChangeMe2025 GET test:session:1
+  valkey-cli -a CHANGE_ME_VALKEY_PASSWORD SET test:session:1 "user_session_data" EX 3600
+  valkey-cli -a CHANGE_ME_VALKEY_PASSWORD GET test:session:1
 
   # Show Valkey info
   echo ""
   echo "=== Valkey Information ==="
-  valkey-cli -a VibeCodeChangeMe2025 INFO server | grep -E "valkey_version|valkey_mode|os|arch"
+  valkey-cli -a CHANGE_ME_VALKEY_PASSWORD INFO server | grep -E "valkey_version|valkey_mode|os|arch"
 
   echo ""
   echo "=== Valkey Memory Usage ==="
-  valkey-cli -a VibeCodeChangeMe2025 INFO memory | grep -E "used_memory_human|maxmemory_human"
+  valkey-cli -a CHANGE_ME_VALKEY_PASSWORD INFO memory | grep -E "used_memory_human|maxmemory_human"
 
   echo ""
   echo "=== Valkey Configuration ==="
   echo "Host: 0.0.0.0"
   echo "Port: 6379"
-  echo "Password: VibeCodeChangeMe2025 (CHANGE IN PRODUCTION!)"
+  echo "Password: CHANGE_ME_VALKEY_PASSWORD (CHANGE IN PRODUCTION!)"
   echo "Persistence: AOF + RDB"
   echo "Max Memory: 512MB"
   echo "Max Clients: 10000"
 
   echo ""
   echo "=== Connection Test from Host ==="
-  echo "Test with: valkey-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping"
-  echo "Or: redis-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping"
+  echo "Test with: valkey-cli -h localhost -p 6379 -a CHANGE_ME_VALKEY_PASSWORD ping"
+  echo "Or: redis-cli -h localhost -p 6379 -a CHANGE_ME_VALKEY_PASSWORD ping"
   echo "(Valkey is 100% Redis protocol compatible)"
 
   echo ""

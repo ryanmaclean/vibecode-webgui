@@ -36,7 +36,7 @@ runcmd:
   # Set postgres password
   - rc-service postgresql start
   - sleep 5
-  - su -s /bin/sh postgres -c "psql -c \"ALTER USER postgres PASSWORD 'postgres';\""
+  - PGPW=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n'); (umask 077; printf '%s' "$PGPW" > /root/.postgres-password); su -s /bin/sh postgres -c "psql -c \"ALTER USER postgres PASSWORD '$PGPW';\""
   
   # Create test database
   - su -s /bin/sh postgres -c "psql -c \"CREATE DATABASE vibecode;\""
@@ -57,5 +57,5 @@ write_files:
       VibeCode PostgreSQL VM
       PostgreSQL Server Ready
       Connect: psql -h <vm-ip> -U postgres -d vibecode
-      Password: postgres
+      Password: set during provisioning
 

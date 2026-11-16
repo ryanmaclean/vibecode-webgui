@@ -113,13 +113,13 @@ data:
 
     # Storage configuration
     storage:
-      encryption_key: "vibecode-storage-encryption-key-change-in-production"
+      encryption_key: "REPLACE_WITH_STORAGE_ENCRYPTION_KEY"
       postgres:
         address: tcp://postgres-service.vibecode-platform.svc.cluster.local:5432
         database: vibecode
         schema: public
         username: vibecode
-        password: "vibecode_password"
+        password: "REPLACE_WITH_DB_PASSWORD"
         timeout: 5s
 
     # Notification configuration

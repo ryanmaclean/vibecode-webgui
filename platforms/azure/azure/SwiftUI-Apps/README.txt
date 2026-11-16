@@ -30,7 +30,7 @@ CONNECTION EXAMPLES
 -------------------
 SSH:
   ssh root@localhost -p 2222
-  Password: vibecode
+  Password: <set-a-strong-password>
 
 Valkey (Redis-compatible):
   redis-cli -h localhost -p 6379
@@ -38,7 +38,7 @@ Valkey (Redis-compatible):
 
 PostgreSQL:
   psql -h localhost -p 5432 -U vibecode vibecode
-  Password: vibecode
+  Password: <set-a-strong-password>
 
 OpenVSCode:
   Open http://localhost:8080 in your browser

@@ -402,7 +402,7 @@ $ vfkit \
 #    "✓ VirtioFS module loaded successfully"
 #    "✓ Host filesystem mounted at /mnt/host"
 
-# 4. SSH into VM (password: vibecode)
+# 4. SSH into VM (password: <set-a-strong-password>)
 $ ssh root@192.168.64.10
 
 # 5. Inside VM, verify mount
@@ -1290,7 +1290,7 @@ $ vfkit \
     --memory 2048
 
 # 3. Verify volume mounted
-$ ssh root@192.168.64.10  # password: vibecode
+$ ssh root@192.168.64.10  # password: <set-a-strong-password>
 # mount | grep virtiofs
 hostshare on /mnt/host type virtiofs (rw,relatime)
 

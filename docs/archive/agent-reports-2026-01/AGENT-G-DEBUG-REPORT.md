@@ -378,7 +378,7 @@ tail -f /tmp/unified-vm-console.log
 ### SSH into VM (once booted):
 ```bash
 ssh root@$(grep "DHCP IP:" /tmp/unified-vm-console.log | awk '{print $4}')
-# Password: vibecode
+# Password: <set-a-strong-password>
 ```
 
 ### Check service logs inside VM:

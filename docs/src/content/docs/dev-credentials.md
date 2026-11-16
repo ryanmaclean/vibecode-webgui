@@ -100,7 +100,7 @@ This will output properly formatted `AUTH_TEST_USERS` JSON that you can copy to 
 ## 🛠️ Testing Different Scenarios
 
 ### Admin Access Testing
-Use `admin@vibecode.dev / admin123` or `lead@vibecode.dev / lead123` to test:
+Use `admin@vibecode.dev / <dev-admin-password>` or `lead@vibecode.dev / lead123` to test:
 - Full monitoring dashboard access
 - Administrative functions
 - System health checks

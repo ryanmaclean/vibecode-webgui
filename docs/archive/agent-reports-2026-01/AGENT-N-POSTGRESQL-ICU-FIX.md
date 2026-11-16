@@ -192,7 +192,7 @@ While PostgreSQL initialization now succeeds, a **new runtime issue** was discov
 
 | Service | Previous Status | Current Status | Notes |
 |---------|----------------|----------------|-------|
-| **SSH** | ✅ Working | ✅ Working | Port 22, password: vibecode |
+| **SSH** | ✅ Working | ✅ Working | Port 22, password: <set-a-strong-password> |
 | **Valkey** | ✅ Working | ✅ Working | Port 6379, fully functional |
 | **OpenVSCode** | ✅ Working | ✅ Working | Port 8080, HTTP accessible |
 | **PostgreSQL** | ⚠️ 95% Init Fail | ✅ Init Success<br>⚠️ Runtime Issue | ICU fixed, new SHM issue |

@@ -191,7 +191,7 @@
             fi
             /data/usr/sbin/dropbear -R -B 2>&1
             if pgrep dropbear > /dev/null; then
-              echo "  SSH: OK (port 22, password: vibecode)"
+              echo "  SSH: OK (port 22)"
             else
               echo "  SSH: FAILED"
             fi
@@ -236,7 +236,7 @@
           mode: '0644'
         - name: shadow
           content: |
-            root:$6$vibecode$LkKMVBQY5qE3Vq7rWvK7xI8eXkQmNpO0jR1sT2uW3vX4yZ5aB6cD7eF8gH9iJ0kL1mN2oP3qR4sT5uV6wX7yZ8:19000:0:99999:7:::
+            root:*:19000:0:99999:7:::
             postgres:!:19000:0:99999:7:::
           mode: '0600'
 

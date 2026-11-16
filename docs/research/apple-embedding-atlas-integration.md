@@ -425,7 +425,7 @@ import subprocess
 from pathlib import Path
 
 # Configuration
-POSTGRES_URL = os.environ.get('DATABASE_URL', 'postgresql://vibecode:vibecode@localhost:5432/vibecode')
+POSTGRES_URL = os.environ.get('DATABASE_URL', 'postgresql://vibecode:<set-a-strong-password>@localhost:5432/vibecode')
 OUTPUT_PATH = Path('/tmp/rag_embeddings.parquet')
 SAMPLE_SIZE = 50000
 

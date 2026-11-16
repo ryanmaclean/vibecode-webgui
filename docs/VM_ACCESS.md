@@ -38,7 +38,7 @@ http://localhost:3000
 **Status:** ⏳ In Progress (GLIBC compatibility)
 
 ```bash
-# Create tunnel (will prompt for password: vibecode)
+# Create tunnel (will prompt for password: <set-a-strong-password>)
 ssh -L 9000:localhost:3000 -N root@192.168.64.3 &
 
 # One-click open

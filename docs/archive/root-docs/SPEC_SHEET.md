@@ -346,7 +346,7 @@ Features: Rate limited (10/min), authentication required, health verification po
 
 ```bash
 # SSH
-ssh -p 2222 root@localhost  # password: vibecode
+ssh -p 2222 root@localhost  # password: <set-a-strong-password>
 
 # PostgreSQL
 psql -h localhost -U postgres  # database: vibecode

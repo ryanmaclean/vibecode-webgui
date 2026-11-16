@@ -70,7 +70,7 @@ datadog:
         - host: postgres-service.vibecode-platform.svc.cluster.local
           port: 5432
           username: datadog
-          password: datadog_monitoring_password
+          password: REPLACE_WITH_DATADOG_MONITORING_PASSWORD
           dbname: vibecode
           dbm: true
           tags:

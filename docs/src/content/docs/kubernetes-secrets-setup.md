@@ -39,7 +39,7 @@ Replace these values:
 ```yaml
 # Placeholder/development values that need replacement:
 ADMIN_EMAIL: admin@vibecode.dev           # Use real admin email
-ADMIN_PASSWORD: admin123                  # Use secure password
+ADMIN_PASSWORD: <dev-admin-password>                  # Use secure password
 NEXTAUTH_SECRET: [encoded placeholder]    # Must match oauth-secrets
 DD_API_KEY: [encoded placeholder]         # Real Datadog API key
 OPENROUTER_API_KEY: [encoded placeholder] # Real OpenRouter API key

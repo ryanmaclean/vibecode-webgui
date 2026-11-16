@@ -879,7 +879,7 @@ CNCF sandbox project for Linux VMs on macOS with automatic file sharing and port
 If you use VibeCode in your research or project, please cite as:
 
 ```bibtex
-@software{vibecode2024,
+@software{<set-a-strong-password>,
   title={VibeCode: Template Method Pattern Framework for Apple Virtualization.framework},
   author={{VibeCode Contributors}},
   year={2024},

@@ -76,7 +76,7 @@ cask "vibecode" do
   postflight do
     system "container", "system", "start"
     system "container", "run", "-d", "-p", "8080:8080", 
-           "-e", "PASSWORD=vibecode", 
+           "-e", "PASSWORD=<set-a-strong-password>", 
            "codercom/code-server:latest"
   end
 end
@@ -163,7 +163,7 @@ container system start
 
 # Run VibeCode
 container run -d -p 8080:8080 \
-  -e PASSWORD=vibecode \
+  -e PASSWORD=<set-a-strong-password> \
   --name vibecode \
   codercom/code-server:latest
 

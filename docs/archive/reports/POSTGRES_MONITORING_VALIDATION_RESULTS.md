@@ -99,7 +99,7 @@ shared_preload_libraries = 'pg_stat_statements'
 host: localhost
 port: 5432
 username: datadog
-password: datadog_monitoring_password
+password: <datadog-monitoring-password>
 dbname: vibecode
 dbm: true
 ```
@@ -110,7 +110,7 @@ instances:
   - host: localhost
     port: 5432
     username: datadog
-    password: datadog_monitoring_password
+    password: <datadog-monitoring-password>
     dbname: vibecode
     dbm: true
     collect_schemas: 

@@ -7,7 +7,6 @@ metadata:
 data:
   POSTGRES_DB: vibecode
   POSTGRES_USER: vibecode
-  POSTGRES_PASSWORD: vibecode_password
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

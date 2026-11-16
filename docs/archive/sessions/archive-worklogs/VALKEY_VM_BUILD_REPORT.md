@@ -209,7 +209,7 @@ chown -R valkey:valkey /var/lib/valkey /var/log/valkey /etc/valkey
 3. **Configure Valkey**
    - Copy `/Users/ryan.maclean/vibecode-webgui/config/valkey/valkey.conf` into VM
    - Set proper permissions
-   - Configure requirepass (currently: `VibeCodeChangeInProduction2025`)
+   - Configure requirepass (currently: `<set-a-strong-password>`)
 
 4. **Create OpenRC Service**
 ```bash
@@ -544,7 +544,7 @@ bind 0.0.0.0
 port 6379
 
 # Security
-requirepass VibeCodeChangeInProduction2025
+requirepass <set-a-strong-password>
 protected-mode yes
 
 # Memory

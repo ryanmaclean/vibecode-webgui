@@ -5,7 +5,7 @@ metadata:
   name: vibecode-config
   namespace: vibecode-platform
 data:
-  DATABASE_URL: "postgresql://vibecode:vibecode_password@postgres-service:5432/vibecode"
+  DATABASE_URL: "postgresql://vibecode:REPLACE_WITH_DB_PASSWORD@postgres-service:5432/vibecode"
   REDIS_URL: "redis://valkey-service:6379"
   NEXTAUTH_URL: "http://localhost:3000"
   NEXTAUTH_URL_INTERNAL: "http://0.0.0.0:3000"

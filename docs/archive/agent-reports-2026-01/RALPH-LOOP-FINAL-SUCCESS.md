@@ -194,7 +194,7 @@ nghttp2-libs-1.68.0-r0.apk ✓
 
 === SSH Server ===
 ✓ SSH server running (PID: 190)
-  Connect: ssh root@192.168.64.10 (password: vibecode)
+  Connect: ssh root@192.168.64.10 (password: <set-a-strong-password>)
 
 === Valkey Server ===
 ✓ Valkey running (PID: 191)
@@ -212,7 +212,7 @@ nghttp2-libs-1.68.0-r0.apk ✓
 ```
 
 ### Service Accessibility
-- **SSH**: `ssh root@192.168.64.10` (password: vibecode)
+- **SSH**: `ssh root@192.168.64.10` (password: <set-a-strong-password>)
 - **Valkey**: `redis://192.168.64.10:6379`
 - **OpenVSCode**: `http://192.168.64.10:8080`
 - **PostgreSQL**: `postgresql://192.168.64.10:5432`

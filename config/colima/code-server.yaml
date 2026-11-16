@@ -20,9 +20,9 @@ mounts:
 autoStart:
   - docker run -d \
       --name code-server \
-      -p 8080:8080 \
+      -p 127.0.0.1:8080:8080 \
       -v "$HOME:/home/coder/workspace" \
-      -e PASSWORD=vibecode \
+      -e PASSWORD=CHANGE_ME_CODE_SERVER_PASSWORD \
       codercom/code-server:latest
 
 # Network configuration

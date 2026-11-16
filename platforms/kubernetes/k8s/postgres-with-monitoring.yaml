@@ -11,7 +11,7 @@ data:
     CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 
     -- Create datadog monitoring user
-    CREATE USER datadog WITH PASSWORD 'datadog_monitoring_password';
+    CREATE USER datadog WITH PASSWORD 'REPLACE_WITH_DATADOG_MONITORING_PASSWORD';
     GRANT SELECT ON pg_stat_database TO datadog;
     GRANT SELECT ON pg_stat_user_tables TO datadog;
     GRANT SELECT ON pg_stat_user_indexes TO datadog;
@@ -107,7 +107,7 @@ spec:
             "host": "%%host%%",
             "port": 5432,
             "username": "datadog",
-            "password": "datadog_monitoring_password",
+            "password": "REPLACE_WITH_DATADOG_MONITORING_PASSWORD",
             "dbm": true,
             "collect_schemas": {"enabled": true, "collection_interval": 600},
             "collect_activity": {"enabled": true, "collection_interval": 10},

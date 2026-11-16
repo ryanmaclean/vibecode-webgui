@@ -1116,13 +1116,11 @@ postgres:x:70:70:PostgreSQL:/var/lib/postgresql:/bin/sh
 sandbox:x:1000:1000:Sandbox User:/home/sandbox:/bin/sh
 EOF
 
-    # /etc/shadow (password: vibecode)
-    # Hash generated with: openssl passwd -6 -salt vibecode123 vibecode
-    cat > "$initramfs/etc/shadow" << 'EOF'
-root:$6$vibecode123$xrMGfQmkECwBG5tnCoZCFLvKcOB9X1A.L4DhlO8z6jq1y8mq8Zb3gNOOthahQbBvXvuJ8gmnZXBTq5j48Dodp1:19000:0:99999:7:::
-postgres:*:19000:0:99999:7:::
-sandbox:*:19000:0:99999:7:::
-EOF
+    # /etc/shadow: the root password is generated per build (never committed).
+    # Set VM_ROOT_PASSWORD to choose your own.
+    VM_ROOT_PASSWORD="${VM_ROOT_PASSWORD:-$(openssl rand -hex 12)}"
+    VM_ROOT_HASH=$(openssl passwd -6 "$VM_ROOT_PASSWORD")
+    printf 'root:%s:19000:0:99999:7:::\npostgres:*:19000:0:99999:7:::\nsandbox:*:19000:0:99999:7:::\n' "$VM_ROOT_HASH" > "$initramfs/etc/shadow"
     chmod 600 "$initramfs/etc/shadow"
 
     # /etc/group
@@ -1750,7 +1748,7 @@ if [ -n "$SSH_PID" ]; then
         fi
 
         if [ -n "$VM_IP" ] && [ "$VM_IP" != "localhost" ]; then
-            echo "  Connect: ssh root@$VM_IP (password: vibecode)"
+            echo "  Connect: ssh root@$VM_IP (password: $VM_ROOT_PASSWORD)"
         else
             echo "  Connect: ssh root@localhost"
         fi
@@ -1961,7 +1959,7 @@ echo "Services Running:"
 echo "  - Valkey:      redis://$VM_IP:6379"
 echo "  - PostgreSQL:  postgresql://$VM_IP:5432"
 echo "  - OpenVSCode:  http://$VM_IP:8080"
-echo "  - SSH:         ssh root@$VM_IP (password: vibecode)"
+echo "  - SSH:         ssh root@$VM_IP (password: $VM_ROOT_PASSWORD)"
 if [ -n "$DD_API_KEY" ]; then
     echo "  - Datadog:     StatsD on 127.0.0.1:8125"
 fi
@@ -1979,7 +1977,7 @@ echo "==========================================="
 echo ""
 echo "SSH Access:"
 echo "  ssh root@$VM_IP"
-echo "  Password: vibecode"
+echo "  Password: $VM_ROOT_PASSWORD"
 echo ""
 echo "Valkey Access:"
 if [ -n "$VALKEY_PID" ]; then
@@ -2214,7 +2212,7 @@ show_usage_instructions() {
     echo "  - Valkey:      redis://<VM_IP>:6379"
     echo "  - PostgreSQL:  postgresql://<VM_IP>:5432"
     echo "  - OpenVSCode:  http://<VM_IP>:8080"
-    echo "  - SSH:         ssh root@<VM_IP> (password: vibecode)"
+    echo "  - SSH:         ssh root@<VM_IP> (password: generated at build time)"
     echo ""
     echo "Datadog Integration:"
     echo "  - StatsD endpoint: 127.0.0.1:8125 (inside VM)"

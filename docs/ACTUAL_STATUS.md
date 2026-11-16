@@ -13,7 +13,7 @@ Found console log showing **Unified VM successfully booted**:
 - ✅ Network configured: 192.168.64.3/24 via DHCP
 - ✅ Valkey started: Port 6379, PID 190
 - ✅ OpenVSCode started: Port 3000 (internal), 8080 (external relay)
-- ✅ SSH server: Port 22, root password: vibecode
+- ✅ SSH server: Port 22, root password: <set-a-strong-password>
 
 **Console log:** `/tmp/vibecode-console-4B50B58C-B8DF-41F8-8E7A-6E21FD43EF64.log`
 

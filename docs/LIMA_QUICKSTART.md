@@ -127,13 +127,13 @@ limactl delete vibecode-valkey
 **From host:**
 ```bash
 # Test connection
-redis-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping
+redis-cli -h localhost -p 6379 -a <set-a-strong-password> ping
 
 # Set a key
-redis-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 SET mykey "Hello"
+redis-cli -h localhost -p 6379 -a <set-a-strong-password> SET mykey "Hello"
 
 # Get a key
-redis-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 GET mykey
+redis-cli -h localhost -p 6379 -a <set-a-strong-password> GET mykey
 ```
 
 **From VM shell:**
@@ -142,7 +142,7 @@ redis-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 GET mykey
 limactl shell vibecode-valkey
 
 # Connect to Valkey
-sudo valkey-cli -a VibeCodeChangeMe2025 ping
+sudo valkey-cli -a <set-a-strong-password> ping
 
 # View logs
 sudo tail -f /var/log/valkey/valkey.log
@@ -443,7 +443,7 @@ limactl copy vibecode-valkey:/tmp/file.txt ./
 
 ```bash
 # Run single command
-limactl shell vibecode-valkey sudo valkey-cli -a VibeCodeChangeMe2025 ping
+limactl shell vibecode-valkey sudo valkey-cli -a <set-a-strong-password> ping
 
 # Run script
 limactl shell vibecode-valkey < my-script.sh

@@ -82,7 +82,7 @@ provision:
       tcp-keepalive 300
 
       # SECURITY
-      requirepass VibeCodeChangeMe2025
+      requirepass CHANGE_ME_VALKEY_PASSWORD
       protected-mode yes
 
       # Disable dangerous commands
@@ -184,7 +184,7 @@ provision:
       sleep 3
 
       # Verify Valkey is running
-      if valkey-cli -a VibeCodeChangeMe2025 ping | grep -q PONG; then
+      if valkey-cli -a CHANGE_ME_VALKEY_PASSWORD ping | grep -q PONG; then
         echo "✓ Valkey is running successfully"
       else
         echo "✗ Valkey failed to start"
@@ -195,11 +195,11 @@ provision:
       echo "=== Valkey VM Setup Complete ==="
       echo "Host: 0.0.0.0"
       echo "Port: 6379"
-      echo "Password: VibeCodeChangeMe2025 (CHANGE IN PRODUCTION!)"
+      echo "Password: CHANGE_ME_VALKEY_PASSWORD (CHANGE IN PRODUCTION!)"
       echo ""
       echo "Test from host:"
-      echo "  valkey-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping"
-      echo "  redis-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping"
+      echo "  valkey-cli -h localhost -p 6379 -a CHANGE_ME_VALKEY_PASSWORD ping"
+      echo "  redis-cli -h localhost -p 6379 -a CHANGE_ME_VALKEY_PASSWORD ping"
 
 # Probes - Health checks
 probes:
@@ -208,7 +208,7 @@ probes:
     script: |
       #!/bin/bash
       set -eux -o pipefail
-      valkey-cli -a VibeCodeChangeMe2025 ping | grep -q PONG
+      valkey-cli -a CHANGE_ME_VALKEY_PASSWORD ping | grep -q PONG
     hint: |
       The VM is not running Valkey yet.
       Run `limactl shell vibecode-valkey` to enter the VM and check logs with:
@@ -223,11 +223,11 @@ message: |
   Connection from host:
     Host: localhost
     Port: 6379
-    Password: VibeCodeChangeMe2025
+    Password: CHANGE_ME_VALKEY_PASSWORD
 
   Test connection:
-    valkey-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping
-    redis-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping
+    valkey-cli -h localhost -p 6379 -a CHANGE_ME_VALKEY_PASSWORD ping
+    redis-cli -h localhost -p 6379 -a CHANGE_ME_VALKEY_PASSWORD ping
 
   Access VM shell:
     limactl shell vibecode-valkey

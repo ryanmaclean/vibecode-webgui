@@ -253,7 +253,7 @@ volumes:
    vfkit --config config/vfkit/valkey-vm.yaml
 
    # Verify Valkey is running
-   valkey-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping
+   valkey-cli -h localhost -p 6379 -a <set-a-strong-password> ping
    # Expected output: PONG
    ```
 
@@ -275,7 +275,7 @@ volumes:
    ssh valkey-vm "rc-service valkey restart"
 
    # Verify data
-   valkey-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 KEYS "*"
+   valkey-cli -h localhost -p 6379 -a <set-a-strong-password> KEYS "*"
    ```
 
 4. **Update Application Configuration**
@@ -283,12 +283,12 @@ volumes:
    # Update .env (no changes required if using localhost:6379)
    REDIS_HOST=localhost
    REDIS_PORT=6379
-   REDIS_PASSWORD=VibeCodeChangeMe2025
+   REDIS_PASSWORD=<set-a-strong-password>
 
    # Or use Valkey-specific variables
    VALKEY_HOST=localhost
    VALKEY_PORT=6379
-   VALKEY_PASSWORD=VibeCodeChangeMe2025
+   VALKEY_PASSWORD=<set-a-strong-password>
    ```
 
 5. **Restart Application**

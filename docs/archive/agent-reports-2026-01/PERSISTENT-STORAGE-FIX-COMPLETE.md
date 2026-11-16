@@ -151,7 +151,7 @@ ls -la ~/Library/Application\ Support/VibeCode/vm-data/
 
 **Steps:**
 1. Start VM and let PostgreSQL initialize
-2. SSH into VM: `ssh root@<VM_IP>` (password: vibecode)
+2. SSH into VM: `ssh root@<VM_IP>` (password: <set-a-strong-password>)
 3. Create test database:
    ```sql
    su postgres -c "psql -U postgres -c 'CREATE DATABASE testdb;'"
