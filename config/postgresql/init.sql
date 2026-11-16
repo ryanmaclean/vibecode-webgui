@@ -23,20 +23,21 @@
 \echo '==================================================================='
 
 -- Passwords are required inputs; none are stored in this file.
+-- (requires psql 13 or newer; a missing variable stops the script with a non-zero exit)
 \if :{?postgres_password}
 \else
   \echo 'ERROR: pass -v postgres_password=... and -v vibecode_password=... to psql'
-  \quit
+  SELECT 1/0;
 \endif
 \if :{?vibecode_password}
 \else
   \echo 'ERROR: pass -v postgres_password=... and -v vibecode_password=... to psql'
-  \quit
+  SELECT 1/0;
 \endif
 
 -- Set password for postgres superuser
 ALTER USER postgres WITH PASSWORD :'postgres_password';
-SELECT set_config('vibecode.app_password', :'vibecode_password', false);
+SELECT set_config('vibecode.app_password', :'vibecode_password', false) AS _ignored \gset
 
 -- Create vibecode application user
 DO $$
