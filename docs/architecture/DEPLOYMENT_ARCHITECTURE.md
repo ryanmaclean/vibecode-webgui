@@ -1,4 +1,6 @@
 # VibeCode Deployment Architecture
+
+> **Moved 2026-10-24 (WS3):** `infra/tundra-dome/` and its workflows (`tundra-deploy.yaml`, `tundra-dome-kind.yml`) now live in ryanmaclean/gt (private; gt#5, which also carries the #2137 fixes). Paths to them below refer to that repo.
 **Complete Deployment Architecture with Infrastructure Details**
 
 **Version:** 1.0
