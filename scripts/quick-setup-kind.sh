@@ -378,13 +378,6 @@ setup_namespace() {
         log_success "Created namespace 'vibecode' ✓"
     fi
 
-    # Generated at run time, never committed
-    if ! kubectl get secret vibecode-db-credentials -n vibecode --context "kind-$CLUSTER_NAME" &> /dev/null; then
-        kubectl create secret generic vibecode-db-credentials -n vibecode --context "kind-$CLUSTER_NAME" \
-            --from-literal=POSTGRES_PASSWORD="$(openssl rand -hex 16)" \
-            --from-literal=ADMIN_PASSWORD="$(openssl rand -hex 12)"
-        log_success "Created secret 'vibecode-db-credentials' with generated values ✓"
-    fi
 }
 
 detect_kubernetes_manifests() {

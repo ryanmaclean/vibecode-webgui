@@ -17,6 +17,7 @@ mounts:
     writable: true
 
 # Auto-start code-server container
+# Replace CHANGE_ME_CODE_SERVER_PASSWORD with a strong password before use
 autoStart:
   - docker run -d \
       --name code-server \

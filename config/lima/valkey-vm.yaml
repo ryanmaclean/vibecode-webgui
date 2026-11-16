@@ -82,6 +82,7 @@ provision:
       tcp-keepalive 300
 
       # SECURITY
+      # Replace CHANGE_ME_VALKEY_PASSWORD with a strong password before use
       requirepass CHANGE_ME_VALKEY_PASSWORD
       protected-mode yes
 

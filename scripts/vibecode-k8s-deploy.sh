@@ -68,11 +68,25 @@ NAMESPACE_PLATFORM="vibecode-platform"
 NAMESPACE_WEBGUI="vibecode-webgui"
 K8S_MANIFESTS_DIR="platforms/kubernetes/k8s"
 
-# Credentials are generated per run and substituted into the manifests at apply time.
-# Export DB_PASSWORD / ADMIN_PASSWORD beforehand to reuse values from an earlier run
-# (required when the database volume already exists).
-DB_PASSWORD="${DB_PASSWORD:-$(openssl rand -hex 16)}"
-ADMIN_PASSWORD="${ADMIN_PASSWORD:-$(openssl rand -hex 12)}"
+# Credentials are never committed. They are resolved in this order: DB_PASSWORD /
+# ADMIN_PASSWORD from the environment, the value already stored in the cluster
+# Secret (so reruns stay stable), then a freshly generated value (openssl rand).
+# The same DB_PASSWORD feeds the postgres-secret Secret and the app DATABASE_URL.
+DB_PASSWORD="${DB_PASSWORD:-}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
+secret_value() {
+    # usage: secret_value <secret> <namespace> <key>
+    local v
+    v=$(kubectl get secret "$1" -n "$2" -o "jsonpath={.data.$3}" 2>/dev/null | base64 -d 2>/dev/null || true)
+    case "$v" in "<set-me>"|REPLACE_WITH_*) v="" ;; esac
+    printf '%s' "$v"
+}
+resolve_credentials() {
+    [ -n "$DB_PASSWORD" ] || DB_PASSWORD=$(secret_value postgres-secret "$NAMESPACE_WEBGUI" POSTGRES_PASSWORD)
+    [ -n "$DB_PASSWORD" ] || DB_PASSWORD=$(openssl rand -hex 16)
+    [ -n "$ADMIN_PASSWORD" ] || ADMIN_PASSWORD=$(secret_value vibecode-secrets "$NAMESPACE_PLATFORM" ADMIN_PASSWORD)
+    [ -n "$ADMIN_PASSWORD" ] || ADMIN_PASSWORD=$(openssl rand -hex 12)
+}
 render_manifest() {
     sed -e "s/REPLACE_WITH_DB_PASSWORD/${DB_PASSWORD}/g" -e "s/REPLACE_WITH_ADMIN_PASSWORD/${ADMIN_PASSWORD}/g" "$1"
 }
@@ -612,11 +626,18 @@ if [ "$DRY_RUN" = true ]; then
     [ -f "$K8S_MANIFESTS_DIR/oauth-secrets.yaml" ] && log_info "Would deploy: $K8S_MANIFESTS_DIR/oauth-secrets.yaml" || log_warning "oauth-secrets.yaml not found (copy oauth-secrets.example.yaml)"
     [ -f "$K8S_MANIFESTS_DIR/vibecode-secrets.yaml" ] && log_info "Would deploy: $K8S_MANIFESTS_DIR/vibecode-secrets.yaml" || log_warning "vibecode-secrets.yaml not found"
 else
+    resolve_credentials
+
     if [ -f "$K8S_MANIFESTS_DIR/postgres-secret.yaml" ]; then
         kubectl apply -f "$K8S_MANIFESTS_DIR/postgres-secret.yaml"
+        # A hand-filled file wins; use its password for the app connection string
+        DB_PASSWORD=$(secret_value postgres-secret "$NAMESPACE_WEBGUI" POSTGRES_PASSWORD)
+        [ -n "$DB_PASSWORD" ] || { log_error "postgres-secret.yaml has no usable POSTGRES_PASSWORD"; exit 1; }
         log_success "PostgreSQL secrets deployed"
     else
-        log_warning "postgres-secret.yaml not found (copy postgres-secret.example.yaml and fill it), skipping..."
+        kubectl create secret generic postgres-secret -n "$NAMESPACE_WEBGUI" \
+            --from-literal=POSTGRES_PASSWORD="$DB_PASSWORD" --dry-run=client -o yaml | kubectl apply -f -
+        log_success "PostgreSQL secret generated (postgres-secret)"
     fi
 
     if [ -f "$K8S_MANIFESTS_DIR/oauth-secrets.yaml" ]; then
