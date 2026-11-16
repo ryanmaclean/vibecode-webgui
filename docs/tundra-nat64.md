@@ -1,5 +1,7 @@
 # Tundra NAT64
 
+> **Moved 2026-10-24 (WS3):** the `settings/nat64/` templates (`nat64.env`, launchd plist, systemd unit) now live in ryanmaclean/gt (private; gt#4). The `plugins/tundra-nat64` module referenced below stays in this repo.
+
 This repo vendors `tundra-nat64` as a module for polecat IP scaling and per-role address pools.
 
 ## Module

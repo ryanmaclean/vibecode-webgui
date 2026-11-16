@@ -230,6 +230,6 @@ Python scripts provide:
 ## See Also
 
 - [EFI Bootloader Setup Guide](./efi-bootloader-setup.md) - Complete setup guide
-- [README-PYTHON-SCRIPTS.md](../../../scripts/vfkit/README-PYTHON-SCRIPTS.md) - Detailed script documentation
+- [README-PYTHON-SCRIPTS.md](https://github.com/ryanmaclean/smolfire/blob/main/imports/vibecode/scripts/vfkit/README-PYTHON-SCRIPTS.md) - Detailed script documentation
 
 

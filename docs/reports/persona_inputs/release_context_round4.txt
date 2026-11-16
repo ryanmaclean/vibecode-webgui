@@ -1,5 +1,0 @@
-- BUILD_STATUS 06:45 UTC: 40% complete; ai building; web/full queued.
-- DEPLOYMENT_SUMMARY 07:24 UTC: 60% complete; minimal/standard/ai verified; web/full building.
-- Latest codeserver-multiarch runs (IDs 18173489520, 18173488125, 18173477874) failed immediately on 2025-10-01 19:34 UTC.
-- Issue #410: ai/web/full images unchecked; need manifest evidence once builds succeed.
-- Issue #418: reviewers require unique validation tag <run_id+sha>, concurrency guard, SBOM fail-fast, Datadog metrics proof prior to merge.

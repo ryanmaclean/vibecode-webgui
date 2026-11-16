@@ -36,7 +36,7 @@ links:
   - name: AI Gateway Observability Dashboard
     type: doc
     provider: github
-    url: https://github.com/vibecode/vibecode-webgui/blob/main/monitoring/datadog/dashboards/ai-gateway-observability.json
+    url: https://github.com/ryanmaclean/vibecode-webgui/blob/main/infrastructure/monitoring/datadog/dashboards/ai-gateway-observability.json
   - name: AI Gateway Source
     type: repo
     provider: github
@@ -54,7 +54,7 @@ extensions:
     repository: vibecode/vibecode-webgui
     source_patterns:
       - services/ai-gateway/**
-      - monitoring/datadog/dashboards/ai-gateway-observability.json
+      - infrastructure/monitoring/datadog/dashboards/ai-gateway-observability.json
   datadoghq.com/cd-visibility:
     deployment_patterns:
       - Build and Push AI Gateway Image

@@ -45,15 +45,6 @@
       "restart": true
     },
     {
-      "type": "node",
-      "request": "launch",
-      "name": "Debug Build Script",
-      "program": "${workspaceFolder}/azure/build-unified-services-with-datadog.sh",
-      "cwd": "${workspaceFolder}/azure",
-      "console": "integratedTerminal",
-      "runtimeExecutable": "bash"
-    },
-    {
       "type": "python",
       "request": "attach",
       "name": "Debug Python in VM",

@@ -94,7 +94,7 @@ Warning: Found multiple lockfiles. Selecting /Users/studio/package-lock.json.
 Updated `.env.local` with proper configuration:
 ```bash
 # Authentication
-NEXTAUTH_SECRET="09v+4uOyeebydlcoBYimzqtqP+0Y3SnT+24uQkjs2NA="
+NEXTAUTH_SECRET="<redacted>"
 NEXTAUTH_URL="http://localhost:3000"
 
 # Datadog Monitoring

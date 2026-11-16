@@ -12,7 +12,7 @@
 1. **Datadog Agent Running**
    - Agent processes active (3 processes)
    - Location: `/opt/datadog-agent/`
-   - API Key configured: `f5be780e66c1e53a6d36b79c7c6c0178`
+   - API Key configured: `<redacted>`
    - Successfully sending metrics to Datadog
    - Site: `datadoghq.com`
 

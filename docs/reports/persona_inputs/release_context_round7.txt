@@ -1,5 +1,0 @@
-- BUILD_STATUS.md (2025-10-01 06:45 UTC): 40% complete (ai building, web/full queued).
-- DEPLOYMENT_SUMMARY.md (07:24 UTC): 60% complete (minimal/standard/ai verified; web/full building).
-- Latest codeserver-multiarch runs 18173489520/88125/77874 failed immediately at 2025-10-01 19:34 UTC.
-- Issue #410 still needs ai/web/full manifests before closure.
-- Issue #418 reviewer feedback: add unique validation tag (run+sha), concurrency guard, SBOM fail-fast, Datadog metrics proof.

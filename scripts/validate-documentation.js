@@ -55,8 +55,8 @@ class DocumentationValidator {
         label: 'Documentation index',
         paths: [
           'docs/DOCUMENTATION_INDEX.md',
-          'content/wiki/DOCUMENTATION_INDEX.md',
-          'archive/consolidated-wiki/DOCUMENTATION_INDEX.md'
+          'docs/archive/content/wiki/DOCUMENTATION_INDEX.md',
+          'docs/archive/consolidated-wiki/DOCUMENTATION_INDEX.md'
         ]
       },
       {
@@ -64,7 +64,7 @@ class DocumentationValidator {
         paths: [
           'docs/CONSOLIDATED_DOCUMENTATION.md',
           'docs/src/content/docs/wiki-archive/CONSOLIDATED_DOCUMENTATION.md',
-          'archive/consolidated-wiki/CONSOLIDATED_DOCUMENTATION.md'
+          'docs/archive/consolidated-wiki/CONSOLIDATED_DOCUMENTATION.md'
         ]
       },
       {
@@ -72,8 +72,8 @@ class DocumentationValidator {
         paths: [
           'docs/DATADOG_MONITORING.md',
           'docs/datadog/monitoring.md',
-          'content/wiki/monitoring/DATADOG_MONITORING.md',
-          'archive/consolidated-wiki/monitoring/DATADOG_MONITORING.md'
+          'docs/archive/content/wiki/monitoring/DATADOG_MONITORING.md',
+          'docs/archive/consolidated-wiki/monitoring/DATADOG_MONITORING.md'
         ]
       },
       {
@@ -81,8 +81,8 @@ class DocumentationValidator {
         paths: [
           'docs/OPENTELEMETRY_INTEGRATION.md',
           'docs/monitoring/OPENTELEMETRY_INTEGRATION.md',
-          'content/wiki/monitoring/OPENTELEMETRY_INTEGRATION.md',
-          'archive/consolidated-wiki/monitoring/OPENTELEMETRY_INTEGRATION.md'
+          'docs/archive/content/wiki/monitoring/OPENTELEMETRY_INTEGRATION.md',
+          'docs/archive/consolidated-wiki/monitoring/OPENTELEMETRY_INTEGRATION.md'
         ]
       },
       {
@@ -94,8 +94,8 @@ class DocumentationValidator {
         paths: [
           'CODE_OF_CONDUCT.md',
           'docs/CODE_OF_CONDUCT.md',
-          'content/wiki/CODE_OF_CONDUCT.md',
-          'archive/consolidated-wiki/CODE_OF_CONDUCT.md'
+          'docs/archive/content/wiki/CODE_OF_CONDUCT.md',
+          'docs/archive/consolidated-wiki/CODE_OF_CONDUCT.md'
         ]
       }
     ];
@@ -272,7 +272,7 @@ class DocumentationValidator {
         paths: [
           'docs/CONSOLIDATED_DOCUMENTATION.md',
           'docs/src/content/docs/wiki-archive/CONSOLIDATED_DOCUMENTATION.md',
-          'archive/consolidated-wiki/CONSOLIDATED_DOCUMENTATION.md'
+          'docs/archive/consolidated-wiki/CONSOLIDATED_DOCUMENTATION.md'
         ]
       },
       {
@@ -280,8 +280,8 @@ class DocumentationValidator {
         paths: [
           'docs/DATADOG_MONITORING.md',
           'docs/datadog/monitoring.md',
-          'content/wiki/monitoring/DATADOG_MONITORING.md',
-          'archive/consolidated-wiki/monitoring/DATADOG_MONITORING.md'
+          'docs/archive/content/wiki/monitoring/DATADOG_MONITORING.md',
+          'docs/archive/consolidated-wiki/monitoring/DATADOG_MONITORING.md'
         ]
       },
       {
@@ -289,8 +289,8 @@ class DocumentationValidator {
         paths: [
           'docs/OPENTELEMETRY_INTEGRATION.md',
           'docs/monitoring/OPENTELEMETRY_INTEGRATION.md',
-          'content/wiki/monitoring/OPENTELEMETRY_INTEGRATION.md',
-          'archive/consolidated-wiki/monitoring/OPENTELEMETRY_INTEGRATION.md'
+          'docs/archive/content/wiki/monitoring/OPENTELEMETRY_INTEGRATION.md',
+          'docs/archive/consolidated-wiki/monitoring/OPENTELEMETRY_INTEGRATION.md'
         ]
       }
     ];
