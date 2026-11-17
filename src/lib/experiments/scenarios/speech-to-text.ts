@@ -322,8 +322,8 @@ Provide ONLY the transcription text, without any additional commentary or format
     const endTime = Date.now();
     let latencyMs = endTime - startTime;
 
-    // For mock/testing with zero latency, simulate realistic values
-    if (latencyMs === 0) {
+    // Sub-2ms (mock) timings count as zero so TTFT (min 1ms) stays < latency
+    if (latencyMs < 2) {
       latencyMs = 100 + Math.floor(Math.random() * 200); // 100-300ms
     }
 
