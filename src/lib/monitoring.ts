@@ -17,6 +17,23 @@ interface HealthCheck {
   error?: string
 }
 
+// Server-only loaders. The `typeof window` guard is replaced at build time, so the
+// client bundle (including the Tauri static export) drops these imports and
+// never pulls prisma, dd-trace or redis into the browser.
+async function loadServerPrisma() {
+  if (typeof window === 'undefined') {
+    return (await import('@/lib/prisma')).prisma
+  }
+  throw new Error('prisma is only available on the server')
+}
+
+async function loadServerRedisClient() {
+  if (typeof window === 'undefined') {
+    return (await import('redis')).createClient
+  }
+  throw new Error('redis is only available on the server')
+}
+
 class MonitoringService {
   private datadogApiKey: string | undefined
   private datadogSite: string
@@ -135,7 +152,7 @@ class MonitoringService {
       if (databaseUrl.startsWith('postgres')) {
         try {
           // Use Prisma client for database health check
-          const { prisma } = await import('@/lib/prisma')
+          const prisma = await loadServerPrisma()
           const start = Date.now()
           
           // Simple query to test connection
@@ -207,7 +224,7 @@ class MonitoringService {
     try {
       // Try to use Valkey client, but fallback gracefully if it fails
       try {
-        const { createClient } = await import('redis')
+        const createClient = await loadServerRedisClient()
         const client = createClient({
           url: valkeyUrl,
           socket: {
