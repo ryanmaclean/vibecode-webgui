@@ -82,8 +82,8 @@
       "appimage": {
         "bundleMediaFramework": true,
         "files": {
-          "resources/linux/vibecode.desktop": "vibecode.desktop",
-          "icons/128x128@2x.png": "vibecode.png"
+          "vibecode.desktop": "resources/linux/vibecode.desktop",
+          "vibecode.png": "icons/128x128@2x.png"
         }
       }
     }
