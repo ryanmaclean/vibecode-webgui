@@ -462,6 +462,33 @@ describe('Speech-to-Text Experiment', () => {
       expect(result.metrics.timeToFirstTokenMs).toBeGreaterThan(0);
       expect(result.metrics.latencyMs).toBeGreaterThan(0);
     });
+
+    it.each([
+      ['no elapsed time', 0],
+      ['1ms elapsed', 1],
+      ['2ms elapsed', 2]
+    ])('should keep TTFT below latency with %s on the clock', async (_label, stepMs) => {
+      // Drive the clock deterministically so the result does not depend on
+      // how fast the mocked API call happens to resolve.
+      let tick = Date.parse('2026-01-01T00:00:00Z');
+      const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+        const value = tick;
+        tick += stepMs;
+        return value;
+      });
+
+      try {
+        const result = await runSpeechToTextExperiment({
+          userId: `latency_clock_user_${stepMs}`,
+          textPrompt: 'Test'
+        });
+
+        expect(result.metrics.timeToFirstTokenMs).toBeGreaterThan(0);
+        expect(result.metrics.timeToFirstTokenMs).toBeLessThan(result.metrics.latencyMs);
+      } finally {
+        nowSpy.mockRestore();
+      }
+    });
   });
 
   describe('Performance', () => {
