@@ -30,11 +30,14 @@ module.exports = {
       '@': path.join(__dirname, 'src'),
     }
     if (!isServer) {
-      // Server-only tracing/profiling packages are reachable from client
+      // Server-only tracing, cache and database packages are reachable from client
       // pages through lib/monitoring -> lib/prisma. They are never used in
       // the static export, so keep them out of the browser bundle.
       config.resolve.alias["dd-trace"] = false
       config.resolve.alias["@datadog/pprof"] = false
+      config.resolve.alias.redis = false
+      config.resolve.alias.pg = false
+      config.resolve.alias["@prisma/client"] = false
       config.resolve.fallback = {
         ...(config.resolve.fallback || {}),
         fs: false,
