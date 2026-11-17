@@ -470,7 +470,7 @@ describe('Speech-to-Text Experiment', () => {
     ])('should keep TTFT below latency with %s on the clock', async (_label, stepMs) => {
       // Drive the clock deterministically so the result does not depend on
       // how fast the mocked API call happens to resolve.
-      let tick = 1_700_000_000_000;
+      let tick = Date.parse('2026-01-01T00:00:00Z');
       const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
         const value = tick;
         tick += stepMs;
