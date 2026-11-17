@@ -445,7 +445,7 @@ jobs:
 
             # Verify installation
             which vibecode || echo "Binary not in PATH (may be normal for GUI apps)"
-            dpkg -l | grep -i vibecode
+            dpkg -l | grep -iE 'vibe-?code'
 
             echo "Package installation test passed"
           else
