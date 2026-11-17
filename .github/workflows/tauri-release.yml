@@ -214,7 +214,11 @@ jobs:
           echo "=========================================="
           echo "Using Next.js config: $NEXT_CONFIG_FILE"
 
-          npx tauri build --target aarch64-apple-darwin --verbose || {
+          # The static export was already built into platforms/public by the step above
+          # (API and dynamic routes moved out). Skip tauri.conf.json beforeBuildCommand so
+          # it does not run a second, unprepared next build over the full app tree.
+          npx tauri build --target aarch64-apple-darwin --verbose \
+            --config '{"build":{"beforeBuildCommand":""}}' || {
             echo "Build failed. Checking logs..."
             test -f target/aarch64-apple-darwin/release/build.log && cat target/aarch64-apple-darwin/release/build.log
             exit 1
