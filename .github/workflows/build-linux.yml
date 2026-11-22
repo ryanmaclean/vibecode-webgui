@@ -166,7 +166,7 @@ jobs:
           ls -lhR platforms/tauri/target/x86_64-unknown-linux-gnu/release/bundle/
 
       - name: Upload deb artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vibecode-linux-x64-deb
           path: |
@@ -175,7 +175,7 @@ jobs:
           retention-days: 30
 
       - name: Upload AppImage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vibecode-linux-x64-appimage
           path: |
@@ -184,7 +184,7 @@ jobs:
           retention-days: 30
 
       - name: Upload rpm artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vibecode-linux-x64-rpm
           path: |
@@ -334,7 +334,7 @@ jobs:
           ls -lhR platforms/tauri/target/aarch64-unknown-linux-gnu/release/bundle/ || true
 
       - name: Upload ARM64 deb artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vibecode-linux-arm64-deb
           path: |
@@ -407,7 +407,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload native ARM64 artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vibecode-linux-arm64-native
           path: |
