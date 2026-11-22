@@ -164,7 +164,7 @@ jobs:
 
     - name: Azure CLI Login
       if: steps.check-azure.outputs.skip != 'true'
-      uses: azure/login@v1
+      uses: azure/login@v3
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
