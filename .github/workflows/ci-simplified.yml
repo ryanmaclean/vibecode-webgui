@@ -245,7 +245,7 @@ jobs:
           NODE_OPTIONS: -r dd-trace/ci/init
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: integration-test-results
@@ -290,7 +290,7 @@ jobs:
           SKIP_ENV_VALIDATION: true
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-artifacts
           path: |
