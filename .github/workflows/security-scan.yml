@@ -99,7 +99,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Datadog Static Analyzer - Secrets Detection
-        uses: DataDog/datadog-static-analyzer-github-action@v1
+        uses: DataDog/datadog-static-analyzer-github-action@v3
         continue-on-error: true
         with:
           dd_app_key: ${{ secrets.DD_APP_KEY }}
