@@ -170,7 +170,7 @@ jobs:
 
     - name: Set up kubectl
       if: steps.check-azure.outputs.skip != 'true'
-      uses: azure/setup-kubectl@v3
+      uses: azure/setup-kubectl@v5
 
     - name: Get AKS credentials
       if: steps.check-azure.outputs.skip != 'true'
