@@ -124,7 +124,7 @@ jobs:
           cat dist/cli/manifest.json
 
       - name: Upload CLI binaries to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           files: |
@@ -236,7 +236,7 @@ jobs:
           EOF
 
       - name: Upload Alpine kernels to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           files: |
@@ -305,7 +305,7 @@ jobs:
           ls -lh dist/source/
 
       - name: Upload source tarballs to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           files: |
@@ -417,7 +417,7 @@ jobs:
           cat dist/metadata/ALL-SHA256SUMS.txt
 
       - name: Upload metadata to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           files: |
