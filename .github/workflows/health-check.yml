@@ -150,11 +150,11 @@ jobs:
 
           # Count health statuses
           if [ -f workflow_health.jsonl ]; then
-            healthy_count=$(grep -c '"status":"healthy"' workflow_health.jsonl || echo "0")
-            degraded_count=$(grep -c '"status":"degraded"' workflow_health.jsonl || echo "0")
-            warning_count=$(grep -c '"status":"warning"' workflow_health.jsonl || echo "0")
-            critical_count=$(grep -c '"status":"critical"' workflow_health.jsonl || echo "0")
-            no_runs_count=$(grep -c '"status":"no_runs"' workflow_health.jsonl || echo "0")
+            healthy_count=$(grep -c '"status":"healthy"' workflow_health.jsonl || true)
+            degraded_count=$(grep -c '"status":"degraded"' workflow_health.jsonl || true)
+            warning_count=$(grep -c '"status":"warning"' workflow_health.jsonl || true)
+            critical_count=$(grep -c '"status":"critical"' workflow_health.jsonl || true)
+            no_runs_count=$(grep -c '"status":"no_runs"' workflow_health.jsonl || true)
 
             echo "healthy_count=$healthy_count" >> $GITHUB_OUTPUT
             echo "degraded_count=$degraded_count" >> $GITHUB_OUTPUT
